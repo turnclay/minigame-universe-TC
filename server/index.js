@@ -58,20 +58,22 @@ app.use("/api", async (req, res, next) => {
 });
 
 // ─────────────────────────────────────────────
-// Fichiers statiques
+// Fichiers statiques (CORRIGÉ)
 // ─────────────────────────────────────────────
 const ROOT = path.join(__dirname, "..");
 
-app.use("/css",    express.static(path.join(ROOT, "css"),    { maxAge: IS_DEV ? 0 : "1h" }));
-app.use("/js",     express.static(path.join(ROOT, "js"),     { maxAge: IS_DEV ? 0 : "1h" }));
-app.use("/images", express.static(path.join(ROOT, "images"), { maxAge: IS_DEV ? 0 : "1h" }));
-app.use("/audio",  express.static(path.join(ROOT, "audio"),  { maxAge: IS_DEV ? 0 : "1h" }));
-app.use("/data",   express.static(path.join(ROOT, "data"),   { maxAge: IS_DEV ? 0 : "1h" }));
+// Dossiers front-end
+app.use("/css",    express.static(path.join(ROOT, "css")));
+app.use("/js",     express.static(path.join(ROOT, "js")));
+app.use("/images", express.static(path.join(ROOT, "images")));
+app.use("/audio",  express.static(path.join(ROOT, "audio")));
+app.use("/data",   express.static(path.join(ROOT, "data")));
 
-// Interfaces
+// Interfaces Host & Join
 app.use("/host", express.static(path.join(ROOT, "public", "host")));
 app.use("/join", express.static(path.join(ROOT, "public", "join")));
 
+// Page d'accueil
 app.get("/", (req, res) => {
     res.sendFile(path.join(ROOT, "index.html"));
 });
@@ -99,35 +101,10 @@ app.get("/api/parties", (req, res) => {
 // WebSocket
 // ─────────────────────────────────────────────
 const wss = new WebSocketServer({ server, path: "/ws" });
-
-const wsRateLimiter = new RateLimiterMemory({ points: 60, duration: 10 });
-
-wss.on("connection", (ws, req) => {
-    ws._ip = req.socket.remoteAddress || "unknown";
-    ws._rateLimited = false;
-
-    const originalEmit = ws.emit.bind(ws);
-    ws.emit = async function (event, ...args) {
-        if (event === "message") {
-            try {
-                await wsRateLimiter.consume(ws._ip);
-            } catch {
-                if (!ws._rateLimited) {
-                    ws._rateLimited = true;
-                    ws.send(JSON.stringify({ type: "ERROR", payload: { code: "RATE_LIMIT" } }));
-                    ws.close();
-                }
-                return;
-            }
-        }
-        return originalEmit(event, ...args);
-    };
-});
-
 setupWebSocket(wss);
 
 // ─────────────────────────────────────────────
-// Démarrage serveur (Render OK)
+// Démarrage serveur
 // ─────────────────────────────────────────────
 server.listen(PORT, "0.0.0.0", () => {
     console.log(`
