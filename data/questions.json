@@ -1,0 +1,3714 @@
+[
+  {
+    "n°": 1,
+    "Thème": "Abstrait",
+    "Question": "Combien de mois de l’année ont 28 jours ?",
+    "Indice 1": "Ils en ont tous au moins 28",
+    "Indice 2": "Certains en ont plus",
+    "Réponse": 12
+  },
+  {
+    "n°": 2,
+    "Thème": "Abstrait",
+    "Question": "Je suis invisible mais je fais peur quand je disparais",
+    "Indice 1": "Je circule en ligne",
+    "Indice 2": "Je permet d’acheter sans billets",
+    "Réponse": "Argent virtuel"
+  },
+  {
+    "n°": 3,
+    "Thème": "Abstrait",
+    "Question": "Je sers à nettoyer le sol",
+    "Indice 1": "Je fais pas du bruit",
+    "Indice 2": "J’accroche et déplace la poussière",
+    "Réponse": "Balai"
+  },
+  {
+    "n°": 4,
+    "Thème": "Abstrait",
+    "Question": "Je nettoie le sol",
+    "Indice 1": "Je fais du bruit",
+    "Indice 2": "J’aspire la poussière",
+    "Réponse": "Aspirateur"
+  },
+  {
+    "n°": 5,
+    "Thème": "Abstrait",
+    "Question": "Où l’océan est-il le plus profond ?",
+    "Indice 1": "On y plonge rarement",
+    "Indice 2": "C’est un jeu de mots",
+    "Réponse": "Au fond"
+  },
+  {
+    "n°": 6,
+    "Thème": "Abstrait",
+    "Question": "Je vole dans le ciel mais je n’ai pas d’ailes",
+    "Indice 1": "Je transporte des passagers",
+    "Indice 2": "Je décolle d’un aéroport",
+    "Réponse": "Avion"
+  },
+  {
+    "n°": 7,
+    "Thème": "Abstrait",
+    "Question": "Je suis une maison pour l’argent",
+    "Indice 1": "On me consulte",
+    "Indice 2": "Je garde les comptes",
+    "Réponse": "Banque"
+  },
+  {
+    "n°": 8,
+    "Thème": "Abstrait",
+    "Question": "Je flotte sur l’eau mais je n’ai pas de nageoires",
+    "Indice 1": "Je transporte des personnes",
+    "Indice 2": "J’accoste au port",
+    "Réponse": "Bateau"
+  },
+  {
+    "n°": 9,
+    "Thème": "Abstrait",
+    "Question": "Je suis un ticket qui ouvre les portes du voyage",
+    "Indice 1": "Je peux être papier ou numérique",
+    "Indice 2": "Je permets d’embarquer",
+    "Réponse": "Billet"
+  },
+  {
+    "n°": 10,
+    "Thème": "Abstrait",
+    "Question": "Je sers à contenir du liquide",
+    "Indice 1": "Je peux être en plastique ou en verre",
+    "Indice 2": "Je suis refermable",
+    "Réponse": "Bouteille"
+  },
+  {
+    "n°": 11,
+    "Thème": "Abstrait",
+    "Question": "Je suis une maison qui bouge",
+    "Indice 1": "Je roule sur la route",
+    "Indice 2": "On m’utilise pour voyager",
+    "Réponse": "Camping-car"
+  },
+  {
+    "n°": 12,
+    "Thème": "Abstrait",
+    "Question": "Je suis une carte mais je ne montre pas de pays",
+    "Indice 1": "Je sers à payer",
+    "Indice 2": "Je suis en plastique",
+    "Réponse": "Carte bancaire"
+  },
+  {
+    "n°": 13,
+    "Thème": "Abstrait",
+    "Question": "Je suis une carte qui ne montre pas de trésors",
+    "Indice 1": "On me déplie",
+    "Indice 2": "Je indique les routes",
+    "Réponse": "Carte routière"
+  },
+  {
+    "n°": 14,
+    "Thème": "Abstrait",
+    "Question": "Je suis rond mais je n’ai pas de fin",
+    "Indice 1": "On me trace",
+    "Indice 2": "Je suis une figure géométrique",
+    "Réponse": "Cercle"
+  },
+  {
+    "n°": 15,
+    "Thème": "Abstrait",
+    "Question": "Je suis noir quand on m’achète, rouge quand on m’utilise et gris quand on me jette",
+    "Indice 1": "On me brûle pour m’utiliser",
+    "Indice 2": "Je chauffe les aliments",
+    "Réponse": "Charbon"
+  },
+  {
+    "n°": 16,
+    "Thème": "Abstrait",
+    "Question": "Je suis une promesse de paiement",
+    "Indice 1": "Je suis signé",
+    "Indice 2": "Je remplace les pièces et les billets",
+    "Réponse": "Chèque"
+  },
+  {
+    "n°": 17,
+    "Thème": "Abstrait",
+    "Question": "Je sers à couper mais je ne suis pas un couteau",
+    "Indice 1": "On me trouve dans un bureau",
+    "Indice 2": "Je coupe du papier",
+    "Réponse": "Ciseaux"
+  },
+  {
+    "n°": 18,
+    "Thème": "Abstrait",
+    "Question": "Je bats sans arrêt mais je ne marche pas",
+    "Indice 1": "Je suis vital",
+    "Indice 2": "Je fais circuler le sang",
+    "Réponse": "Cœur"
+  },
+  {
+    "n°": 19,
+    "Thème": "Abstrait",
+    "Question": "Je conduis des trains",
+    "Indice 1": "Je porte souvent une casquette",
+    "Indice 2": "Je travaille sur les rails",
+    "Réponse": "Conducteur de train"
+  },
+  {
+    "n°": 20,
+    "Thème": "Abstrait",
+    "Question": "Je peux être court ou long",
+    "Indice 1": "On me raconte",
+    "Indice 2": "Je commence souvent par « Il était une fois »",
+    "Réponse": "Conte"
+  },
+  {
+    "n°": 21,
+    "Thème": "Abstrait",
+    "Question": "Je sers à ouvrir mais je ne suis pas une clé",
+    "Indice 1": "On m’utilise pour découper",
+    "Indice 2": "Je suis tranchant",
+    "Réponse": "Cutter"
+  },
+  {
+    "n°": 22,
+    "Thème": "Abstrait",
+    "Question": "Quel est le comble pour un électricien ?",
+    "Indice 1": "C’est un jeu de mots",
+    "Indice 2": "Ça concerne ses pieds",
+    "Réponse": "D’avoir des ampoules aux pieds"
+  },
+  {
+    "n°": 23,
+    "Thème": "Abstrait",
+    "Question": "Quel est le comble pour un prof de maths ?",
+    "Indice 1": "C’est une blague",
+    "Indice 2": "Elle joue sur un mot scolaire",
+    "Réponse": "D’avoir trop de problèmes"
+  },
+  {
+    "n°": 24,
+    "Thème": "Abstrait",
+    "Question": "Quel est le comble pour un jardinier ?",
+    "Indice 1": "C’est un jeu de mots",
+    "Indice 2": "Il travaille la terre",
+    "Réponse": "De ne pas avoir de pot"
+  },
+  {
+    "n°": 25,
+    "Thème": "Abstrait",
+    "Question": "Je suis devant toi, mais tu ne peux pas me rattraper",
+    "Indice 1": "Je n’existe pas encore",
+    "Indice 2": "Je viens après aujourd’hui",
+    "Réponse": "Demain"
+  },
+  {
+    "n°": 26,
+    "Thème": "Abstrait",
+    "Question": "Plus tu en fais, plus tu en laisses",
+    "Indice 1": "On les fait en marchant",
+    "Indice 2": "Ils restent derrière toi",
+    "Réponse": "Des pas"
+  },
+  {
+    "n°": 27,
+    "Thème": "Abstrait",
+    "Question": "Je suis invisible mais je fais pousser les plantes",
+    "Indice 1": "Je suis indispensable à la vie",
+    "Indice 2": "Je suis présent dans l’air",
+    "Réponse": "Dioxyde de carbone"
+  },
+  {
+    "n°": 28,
+    "Thème": "Abstrait",
+    "Question": "Je sers à écouter de la musique",
+    "Indice 1": "Je diffuse du son",
+    "Indice 2": "On me trouve souvent dans un salon",
+    "Réponse": "Enceinte"
+  },
+  {
+    "n°": 29,
+    "Thème": "Abstrait",
+    "Question": "Quelle question ne peut jamais recevoir un “oui” sincère ?",
+    "Indice 1": "Elle concerne ton état",
+    "Indice 2": "Tu ne peux pas répondre si c’est vrai",
+    "Réponse": "Es-tu endormi ?"
+  },
+  {
+    "n°": 30,
+    "Thème": "Abstrait",
+    "Question": "Je repasse les vêtements",
+    "Indice 1": "Je suis brûlant",
+    "Indice 2": "Je glisse sur le tissu",
+    "Réponse": "Fer à repasser"
+  },
+  {
+    "n°": 31,
+    "Thème": "Abstrait",
+    "Question": "Quel mois de l’année fait dormir le moins ?",
+    "Indice 1": "Il est le plus court",
+    "Indice 2": "Il a parfois 29 jours",
+    "Réponse": "Février"
+  },
+  {
+    "n°": 32,
+    "Thème": "Abstrait",
+    "Question": "Je raconte des histoires sans parler",
+    "Indice 1": "Je suis fait d’images",
+    "Indice 2": "On me regarde dans une salle sombre",
+    "Réponse": "Film"
+  },
+  {
+    "n°": 33,
+    "Thème": "Abstrait",
+    "Question": "Je tombe mais je pique",
+    "Indice 1": "Je suis dure",
+    "Indice 2": "Je viens du ciel",
+    "Réponse": "Grêle"
+  },
+  {
+    "n°": 34,
+    "Thème": "Abstrait",
+    "Question": "Nomme trois jours consécutifs sans dire mercredi, vendredi ou dimanche",
+    "Indice 1": "Ce n’est pas un calendrier",
+    "Indice 2": "C’est une suite logique",
+    "Réponse": "Hier, aujourd’hui et demain"
+  },
+  {
+    "n°": 35,
+    "Thème": "Abstrait",
+    "Question": "Je sers à montrer l’heure",
+    "Indice 1": "Je reste accroché",
+    "Indice 2": "Je suis souvent rond",
+    "Réponse": "Horloge"
+  },
+  {
+    "n°": 36,
+    "Thème": "Abstrait",
+    "Question": "Je suis un lieu où l’on dort loin de chez soi",
+    "Indice 1": "Je possède des chambres",
+    "Indice 2": "J’accueille les voyageurs",
+    "Réponse": "Hôtel"
+  },
+  {
+    "n°": 37,
+    "Thème": "Abstrait",
+    "Question": "L’ours en peluche n’a jamais faim. Pourquoi ?",
+    "Indice 1": "Il est rempli jusqu’au bord",
+    "Indice 2": "On dit la même chose d’un coussin",
+    "Réponse": "Il est bourré"
+  },
+  {
+    "n°": 38,
+    "Thème": "Abstrait",
+    "Question": "Un homme marche sous la pluie, mais aucun de ses cheveux n’est mouillé.",
+    "Indice 1": "Il n’a rien sur la tête",
+    "Indice 2": "Il n’a rien à mouiller",
+    "Réponse": "Il est chauve"
+  },
+  {
+    "n°": 39,
+    "Thème": "Abstrait",
+    "Question": "Je grandis quand on me partage",
+    "Indice 1": "Je suis immatériel",
+    "Indice 2": "Je suis une émotion positive",
+    "Réponse": "Joie"
+  },
+  {
+    "n°": 40,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui est jaune et qui attend ?",
+    "Indice 1": "C’est un jeu de mots",
+    "Indice 2": "La réponse est un prénom",
+    "Réponse": "Jonathan"
+  },
+  {
+    "n°": 41,
+    "Thème": "Abstrait",
+    "Question": "Je sers à voir de loin",
+    "Indice 1": "Je rapproche ce qui est éloigné",
+    "Indice 2": "On me tient avec les deux mains",
+    "Réponse": "Jumelles"
+  },
+  {
+    "n°": 42,
+    "Thème": "Abstrait",
+    "Question": "Je grossis les images, je rapproche ou éloigne visuellement",
+    "Indice 1": "Très utile pour voir les détails",
+    "Indice 2": "Pratique lorsque je veux cadrer",
+    "Réponse": "Effet de zoom"
+  },
+  {
+    "n°": 43,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui augmente mais ne diminue jamais ?",
+    "Indice 1": "Tout le monde en a",
+    "Indice 2": "Il évolue chaque année",
+    "Réponse": "L’âge"
+  },
+  {
+    "n°": 44,
+    "Thème": "Abstrait",
+    "Question": "Invisible mais indispensable à la vie.",
+    "Indice 1": "Tu le prends à chaque respiration",
+    "Indice 2": "Il remplit l’espace autour de toi",
+    "Réponse": "L’air"
+  },
+  {
+    "n°": 45,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce que les gens commencent à boire par loisir et finissent parfois par ne plus contrôler ?",
+    "Indice 1": "On le sert dans les bars",
+    "Indice 2": "Il peut devenir une dépendance",
+    "Réponse": "L’alcool"
+  },
+  {
+    "n°": 46,
+    "Thème": "Abstrait",
+    "Question": "Qu'est-ce qui peut s'affaiblir avec le temps sans jamais disparaître ?",
+    "Indice 1": "On la construit",
+    "Indice 2": "Elle unit les gens",
+    "Réponse": "L’amitié"
+  },
+  {
+    "n°": 47,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui est gratuit mais très précieux ?",
+    "Indice 1": "On le donne sans le perdre",
+    "Indice 2": "Il est vital pour le cœur",
+    "Réponse": "L’amour"
+  },
+  {
+    "n°": 48,
+    "Thème": "Abstrait",
+    "Question": "Plus on me dépense, plus je disparais",
+    "Indice 1": "Je circule partout",
+    "Indice 2": "Je fait tourner l’économie",
+    "Réponse": "L’argent"
+  },
+  {
+    "n°": 49,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui est plus haut que le roi ?",
+    "Indice 1": "On le trouve dans un jeu",
+    "Indice 2": "Il le bat sans effort",
+    "Réponse": "L’as"
+  },
+  {
+    "n°": 50,
+    "Thème": "Abstrait",
+    "Question": "Quelle est la différence entre un homme mal habillé sur un tricycle et un homme bien habillé sur un vélo ?",
+    "Indice 1": "C’est un jeu de mots",
+    "Indice 2": "La réponse joue sur les sons",
+    "Réponse": "L’attirail / l’« a‑tirail »"
+  },
+  {
+    "n°": 51,
+    "Thème": "Abstrait",
+    "Question": "Je suis toujours devant toi mais tu ne peux jamais me voir",
+    "Indice 1": "Je n’existe pas encore",
+    "Indice 2": "Je viens après aujourd’hui",
+    "Réponse": "L’avenir"
+  },
+  {
+    "n°": 52,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui ne peut pas sécher au soleil ?",
+    "Indice 1": "Il disparaît plutôt qu’il sèche",
+    "Indice 2": "Il change d’état",
+    "Réponse": "L’eau"
+  },
+  {
+    "n°": 53,
+    "Thème": "Abstrait",
+    "Question": "Je parle toutes les langues sans en avoir appris aucune",
+    "Indice 1": "Je répète ce que j’entends",
+    "Indice 2": "Je réponds toujours, mais jamais le premier",
+    "Réponse": "L’écho"
+  },
+  {
+    "n°": 54,
+    "Thème": "Abstrait",
+    "Question": "Le monde était sombre avant mon arrivée, mais je peux aussi te tuer.",
+    "Indice 1": "Je circule dans les câbles",
+    "Indice 2": "Je s’allume d’un simple geste",
+    "Réponse": "L’électricité"
+  },
+  {
+    "n°": 55,
+    "Thème": "Abstrait",
+    "Question": "Les enfants me vivent, les adultes me regrettent.",
+    "Indice 1": "Je précède les responsabilités",
+    "Indice 2": "Je laisse des souvenirs doux",
+    "Réponse": "L’enfance"
+  },
+  {
+    "n°": 56,
+    "Thème": "Abstrait",
+    "Question": "Je peux inventer des rêves ou ouvrir le ciel. Il suffit de fermer les yeux pour m’utiliser.",
+    "Indice 1": "Je crée des mondes sans limites",
+    "Indice 2": "Je n’existe que dans ta tête",
+    "Réponse": "L’imagination"
+  },
+  {
+    "n°": 57,
+    "Thème": "Abstrait",
+    "Question": "Plus je suis grand, moins on me voit",
+    "Indice 1": "Je viens avec la nuit",
+    "Indice 2": "Je cache les étoiles",
+    "Réponse": "L’obscurité"
+  },
+  {
+    "n°": 58,
+    "Thème": "Abstrait",
+    "Question": "Je vois tout mais je ne bouge pas",
+    "Indice 1": "Je suis rond",
+    "Indice 2": "Je capte la lumière",
+    "Réponse": "L’œil"
+  },
+  {
+    "n°": 59,
+    "Thème": "Abstrait",
+    "Question": "Je te suis partout, mais tu ne peux jamais me toucher.",
+    "Indice 1": "Je m’allonge au soleil",
+    "Indice 2": "Je disparais dans le noir",
+    "Réponse": "L’ombre"
+  },
+  {
+    "n°": 60,
+    "Thème": "Abstrait",
+    "Question": "Je suis l’oiseau qui flotte sur la mer sans se mouiller.",
+    "Indice 1": "Je dépends de la lumière",
+    "Indice 2": "Je reste au sol même quand il vole",
+    "Réponse": "L’ombre de l’oiseau"
+  },
+  {
+    "n°": 61,
+    "Thème": "Abstrait",
+    "Question": "Je suis gardé dans un coffre mais je ne dors jamais",
+    "Indice 1": "Je suis précieux",
+    "Indice 2": "Je suis jaune et brillant",
+    "Réponse": "L’or"
+  },
+  {
+    "n°": 62,
+    "Thème": "Abstrait",
+    "Question": "Si tu dépasses la personne en deuxième position, quelle place prends-tu ?",
+    "Indice 1": "Tu n’es pas premier",
+    "Indice 2": "Tu prends sa place",
+    "Réponse": "La deuxième"
+  },
+  {
+    "n°": 63,
+    "Thème": "Abstrait",
+    "Question": "Je parle sans mots et je goûte sans manger",
+    "Indice 1": "Je suis souple",
+    "Indice 2": "Je suis dans la bouche",
+    "Réponse": "La langue"
+  },
+  {
+    "n°": 64,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui vient une fois dans une minute, deux fois dans un moment, mais jamais dans 1000 ans ?",
+    "Indice 1": "C’est une lettre",
+    "Indice 2": "Elle apparaît dans certains mots",
+    "Réponse": "La lettre « m »"
+  },
+  {
+    "n°": 65,
+    "Thème": "Abstrait",
+    "Question": "Je commence la nuit et je termine le matin",
+    "Indice 1": "Je suis une lettre",
+    "Indice 2": "Je suis dans l’alphabet",
+    "Réponse": "La lettre « N »"
+  },
+  {
+    "n°": 66,
+    "Thème": "Abstrait",
+    "Question": "Je peux être lancé dans tous les sens",
+    "Indice 1": "Je suis une lettre",
+    "Indice 2": "Je suis aussi un petit cube numéroté",
+    "Réponse": "La lettre D (dé)"
+  },
+  {
+    "n°": 67,
+    "Thème": "Abstrait",
+    "Question": "Quelle est la lettre préférée des bûcherons ?",
+    "Indice 1": "C’est un jeu de mots",
+    "Indice 2": "Elle coupe",
+    "Réponse": "La lettre H (hache)"
+  },
+  {
+    "n°": 68,
+    "Thème": "Abstrait",
+    "Question": "Je peux commencer et finir sans jamais être au milieu",
+    "Indice 1": "On me voit dans les compétitions",
+    "Indice 2": "Je marque un début et une fin",
+    "Réponse": "La ligne de départ/arrivée"
+  },
+  {
+    "n°": 69,
+    "Thème": "Abstrait",
+    "Question": "J’existe depuis des millions d’années mais je n’ai jamais plus d’un mois d’âge",
+    "Indice 1": "Je suis dans le ciel",
+    "Indice 2": "Je change de forme",
+    "Réponse": "La lune"
+  },
+  {
+    "n°": 70,
+    "Thème": "Abstrait",
+    "Question": "Un jeune homme veut m’avoir… puis revient quelques jours plus tard.",
+    "Indice 1": "Je pousse sur le visage",
+    "Indice 2": "On peut me tailler",
+    "Réponse": "La moustache"
+  },
+  {
+    "n°": 71,
+    "Thème": "Abstrait",
+    "Question": "Je tombe du ciel, mais je ne suis pas la pluie. J’aime le froid, mais pas le soleil.",
+    "Indice 1": "Je blanchis les paysages",
+    "Indice 2": "Je fonds dès que ça chauffe",
+    "Réponse": "La neige"
+  },
+  {
+    "n°": 72,
+    "Thème": "Abstrait",
+    "Question": "Je tombe mais ne me blesse jamais",
+    "Indice 1": "J’arrive chaque soir",
+    "Indice 2": "Je remplace le jour",
+    "Réponse": "La nuit"
+  },
+  {
+    "n°": 73,
+    "Thème": "Abstrait",
+    "Question": "On ne peut pas me tenir tant qu’on ne m’a pas donné",
+    "Indice 1": "Je sors de la bouche",
+    "Indice 2": "Je représente un engagement",
+    "Réponse": "La parole"
+  },
+  {
+    "n°": 74,
+    "Thème": "Abstrait",
+    "Question": "Je protège mais je ne suis pas une armure",
+    "Indice 1": "Je recouvre tout le corps",
+    "Indice 2": "Je ressens le chaud et le froid",
+    "Réponse": "La peau"
+  },
+  {
+    "n°": 75,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui tombe sans jamais monter ?",
+    "Indice 1": "On le voit venir du ciel",
+    "Indice 2": "Il mouille",
+    "Réponse": "La pluie"
+  },
+  {
+    "n°": 76,
+    "Thème": "Abstrait",
+    "Question": "Quel poisson s’arrête très souvent ?",
+    "Indice 1": "C’est un jeu de mots",
+    "Indice 2": "Il fait des arrêts",
+    "Réponse": "La raie (l’arrêt)"
+  },
+  {
+    "n°": 77,
+    "Thème": "Abstrait",
+    "Question": "Comment traverser une rivière sans se mouiller ?",
+    "Indice 1": "Elle peut devenir solide",
+    "Indice 2": "Elle dort en hiver",
+    "Réponse": "La rivière est gelée"
+  },
+  {
+    "n°": 78,
+    "Thème": "Abstrait",
+    "Question": "On voit bouger des images en moi, mais moi je ne bouge jamais.",
+    "Indice 1": "Je m’allume le soir",
+    "Indice 2": "Je raconte des histoires en lumière",
+    "Réponse": "La télévision"
+  },
+  {
+    "n°": 79,
+    "Thème": "Abstrait",
+    "Question": "Plus je suis grand, moins on voit",
+    "Indice 1": "Je viens avec l’humidité",
+    "Indice 2": "Je trouble la vision",
+    "Réponse": "Le brouillard"
+  },
+  {
+    "n°": 80,
+    "Thème": "Abstrait",
+    "Question": "Qu'est-ce que les gens apprécient moins quand il y en a trop ?",
+    "Indice 1": "Il envahit l’espace",
+    "Indice 2": "Il fatigue les oreilles",
+    "Réponse": "Le bruit"
+  },
+  {
+    "n°": 81,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui a des yeux mais ne voit pas ?",
+    "Indice 1": "On le trouve dans un outil de couture",
+    "Indice 2": "Il sert à faire passer un fil",
+    "Réponse": "Le chas d’aiguille"
+  },
+  {
+    "n°": 82,
+    "Thème": "Abstrait",
+    "Question": "Quelle est la différence entre un chewing‑gum et un avion ?",
+    "Indice 1": "L’un colle",
+    "Indice 2": "L’autre décolle",
+    "Réponse": "Le chewing‑gum colle et l’avion décolle"
+  },
+  {
+    "n°": 83,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui bat sans arrêt mais ne marche pas ?",
+    "Indice 1": "Il est indispensable à la vie",
+    "Indice 2": "Il fait circuler le sang",
+    "Réponse": "Le cœur"
+  },
+  {
+    "n°": 84,
+    "Thème": "Abstrait",
+    "Question": "Qu'est-ce qui pousse les gens sans jamais les faire tomber ?",
+    "Indice 1": "On le ressent dans les moments difficiles",
+    "Indice 2": "Il donne la force d’avancer",
+    "Réponse": "Le courage"
+  },
+  {
+    "n°": 85,
+    "Thème": "Abstrait",
+    "Question": "Je sors d’une mine, on m’enferme dans du bois, et je fais parler tous",
+    "Indice 1": "On m’utilise à l’école",
+    "Indice 2": "Je laisse une trace noire",
+    "Réponse": "Le crayon"
+  },
+  {
+    "n°": 86,
+    "Thème": "Abstrait",
+    "Question": "Je grandis sans être vivant, j’ai besoin d’air mais l’eau me tue",
+    "Indice 1": "Je suis dangereux",
+    "Indice 2": "Je brûle",
+    "Réponse": "Le feu"
+  },
+  {
+    "n°": 87,
+    "Thème": "Abstrait",
+    "Question": "Je te regarde sans yeux et je décide quand tu passes.",
+    "Indice 1": "Je parle en couleurs",
+    "Indice 2": "Je règne aux carrefours",
+    "Réponse": "Le feu tricolore"
+  },
+  {
+    "n°": 88,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui est toujours devant soi et qu’on ne peut jamais voir ?",
+    "Indice 1": "C’est lié au temps",
+    "Indice 2": "Il n’est jamais présent",
+    "Réponse": "Le futur"
+  },
+  {
+    "n°": 89,
+    "Thème": "Abstrait",
+    "Question": "On me porte toujours, mais on ne me voit jamais",
+    "Indice 1": "Je fais partie de ton identité",
+    "Indice 2": "Je te désigne",
+    "Réponse": "Le nom"
+  },
+  {
+    "n°": 90,
+    "Thème": "Abstrait",
+    "Question": "Plus vous avancez, plus je reste derrière vous",
+    "Indice 1": "Je suis immatériel",
+    "Indice 2": "Je laisse des traces",
+    "Réponse": "Le passé"
+  },
+  {
+    "n°": 91,
+    "Thème": "Abstrait",
+    "Question": "Je suis le plus petit, mais quand tu es fier, tu me lèves.",
+    "Indice 1": "Je t’aide à saisir",
+    "Indice 2": "Je suis opposable",
+    "Réponse": "Le pouce"
+  },
+  {
+    "n°": 92,
+    "Thème": "Abstrait",
+    "Question": "Je suis un liquide rouge qui circule partout",
+    "Indice 1": "Je transporte l’oxygène",
+    "Indice 2": "Je coule dans les veines",
+    "Réponse": "Le sang"
+  },
+  {
+    "n°": 93,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui disparaît dès qu’on le nomme ?",
+    "Indice 1": "Il suffit d’un mot pour le briser",
+    "Indice 2": "Il est rare et précieux",
+    "Réponse": "Le silence"
+  },
+  {
+    "n°": 94,
+    "Thème": "Abstrait",
+    "Question": "On me voit au jour mais jamais la nuit",
+    "Indice 1": "Je suis dans le ciel",
+    "Indice 2": "Je chauffe la Terre",
+    "Réponse": "Le soleil"
+  },
+  {
+    "n°": 95,
+    "Thème": "Abstrait",
+    "Question": "Je ne vous pose jamais de questions, pourtant vous me répondez",
+    "Indice 1": "Je suis partout",
+    "Indice 2": "Je sonne pour attirer votre attention",
+    "Réponse": "Le téléphone"
+  },
+  {
+    "n°": 96,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui peut être long ou court, mais qu’on ne peut pas voir ?",
+    "Indice 1": "Tout le monde en dispose",
+    "Indice 2": "Il s’écoule",
+    "Réponse": "Le temps"
+  },
+  {
+    "n°": 97,
+    "Thème": "Abstrait",
+    "Question": "Je peux être mesuré mais je n’ai ni longueur, ni largeur, ni hauteur",
+    "Indice 1": "Je sers à compter",
+    "Indice 2": "Je suis immatériel",
+    "Réponse": "Le temps"
+  },
+  {
+    "n°": 98,
+    "Thème": "Abstrait",
+    "Question": "Je dévore tout : animaux, arbres, fleurs, rois et montagnes",
+    "Indice 1": "Je ne fais aucun bruit",
+    "Indice 2": "Je passe pour tous",
+    "Réponse": "Le temps"
+  },
+  {
+    "n°": 99,
+    "Thème": "Abstrait",
+    "Question": "Un endroit où les histoires prennent vie sur scène.",
+    "Indice 1": "On y joue sans caméra",
+    "Indice 2": "Le rideau s’y lève",
+    "Réponse": "Le théâtre"
+  },
+  {
+    "n°": 100,
+    "Thème": "Abstrait",
+    "Question": "Je couvre toute la maison sans jamais entrer dedans.",
+    "Indice 1": "Je protège de la pluie",
+    "Indice 2": "Je suis fait de tuiles ou d’ardoises",
+    "Réponse": "Le toit"
+  },
+  {
+    "n°": 101,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui souffle mais n’a pas de bouche ?",
+    "Indice 1": "On le ressent",
+    "Indice 2": "Il déplace les feuilles",
+    "Réponse": "Le vent"
+  },
+  {
+    "n°": 102,
+    "Thème": "Abstrait",
+    "Question": "Je n’ai pas de bouche mais je peux crier",
+    "Indice 1": "Je suis invisible",
+    "Indice 2": "Je fais vibrer les fenêtres",
+    "Réponse": "Le vent"
+  },
+  {
+    "n°": 103,
+    "Thème": "Abstrait",
+    "Question": "Je pousse sans fin mais je ne grandis pas",
+    "Indice 1": "Je suis fait de kératine",
+    "Indice 2": "On me coupe régulièrement",
+    "Réponse": "Les cheveux"
+  },
+  {
+    "n°": 104,
+    "Thème": "Abstrait",
+    "Question": "Je suis blanc, parfait pour couper et broyer. Chez certains animaux, je deviens une arme.",
+    "Indice 1": "Je travaille à chaque repas",
+    "Indice 2": "Je suis rangé en deux rangées",
+    "Réponse": "Les dents"
+  },
+  {
+    "n°": 105,
+    "Thème": "Abstrait",
+    "Question": "Trente-deux voleurs dans une grotte, actifs trois heures par jour.",
+    "Indice 1": "Ils vivent dans ta bouche",
+    "Indice 2": "Ils mâchent sans relâche",
+    "Réponse": "Les dents"
+  },
+  {
+    "n°": 106,
+    "Thème": "Abstrait",
+    "Question": "Je suis dix mais je travaille en équipe",
+    "Indice 1": "J’attrape et je serre",
+    "Indice 2": "Je suis au bout des mains",
+    "Réponse": "Les doigts"
+  },
+  {
+    "n°": 107,
+    "Thème": "Abstrait",
+    "Question": "On entre facilement en moi, mais on peine à en sortir.",
+    "Indice 1": "Je viens rarement seul",
+    "Indice 2": "Je complique les journées",
+    "Réponse": "Les ennuis"
+  },
+  {
+    "n°": 108,
+    "Thème": "Abstrait",
+    "Question": "Je peux voler sans ailes et pleurer sans yeux",
+    "Indice 1": "Je flotte dans le ciel",
+    "Indice 2": "Je gronde parfois",
+    "Réponse": "Les nuages"
+  },
+  {
+    "n°": 109,
+    "Thème": "Abstrait",
+    "Question": "Je tiens debout mais je ne marche pas",
+    "Indice 1": "Je suis dur",
+    "Indice 2": "Je forme la charpente du corps",
+    "Réponse": "Les os"
+  },
+  {
+    "n°": 110,
+    "Thème": "Abstrait",
+    "Question": "Plus tu en prends, plus tu en laisses",
+    "Indice 1": "On les fait en marchant",
+    "Indice 2": "Ils restent derrière toi",
+    "Réponse": "Les pas"
+  },
+  {
+    "n°": 111,
+    "Thème": "Abstrait",
+    "Question": "Je respire sans arrêt mais je ne parle jamais",
+    "Indice 1": "Je suis double",
+    "Indice 2": "Je suis dans la poitrine",
+    "Réponse": "Les poumons"
+  },
+  {
+    "n°": 112,
+    "Thème": "Abstrait",
+    "Question": "Si tu veux vraiment voir l'intérieur de quelqu’un, utilise-moi.",
+    "Indice 1": "Je traverse la peau sans la toucher",
+    "Indice 2": "Je révèle ce qui est dur dans ton corps",
+    "Réponse": "Les rayons X"
+  },
+  {
+    "n°": 113,
+    "Thème": "Abstrait",
+    "Question": "Quelle est la monnaie des poissons ?",
+    "Indice 1": "Elle est sous l’eau",
+    "Indice 2": "C’est un jeu de mots",
+    "Réponse": "Les sous‑marins"
+  },
+  {
+    "n°": 114,
+    "Thème": "Abstrait",
+    "Question": "Tout le monde voit à travers nous, mais nous ne nous voyons jamais entre nous.",
+    "Indice 1": "Nous clignons parfois",
+    "Indice 2": "Nous avons des couleurs variées",
+    "Réponse": "Les yeux"
+  },
+  {
+    "n°": 115,
+    "Thème": "Abstrait",
+    "Question": "Je sers à voir mais je ne suis pas des yeux",
+    "Indice 1": "Je suis transparent",
+    "Indice 2": "Je corrige la vision",
+    "Réponse": "Lunettes"
+  },
+  {
+    "n°": 116,
+    "Thème": "Abstrait",
+    "Question": "Je sers à laver les vêtements",
+    "Indice 1": "Je tourne rapidement",
+    "Indice 2": "Je suis un appareil ménager",
+    "Réponse": "Machine à laver"
+  },
+  {
+    "n°": 117,
+    "Thème": "Abstrait",
+    "Question": "Je sers à mesurer mais je ne suis pas une montre",
+    "Indice 1": "On me déroule",
+    "Indice 2": "Je mesure des longueurs",
+    "Réponse": "Mètre"
+  },
+  {
+    "n°": 118,
+    "Thème": "Abstrait",
+    "Question": "Je vends des fenêtres qui ne donnent sur aucun paysage.",
+    "Indice 1": "Mon logo est mondialement connu",
+    "Indice 2": "Je suis née dans un garage américain",
+    "Réponse": "Microsoft"
+  },
+  {
+    "n°": 119,
+    "Thème": "Abstrait",
+    "Question": "Je suis Tintin mais je ne suis pas Tintin",
+    "Indice 1": "Je suis son fidèle compagnon",
+    "Indice 2": "Je suis un chien",
+    "Réponse": "Milou"
+  },
+  {
+    "n°": 120,
+    "Thème": "Abstrait",
+    "Question": "Je donne l’heure mais je n’ai pas de bouche",
+    "Indice 1": "On me porte sur soi",
+    "Indice 2": "Je peux être mécanique ou digitale",
+    "Réponse": "Montre"
+  },
+  {
+    "n°": 121,
+    "Thème": "Abstrait",
+    "Question": "Je suis un deux-roues qui fait voyager",
+    "Indice 1": "Je suis rapide",
+    "Indice 2": "On porte un casque pour me conduire",
+    "Réponse": "Moto"
+  },
+  {
+    "n°": 122,
+    "Thème": "Abstrait",
+    "Question": "Je suis une maison pleine de tableaux",
+    "Indice 1": "On me visite",
+    "Indice 2": "J’expose des œuvres",
+    "Réponse": "Musée"
+  },
+  {
+    "n°": 123,
+    "Thème": "Abstrait",
+    "Question": "Je tombe en hiver",
+    "Indice 1": "Je suis blanche",
+    "Indice 2": "Je recouvre le sol",
+    "Réponse": "Neige"
+  },
+  {
+    "n°": 124,
+    "Thème": "Abstrait",
+    "Question": "Je suis une fête où l’on offre des cadeaux",
+    "Indice 1": "Je viens en fin d’année",
+    "Indice 2": "Je suis associé à un sapin",
+    "Réponse": "Noël"
+  },
+  {
+    "n°": 125,
+    "Thème": "Abstrait",
+    "Question": "Je construis des routes",
+    "Indice 1": "Je travaille en plein air",
+    "Indice 2": "J’utilise de grosses machines",
+    "Réponse": "Ouvrier du BTP"
+  },
+  {
+    "n°": 126,
+    "Thème": "Abstrait",
+    "Question": "Je sers à protéger de la pluie",
+    "Indice 1": "Je peux se plier facilement",
+    "Indice 2": "Je s’ouvre en cercle",
+    "Réponse": "Parapluie"
+  },
+  {
+    "n°": 127,
+    "Thème": "Abstrait",
+    "Question": "Je peux être perdu mais jamais retrouvé",
+    "Indice 1": "Je demande du calme",
+    "Indice 2": "Je aide à attendre",
+    "Réponse": "Patience"
+  },
+  {
+    "n°": 128,
+    "Thème": "Abstrait",
+    "Question": "Je tombe sans jamais me lever",
+    "Indice 1": "Je mouille",
+    "Indice 2": "Je viens du ciel",
+    "Réponse": "Pluie"
+  },
+  {
+    "n°": 129,
+    "Thème": "Abstrait",
+    "Question": "Je fais des films",
+    "Indice 1": "Je dirige une équipe",
+    "Indice 2": "Je suis derrière la caméra",
+    "Réponse": "Réalisateur"
+  },
+  {
+    "n°": 130,
+    "Thème": "Abstrait",
+    "Question": "Je sonne le matin",
+    "Indice 1": "Je suis posé près du lit",
+    "Indice 2": "Je réveille",
+    "Réponse": "Réveil"
+  },
+  {
+    "n°": 131,
+    "Thème": "Abstrait",
+    "Question": "Je suis plus haut que le plus haut, plus bas que le plus bas… et si on me mange, on en meurt",
+    "Indice 1": "Je suis paradoxal",
+    "Indice 2": "Je suis une absence totale",
+    "Réponse": "Rien"
+  },
+  {
+    "n°": 132,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce que les pauvres ont mais que les riches n’ont pas ?",
+    "Indice 1": "C’est une absence",
+    "Indice 2": "On peut en avoir beaucoup",
+    "Réponse": "Rien"
+  },
+  {
+    "n°": 133,
+    "Thème": "Abstrait",
+    "Question": "Je suis rond et je roule",
+    "Indice 1": "Je supporte le poids",
+    "Indice 2": "Je suis sous les véhicules",
+    "Réponse": "Roue"
+  },
+  {
+    "n°": 134,
+    "Thème": "Abstrait",
+    "Question": "Je sers à transporter des affaires",
+    "Indice 1": "On me porte sur soi",
+    "Indice 2": "Je suis pratique pour voyager",
+    "Réponse": "Sac à dos"
+  },
+  {
+    "n°": 135,
+    "Thème": "Abstrait",
+    "Question": "Je sers à sécher les cheveux",
+    "Indice 1": "Je souffle de l’air",
+    "Indice 2": "Je fonctionne à l’électricité",
+    "Réponse": "Sèche-cheveux"
+  },
+  {
+    "n°": 136,
+    "Thème": "Abstrait",
+    "Question": "Plus je sèche, plus je deviens mouillé",
+    "Indice 1": "On m’utilise après s’être lavé",
+    "Indice 2": "Je suis en tissu",
+    "Réponse": "Serviette"
+  },
+  {
+    "n°": 137,
+    "Thème": "Abstrait",
+    "Question": "Je suis petit mais je peux contenir le monde",
+    "Indice 1": "Je suis électronique",
+    "Indice 2": "Je tiens dans la main",
+    "Réponse": "Smartphone"
+  },
+  {
+    "n°": 138,
+    "Thème": "Abstrait",
+    "Question": "Quel est le comble pour un vampire ?",
+    "Indice 1": "C’est un jeu de mots",
+    "Indice 2": "Il aime le sang",
+    "Réponse": "Son juron préféré : « Bon sang ! »"
+  },
+  {
+    "n°": 139,
+    "Thème": "Abstrait",
+    "Question": "Je sers à écrire mais je n’ai pas de bouche",
+    "Indice 1": "On me tient dans la main",
+    "Indice 2": "Je laisse une trace",
+    "Réponse": "Stylo"
+  },
+  {
+    "n°": 140,
+    "Thème": "Abstrait",
+    "Question": "Qu'est-ce que personne ne peut te voler ?",
+    "Indice 1": "Elle ne s’achète pas",
+    "Indice 2": "Elle reflète ce que tu es",
+    "Réponse": "Ta dignité"
+  },
+  {
+    "n°": 141,
+    "Thème": "Abstrait",
+    "Question": "Tu me donnes et tu me gardes",
+    "Indice 1": "Je suis un engagement",
+    "Indice 2": "Je repose sur la confiance",
+    "Réponse": "Ta parole"
+  },
+  {
+    "n°": 142,
+    "Thème": "Abstrait",
+    "Question": "Plus tu avances, plus je reste derrière toi.",
+    "Indice 1": "Je marque ton passage",
+    "Indice 2": "Je disparais avec le vent",
+    "Réponse": "Tes pas"
+  },
+  {
+    "n°": 143,
+    "Thème": "Abstrait",
+    "Question": "Je t’appartiens, mais les autres s’en servent plus que toi.",
+    "Indice 1": "On s’en sert pour te désigner",
+    "Indice 2": "Il circule de bouche en bouche",
+    "Réponse": "Ton nom"
+  },
+  {
+    "n°": 144,
+    "Thème": "Abstrait",
+    "Question": "Je suis à toi mais les autres m’utilisent plus",
+    "Indice 1": "Je te désigne",
+    "Indice 2": "Je figure sur tes documents",
+    "Réponse": "Ton prénom"
+  },
+  {
+    "n°": 145,
+    "Thème": "Abstrait",
+    "Question": "Quel mois de l’année a 28 jours ?",
+    "Indice 1": "La réponse concerne le calendrier",
+    "Indice 2": "Tous sont concernés",
+    "Réponse": "Tous les mois"
+  },
+  {
+    "n°": 146,
+    "Thème": "Abstrait",
+    "Question": "Je roule sur des rails et je siffle en gare",
+    "Indice 1": "Je transporte des voyageurs",
+    "Indice 2": "Je pars à heure fixe",
+    "Réponse": "Train"
+  },
+  {
+    "n°": 147,
+    "Thème": "Abstrait",
+    "Question": "Deux pères et deux fils sont dans une voiture, mais ils ne sont que trois.",
+    "Indice 1": "C’est une histoire de famille",
+    "Indice 2": "Trois générations suffisent",
+    "Réponse": "Trois générations"
+  },
+  {
+    "n°": 148,
+    "Thème": "Abstrait",
+    "Question": "Pourquoi le livre de maths est-il triste ?",
+    "Indice 1": "C’est une blague scolaire",
+    "Indice 2": "Il en a trop",
+    "Réponse": "Trop de problèmes"
+  },
+  {
+    "n°": 149,
+    "Thème": "Abstrait",
+    "Question": "Un cadeau inestimable qui n’a ni début, ni fin, ni milieu.",
+    "Indice 1": "On le glisse au doigt",
+    "Indice 2": "Il symbolise l’infini",
+    "Réponse": "Un anneau"
+  },
+  {
+    "n°": 150,
+    "Thème": "Abstrait",
+    "Question": "Je vole dans le ciel, mais je ne suis pas un oiseau.",
+    "Indice 1": "On y monte pour voyager",
+    "Indice 2": "Je traverse les continents",
+    "Réponse": "Un avion"
+  },
+  {
+    "n°": 151,
+    "Thème": "Abstrait",
+    "Question": "Je rase tous les jours mais ma barbe ne change pas",
+    "Indice 1": "Je travaille avec des outils de coupe",
+    "Indice 2": "Je m’occupe des cheveux et de la barbe",
+    "Réponse": "Un barbier"
+  },
+  {
+    "n°": 152,
+    "Thème": "Abstrait",
+    "Question": "Je suis en papier mais je vaux plus que mon poids",
+    "Indice 1": "On m’imprime",
+    "Indice 2": "Je suis coloré",
+    "Réponse": "Un billet"
+  },
+  {
+    "n°": 153,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui est bleu et qui court ?",
+    "Indice 1": "C’est un jeu de mots",
+    "Indice 2": "On le trouve dans les champs",
+    "Réponse": "Un bleu d’azur en jogging"
+  },
+  {
+    "n°": 154,
+    "Thème": "Abstrait",
+    "Question": "Que tu m’utilises beaucoup ou peu, tu dois me changer chaque mois.",
+    "Indice 1": "Je suis accroché au mur",
+    "Indice 2": "Je tourne douze fois par an",
+    "Réponse": "Un calendrier"
+  },
+  {
+    "n°": 155,
+    "Thème": "Abstrait",
+    "Question": "Quel est le chemin qui ne finit jamais ?",
+    "Indice 1": "Il tourne sans arrêt",
+    "Indice 2": "Il n’a ni début ni fin",
+    "Réponse": "Un cercle"
+  },
+  {
+    "n°": 156,
+    "Thème": "Abstrait",
+    "Question": "Celui qui me fabrique ne me dit pas. Celui qui m’achète ne m’utilise pas. Celui qui m’utilise ne me voit pas.",
+    "Indice 1": "Je suis lié à la mort",
+    "Indice 2": "Je suis en bois",
+    "Réponse": "Un cercueil"
+  },
+  {
+    "n°": 157,
+    "Thème": "Abstrait",
+    "Question": "Si tu fais ce métier, tu vas partout selon la volonté des autres.",
+    "Indice 1": "Je tiens un volant",
+    "Indice 2": "Je transporte des passagers",
+    "Réponse": "Un chauffeur"
+  },
+  {
+    "n°": 158,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui est vert et qui fait du bruit ?",
+    "Indice 1": "C’est un jeu de mots",
+    "Indice 2": "On le trouve dans la jungle",
+    "Réponse": "Un chou-son"
+  },
+  {
+    "n°": 159,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui est rose et qui chante ?",
+    "Indice 1": "C’est un jeu de mots",
+    "Indice 2": "On le trouve dans une ferme",
+    "Réponse": "Un cochon karaoké"
+  },
+  {
+    "n°": 160,
+    "Thème": "Abstrait",
+    "Question": "Je viens d'une mine et je suis entouré de bois. Tout le monde m’utilise.",
+    "Indice 1": "Je laisse une trace noire",
+    "Indice 2": "On m’aiguise pour écrire",
+    "Réponse": "Un crayon"
+  },
+  {
+    "n°": 161,
+    "Thème": "Abstrait",
+    "Question": "Faire cela peut t’envoyer devant un juge.",
+    "Indice 1": "On en parle dans les tribunaux",
+    "Indice 2": "Il peut être très grave",
+    "Réponse": "Un crime"
+  },
+  {
+    "n°": 162,
+    "Thème": "Abstrait",
+    "Question": "Je suis sans vie mais je grandis",
+    "Indice 1": "Je suis solide",
+    "Indice 2": "On me trouve dans les roches",
+    "Réponse": "Un cristal"
+  },
+  {
+    "n°": 163,
+    "Thème": "Abstrait",
+    "Question": "Beaucoup passent des années à m’obtenir, puis m’accrochent fièrement au mur.",
+    "Indice 1": "Je marque une réussite",
+    "Indice 2": "Je suis remis lors d’une cérémonie",
+    "Réponse": "Un diplôme"
+  },
+  {
+    "n°": 164,
+    "Thème": "Abstrait",
+    "Question": "Qu'est-ce qui devient plus petit à mesure qu’on le tire ?",
+    "Indice 1": "Il accompagne les aiguilles",
+    "Indice 2": "Il relie les tissus",
+    "Réponse": "Un fil"
+  },
+  {
+    "n°": 165,
+    "Thème": "Abstrait",
+    "Question": "J’ai beaucoup de trous, mais je reste solide.",
+    "Indice 1": "Je protège sans enfermer",
+    "Indice 2": "On me trouve autour des terrains",
+    "Réponse": "Un grillage"
+  },
+  {
+    "n°": 166,
+    "Thème": "Abstrait",
+    "Question": "Un endroit où l’on peut profiter de toutes les saisons.",
+    "Indice 1": "On y observe des plantes du monde entier",
+    "Indice 2": "Je suis organisé par zones climatiques",
+    "Réponse": "Un jardin botanique"
+  },
+  {
+    "n°": 167,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui a des pieds et une tête mais ne bouge pas ?",
+    "Indice 1": "On s’y repose",
+    "Indice 2": "Il est dans la chambre",
+    "Réponse": "Un lit"
+  },
+  {
+    "n°": 168,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui s’ouvre sans clé ?",
+    "Indice 1": "Je t’emmène dans des histoires",
+    "Indice 2": "Je tourne mes pages",
+    "Réponse": "Un livre"
+  },
+  {
+    "n°": 169,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui est marron et qui vole ?",
+    "Indice 1": "C’est un jeu de mots",
+    "Indice 2": "On le trouve dans la forêt",
+    "Réponse": "Un marron volant"
+  },
+  {
+    "n°": 170,
+    "Thème": "Abstrait",
+    "Question": "Je lève ma main droite, il lève sa main gauche.",
+    "Indice 1": "Je te renvoie ton image",
+    "Indice 2": "Je suis l’inverse de toi",
+    "Réponse": "Un miroir"
+  },
+  {
+    "n°": 171,
+    "Thème": "Abstrait",
+    "Question": "Si tu me fais tomber, je me brise. Si tu me souris, je te souris.",
+    "Indice 1": "Je reflète ce que tu fais",
+    "Indice 2": "Je suis fragile",
+    "Réponse": "Un miroir"
+  },
+  {
+    "n°": 172,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui a des dents mais ne mord pas ?",
+    "Indice 1": "On l’utilise pour se coiffer",
+    "Indice 2": "Il peut être en plastique ou en métal",
+    "Réponse": "Un peigne"
+  },
+  {
+    "n°": 173,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui est invisible et qui sent mauvais ?",
+    "Indice 1": "C’est un jeu de mots",
+    "Indice 2": "On le trouve dans la salle de bain",
+    "Réponse": "Un pet fantôme"
+  },
+  {
+    "n°": 174,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui est vert et qui monte et descend ?",
+    "Indice 1": "On le trouve dans un ascenseur",
+    "Indice 2": "C’est un jeu de mots",
+    "Réponse": "Un petit pois dans l’ascenseur"
+  },
+  {
+    "n°": 175,
+    "Thème": "Abstrait",
+    "Question": "Plus j’ai de gardiens, moins je suis gardé",
+    "Indice 1": "Je suis fragile",
+    "Indice 2": "Je disparais si je suis partagé",
+    "Réponse": "Un secret"
+  },
+  {
+    "n°": 176,
+    "Thème": "Abstrait",
+    "Question": "Si tu me dis, je ne t’appartiens plus.",
+    "Indice 1": "Je disparais dès qu’on me révèle",
+    "Indice 2": "On me confie parfois par erreur",
+    "Réponse": "Un secret"
+  },
+  {
+    "n°": 177,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui devient plus blanc à mesure qu’il se salit ?",
+    "Indice 1": "On écrit dessus",
+    "Indice 2": "Il noircit pour éclaircir",
+    "Réponse": "Un tableau noir"
+  },
+  {
+    "n°": 178,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui voyage dans le monde entier tout en restant dans un coin ?",
+    "Indice 1": "On le colle",
+    "Indice 2": "Il accompagne les envois",
+    "Réponse": "Un timbre"
+  },
+  {
+    "n°": 179,
+    "Thème": "Abstrait",
+    "Question": "Je grossis quand on me retire quelque chose",
+    "Indice 1": "Je suis un paradoxe",
+    "Indice 2": "Je suis un vide",
+    "Réponse": "Un trou"
+  },
+  {
+    "n°": 180,
+    "Thème": "Abstrait",
+    "Question": "Je suis plus léger que ce dont je suis fait.",
+    "Indice 1": "On me creuse",
+    "Indice 2": "Je suis l’absence de matière",
+    "Réponse": "Un trou"
+  },
+  {
+    "n°": 181,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui est noir et blanc et qui lit ?",
+    "Indice 1": "C’est un jeu de mots",
+    "Indice 2": "On le trouve dans une bibliothèque",
+    "Réponse": "Un zèbre qui lit"
+  },
+  {
+    "n°": 182,
+    "Thème": "Abstrait",
+    "Question": "J’ai un œil mais je ne vois pas.",
+    "Indice 1": "On me trouve en couture",
+    "Indice 2": "Je suis au bout d’un outil pointu",
+    "Réponse": "Une aiguille"
+  },
+  {
+    "n°": 183,
+    "Thème": "Abstrait",
+    "Question": "Quand tu veux m’utiliser, tu me jettes ; quand tu ne veux plus, je reste immobile.",
+    "Indice 1": "Je retiens ce qui flotte",
+    "Indice 2": "Je stabilise les voyageurs",
+    "Réponse": "Une ancre"
+  },
+  {
+    "n°": 184,
+    "Thème": "Abstrait",
+    "Question": "On m’achète pour manger, mais personne ne me mange.",
+    "Indice 1": "Je porte les repas",
+    "Indice 2": "Je termine souvent dans l’évier",
+    "Réponse": "Une assiette"
+  },
+  {
+    "n°": 185,
+    "Thème": "Abstrait",
+    "Question": "J’ai des branches mais ni fruits, ni feuilles, ni tronc.",
+    "Indice 1": "On y dépose de l’argent",
+    "Indice 2": "Elle gère des comptes",
+    "Réponse": "Une banque"
+  },
+  {
+    "n°": 186,
+    "Thème": "Abstrait",
+    "Question": "Je ne suis bon que si les gens rient.",
+    "Indice 1": "On me raconte",
+    "Indice 2": "Je détends l’atmosphère",
+    "Réponse": "Une blague"
+  },
+  {
+    "n°": 187,
+    "Thème": "Abstrait",
+    "Question": "Je suis grand quand je suis jeune et petit quand je suis vieux",
+    "Indice 1": "Je produis de la lumière",
+    "Indice 2": "Je disparais lentement",
+    "Réponse": "Une bougie"
+  },
+  {
+    "n°": 188,
+    "Thème": "Abstrait",
+    "Question": "Je suis simple, je ne fais que pointer, mais je guide le monde entier.",
+    "Indice 1": "On me tient en main",
+    "Indice 2": "Je montre toujours le nord",
+    "Réponse": "Une boussole"
+  },
+  {
+    "n°": 189,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui a un cou mais pas de tête ?",
+    "Indice 1": "On le pose souvent sur une table",
+    "Indice 2": "Il contient un liquide",
+    "Réponse": "Une bouteille"
+  },
+  {
+    "n°": 190,
+    "Thème": "Abstrait",
+    "Question": "Mes villes sont vides, mes montagnes sont plates, mes océans et mes fleuves sont secs",
+    "Indice 1": "On me déplie",
+    "Indice 2": "Je représente le monde",
+    "Réponse": "Une carte"
+  },
+  {
+    "n°": 191,
+    "Thème": "Abstrait",
+    "Question": "C’est une forme d’argent en plastique.",
+    "Indice 1": "Je remplace les billets",
+    "Indice 2": "On me glisse dans un terminal",
+    "Réponse": "Une carte bancaire"
+  },
+  {
+    "n°": 192,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui a quatre jambes mais ne marche pas ?",
+    "Indice 1": "On s’y installe",
+    "Indice 2": "On le trouve dans de nombreuses pièces",
+    "Réponse": "Une chaise"
+  },
+  {
+    "n°": 193,
+    "Thème": "Abstrait",
+    "Question": "Tu peux voir ton reflet en moi, mais seulement si tu restes immobile.",
+    "Indice 1": "Je deviens miroir quand je suis calme",
+    "Indice 2": "Je frémis au moindre souffle",
+    "Réponse": "Une eau calme"
+  },
+  {
+    "n°": 194,
+    "Thème": "Abstrait",
+    "Question": "Je commence par « e », je finis par « e » et je contiens une lettre",
+    "Indice 1": "On m’envoie",
+    "Indice 2": "Je suis en papier",
+    "Réponse": "Une enveloppe"
+  },
+  {
+    "n°": 195,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui est rouge et qui clignote ?",
+    "Indice 1": "C’est un jeu de mots",
+    "Indice 2": "On le trouve sur la route",
+    "Réponse": "Une fraise en panne"
+  },
+  {
+    "n°": 196,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui a des aiguilles mais ne pique pas ?",
+    "Indice 1": "On le consulte régulièrement",
+    "Indice 2": "Il indique le temps",
+    "Réponse": "Une horloge"
+  },
+  {
+    "n°": 197,
+    "Thème": "Abstrait",
+    "Question": "Je n’ai pas de vie, mais je peux mourir si on m’oublie",
+    "Indice 1": "Je naîs dans l’esprit",
+    "Indice 2": "Je disparais sans attention",
+    "Réponse": "Une idée"
+  },
+  {
+    "n°": 198,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui a des roues mais ne roule pas ?",
+    "Indice 1": "On l’utilise pour fabriquer des vêtements",
+    "Indice 2": "Il fonctionne avec une aiguille",
+    "Réponse": "Une machine à coudre"
+  },
+  {
+    "n°": 199,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui est difficile à enlever une fois qu’on le porte ?",
+    "Indice 1": "Elle colle à ta réputation",
+    "Indice 2": "Elle te suit longtemps",
+    "Réponse": "Une mauvaise réputation"
+  },
+  {
+    "n°": 200,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui a une couronne mais pas de roi ?",
+    "Indice 1": "On le trouve dans la nature",
+    "Indice 2": "Il domine le paysage",
+    "Réponse": "Une montagne"
+  },
+  {
+    "n°": 201,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui a des mains mais ne peut applaudir ?",
+    "Indice 1": "On le porte sur soi",
+    "Indice 2": "Il mesure le temps",
+    "Réponse": "Une montre"
+  },
+  {
+    "n°": 202,
+    "Thème": "Abstrait",
+    "Question": "J’entre dans l’eau sans me mouiller",
+    "Indice 1": "Je suis une silhouette",
+    "Indice 2": "Je suis liée à la lumière",
+    "Réponse": "Une ombre"
+  },
+  {
+    "n°": 203,
+    "Thème": "Abstrait",
+    "Question": "Je suis petit, si j'en détiens suffisemment je peux acheter beaucoup",
+    "Indice 1": "Je suis rond",
+    "Indice 2": "Je sers à payer",
+    "Réponse": "Une pièce de monnaie"
+  },
+  {
+    "n°": 204,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui peut être cassé mais jamais tenu ?",
+    "Indice 1": "On en fait parfois sans réfléchir",
+    "Indice 2": "Elle engage celui qui la donne",
+    "Réponse": "Une promesse"
+  },
+  {
+    "n°": 205,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui a un lit mais ne dort jamais ?",
+    "Indice 1": "On le trouve dans la nature",
+    "Indice 2": "Il s’écoule continuellement",
+    "Réponse": "Une rivière"
+  },
+  {
+    "n°": 206,
+    "Thème": "Abstrait",
+    "Question": "Je deviens plus mouillée en séchant les autres.",
+    "Indice 1": "On m’attrape en sortant de l’eau",
+    "Indice 2": "J’absorbe tout ce qui coule",
+    "Réponse": "Une serviette"
+  },
+  {
+    "n°": 207,
+    "Thème": "Abstrait",
+    "Question": "Qu’est-ce qui est petit, rond et rouge et qui tourne ?",
+    "Indice 1": "C’est un jeu de mots",
+    "Indice 2": "On le trouve dans une cuisine",
+    "Réponse": "Une tomate qui fait du manège"
+  },
+  {
+    "n°": 208,
+    "Thème": "Abstrait",
+    "Question": "Je suis un sac qui suit partout",
+    "Indice 1": "Je transporte des affaires",
+    "Indice 2": "Je roule ou je me porte",
+    "Réponse": "Valise"
+  },
+  {
+    "n°": 209,
+    "Thème": "Abstrait",
+    "Question": "Je suis chaud et je sors de la terre",
+    "Indice 1": "Je peux détruire tout autour de moi",
+    "Indice 2": "Je suis une montagne vivante",
+    "Réponse": "Volcan"
+  },
+  {
+    "n°": 210,
+    "Thème": "Animaux",
+    "Question": "Je glisse dans l’eau comme un serpent électrique",
+    "Indice 1": "Je suis gluant",
+    "Indice 2": "Je peux envoyer une décharge",
+    "Réponse": "Anguille électrique"
+  },
+  {
+    "n°": 211,
+    "Thème": "Animaux",
+    "Question": "Je vis dans l’eau mais je respire de l’air",
+    "Indice 1": "Je suis immense",
+    "Indice 2": "Je chante sous l’eau",
+    "Réponse": "Baleine"
+  },
+  {
+    "n°": 212,
+    "Thème": "Animaux",
+    "Question": "Je change de tenue comme un magicien et je regarde dans deux directions à la fois",
+    "Indice 1": "Je grimpe partout",
+    "Indice 2": "Je suis un pro du camouflage",
+    "Réponse": "Caméléon"
+  },
+  {
+    "n°": 213,
+    "Thème": "Animaux",
+    "Question": "Je miaule mais je ne parle pas",
+    "Indice 1": "Je suis un compagnon courant",
+    "Indice 2": "Je chasse les rongeurs",
+    "Réponse": "Chat"
+  },
+  {
+    "n°": 214,
+    "Thème": "Animaux",
+    "Question": "Je dors la tête en bas",
+    "Indice 1": "Je vole",
+    "Indice 2": "Je vis dans les grottes",
+    "Réponse": "Chauve‑souris"
+  },
+  {
+    "n°": 215,
+    "Thème": "Animaux",
+    "Question": "J’aboie mais je ne parle pas",
+    "Indice 1": "Je suis domestiqué",
+    "Indice 2": "Je garde la maison",
+    "Réponse": "Chien"
+  },
+  {
+    "n°": 216,
+    "Thème": "Animaux",
+    "Question": "Les chèvres, les démons et les licornes ont tous ceci.",
+    "Indice 1": "Certaines vaches en ont deux",
+    "Indice 2": "Je pousse sur la tête",
+    "Réponse": "Des cornes"
+  },
+  {
+    "n°": 217,
+    "Thème": "Animaux",
+    "Question": "Je suis petit et je pique",
+    "Indice 1": "Je vis en colonie",
+    "Indice 2": "Je construis des galeries",
+    "Réponse": "Fourmi"
+  },
+  {
+    "n°": 218,
+    "Thème": "Animaux",
+    "Question": "Je vois le monde d’en haut grâce à mon cou interminable",
+    "Indice 1": "Je mange les feuilles les plus hautes",
+    "Indice 2": "Je suis très paisible",
+    "Réponse": "Girafe"
+  },
+  {
+    "n°": 219,
+    "Thème": "Animaux",
+    "Question": "Je coasse mais je ne parle pas",
+    "Indice 1": "Je saute",
+    "Indice 2": "Je vis près de l’eau",
+    "Réponse": "Grenouille"
+  },
+  {
+    "n°": 220,
+    "Thème": "Animaux",
+    "Question": "Je file dans la savane comme si j’avais un moteur caché dans les pattes",
+    "Indice 1": "Je suis couvert de taches",
+    "Indice 2": "Je suis l’un des plus rapides du monde",
+    "Réponse": "Guépard"
+  },
+  {
+    "n°": 221,
+    "Thème": "Animaux",
+    "Question": "Je saute et j’ai une poche",
+    "Indice 1": "Je vis dans un pays chaud",
+    "Indice 2": "Je transporte mes petits",
+    "Réponse": "Kangourou"
+  },
+  {
+    "n°": 222,
+    "Thème": "Animaux",
+    "Question": "Je dors beaucoup mais je ne suis pas paresseux",
+    "Indice 1": "Je vis dans les arbres",
+    "Indice 2": "Je mange des feuilles parfumées",
+    "Réponse": "Koala"
+  },
+  {
+    "n°": 223,
+    "Thème": "Animaux",
+    "Question": "Une reine unique d’un roi boit de l’eau avec l’aide de sa queue.",
+    "Indice 1": "Je vis dans une ruche",
+    "Indice 2": "Je suis indispensable à la colonie",
+    "Réponse": "L’abeille"
+  },
+  {
+    "n°": 224,
+    "Thème": "Animaux",
+    "Question": "Qui construit sa maison sans marteau ni outil ?",
+    "Indice 1": "Je tisse pour vivre",
+    "Indice 2": "Je me cache dans les coins",
+    "Réponse": "L’araignée"
+  },
+  {
+    "n°": 225,
+    "Thème": "Animaux",
+    "Question": "Je me tais le jour mais je chante la nuit.",
+    "Indice 1": "Je vis dans l’herbe",
+    "Indice 2": "Mon chant est régulier",
+    "Réponse": "Le grillon"
+  },
+  {
+    "n°": 226,
+    "Thème": "Animaux",
+    "Question": "On m’appelle roi, mais je n’ai ni couronne ni château.",
+    "Indice 1": "Je règne sur la savane",
+    "Indice 2": "Mon cri fait trembler",
+    "Réponse": "Le lion"
+  },
+  {
+    "n°": 227,
+    "Thème": "Animaux",
+    "Question": "Quel est le poisson qui ne peut jamais nager ?",
+    "Indice 1": "On le trouve au rayon surgelé",
+    "Indice 2": "Il est pané",
+    "Réponse": "Le poisson pané"
+  },
+  {
+    "n°": 228,
+    "Thème": "Animaux",
+    "Question": "Quand il était petit, il avait une queue, mais en grandissant, il a eu des jambes.",
+    "Indice 1": "Il vit près des mares",
+    "Indice 2": "Il saute une fois adulte",
+    "Réponse": "Le têtard devenu grenouille"
+  },
+  {
+    "n°": 229,
+    "Thème": "Animaux",
+    "Question": "Je me pavane mais je ne parle pas",
+    "Indice 1": "Je suis très coloré",
+    "Indice 2": "Je déploie une grande roue",
+    "Réponse": "Paon"
+  },
+  {
+    "n°": 230,
+    "Thème": "Animaux",
+    "Question": "Je marche en smoking naturel et je glisse sur la glace comme un champion",
+    "Indice 1": "Je vis dans le froid",
+    "Indice 2": "Je mange du poisson",
+    "Réponse": "Pingouin"
+  },
+  {
+    "n°": 231,
+    "Thème": "Animaux",
+    "Question": "Je suis minuscule mais je saute comme un athlète olympique",
+    "Indice 1": "Je pique parfois",
+    "Indice 2": "Je suis difficile à attraper",
+    "Réponse": "Puce"
+  },
+  {
+    "n°": 232,
+    "Thème": "Animaux",
+    "Question": "Je saute de branche en branche comme un acrobate",
+    "Indice 1": "Je mange des fruits",
+    "Indice 2": "Je suis très malin",
+    "Réponse": "Singe"
+  },
+  {
+    "n°": 233,
+    "Thème": "Animaux",
+    "Question": "Je vis sous terre comme un petit mineur et je ne vois presque rien",
+    "Indice 1": "Je creuse sans arrêt",
+    "Indice 2": "Je suis très discret",
+    "Réponse": "Taupe"
+  },
+  {
+    "n°": 234,
+    "Thème": "Animaux",
+    "Question": "Je me balade avec ma maison sur le dos comme si j’étais toujours en vacances",
+    "Indice 1": "Je suis très lent",
+    "Indice 2": "Je rentre ma tête quand j’ai peur",
+    "Réponse": "Tortue"
+  },
+  {
+    "n°": 235,
+    "Thème": "Animaux",
+    "Question": "Qu’est-ce qu’un hippopotame qui fait du camping ?",
+    "Indice 1": "C’est un jeu de mots",
+    "Indice 2": "Il change de nom",
+    "Réponse": "Un hippocampe"
+  },
+  {
+    "n°": 236,
+    "Thème": "Animaux",
+    "Question": "Je suis un animal et je fournis de la laine.",
+    "Indice 1": "On me tond",
+    "Indice 2": "Je bêle",
+    "Réponse": "Un mouton"
+  },
+  {
+    "n°": 237,
+    "Thème": "Animaux",
+    "Question": "Je brille dans la nuit sans être une étoile.",
+    "Indice 1": "Je vole doucement",
+    "Indice 2": "Ma lumière est naturelle",
+    "Réponse": "Une luciole"
+  },
+  {
+    "n°": 238,
+    "Thème": "Animaux",
+    "Question": "J’ai huit bras, un corps mou et j’éjecte de l’encre.",
+    "Indice 1": "Je vis dans les profondeurs",
+    "Indice 2": "Je suis très intelligent",
+    "Réponse": "Une pieuvre"
+  },
+  {
+    "n°": 239,
+    "Thème": "Animaux",
+    "Question": "On dirait un cheval en pyjama rayé",
+    "Indice 1": "Je vis en troupeau",
+    "Indice 2": "Je suis très sociable",
+    "Réponse": "Zèbre"
+  },
+  {
+    "n°": 240,
+    "Thème": "Cinéma & Séries",
+    "Question": "Dans quelle série un agent antiterroriste vit des journées de 24 heures en temps réel ?",
+    "Indice 1": "Format très particulier",
+    "Indice 2": "Le héros s’appelle Jack Bauer",
+    "Réponse": 24
+  },
+  {
+    "n°": 241,
+    "Thème": "Cinéma & Séries",
+    "Question": "Dans quelle série un père agent secret agit comme si la logique avait pris des vacances ?",
+    "Indice 1": "Famille américaine",
+    "Indice 2": "Alien colocataire",
+    "Réponse": "American Dad"
+  },
+  {
+    "n°": 242,
+    "Thème": "Cinéma & Séries",
+    "Question": "Quel film de 2019 conclut la saga des Avengers contre Thanos ?",
+    "Indice 1": "Très attendu",
+    "Indice 2": "Voyage dans le temps",
+    "Réponse": "Avengers: Endgame"
+  },
+  {
+    "n°": 243,
+    "Thème": "Cinéma & Séries",
+    "Question": "Dans quelle série un ancien tueur à gages tente de vivre une vie normale mais replonge dans la violence ?",
+    "Indice 1": "Humour noir",
+    "Indice 2": "Le héros est un acteur raté",
+    "Réponse": "Barry"
+  },
+  {
+    "n°": 244,
+    "Thème": "Cinéma & Séries",
+    "Question": "Dans quelle série des ados découvrent que leurs hormones ont… une forme physique et beaucoup trop d’énergie ?",
+    "Indice 1": "Humour très cru",
+    "Indice 2": "Monstres très bavards",
+    "Réponse": "Big Mouth"
+  },
+  {
+    "n°": 245,
+    "Thème": "Cinéma & Séries",
+    "Question": "Quelle héroïne perd sa chaussure comme si elle jouait à “Où est ma pantoufle ?” en pleine soirée ?",
+    "Indice 1": "Minuit n’est pas son ami",
+    "Indice 2": "Très proche des citrouilles",
+    "Réponse": "Cendrillon"
+  },
+  {
+    "n°": 246,
+    "Thème": "Cinéma & Séries",
+    "Question": "Dans quelle série un médecin misanthrope résout des cas médicaux complexes ?",
+    "Indice 1": "Le héros marche avec une canne",
+    "Indice 2": "Très sarcastique",
+    "Réponse": "Dr House"
+  },
+  {
+    "n°": 247,
+    "Thème": "Cinéma & Séries",
+    "Question": "Quel film de 2021 raconte l’histoire d’un héros qui contrôle le sable dans un univers désertique ?",
+    "Indice 1": "Adapté d’un roman culte",
+    "Indice 2": "Réalisé par Denis Villeneuve",
+    "Réponse": "Dune"
+  },
+  {
+    "n°": 248,
+    "Thème": "Cinéma & Séries",
+    "Question": "Quel film d’animation de 2021 raconte l’histoire d’une famille colombienne dotée de pouvoirs magiques ?",
+    "Indice 1": "Maison vivante",
+    "Indice 2": "Chansons très populaires",
+    "Réponse": "Encanto"
+  },
+  {
+    "n°": 249,
+    "Thème": "Cinéma & Séries",
+    "Question": "Quel film de 2008 raconte l’histoire d’un milliardaire qui devient un héros en armure ?",
+    "Indice 1": "Début d’un univers cinématographique",
+    "Indice 2": "Le héros s’appelle Tony",
+    "Réponse": "Iron Man"
+  },
+  {
+    "n°": 250,
+    "Thème": "Cinéma & Séries",
+    "Question": "Dans quel conte un prince poilu découvre que l’amour, c’est plus efficace qu’un coiffeur ?",
+    "Indice 1": "Château isolé",
+    "Indice 2": "Vaisselle très vivante",
+    "Réponse": "La Belle et la Bête"
+  },
+  {
+    "n°": 251,
+    "Thème": "Cinéma & Séries",
+    "Question": "Quels personnages blancs et complètement déjantés semblent vivre sous caféine pure ?",
+    "Indice 1": "Yeux écarquillés",
+    "Indice 2": "Adorent le chaos",
+    "Réponse": "Lapin Crétin"
+  },
+  {
+    "n°": 252,
+    "Thème": "Cinéma & Séries",
+    "Question": "Quel film raconte l’histoire d’un clown amnésique cherchant son fils dans l’océan ?",
+    "Indice 1": "Film d’animation",
+    "Indice 2": "Le héros est un poisson",
+    "Réponse": "Le Monde de Nemo"
+  },
+  {
+    "n°": 253,
+    "Thème": "Cinéma & Séries",
+    "Question": "Dans quelle trilogie suit‑on un jeune hobbit chargé de détruire un anneau maléfique ?",
+    "Indice 1": "Inspirée d’un roman culte",
+    "Indice 2": "Le voyage commence dans la Comté",
+    "Réponse": "Le Seigneur des Anneaux"
+  },
+  {
+    "n°": 254,
+    "Thème": "Cinéma & Séries",
+    "Question": "Quel personnage grincheux des simpsons s'adresse aux clients comme s'il était une punition divine ?",
+    "Indice 1": "Passionné mais aigri",
+    "Indice 2": "Boutique remplie de comics",
+    "Réponse": "Le vendeur de BD"
+  },
+  {
+    "n°": 255,
+    "Thème": "Cinéma & Séries",
+    "Question": "Dans quelle série un professeur de lycée devient expert en mensonges grâce à la micro‑expression ?",
+    "Indice 1": "Inspirée de travaux scientifiques",
+    "Indice 2": "Le héros s’appelle Cal Lightman",
+    "Réponse": "Lie to Me"
+  },
+  {
+    "n°": 256,
+    "Thème": "Cinéma & Séries",
+    "Question": "Dans quelle série un gang de Birmingham dirigé par Thomas Shelby prend de l’ampleur ?",
+    "Indice 1": "Angleterre post‑guerre",
+    "Indice 2": "Casquettes iconiques",
+    "Réponse": "Peaky Blinders"
+  },
+  {
+    "n°": 257,
+    "Thème": "Cinéma & Séries",
+    "Question": "Dans quelle série un scientifique excentrique voyage entre les dimensions avec son petit‑fils ?",
+    "Indice 1": "Animation adulte",
+    "Indice 2": "Portails verts",
+    "Réponse": "Rick and Morty"
+  },
+  {
+    "n°": 258,
+    "Thème": "Cinéma & Séries",
+    "Question": "Quel méchant félin a inventé le concept de “tonton toxique” ?",
+    "Indice 1": "Cicatrice stylée",
+    "Indice 2": "Très mauvais perdant",
+    "Réponse": "Scar"
+  },
+  {
+    "n°": 259,
+    "Thème": "Cinéma & Séries",
+    "Question": "Quel ogre vert vit comme si “ne pas déranger” était sa philosophie de vie ?",
+    "Indice 1": "Odeur discutable",
+    "Indice 2": "Ami d’un âne très bavard",
+    "Réponse": "Shrek"
+  },
+  {
+    "n°": 260,
+    "Thème": "Cinéma & Séries",
+    "Question": "Quel lion doit devenir roi alors qu’il préférerait clairement une vie tranquille à chanter dans la savane ?",
+    "Indice 1": "Je voudrai déjà…",
+    "Indice 2": "Amis très atypiques",
+    "Réponse": "Simba"
+  },
+  {
+    "n°": 261,
+    "Thème": "Cinéma & Séries",
+    "Question": "Quel film de super‑héros de 2002 a lancé une trilogie avec un héros qui grimpe aux murs ?",
+    "Indice 1": "Adapté d’un comics",
+    "Indice 2": "Le héros vit à New York",
+    "Réponse": "Spider‑Man"
+  },
+  {
+    "n°": 262,
+    "Thème": "Cinéma & Séries",
+    "Question": "Dans quelle série un jeu mortel oppose des centaines de participants endettés ?",
+    "Indice 1": "Origine coréenne",
+    "Indice 2": "Combinaisons roses",
+    "Réponse": "Squid Game"
+  },
+  {
+    "n°": 263,
+    "Thème": "Cinéma & Séries",
+    "Question": "Dans quelle série deux frères chassent des créatures surnaturelles à travers les États‑Unis ?",
+    "Indice 1": "Très longue série",
+    "Indice 2": "Leurs noms : Sam et Dean",
+    "Réponse": "Supernatural"
+  },
+  {
+    "n°": 264,
+    "Thème": "Cinéma & Séries",
+    "Question": "Dans quelle série un chasseur solitaire protège un enfant aux pouvoirs mystérieux dans l’univers Star Wars ?",
+    "Indice 1": "Casque en métal",
+    "Indice 2": "Le petit s’appelle Grogu",
+    "Réponse": "The Mandalorian"
+  },
+  {
+    "n°": 265,
+    "Thème": "Cinéma & Séries",
+    "Question": "Dans quelle série un groupe de prisonniers tente de survivre dans une prison infestée de zombies ?",
+    "Indice 1": "Adaptée d’un comics",
+    "Indice 2": "Le héros porte un chapeau de shérif",
+    "Réponse": "The Walking Dead"
+  },
+  {
+    "n°": 266,
+    "Thème": "Cinéma & Séries",
+    "Question": "Quel film de 2010 raconte l’histoire d’un jouet cowboy et d’un jouet astronaute face à une garderie ?",
+    "Indice 1": "Film d’animation Pixar",
+    "Indice 2": "Troisième opus d’une saga",
+    "Réponse": "Toy Story 3"
+  },
+  {
+    "n°": 267,
+    "Thème": "Cinéma & Séries",
+    "Question": "Quel film de 2015 raconte l’histoire d’une jeune fille guidée par ses émotions personnifiées ?",
+    "Indice 1": "Film d’animation",
+    "Indice 2": "Les émotions ont des couleurs",
+    "Réponse": "Vice‑Versa"
+  },
+  {
+    "n°": 268,
+    "Thème": "Cinéma & Séries",
+    "Question": "Quel film de 2014 raconte l’histoire d’un jeune batteur poussé à bout par un professeur tyrannique ?",
+    "Indice 1": "Film musical intense",
+    "Indice 2": "Réalisé par Damien Chazelle",
+    "Réponse": "Whiplash"
+  },
+  {
+    "n°": 269,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je suis vert et piquant",
+    "Indice 1": "Je suis un fruit tropical",
+    "Indice 2": "J’ai une couronne",
+    "Réponse": "Ananas"
+  },
+  {
+    "n°": 270,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je suis dur à l’extérieur et jaune à l’intérieur",
+    "Indice 1": "Je suis un fruit tropical",
+    "Indice 2": "J’ai une couronne",
+    "Réponse": "Ananas"
+  },
+  {
+    "n°": 271,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je suis sucré et coloré",
+    "Indice 1": "Les enfants m’adorent",
+    "Indice 2": "Je suis vendu en sachet",
+    "Réponse": "Bonbon"
+  },
+  {
+    "n°": 272,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je suis orange et croquant",
+    "Indice 1": "Je pousse sous terre",
+    "Indice 2": "On me mange souvent crue",
+    "Réponse": "Carotte"
+  },
+  {
+    "n°": 273,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je suis noir et amer",
+    "Indice 1": "On me croque",
+    "Indice 2": "Je suis en tablette",
+    "Réponse": "Chocolat"
+  },
+  {
+    "n°": 274,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je suis jaune et acide",
+    "Indice 1": "Je suis un agrume",
+    "Indice 2": "On me presse souvent",
+    "Réponse": "Citron"
+  },
+  {
+    "n°": 275,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je suis brun et dur",
+    "Indice 1": "Je suis un fruit tropical",
+    "Indice 2": "On me casse pour accéder à ma chair",
+    "Réponse": "Coco"
+  },
+  {
+    "n°": 276,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je suis vert et croquant",
+    "Indice 1": "Je suis un légume frais",
+    "Indice 2": "On me met souvent dans les salades",
+    "Réponse": "Concombre"
+  },
+  {
+    "n°": 277,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je coupe du pain",
+    "Indice 1": "Je suis tranchant",
+    "Indice 2": "Je suis long et dentelé",
+    "Réponse": "Couteau"
+  },
+  {
+    "n°": 278,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je sers à chauffer mais je ne suis pas le soleil",
+    "Indice 1": "Je fonctionne à l’électricité",
+    "Indice 2": "On me trouve dans la cuisine",
+    "Réponse": "Four"
+  },
+  {
+    "n°": 279,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je suis glacé et sucré",
+    "Indice 1": "Je fonds rapidement",
+    "Indice 2": "Je suis souvent en cornet",
+    "Réponse": "Glace"
+  },
+  {
+    "n°": 280,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je suis vert et petit",
+    "Indice 1": "Je suis un fruit acidulé",
+    "Indice 2": "Je pousse en grappes",
+    "Réponse": "Groseille"
+  },
+  {
+    "n°": 281,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je suis blanc et liquide",
+    "Indice 1": "Je viens d’un animal",
+    "Indice 2": "On me boit dès l’enfance",
+    "Réponse": "Lait"
+  },
+  {
+    "n°": 282,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je n’arrive jamais pendant le repas, mais toujours après.",
+    "Indice 1": "On m’attend avec plaisir",
+    "Indice 2": "Je suis souvent sucré",
+    "Réponse": "Le dessert"
+  },
+  {
+    "n°": 283,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Quel est le fruit qu’on ne peut jamais acheter ?",
+    "Indice 1": "Il appartient aux histoires",
+    "Indice 2": "Il est interdit",
+    "Réponse": "Le fruit défendu"
+  },
+  {
+    "n°": 284,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Articles comestibles achetés en grande quantité.",
+    "Indice 1": "On les garde pour plus tard",
+    "Indice 2": "Elles remplissent les placards",
+    "Réponse": "Les provisions"
+  },
+  {
+    "n°": 285,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je suis liquide et sucré",
+    "Indice 1": "Je viens des abeilles",
+    "Indice 2": "Je colle facilement",
+    "Réponse": "Miel"
+  },
+  {
+    "n°": 286,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je suis jaune et je fais pleurer",
+    "Indice 1": "Je relève les plats",
+    "Indice 2": "On me met dans les sauces",
+    "Réponse": "Moutarde"
+  },
+  {
+    "n°": 287,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je suis bleu et sucré",
+    "Indice 1": "Je suis un petit fruit",
+    "Indice 2": "On me met dans les desserts",
+    "Réponse": "Myrtille"
+  },
+  {
+    "n°": 288,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je suis doré et croustillant",
+    "Indice 1": "On me mange le matin",
+    "Indice 2": "Je suis souvent en tranche",
+    "Réponse": "Pain"
+  },
+  {
+    "n°": 289,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je suis violet et sucré",
+    "Indice 1": "Je suis un fruit d’été",
+    "Indice 2": "Je peux être séchée ou fraîche",
+    "Réponse": "Prune"
+  },
+  {
+    "n°": 290,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je suis rond et violet",
+    "Indice 1": "Je suis un fruit sucré",
+    "Indice 2": "Je pousse en grappes",
+    "Réponse": "Raisin"
+  },
+  {
+    "n°": 291,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je sers à garder au froid",
+    "Indice 1": "Je fonctionne en continu",
+    "Indice 2": "Je conserve les aliments",
+    "Réponse": "Réfrigérateur"
+  },
+  {
+    "n°": 292,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je suis sucré et je viens des cannes",
+    "Indice 1": "Je fonds dans les boissons chaudes",
+    "Indice 2": "Je suis blanc ou brun",
+    "Réponse": "Sucre"
+  },
+  {
+    "n°": 293,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Je suis rond et rouge",
+    "Indice 1": "Je suis un fruit-légume",
+    "Indice 2": "On me met dans les salades",
+    "Réponse": "Tomate"
+  },
+  {
+    "n°": 294,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "On me casse avant de m’utiliser",
+    "Indice 1": "On me trouve en cuisine",
+    "Indice 2": "Je suis fragile",
+    "Réponse": "Un œuf"
+  },
+  {
+    "n°": 295,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Tu me coupes, tu me tranches, tu me haches… et tu pleures.",
+    "Indice 1": "Je pique les yeux",
+    "Indice 2": "Je parfume les plats",
+    "Réponse": "Un oignon"
+  },
+  {
+    "n°": 296,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Qu’est-ce qu’un yaourt qui court dans la forêt ?",
+    "Indice 1": "C’est un jeu de mots",
+    "Indice 2": "Il est nature",
+    "Réponse": "Un yaourt nature"
+  },
+  {
+    "n°": 297,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Qu’est-ce qui est orange et ressemble à un perroquet ?",
+    "Indice 1": "C’est un jeu de mots",
+    "Indice 2": "On le mange",
+    "Réponse": "Une carotte"
+  },
+  {
+    "n°": 298,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Qu’est-ce qui est plein de trous mais contient l’eau ?",
+    "Indice 1": "On l’utilise pour nettoyer",
+    "Indice 2": "Il absorbe très bien",
+    "Réponse": "Une éponge"
+  },
+  {
+    "n°": 299,
+    "Thème": "Cuisine & gastronomie",
+    "Question": "Qu’est-ce qui a une coquille mais pas de jambes ?",
+    "Indice 1": "On le casse pour le manger",
+    "Indice 2": "Il est souvent dur",
+    "Réponse": "Une noix"
+  },
+  {
+    "n°": 300,
+    "Thème": "Langues",
+    "Question": "Quelle est la traduction française du mot anglais, « actually » ?",
+    "Indice 1": "C’est un faux ami",
+    "Indice 2": "Il corrige une idée fausse",
+    "Réponse": "en réalité, à vrai dire"
+  },
+  {
+    "n°": 301,
+    "Thème": "Langues",
+    "Question": "Dans quel contexte utilise‑t‑on le verbe anglais « to help » pour apporter un soutien ?",
+    "Indice 1": "Il évoque l’assistance",
+    "Indice 2": "On l’utilise pour rendre service",
+    "Réponse": "aider"
+  },
+  {
+    "n°": 302,
+    "Thème": "Langues",
+    "Question": "Dans quel cas utilise‑t‑on le verbe anglais « to learn » pour parler d’acquisition de connaissances ?",
+    "Indice 1": "On le fait à l’école",
+    "Indice 2": "Il mène au savoir",
+    "Réponse": "apprendre"
+  },
+  {
+    "n°": 303,
+    "Thème": "Langues",
+    "Question": "Que désigne le mot anglais « rainbow », visible après la pluie ?",
+    "Indice 1": "Il est dans le ciel",
+    "Indice 2": "Il contient plusieurs couleurs",
+    "Réponse": "arc‑en‑ciel"
+  },
+  {
+    "n°": 304,
+    "Thème": "Langues",
+    "Question": "Dans quel contexte emploie‑t‑on le mot anglais « to need » pour exprimer un manque ?",
+    "Indice 1": "Il exprime une nécessité",
+    "Indice 2": "On l’utilise pour demander de l’aide",
+    "Réponse": "avoir besoin"
+  },
+  {
+    "n°": 305,
+    "Thème": "Langues",
+    "Question": "Que désigne le mot anglais « library », souvent confondu avec « librairie » ?",
+    "Indice 1": "On y emprunte des ouvrages",
+    "Indice 2": "C’est un lieu calme",
+    "Réponse": "bibliothèque"
+  },
+  {
+    "n°": 306,
+    "Thème": "Langues",
+    "Question": "Comment traduit‑on « beau‑frère » en anglais ?",
+    "Indice 1": "Lien par alliance",
+    "Indice 2": "bro…",
+    "Réponse": "brother‑in‑law"
+  },
+  {
+    "n°": 307,
+    "Thème": "Langues",
+    "Question": "Si je te demande la traduction anglaise de « beau‑frère », quel mot me donnerais‑tu ?",
+    "Indice 1": "Même réponse que la 1",
+    "Indice 2": "bro…",
+    "Réponse": "brother‑in‑law"
+  },
+  {
+    "n°": 308,
+    "Thème": "Langues",
+    "Question": "Dans quel cas utilise‑t‑on le verbe anglais « to choose » pour exprimer une sélection ?",
+    "Indice 1": "On le fait entre plusieurs options",
+    "Indice 2": "C’est une décision",
+    "Réponse": "choisir"
+  },
+  {
+    "n°": 309,
+    "Thème": "Langues",
+    "Question": "Quel mot anglais désigne l’université américaine, souvent confondu avec le collège ?",
+    "Indice 1": "Il concerne les études supérieures",
+    "Indice 2": "Très courant aux États‑Unis",
+    "Réponse": "college"
+  },
+  {
+    "n°": 310,
+    "Thème": "Langues",
+    "Question": "Quel est l’équivalent anglais du terme « petit cousin » ?",
+    "Indice 1": "Plus jeune dans la famille",
+    "Indice 2": "… co…",
+    "Réponse": "younger cousin"
+  },
+  {
+    "n°": 311,
+    "Thème": "Langues",
+    "Question": "Que signifie réellement le mot anglais « eventually », souvent mal interprété ?",
+    "Indice 1": "Il ne veut pas dire « peut‑être »",
+    "Indice 2": "Il marque la conclusion",
+    "Réponse": "finalement"
+  },
+  {
+    "n°": 312,
+    "Thème": "Langues",
+    "Question": "Que veut dire en français le mot « firework » ?",
+    "Indice 1": "On les voit le 14 juillet",
+    "Indice 2": "Ils illuminent le ciel",
+    "Réponse": "feu d'artifice"
+  },
+  {
+    "n°": 313,
+    "Thème": "Langues",
+    "Question": "Que désigne le mot anglais « snowflake », associé à l’hiver ?",
+    "Indice 1": "Il tombe du ciel",
+    "Indice 2": "Il fond au contact de la chaleur",
+    "Réponse": "flocon"
+  },
+  {
+    "n°": 314,
+    "Thème": "Langues",
+    "Question": "Quel mot anglais correspond à « parrain » ?",
+    "Indice 1": "Figure symbolique",
+    "Indice 2": "go…",
+    "Réponse": "godfather"
+  },
+  {
+    "n°": 315,
+    "Thème": "Langues",
+    "Question": "Comment dit‑on « marraine » en anglais ?",
+    "Indice 1": "Version féminine du précédent",
+    "Indice 2": "god…",
+    "Réponse": "godmother"
+  },
+  {
+    "n°": 316,
+    "Thème": "Langues",
+    "Question": "Quel est le terme anglais utilisé pour traduire « petit‑fils » ?",
+    "Indice 1": "Descendant direct",
+    "Indice 2": "gra…",
+    "Réponse": "grandson"
+  },
+  {
+    "n°": 317,
+    "Thème": "Langues",
+    "Question": "Peux‑tu donner la traduction anglaise de « arrière‑grand‑mère » ?",
+    "Indice 1": "Génération très au‑dessus",
+    "Indice 2": "gre…",
+    "Réponse": "great‑grandmother"
+  },
+  {
+    "n°": 318,
+    "Thème": "Abstrait",
+    "Question": "Je suis une langue sans bouche",
+    "Indice 1": "Je suis universelle",
+    "Indice 2": "Je parle avec les mains",
+    "Réponse": "La langue des signes"
+  },
+  {
+    "n°": 319,
+    "Thème": "Abstrait",
+    "Question": "Je suis une langue qui change tout le temps",
+    "Indice 1": "Je suis vivante",
+    "Indice 2": "J’invente de nouveaux mots",
+    "Réponse": "Le langage courant"
+  },
+  {
+    "n°": 320,
+    "Thème": "Abstrait",
+    "Question": "Je commence par la fin et je finis par le début",
+    "Indice 1": "Je suis un mot",
+    "Indice 2": "Je parle du temps",
+    "Réponse": "Le mot « retour »"
+  },
+  {
+    "n°": 321,
+    "Thème": "Abstrait",
+    "Question": "Tu peux lire mille mots, mais moi tu ne peux que me voir. Que suis‑je ?",
+    "Indice 1": "Je suis minuscule",
+    "Indice 2": "Je suis souvent à la fin",
+    "Réponse": "Le point"
+  },
+  {
+    "n°": 322,
+    "Thème": "Abstrait",
+    "Question": "Je suis crochu, indispensable et je change le sens.",
+    "Indice 1": "Je suis un signe",
+    "Indice 2": "Je pose des questions",
+    "Réponse": "Le point d’interrogation"
+  },
+  {
+    "n°": 323,
+    "Thème": "Abstrait",
+    "Question": "Les vaches le font au sel, les humains à la glace.",
+    "Indice 1": "Je suis dans la bouche",
+    "Indice 2": "Je révèle le goût",
+    "Réponse": "Lécher"
+  },
+  {
+    "n°": 324,
+    "Thème": "Langues",
+    "Question": "Comment traduit‑on « neveu » en anglais ?",
+    "Indice 1": "Enfant de ton frère ou ta sœur",
+    "Indice 2": "ne…",
+    "Réponse": "nephew"
+  },
+  {
+    "n°": 325,
+    "Thème": "Langues",
+    "Question": "Que désigne le mot anglais « butterfly », l’insecte coloré qui vole de fleur en fleur ?",
+    "Indice 1": "Ses ailes sont décorées",
+    "Indice 2": "On le voit au printemps",
+    "Réponse": "papillon"
+  },
+  {
+    "n°": 326,
+    "Thème": "Langues",
+    "Question": "Dans quel contexte utilise‑t‑on le verbe anglais « to remember » pour évoquer un souvenir ?",
+    "Indice 1": "Il concerne la mémoire",
+    "Indice 2": "On l’utilise pour ne pas oublier",
+    "Réponse": "se souvenir"
+  },
+  {
+    "n°": 327,
+    "Thème": "Langues",
+    "Question": "Quel mot anglais, « sensible », signifie raisonnable et non pas « sensible » en français ?",
+    "Indice 1": "C’est un faux ami",
+    "Indice 2": "Il décrit quelqu’un de réfléchi",
+    "Réponse": "sensible"
+  },
+  {
+    "n°": 328,
+    "Thème": "Langues",
+    "Question": "Quel mot français, « sunrise », désigne le moment où le soleil apparaît à l’horizon ?",
+    "Indice 1": "C’est le début du jour",
+    "Indice 2": "Il colore le ciel",
+    "Réponse": "l'aube, lever du soleil"
+  },
+  {
+    "n°": 329,
+    "Thème": "Langues",
+    "Question": "Dans quel cas utilise‑t‑on le mot anglais « while » pour exprimer une durée conditionnelle ?",
+    "Indice 1": "On le voit dans les boucles",
+    "Indice 2": "Il introduit une action continue",
+    "Réponse": "tant que"
+  },
+  {
+    "n°": 330,
+    "Thème": "Langues",
+    "Question": "Quel verbe anglais utilise‑t‑on lorsqu’on échange de l’argent contre quelque chose ?",
+    "Indice 1": "On le fait dans les magasins",
+    "Indice 2": "C’est l’opposé de vendre",
+    "Réponse": "to buy"
+  },
+  {
+    "n°": 331,
+    "Thème": "Langues",
+    "Question": "Quel verbe anglais exprime l’action de réfléchir ou de former une idée ?",
+    "Indice 1": "Il se passe dans la tête",
+    "Indice 2": "Il mène à une conclusion",
+    "Réponse": "to think"
+  },
+  {
+    "n°": 332,
+    "Thème": "Langues",
+    "Question": "Quel verbe anglais signifie faire une tentative ou un essai ?",
+    "Indice 1": "On le fait avant de réussir",
+    "Indice 2": "Il évoque une expérimentation",
+    "Réponse": "to try"
+  },
+  {
+    "n°": 333,
+    "Thème": "Langues",
+    "Question": "Quel verbe anglais exprime le fait de saisir le sens d’une idée ?",
+    "Indice 1": "Il se passe dans la tête",
+    "Indice 2": "Il marque la compréhension",
+    "Réponse": "to understand"
+  },
+  {
+    "n°": 334,
+    "Thème": "Langues",
+    "Question": "Quel verbe anglais exprime l’action d’attendre patiemment ?",
+    "Indice 1": "Il demande du temps",
+    "Indice 2": "On l’utilise quand on n’est pas pressé",
+    "Réponse": "to wait"
+  },
+  {
+    "n°": 335,
+    "Thème": "Abstrait",
+    "Question": "Tu peux me tenir sans jamais me toucher.",
+    "Indice 1": "Tu me prends avant de parler",
+    "Indice 2": "Je s’échappe dès que tu expires",
+    "Réponse": "Ton souffle"
+  },
+  {
+    "n°": 336,
+    "Thème": "Abstrait",
+    "Question": "Je suis plein de mots mais je ne parle pas",
+    "Indice 1": "Je suis imprimé",
+    "Indice 2": "On me consulte",
+    "Réponse": "Un dictionnaire"
+  },
+  {
+    "n°": 337,
+    "Thème": "Abstrait",
+    "Question": "Je contiens des mots sur des mots, dont certains que tu n’as jamais entendus.",
+    "Indice 1": "On me consulte quand un terme échappe",
+    "Indice 2": "Je classe tout par ordre précis",
+    "Réponse": "Un dictionnaire"
+  },
+  {
+    "n°": 338,
+    "Thème": "Abstrait",
+    "Question": "Je suis une langue qui n’existe pas",
+    "Indice 1": "Je suis inventée",
+    "Indice 2": "On m’entend dans certains films",
+    "Réponse": "Une langue fictive"
+  },
+  {
+    "n°": 339,
+    "Thème": "Abstrait",
+    "Question": "Je suis une phrase qui ne finit jamais",
+    "Indice 1": "Je suis très longue",
+    "Indice 2": "Je manque de ponctuation",
+    "Réponse": "Une phrase sans point"
+  },
+  {
+    "n°": 340,
+    "Thème": "Monde & géographie",
+    "Question": "Les mines y offrent des diamants qui brillent autant que les sourires",
+    "Indice 1": "Langues zoulou et afrikaans",
+    "Indice 2": "Capitale Pretoria",
+    "Réponse": "Afrique du Sud"
+  },
+  {
+    "n°": 341,
+    "Thème": "Monde & géographie",
+    "Question": "Quelle est la capitale des Pays‑Bas ?",
+    "Indice 1": "Ville des canaux",
+    "Indice 2": "Connue pour ses tulipes",
+    "Réponse": "Amsterdam"
+  },
+  {
+    "n°": 342,
+    "Thème": "Monde & géographie",
+    "Question": "Quelle est la capitale de la Turquie ?",
+    "Indice 1": "Ville moderne",
+    "Indice 2": "Elle n’est pas Istanbul",
+    "Réponse": "Ankara"
+  },
+  {
+    "n°": 343,
+    "Thème": "Monde & géographie",
+    "Question": "Dans le désert, une mer de sable cache un trésor noir qui fait rouler des fortunes",
+    "Indice 1": "Langue arabe",
+    "Indice 2": "Capitale Riyad",
+    "Réponse": "Arabie Saoudite"
+  },
+  {
+    "n°": 344,
+    "Thème": "Monde & géographie",
+    "Question": "Ses plaines nourrissent les barbecues et les amateurs de steak",
+    "Indice 1": "Langue espagnole",
+    "Indice 2": "Sa capitale est Buenos Aires",
+    "Réponse": "Argentine"
+  },
+  {
+    "n°": 345,
+    "Thème": "Monde & géographie",
+    "Question": "Quelle est la capitale de la Grèce ?",
+    "Indice 1": "Ville antique",
+    "Indice 2": "On y trouve l’Acropole",
+    "Réponse": "Athènes"
+  },
+  {
+    "n°": 346,
+    "Thème": "Monde & géographie",
+    "Question": "Sur ce continent‑île, les mines brillent autant que les kangourous bondissent",
+    "Indice 1": "Langue anglaise",
+    "Indice 2": "Capitale Canberra",
+    "Réponse": "Australie"
+  },
+  {
+    "n°": 347,
+    "Thème": "Monde & géographie",
+    "Question": "Quelle est la capitale de l’Allemagne ?",
+    "Indice 1": "Elle fut séparée par un mur",
+    "Indice 2": "Elle se situe au nord‑est",
+    "Réponse": "Berlin"
+  },
+  {
+    "n°": 348,
+    "Thème": "Monde & géographie",
+    "Question": "Quelle est la capitale de la Suisse ?",
+    "Indice 1": "Ville fédérale",
+    "Indice 2": "Elle n’est pas Zurich",
+    "Réponse": "Berne"
+  },
+  {
+    "n°": 349,
+    "Thème": "Monde & géographie",
+    "Question": "Quelle est la capitale du Brésil ?",
+    "Indice 1": "Ville construite au XXe siècle",
+    "Indice 2": "Elle n’est pas Rio",
+    "Réponse": "Brasília"
+  },
+  {
+    "n°": 350,
+    "Thème": "Monde & géographie",
+    "Question": "Samba, Amazonie et champs de café qui réveillent la planète",
+    "Indice 1": "Langue portugaise",
+    "Indice 2": "Capitale Brasília",
+    "Réponse": "Brésil"
+  },
+  {
+    "n°": 351,
+    "Thème": "Monde & géographie",
+    "Question": "Quelle est la capitale de la Belgique ?",
+    "Indice 1": "Ville européenne",
+    "Indice 2": "Elle accueille les institutions de l’UE",
+    "Réponse": "Bruxelles"
+  },
+  {
+    "n°": 352,
+    "Thème": "Monde & géographie",
+    "Question": "Quelle est la capitale de l’Argentine ?",
+    "Indice 1": "Ville au bord du Rio de la Plata",
+    "Indice 2": "Connue pour le tango",
+    "Réponse": "Buenos Aires"
+  },
+  {
+    "n°": 353,
+    "Thème": "Monde & géographie",
+    "Question": "Les immenses forêts boréales sont sa grande richesse, autant que le sirop d’érable",
+    "Indice 1": "Deux langues officielles",
+    "Indice 2": "Capitale Ottawa",
+    "Réponse": "Canada"
+  },
+  {
+    "n°": 354,
+    "Thème": "Monde & géographie",
+    "Question": "Quelle est la capitale de l’Australie ?",
+    "Indice 1": "Ville planifiée",
+    "Indice 2": "Elle n’est pas Sydney",
+    "Réponse": "Canberra"
+  },
+  {
+    "n°": 355,
+    "Thème": "Monde & géographie",
+    "Question": "Ses mines rougissent de cuivre, métal qui conduit l’électricité",
+    "Indice 1": "Langue espagnole",
+    "Indice 2": "Capitale Santiago",
+    "Réponse": "Chili"
+  },
+  {
+    "n°": 356,
+    "Thème": "Monde & géographie",
+    "Question": "Ses centrales fument plus que ses cheminées, grâce au charbon",
+    "Indice 1": "Langue mandarine",
+    "Indice 2": "Capitale Pékin",
+    "Réponse": "Chine"
+  },
+  {
+    "n°": 357,
+    "Thème": "Monde & géographie",
+    "Question": "Les montagnes andines sentent le café qui réveille le monde",
+    "Indice 1": "Langue espagnole",
+    "Indice 2": "Capitale Bogotá",
+    "Réponse": "Colombie"
+  },
+  {
+    "n°": 358,
+    "Thème": "Monde & géographie",
+    "Question": "Le Nil irrigue ses terres et nourrit les pyramides",
+    "Indice 1": "Langue arabe",
+    "Indice 2": "Capitale Le Caire",
+    "Réponse": "Égypte"
+  },
+  {
+    "n°": 359,
+    "Thème": "Monde & géographie",
+    "Question": "Ses épices colorent les plats et parfument les films",
+    "Indice 1": "Langue hindi",
+    "Indice 2": "Capitale New Delhi",
+    "Réponse": "Inde"
+  },
+  {
+    "n°": 360,
+    "Thème": "Monde & géographie",
+    "Question": "Les palmiers y donnent plus d’huile que d’ombre",
+    "Indice 1": "Langue indonésienne",
+    "Indice 2": "Capitale Jakarta",
+    "Réponse": "Indonésie"
+  },
+  {
+    "n°": 361,
+    "Thème": "Monde & géographie",
+    "Question": "Robots, mangas et technologie s’exportent mieux que les sushis",
+    "Indice 1": "Langue japonaise",
+    "Indice 2": "Sa capitale est Tokyo",
+    "Réponse": "Japon"
+  },
+  {
+    "n°": 362,
+    "Thème": "Monde & géographie",
+    "Question": "Avant qu’on ne me découvre comme la plus haute montagne du monde, j’étais déjà la plus haute.Qui suis-je ?",
+    "Indice 1": "Je domine l’Himalaya",
+    "Indice 2": "Je dépasse les 8 000 mètres",
+    "Réponse": "Le Mont Everest"
+  },
+  {
+    "n°": 363,
+    "Thème": "Monde & géographie",
+    "Question": "Quelle est la capitale du Portugal ?",
+    "Indice 1": "Elle est traversée par le Tage",
+    "Indice 2": "On y mange des pastéis de nata",
+    "Réponse": "Lisbonne"
+  },
+  {
+    "n°": 364,
+    "Thème": "Monde & géographie",
+    "Question": "Quelle est la capitale de l’Espagne ?",
+    "Indice 1": "Ville de deux grands clubs de football",
+    "Indice 2": "Elle se situe au centre du pays",
+    "Réponse": "Madrid"
+  },
+  {
+    "n°": 365,
+    "Thème": "Monde & géographie",
+    "Question": "Quelle est la capitale du Mexique ?",
+    "Indice 1": "Ville gigantesque",
+    "Indice 2": "Elle porte le nom du pays",
+    "Réponse": "Mexico"
+  },
+  {
+    "n°": 366,
+    "Thème": "Monde & géographie",
+    "Question": "Ses mines brillent en argent, comme ses traditions",
+    "Indice 1": "Langue espagnole",
+    "Indice 2": "Capitale Mexico",
+    "Réponse": "Mexique"
+  },
+  {
+    "n°": 367,
+    "Thème": "Monde & géographie",
+    "Question": "Quelle est la capitale de la Russie ?",
+    "Indice 1": "Ville immense",
+    "Indice 2": "On y trouve la Place Rouge",
+    "Réponse": "Moscou"
+  },
+  {
+    "n°": 368,
+    "Thème": "Monde & géographie",
+    "Question": "L’or noir coule sous ses terres africaines et fait rouler l’économie",
+    "Indice 1": "Langues anglais et haoussa",
+    "Indice 2": "Capitale Abuja",
+    "Réponse": "Nigeria"
+  },
+  {
+    "n°": 369,
+    "Thème": "Monde & géographie",
+    "Question": "Les fjords et la mer nourrissent les assiettes de saumon fumé",
+    "Indice 1": "Langue norvégienne",
+    "Indice 2": "Capitale Oslo",
+    "Réponse": "Norvège"
+  },
+  {
+    "n°": 370,
+    "Thème": "Monde & géographie",
+    "Question": "Quelle est la capitale du Canada ?",
+    "Indice 1": "Ville bilingue",
+    "Indice 2": "Elle n’est pas Toronto",
+    "Réponse": "Ottawa"
+  },
+  {
+    "n°": 371,
+    "Thème": "Monde & géographie",
+    "Question": "Quelle est la capitale de la France ?",
+    "Indice 1": "On y trouve la Tour Eiffel",
+    "Indice 2": "On l’appelle la Ville Lumière",
+    "Réponse": "Paris"
+  },
+  {
+    "n°": 372,
+    "Thème": "Monde & géographie",
+    "Question": "Quelle est la capitale de la Chine ?",
+    "Indice 1": "Ville impériale",
+    "Indice 2": "On y trouve la Cité interdite",
+    "Réponse": "Pékin"
+  },
+  {
+    "n°": 373,
+    "Thème": "Monde & géographie",
+    "Question": "Les Andes cachent de l’or qui brille dans ses mines",
+    "Indice 1": "Langue espagnole",
+    "Indice 2": "Capitale Lima",
+    "Réponse": "Pérou"
+  },
+  {
+    "n°": 374,
+    "Thème": "Monde & géographie",
+    "Question": "Petit État du Golfe, riche en gaz invisible qui chauffe les maisons",
+    "Indice 1": "Langue arabe",
+    "Indice 2": "Capitale Doha",
+    "Réponse": "Qatar"
+  },
+  {
+    "n°": 375,
+    "Thème": "Monde & géographie",
+    "Question": "Quelle est la capitale de l’Italie ?",
+    "Indice 1": "Ville antique",
+    "Indice 2": "On y trouve le Colisée",
+    "Réponse": "Rome"
+  },
+  {
+    "n°": 376,
+    "Thème": "Monde & géographie",
+    "Question": "Le plus vaste territoire du monde, où le gaz chauffe les foyers malgré des hivers glacés",
+    "Indice 1": "Langue russe",
+    "Indice 2": "Capitale Moscou",
+    "Réponse": "Russie"
+  },
+  {
+    "n°": 377,
+    "Thème": "Monde & géographie",
+    "Question": "Quelle est la capitale du Japon ?",
+    "Indice 1": "Ville futuriste",
+    "Indice 2": "On y trouve Shibuya",
+    "Réponse": "Tokyo"
+  },
+  {
+    "n°": 378,
+    "Thème": "Monde & géographie",
+    "Question": "Caracas danse au rythme de l’or noir qui coule des puits",
+    "Indice 1": "Langue espagnole",
+    "Indice 2": "Capitale Caracas",
+    "Réponse": "Venezuela"
+  },
+  {
+    "n°": 379,
+    "Thème": "Monde & géographie",
+    "Question": "Quelle est la capitale de l’Autriche ?",
+    "Indice 1": "Ville musicale",
+    "Indice 2": "Mozart y a vécu",
+    "Réponse": "Vienne"
+  },
+  {
+    "n°": 380,
+    "Thème": "Monde & géographie",
+    "Question": "Quelle est la capitale des États‑Unis ?",
+    "Indice 1": "Ville politique",
+    "Indice 2": "On y trouve la Maison Blanche",
+    "Réponse": "Washington D.C."
+  },
+  {
+    "n°": 381,
+    "Thème": "Musique",
+    "Question": "Quel instrument à cordes frottées est plus grand et plus grave que le violon ?",
+    "Indice 1": "On le tient sous le menton",
+    "Indice 2": "Souvent utilisé pour les mélodies graves",
+    "Réponse": "Alto"
+  },
+  {
+    "n°": 382,
+    "Thème": "Musique",
+    "Question": "Quel instrument à percussion se compose de deux petits tambours joués avec les mains ?",
+    "Indice 1": "Originaire d’Amérique latine",
+    "Indice 2": "Très utilisé dans la musique cubaine",
+    "Réponse": "Bongos"
+  },
+  {
+    "n°": 383,
+    "Thème": "Musique",
+    "Question": "Je roule comme un tonnerre musical",
+    "Indice 1": "Je suis une percussion",
+    "Indice 2": "On me frappe avec des baguettes épaisses",
+    "Réponse": "Caisse claire"
+  },
+  {
+    "n°": 384,
+    "Thème": "Musique",
+    "Question": "Quel instrument à vent utilise une anche simple et est très présent dans les harmonies ?",
+    "Indice 1": "Son long tube est en bois",
+    "Indice 2": "Très apprécié en jazz",
+    "Réponse": "Clarinette"
+  },
+  {
+    "n°": 385,
+    "Thème": "Musique",
+    "Question": "Je suis noir et blanc mais je fais des couleurs sonores",
+    "Indice 1": "Je suis un instrument",
+    "Indice 2": "Je possède des touches",
+    "Réponse": "Clavier"
+  },
+  {
+    "n°": 386,
+    "Thème": "Musique",
+    "Question": "Quel grand instrument à cordes se joue debout ou assis et produit les sons les plus graves de sa famille ?",
+    "Indice 1": "Présent dans les orchestres",
+    "Indice 2": "On le frotte avec un archet",
+    "Réponse": "Contrebasse"
+  },
+  {
+    "n°": 387,
+    "Thème": "Musique",
+    "Question": "Je suis frappé avec des baguettes",
+    "Indice 1": "Je suis en métal",
+    "Indice 2": "Je résonne fort",
+    "Réponse": "Cymbales"
+  },
+  {
+    "n°": 388,
+    "Thème": "Musique",
+    "Question": "Je suis un tambour qui aime voyager",
+    "Indice 1": "Je suis cylindrique",
+    "Indice 2": "Je viens d’Afrique de l’Ouest",
+    "Réponse": "Djembé"
+  },
+  {
+    "n°": 389,
+    "Thème": "Musique",
+    "Question": "Je siffle mais je n’ai pas de bouche",
+    "Indice 1": "Je suis en bois ou en métal",
+    "Indice 2": "On souffle pour me faire chanter",
+    "Réponse": "Flûte"
+  },
+  {
+    "n°": 390,
+    "Thème": "Musique",
+    "Question": "J’ai des cordes mais je ne suis pas une marionnette",
+    "Indice 1": "Je vibre quand on me touche",
+    "Indice 2": "On me gratte pour jouer",
+    "Réponse": "Guitare"
+  },
+  {
+    "n°": 391,
+    "Thème": "Musique",
+    "Question": "Sur scène, certains musiciens me branchent pour faire trembler les murs",
+    "Indice 1": "Je suis électrique",
+    "Indice 2": "Je fais rugir les amplis",
+    "Réponse": "Guitare électrique"
+  },
+  {
+    "n°": 392,
+    "Thème": "Musique",
+    "Question": "Quel instrument à cordes se joue en le pinçant et possède souvent une forme triangulaire ?",
+    "Indice 1": "Utilisé dans les orchestres",
+    "Indice 2": "Produit un son doux et cristallin",
+    "Réponse": "Harpe"
+  },
+  {
+    "n°": 393,
+    "Thème": "Musique",
+    "Question": "Quel instrument à vent en bois possède un son très aigu et un tube fin ?",
+    "Indice 1": "Utilisé dans les orchestres classiques",
+    "Indice 2": "Son anche est double",
+    "Réponse": "Hautbois"
+  },
+  {
+    "n°": 394,
+    "Thème": "Musique",
+    "Question": "Quel instrument africain se joue en pinçant des lamelles métalliques avec les pouces ?",
+    "Indice 1": "Tenu dans les mains",
+    "Indice 2": "Produit un son doux et hypnotique",
+    "Réponse": "Kalimba"
+  },
+  {
+    "n°": 395,
+    "Thème": "Musique",
+    "Question": "Cet instrument ressemble à un piano qui aurait décidé de devenir portable",
+    "Indice 1": "Je suis électronique",
+    "Indice 2": "On me porte avec une sangle",
+    "Réponse": "Keytar"
+  },
+  {
+    "n°": 396,
+    "Thème": "Musique",
+    "Question": "Je fais danser les gens mais je ne bouge pas",
+    "Indice 1": "Je suis immatérielle",
+    "Indice 2": "On m’entend partout",
+    "Réponse": "Musique"
+  },
+  {
+    "n°": 397,
+    "Thème": "Musique",
+    "Question": "Je fais vibrer le sol quand on me joue",
+    "Indice 1": "Je suis énorme",
+    "Indice 2": "Je suis le roi des orgues",
+    "Réponse": "Orgue d’église"
+  },
+  {
+    "n°": 398,
+    "Thème": "Musique",
+    "Question": "J’ai des touches mais je ne suis pas un clavier d’ordinateur",
+    "Indice 1": "Je produis des notes",
+    "Indice 2": "On le trouve dans certaines pièces de la maison",
+    "Réponse": "Piano"
+  },
+  {
+    "n°": 399,
+    "Thème": "Musique",
+    "Question": "Quel instrument à vent en métal possède un pavillon courbé et une anche ?",
+    "Indice 1": "Très utilisé en jazz",
+    "Indice 2": "Son timbre est chaud et puissant",
+    "Réponse": "Saxophone"
+  },
+  {
+    "n°": 400,
+    "Thème": "Musique",
+    "Question": "Quel instrument électronique utilise des oscillateurs pour créer des sons variés ?",
+    "Indice 1": "Très utilisé dans la musique moderne",
+    "Indice 2": "Peut imiter d’autres instruments",
+    "Réponse": "Synthétiseur"
+  },
+  {
+    "n°": 401,
+    "Thème": "Musique",
+    "Question": "Je suis frappé mais je ne me plains pas",
+    "Indice 1": "Je donne le rythme",
+    "Indice 2": "Je suis rond et tendu",
+    "Réponse": "Tambour"
+  },
+  {
+    "n°": 402,
+    "Thème": "Musique",
+    "Question": "Cet instrument crée de la musique sans qu’on le touche vraiment",
+    "Indice 1": "Je suis électronique",
+    "Indice 2": "Je réagis aux mouvements des mains",
+    "Réponse": "Theremin"
+  },
+  {
+    "n°": 403,
+    "Thème": "Musique",
+    "Question": "Dans les pubs irlandais, on m’entend souvent siffler joyeusement",
+    "Indice 1": "Je suis à vent",
+    "Indice 2": "Je suis le cœur du folklore irlandais",
+    "Réponse": "Tin whistle"
+  },
+  {
+    "n°": 404,
+    "Thème": "Musique",
+    "Question": "Quand un long tube métallique glisse, c’est moi qui chante",
+    "Indice 1": "Je suis en métal",
+    "Indice 2": "Je fais glisser les notes",
+    "Réponse": "Trombone"
+  },
+  {
+    "n°": 405,
+    "Thème": "Musique",
+    "Question": "Je chante sans paroles",
+    "Indice 1": "Je suis en métal",
+    "Indice 2": "Je fais vibrer l’air",
+    "Réponse": "Trompette"
+  },
+  {
+    "n°": 406,
+    "Thème": "Musique",
+    "Question": "Je chante comme un serpent métallique",
+    "Indice 1": "Je suis à vent",
+    "Indice 2": "Je suis très utilisé dans les fanfares",
+    "Réponse": "Tuba"
+  },
+  {
+    "n°": 407,
+    "Thème": "Musique",
+    "Question": "J’ai plein de trous, mais je chante quand on souffle en moi.",
+    "Indice 1": "Je peux être en bois ou en métal",
+    "Indice 2": "Je fais partie d’un orchestre",
+    "Réponse": "Une flûte"
+  },
+  {
+    "n°": 408,
+    "Thème": "Musique",
+    "Question": "Des bols en verre alignés créent mes sons cristallins",
+    "Indice 1": "Je suis en verre",
+    "Indice 2": "Je résonne quand on me frappe",
+    "Réponse": "Verrophone"
+  },
+  {
+    "n°": 409,
+    "Thème": "Musique",
+    "Question": "Je suis tendu mais je ne suis pas nerveux",
+    "Indice 1": "Je suis en bois",
+    "Indice 2": "On me fait chanter avec un archet",
+    "Réponse": "Violon"
+  },
+  {
+    "n°": 410,
+    "Thème": "Musique",
+    "Question": "Quel instrument à percussion se joue avec des maillets sur des lames alignées ?",
+    "Indice 1": "Souvent utilisé à l’école",
+    "Indice 2": "Produit des sons métalliques ou boisés",
+    "Réponse": "Xylophone"
+  },
+  {
+    "n°": 411,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "24 ÷ 4",
+    "Indice 1": "Division exacte",
+    "Indice 2": "Résultat inférieur à 10",
+    "Réponse": 6
+  },
+  {
+    "n°": 412,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "48 ÷ (3 + 3)",
+    "Indice 1": "On calcule la parenthèse",
+    "Indice 2": "Résultat inférieur à 10",
+    "Réponse": 8
+  },
+  {
+    "n°": 413,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "(14 + 6) − 9",
+    "Indice 1": "On additionne puis on enlève",
+    "Indice 2": "Opération simple",
+    "Réponse": 11
+  },
+  {
+    "n°": 414,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "12 + 7 − 4",
+    "Indice 1": "Opération simple",
+    "Indice 2": "Addition puis soustraction",
+    "Réponse": 15
+  },
+  {
+    "n°": 415,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "40 − (12 × 2)",
+    "Indice 1": "On multiplie avant de soustraire",
+    "Indice 2": "Résultat positif",
+    "Réponse": 16
+  },
+  {
+    "n°": 416,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "14 + 9 − 7",
+    "Indice 1": "Opération simple",
+    "Indice 2": "Résultat inférieur à 20",
+    "Réponse": 16
+  },
+  {
+    "n°": 417,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "52 − (9 × 4)",
+    "Indice 1": "On multiplie avant de soustraire",
+    "Indice 2": "Résultat inférieur à 20",
+    "Réponse": 16
+  },
+  {
+    "n°": 418,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "Le plus petit nombre est divisé par 5, puis on lui ajoute 10. Quel est le résultat ?",
+    "Indice 1": "9 est un chiffre",
+    "Indice 2": "Le total reste inférieur à 20",
+    "Réponse": 12
+  },
+  {
+    "n°": 419,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "33 − (8 + 7)",
+    "Indice 1": "On calcule la parenthèse",
+    "Indice 2": "Puis on soustrait",
+    "Réponse": 18
+  },
+  {
+    "n°": 420,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "(33 ÷ 3) + 7",
+    "Indice 1": "On divise avant d’ajouter",
+    "Indice 2": "Résultat inférieur à 20",
+    "Réponse": 18
+  },
+  {
+    "n°": 421,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "25 − 9 + 3",
+    "Indice 1": "On enlève puis on ajoute",
+    "Indice 2": "Calcul mental",
+    "Réponse": 19
+  },
+  {
+    "n°": 422,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "15 + (9 − 4)",
+    "Indice 1": "On calcule la parenthèse",
+    "Indice 2": "Puis on additionne",
+    "Réponse": 20
+  },
+  {
+    "n°": 423,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "44 − (6 × 4)",
+    "Indice 1": "On multiplie avant de soustraire",
+    "Indice 2": "Le résultat est rond",
+    "Réponse": 20
+  },
+  {
+    "n°": 424,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "16 + 9 − 5",
+    "Indice 1": "Opération simple",
+    "Indice 2": "Résultat inférieur à 25",
+    "Réponse": 20
+  },
+  {
+    "n°": 425,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "60 − (8 × 5)",
+    "Indice 1": "On multiplie avant de soustraire",
+    "Indice 2": "Résultat inférieur à 25",
+    "Réponse": 20
+  },
+  {
+    "n°": 426,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "18 ÷ 3 + 14",
+    "Indice 1": "On divise avant d’ajouter",
+    "Indice 2": "Résultat inférieur à 25",
+    "Réponse": 20
+  },
+  {
+    "n°": 427,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "13 + (15 − 6)",
+    "Indice 1": "On calcule la parenthèse",
+    "Indice 2": "Résultat supérieur à 20",
+    "Réponse": 22
+  },
+  {
+    "n°": 428,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "(7 + 5) × 2",
+    "Indice 1": "On additionne avant de multiplier",
+    "Indice 2": "Résultat pair",
+    "Réponse": 24
+  },
+  {
+    "n°": 429,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "25 − 10 + 9",
+    "Indice 1": "On soustrait puis on ajoute",
+    "Indice 2": "Résultat inférieur à 30",
+    "Réponse": 24
+  },
+  {
+    "n°": 430,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "12 + 6 × 2",
+    "Indice 1": "On multiplie avant d’ajouter",
+    "Indice 2": "Résultat inférieur à 25",
+    "Réponse": 24
+  },
+  {
+    "n°": 431,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "5 × (8 − 3)",
+    "Indice 1": "On calcule la parenthèse",
+    "Indice 2": "Puis on multiplie",
+    "Réponse": 25
+  },
+  {
+    "n°": 432,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "2 est multiplié par 4, puis perd 11 unités. Quel est le résultat ?",
+    "Indice 1": "On multiplie avant de soustraire",
+    "Indice 2": "Résultat négatif",
+    "Réponse": -3
+  },
+  {
+    "n°": 433,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "10 × 3 − 5",
+    "Indice 1": "On multiplie avant de soustraire",
+    "Indice 2": "Résultat supérieur à 20",
+    "Réponse": 25
+  },
+  {
+    "n°": 434,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "18 + 13 − 5",
+    "Indice 1": "Addition puis soustraction",
+    "Indice 2": "Opération directe",
+    "Réponse": 26
+  },
+  {
+    "n°": 435,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "11 × 2 + 4",
+    "Indice 1": "On multiplie avant d’ajouter",
+    "Indice 2": "Résultat supérieur à 20",
+    "Réponse": 26
+  },
+  {
+    "n°": 436,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "19 + (12 − 5)",
+    "Indice 1": "On calcule la parenthèse",
+    "Indice 2": "Résultat supérieur à 20",
+    "Réponse": 26
+  },
+  {
+    "n°": 437,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "52 − (15 + 9)",
+    "Indice 1": "On calcule la parenthèse",
+    "Indice 2": "Résultat inférieur à 30",
+    "Réponse": 28
+  },
+  {
+    "n°": 438,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "Le nombre de faces d'un cube nombre perd 2 unités, puis est multiplié par 7. Quel est le résultat ?",
+    "Indice 1": "On soustrait avant de multiplier",
+    "Indice 2": "Le total est supérieur à 25",
+    "Réponse": 28
+  },
+  {
+    "n°": 439,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "6 × 4 + 5",
+    "Indice 1": "On multiplie d’abord",
+    "Indice 2": "Puis on ajoute",
+    "Réponse": 29
+  },
+  {
+    "n°": 440,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "40 − 17 + 6",
+    "Indice 1": "On enlève puis on ajoute",
+    "Indice 2": "Résultat positif",
+    "Réponse": 29
+  },
+  {
+    "n°": 441,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "33 − 8 + 4",
+    "Indice 1": "On enlève puis on ajoute",
+    "Indice 2": "Calcul mental",
+    "Réponse": 29
+  },
+  {
+    "n°": 442,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "Je perds 5 unités dans ma main, puis double aussitôt. Quel total obtient‑on ?",
+    "Indice 1": "On retire avant de multiplier",
+    "Indice 2": "Le résultat dépasse 25",
+    "Réponse": 0
+  },
+  {
+    "n°": 443,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "(22 − 7) × 2",
+    "Indice 1": "On soustrait avant de multiplier",
+    "Indice 2": "Résultat supérieur à 25",
+    "Réponse": 30
+  },
+  {
+    "n°": 444,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "15 + 27 − 11",
+    "Indice 1": "Addition puis soustraction",
+    "Indice 2": "Opération directe",
+    "Réponse": 31
+  },
+  {
+    "n°": 445,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "(8 × 3) + 7",
+    "Indice 1": "On calcule la parenthèse",
+    "Indice 2": "Puis on ajoute",
+    "Réponse": 31
+  },
+  {
+    "n°": 446,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "27 + (12 ÷ 3)",
+    "Indice 1": "On divise avant d’additionner",
+    "Indice 2": "Résultat supérieur à 30",
+    "Réponse": 31
+  },
+  {
+    "n°": 447,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "7 × 5 − 4",
+    "Indice 1": "On multiplie avant de soustraire",
+    "Indice 2": "Résultat supérieur à 30",
+    "Réponse": 31
+  },
+  {
+    "n°": 448,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "18 + (7 × 2)",
+    "Indice 1": "On calcule la parenthèse en premier",
+    "Indice 2": "Résultat supérieur à 30",
+    "Réponse": 32
+  },
+  {
+    "n°": 449,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "9 × 3 + 6",
+    "Indice 1": "On multiplie d’abord",
+    "Indice 2": "Puis on ajoute",
+    "Réponse": 33
+  },
+  {
+    "n°": 450,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "28 + (9 − 4)",
+    "Indice 1": "On calcule la parenthèse",
+    "Indice 2": "Résultat supérieur à 30",
+    "Réponse": 33
+  },
+  {
+    "n°": 451,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "La somme minimale pour avoir un chiffre entier augmente de 3, puis se partage en 2. Quel total obtient‑on ?",
+    "Indice 1": "C'est petit",
+    "Indice 2": "Le résultat est aussi simple que 1+1",
+    "Réponse": 2
+  },
+  {
+    "n°": 452,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "29 + 14 − 6",
+    "Indice 1": "Addition puis soustraction",
+    "Indice 2": "Opération simple",
+    "Réponse": 37
+  },
+  {
+    "n°": 453,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "7 × 5 + 3",
+    "Indice 1": "On multiplie d’abord",
+    "Indice 2": "Puis on ajoute",
+    "Réponse": 38
+  },
+  {
+    "n°": 454,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "45 − (18 ÷ 3)",
+    "Indice 1": "On divise avant de soustraire",
+    "Indice 2": "Résultat supérieur à 35",
+    "Réponse": 39
+  },
+  {
+    "n°": 455,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "39 − 4 + 7",
+    "Indice 1": "On soustrait puis on ajoute",
+    "Indice 2": "Résultat supérieur à 40",
+    "Réponse": 42
+  },
+  {
+    "n°": 456,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "Le plus petit chiffre augmente de 1, puis est multiplié par 7 puis par 2. Quel total obtient‑on ?",
+    "Indice 1": "On additionne avant de multiplier",
+    "Indice 2": "Résultat supérieur à 7",
+    "Réponse": 14
+  },
+  {
+    "n°": 457,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "9 × (3 + 2)",
+    "Indice 1": "On additionne avant de multiplier",
+    "Indice 2": "Résultat élevé",
+    "Réponse": 45
+  },
+  {
+    "n°": 458,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "6 × 7 + 4",
+    "Indice 1": "On multiplie avant d’ajouter",
+    "Indice 2": "Résultat supérieur à 40",
+    "Réponse": 46
+  },
+  {
+    "n°": 459,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "Mon losange perd un angle droit, puis je multiplie par 2 les faces restantes. Combien me reste-il d'angle droit dans ma forme géométrique ?",
+    "Indice 1": "On compte les angles droits",
+    "Indice 2": "Le résultat dépasse pas 2",
+    "Réponse": 0
+  },
+  {
+    "n°": 460,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "Je possède trois côtés, mais je ne suis pas un triangle. Je peux être plat, mais je ne suis pas une figure plane.Qui suis‑je ?",
+    "Indice 1": "On peut le tenir dans la main, mais ce n’est pas une figure dessinée sur une feuille",
+    "Indice 2": "Toutes ses faces sont des triangles, mais lui-même n’en est pas un",
+    "Réponse": "Une pyramide triangulaire (tétraèdre)"
+  },
+  {
+    "n°": 461,
+    "Thème": "Abstrait",
+    "Question": "J’ai 192 poule mais POULE ne prend pas de s, Pourquoi ?",
+    "Indice 1": "Les poules n'ont pas de dents",
+    "Indice 2": "Il n'y a jamais une seule poule dans un poulaier",
+    "Réponse": "Car j'ai un oeuf de (1-9-2) poule"
+  },
+  {
+    "n°": 462,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "Quel nombre est le plus grand entre ces 3 valeurs : 0.999 / 1 / 0.99 ?",
+    "Indice 1": "1 est bien supérieur à 0.9",
+    "Indice 2": "Mais on parle de chiffre",
+    "Réponse": "0.999 car 0.999[...]=1"
+  },
+  {
+    "n°": 463,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "Si un triangle à 3 angles égaux, combien mesure chaque angle ?",
+    "Indice 1": "Il n'y a pas d'angle droit",
+    "Indice 2": "180° est la somme",
+    "Réponse": "60°"
+  },
+  {
+    "n°": 464,
+    "Thème": "Sciences & Mathématiques",
+    "Question": "Combien y a t-il de chiffre présent dans cette suite : 9 / 10 / 11 ?",
+    "Indice 1": "Il faut compter",
+    "Indice 2": "C'est trompeur mais logique si 9 est le plus grand chiffre",
+    "Réponse": "5 : il y a le 9, 3 fois le 1 et une fois 0"
+  }
+]

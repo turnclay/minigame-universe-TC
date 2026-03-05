@@ -1,0 +1,2162 @@
+[
+  {
+    "ID": 1,
+    "Nom": "Bouilloire compacte 1L",
+    "Description": "Appareil électrique 1L arrêt auto",
+    "Marque": "PHILIPS",
+    "Fourchette de prix": "17,90 € – 29,90 €",
+    "Prix": "19,95 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 2,
+    "Nom": "Lampe de bureau LED",
+    "Description": "Lampe articulée lumière blanche",
+    "Marque": "SKELEO",
+    "Fourchette de prix": "14,90 € – 27,99 €",
+    "Prix": "26,99 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 3,
+    "Nom": "Coussin décoratif 40x40",
+    "Description": "Coussin tissu doux motif uni",
+    "Marque": "TOPFINEL",
+    "Fourchette de prix": "8,90 € – 18,90 €",
+    "Prix": "14,99 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 4,
+    "Nom": "Peluche ours 30 cm",
+    "Description": "Peluche douce pour enfant",
+    "Marque": "BOUTIQUE NATURE",
+    "Fourchette de prix": "11,90 € – 22,90 €",
+    "Prix": "18,00 €",
+    "Catégorie": "Accessoires",
+    "Image": ""
+  },
+  {
+    "ID": 5,
+    "Nom": "Tasse isotherme 350ml",
+    "Description": "Tasse inox double paroi",
+    "Marque": "IICSEN",
+    "Fourchette de prix": "9,90 € – 19,90 €",
+    "Prix": "19,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 6,
+    "Nom": "Câble USB‑C 1m",
+    "Description": "Câble charge rapide",
+    "Marque": "LDLC",
+    "Fourchette de prix": "5,90 € – 12,90 €",
+    "Prix": "17,95 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 7,
+    "Nom": "Balance de cuisine digitale",
+    "Description": "Balance 5kg précision 1g",
+    "Marque": "CULINARION",
+    "Fourchette de prix": "18,90 € – 32,90 €",
+    "Prix": "35,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 8,
+    "Nom": "Casque filaire simple",
+    "Description": "Casque audio entrée de gamme",
+    "Marque": "LOGITECH",
+    "Fourchette de prix": "22,90 € – 39,90 €",
+    "Prix": "38,90 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 9,
+    "Nom": "Tapis de souris XL",
+    "Description": "Tapis gamer 80x30cm",
+    "Marque": "AUKEY",
+    "Fourchette de prix": "14,90 € – 27,90 €",
+    "Prix": "19,90 €",
+    "Catégorie": "Accessoires",
+    "Image": ""
+  },
+  {
+    "ID": 10,
+    "Nom": "Sac à dos 20L",
+    "Description": "Sac léger multi‑poches",
+    "Marque": "SIMOND",
+    "Fourchette de prix": "24,90 € – 199,99 €",
+    "Prix": "159,99 €",
+    "Catégorie": "Loisirs",
+    "Image": ""
+  },
+  {
+    "ID": 11,
+    "Nom": "Ventilateur de table 20cm",
+    "Description": "Ventilateur 3 vitesses",
+    "Marque": "Rowenta",
+    "Fourchette de prix": "27,90 € – 49,90 €",
+    "Prix": "38,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 12,
+    "Nom": "Jeu de société familial",
+    "Description": "Jeu simple 2–6 joueurs",
+    "Marque": "Asmodee",
+    "Fourchette de prix": "21,90 € – 39,90 €",
+    "Prix": "30,90 €",
+    "Catégorie": "Loisirs",
+    "Image": ""
+  },
+  {
+    "ID": 13,
+    "Nom": "Grille‑pain 2 fentes",
+    "Description": "Inox, 7 niveaux de brunissage",
+    "Marque": "Moulinex",
+    "Fourchette de prix": "34,90 € – 58,90 €",
+    "Prix": "46,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 14,
+    "Nom": "Enceinte Bluetooth 20W",
+    "Description": "Enceinte portable étanche",
+    "Marque": "JBL",
+    "Fourchette de prix": "49,90 € – 79,90 €",
+    "Prix": "64,90 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 15,
+    "Nom": "Mini imprimante photo",
+    "Description": "Imprimante thermique portable",
+    "Marque": "Canon Selphy",
+    "Fourchette de prix": "74,90 € – 119,90 €",
+    "Prix": "97,40 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 16,
+    "Nom": "Plancha électrique 2000W",
+    "Description": "Plaque antiadhésive",
+    "Marque": "Tefal",
+    "Fourchette de prix": "59,90 € – 99,90 €",
+    "Prix": "79,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 17,
+    "Nom": "Chaise de bureau simple",
+    "Description": "Chaise ergonomique tissu",
+    "Marque": "Ikea",
+    "Fourchette de prix": "74,90 € – 129,00 €",
+    "Prix": "101,95 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 18,
+    "Nom": "Tondeuse électrique 1200W",
+    "Description": "Tondeuse filaire jardin",
+    "Marque": "Bosch",
+    "Fourchette de prix": "89,90 € – 149,00 €",
+    "Prix": "119,45 €",
+    "Catégorie": "Jardin",
+    "Image": ""
+  },
+  {
+    "ID": 19,
+    "Nom": "Montre connectée GPS",
+    "Description": "Montre sport écran couleur",
+    "Marque": "Amazfit",
+    "Fourchette de prix": "109,00 € – 179,00 €",
+    "Prix": "144,00 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 20,
+    "Nom": "Aspirateur sans sac 700W",
+    "Description": "Aspirateur cyclonique",
+    "Marque": "Hoover",
+    "Fourchette de prix": "129,00 € – 199,00 €",
+    "Prix": "164,00 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 21,
+    "Nom": "Tablette 10 pouces 64Go",
+    "Description": "Tablette Android milieu gamme",
+    "Marque": "Lenovo",
+    "Fourchette de prix": "139,00 € – 219,00 €",
+    "Prix": "179,00 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 22,
+    "Nom": "Drone caméra FHD",
+    "Description": "Drone débutant stabilisé",
+    "Marque": "Potensic",
+    "Fourchette de prix": "149,00 € – 249,00 €",
+    "Prix": "199,00 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 23,
+    "Nom": "Télévision 43 pouces 4K",
+    "Description": "TV UHD entrée de gamme",
+    "Marque": "TCL",
+    "Fourchette de prix": "249,00 € – 349,00 €",
+    "Prix": "299,00 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 24,
+    "Nom": "Robot pâtissier 1200W",
+    "Description": "Robot bol 5L métal",
+    "Marque": "Kenwood",
+    "Fourchette de prix": "169,00 € – 259,00 €",
+    "Prix": "214,00 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 25,
+    "Nom": "Machine expresso automatique",
+    "Description": "Machine café broyeur intégré",
+    "Marque": "Delonghi",
+    "Fourchette de prix": "299,00 € – 449,00 €",
+    "Prix": "374,00 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 26,
+    "Nom": "Bougie parfumée 120g",
+    "Description": "Bougie senteur vanille",
+    "Marque": "Yankee Candle",
+    "Fourchette de prix": "6,90 € – 14,90 €",
+    "Prix": "10,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 27,
+    "Nom": "Gourde inox 500ml",
+    "Description": "Bouteille isotherme",
+    "Marque": "Nalgene",
+    "Fourchette de prix": "8,90 € – 16,90 €",
+    "Prix": "12,90 €",
+    "Catégorie": "Sport",
+    "Image": ""
+  },
+  {
+    "ID": 28,
+    "Nom": "Ciseaux de cuisine",
+    "Description": "Ciseaux multifonctions",
+    "Marque": "Tefal",
+    "Fourchette de prix": "5,90 € – 11,90 €",
+    "Prix": "8,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 29,
+    "Nom": "Jeu de cartes classique",
+    "Description": "Jeu 54 cartes standard",
+    "Marque": "Bicycle",
+    "Fourchette de prix": "3,90 € – 7,90 €",
+    "Prix": "5,90 €",
+    "Catégorie": "Loisirs",
+    "Image": ""
+  },
+  {
+    "ID": 30,
+    "Nom": "Porte-clés LED",
+    "Description": "Petit porte-clés lumineux",
+    "Marque": "Varta",
+    "Fourchette de prix": "2,90 € – 6,90 €",
+    "Prix": "4,90 €",
+    "Catégorie": "Accessoires",
+    "Image": ""
+  },
+  {
+    "ID": 31,
+    "Nom": "Bloc-notes A5",
+    "Description": "Bloc 80 pages",
+    "Marque": "Oxford",
+    "Fourchette de prix": "1,90 € – 4,90 €",
+    "Prix": "3,40 €",
+    "Catégorie": "Bureau",
+    "Image": ""
+  },
+  {
+    "ID": 32,
+    "Nom": "Tapis de bain antidérapant",
+    "Description": "Tapis salle de bain 50x80",
+    "Marque": "Ikea",
+    "Fourchette de prix": "9,90 € – 17,90 €",
+    "Prix": "13,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 33,
+    "Nom": "Boîte de rangement 20L",
+    "Description": "Boîte plastique avec couvercle",
+    "Marque": "Curver",
+    "Fourchette de prix": "7,90 € – 14,90 €",
+    "Prix": "11,40 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 34,
+    "Nom": "Chargeur secteur USB",
+    "Description": "Chargeur 2 ports",
+    "Marque": "Anker",
+    "Fourchette de prix": "12,90 € – 22,90 €",
+    "Prix": "17,90 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 35,
+    "Nom": "Batterie externe 5000mAh",
+    "Description": "Powerbank compacte",
+    "Marque": "Xiaomi",
+    "Fourchette de prix": "14,90 € – 24,90 €",
+    "Prix": "19,90 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 36,
+    "Nom": "Couteau de chef 20cm",
+    "Description": "Couteau acier inox",
+    "Marque": "Arcos",
+    "Fourchette de prix": "16,90 € – 29,90 €",
+    "Prix": "23,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 37,
+    "Nom": "Trousse de toilette",
+    "Description": "Trousse compacte voyage",
+    "Marque": "Travelite",
+    "Fourchette de prix": "9,90 € – 18,90 €",
+    "Prix": "13,90 €",
+    "Catégorie": "Accessoires",
+    "Image": ""
+  },
+  {
+    "ID": 38,
+    "Nom": "Bouilloire 1,7L inox",
+    "Description": "Bouilloire électrique 2200W",
+    "Marque": "Russell Hobbs",
+    "Fourchette de prix": "24,90 € – 39,90 €",
+    "Prix": "32,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 39,
+    "Nom": "Fer à repasser vapeur",
+    "Description": "Fer 2000W semelle céramique",
+    "Marque": "Calor",
+    "Fourchette de prix": "29,90 € – 49,90 €",
+    "Prix": "39,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 40,
+    "Nom": "Enceinte Bluetooth mini",
+    "Description": "Enceinte portable 10W",
+    "Marque": "Sony",
+    "Fourchette de prix": "19,90 € – 34,90 €",
+    "Prix": "26,90 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 41,
+    "Nom": "Balance connectée",
+    "Description": "Balance impédancemètre",
+    "Marque": "Xiaomi Mi Scale",
+    "Fourchette de prix": "29,90 € – 54,90 €",
+    "Prix": "41,90 €",
+    "Catégorie": "Santé",
+    "Image": ""
+  },
+  {
+    "ID": 42,
+    "Nom": "Sac de sport 40L",
+    "Description": "Sac gym multi-poches",
+    "Marque": "Adidas",
+    "Fourchette de prix": "24,90 € – 44,90 €",
+    "Prix": "34,90 €",
+    "Catégorie": "Sport",
+    "Image": ""
+  },
+  {
+    "ID": 43,
+    "Nom": "Cafetière filtre programmable",
+    "Description": "Cafetière 12 tasses",
+    "Marque": "Moulinex",
+    "Fourchette de prix": "34,90 € – 59,90 €",
+    "Prix": "47,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 44,
+    "Nom": "Aspirateur balai filaire",
+    "Description": "Aspirateur léger 600W",
+    "Marque": "Hoover",
+    "Fourchette de prix": "49,90 € – 89,90 €",
+    "Prix": "69,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 45,
+    "Nom": "Casque Bluetooth ANC",
+    "Description": "Casque sans fil réduction bruit",
+    "Marque": "Sony",
+    "Fourchette de prix": "69,90 € – 119,90 €",
+    "Prix": "94,90 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 46,
+    "Nom": "Micro-ondes 20L",
+    "Description": "Micro-ondes 700W",
+    "Marque": "Samsung",
+    "Fourchette de prix": "59,90 € – 99,90 €",
+    "Prix": "79,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 47,
+    "Nom": "Imprimante jet d’encre",
+    "Description": "Imprimante couleur WiFi",
+    "Marque": "HP",
+    "Fourchette de prix": "69,90 € – 129,90 €",
+    "Prix": "99,90 €",
+    "Catégorie": "Informatique",
+    "Image": ""
+  },
+  {
+    "ID": 48,
+    "Nom": "Tondeuse barbe pro",
+    "Description": "Tondeuse précision réglable",
+    "Marque": "Philips",
+    "Fourchette de prix": "49,90 € – 89,90 €",
+    "Prix": "69,90 €",
+    "Catégorie": "Santé",
+    "Image": ""
+  },
+  {
+    "ID": 49,
+    "Nom": "Lampe connectée RGB",
+    "Description": "Lampe LED pilotable appli",
+    "Marque": "Philips Hue",
+    "Fourchette de prix": "39,90 € – 69,90 €",
+    "Prix": "54,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 50,
+    "Nom": "Machine à pain 12 programmes",
+    "Description": "Machine cuisson automatique",
+    "Marque": "Moulinex",
+    "Fourchette de prix": "79,90 € – 139,90 €",
+    "Prix": "109,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 51,
+    "Nom": "Oreiller ergonomique mousse",
+    "Description": "Forme mémoire de forme",
+    "Marque": "Uttara",
+    "Fourchette de prix": "19,90 € – 34,90 €",
+    "Prix": "26,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 52,
+    "Nom": "Set de 6 verres à eau",
+    "Description": "Verres transparents 30cl",
+    "Marque": "Luminarc",
+    "Fourchette de prix": "7,90 € – 14,90 €",
+    "Prix": "11,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 53,
+    "Nom": "Mini ventilateur USB",
+    "Description": "Ventilateur portable silencieux",
+    "Marque": "Xiaomi",
+    "Fourchette de prix": "5,90 € – 12,90 €",
+    "Prix": "8,90 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 54,
+    "Nom": "Gant de cuisine isolant",
+    "Description": "Gant anti‑chaleur silicone",
+    "Marque": "Ikea",
+    "Fourchette de prix": "4,90 € – 9,90 €",
+    "Prix": "7,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 55,
+    "Nom": "Trousse scolaire simple",
+    "Description": "Trousse zip tissu",
+    "Marque": "Maped",
+    "Fourchette de prix": "3,90 € – 7,90 €",
+    "Prix": "5,90 €",
+    "Catégorie": "Accessoires",
+    "Image": ""
+  },
+  {
+    "ID": 56,
+    "Nom": "Brosse WC avec support",
+    "Description": "Brosse hygiénique plastique",
+    "Marque": "Ikea",
+    "Fourchette de prix": "6,90 € – 12,90 €",
+    "Prix": "9,40 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 57,
+    "Nom": "Cadenas à code 4 chiffres",
+    "Description": "Cadenas métal sécurité",
+    "Marque": "Master Lock",
+    "Fourchette de prix": "7,90 € – 14,90 €",
+    "Prix": "11,40 €",
+    "Catégorie": "Bricolage",
+    "Image": ""
+  },
+  {
+    "ID": 58,
+    "Nom": "Support smartphone voiture",
+    "Description": "Support grille d’aération",
+    "Marque": "Belkin",
+    "Fourchette de prix": "9,90 € – 17,90 €",
+    "Prix": "13,90 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 59,
+    "Nom": "Planche à découper bambou",
+    "Description": "Planche cuisine 30x20",
+    "Marque": "Tefal",
+    "Fourchette de prix": "8,90 € – 15,90 €",
+    "Prix": "12,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 60,
+    "Nom": "Tapis antidérapant cuisine",
+    "Description": "Tapis mousse 120x45",
+    "Marque": "Ikea",
+    "Fourchette de prix": "12,90 € – 22,90 €",
+    "Prix": "17,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 61,
+    "Nom": "Bouteille sport 1L",
+    "Description": "Bouteille plastique sans BPA",
+    "Marque": "Decathlon (Kipsta)",
+    "Fourchette de prix": "9,90 € – 16,90 €",
+    "Prix": "13,40 €",
+    "Catégorie": "Sport",
+    "Image": ""
+  },
+  {
+    "ID": 62,
+    "Nom": "Sacoche bandoulière homme",
+    "Description": "Sac compact multi‑poches",
+    "Marque": "Eastpak",
+    "Fourchette de prix": "14,90 € – 24,90 €",
+    "Prix": "19,40 €",
+    "Catégorie": "Accessoires",
+    "Image": ""
+  },
+  {
+    "ID": 63,
+    "Nom": "Bouilloire verre LED",
+    "Description": "1,7L avec éclairage",
+    "Marque": "Aigostar",
+    "Fourchette de prix": "24,90 € – 39,90 €",
+    "Prix": "32,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 64,
+    "Nom": "Cafetière italienne 6 tasses",
+    "Description": "Cafetière aluminium",
+    "Marque": "Bialetti",
+    "Fourchette de prix": "19,90 € – 34,90 €",
+    "Prix": "26,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 65,
+    "Nom": "Lampe de chevet tactile",
+    "Description": "Lampe LED 3 intensités",
+    "Marque": "Philips",
+    "Fourchette de prix": "22,90 € – 39,90 €",
+    "Prix": "30,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 66,
+    "Nom": "Balance de salle de bain",
+    "Description": "Balance mécanique classique",
+    "Marque": "Terraillon",
+    "Fourchette de prix": "17,90 € – 29,90 €",
+    "Prix": "23,90 €",
+    "Catégorie": "Santé",
+    "Image": ""
+  },
+  {
+    "ID": 67,
+    "Nom": "Casque gaming filaire",
+    "Description": "Casque micro PC/console",
+    "Marque": "Trust Gaming",
+    "Fourchette de prix": "29,90 € – 49,90 €",
+    "Prix": "39,90 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 68,
+    "Nom": "Sac à dos randonnée 30L",
+    "Description": "Sac résistant extérieur",
+    "Marque": "Quechua",
+    "Fourchette de prix": "29,90 € – 54,90 €",
+    "Prix": "42,40 €",
+    "Catégorie": "Sport",
+    "Image": ""
+  },
+  {
+    "ID": 69,
+    "Nom": "Barbecue électrique 2000W",
+    "Description": "Grill extérieur sans fumée",
+    "Marque": "Severin",
+    "Fourchette de prix": "49,90 € – 89,90 €",
+    "Prix": "69,90 €",
+    "Catégorie": "Jardin",
+    "Image": ""
+  },
+  {
+    "ID": 70,
+    "Nom": "Projecteur LED extérieur",
+    "Description": "Projecteur 30W étanche",
+    "Marque": "Philips",
+    "Fourchette de prix": "34,90 € – 59,90 €",
+    "Prix": "47,40 €",
+    "Catégorie": "Bricolage",
+    "Image": ""
+  },
+  {
+    "ID": 71,
+    "Nom": "Clavier mécanique RGB",
+    "Description": "Clavier gaming rétroéclairé",
+    "Marque": "Corsair",
+    "Fourchette de prix": "49,90 € – 89,90 €",
+    "Prix": "69,90 €",
+    "Catégorie": "Informatique",
+    "Image": ""
+  },
+  {
+    "ID": 72,
+    "Nom": "Centrale vapeur 2200W",
+    "Description": "Centrale repassage haute pression",
+    "Marque": "Calor",
+    "Fourchette de prix": "79,90 € – 139,90 €",
+    "Prix": "109,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 73,
+    "Nom": "Mini vidéoprojecteur HD",
+    "Description": "Projecteur portable HDMI",
+    "Marque": "Artlii",
+    "Fourchette de prix": "69,90 € – 119,90 €",
+    "Prix": "94,90 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 74,
+    "Nom": "Robot aspirateur basique",
+    "Description": "Aspirateur autonome entrée gamme",
+    "Marque": "Eufy",
+    "Fourchette de prix": "89,90 € – 149,90 €",
+    "Prix": "119,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 75,
+    "Nom": "Machine à glaçons 12kg/j",
+    "Description": "Machine automatique compacte",
+    "Marque": "H.Koenig",
+    "Fourchette de prix": "79,90 € – 139,90 €",
+    "Prix": "109,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 76,
+    "Nom": "Thermomètre de cuisine digital",
+    "Description": "Sonde cuisson précision",
+    "Marque": "Tefal",
+    "Fourchette de prix": "7,90 € – 14,90 €",
+    "Prix": "11,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 77,
+    "Nom": "Tapis de souris simple",
+    "Description": "Tapis 25x20cm",
+    "Marque": "Logitech",
+    "Fourchette de prix": "3,90 € – 7,90 €",
+    "Prix": "5,90 €",
+    "Catégorie": "Informatique",
+    "Image": ""
+  },
+  {
+    "ID": 78,
+    "Nom": "Gobelets réutilisables 4pcs",
+    "Description": "Gobelets plastique rigide",
+    "Marque": "Ikea",
+    "Fourchette de prix": "4,90 € – 9,90 €",
+    "Prix": "7,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 79,
+    "Nom": "Mini lampe de poche LED",
+    "Description": "Lampe aluminium compacte",
+    "Marque": "Varta",
+    "Fourchette de prix": "5,90 € – 11,90 €",
+    "Prix": "8,40 €",
+    "Catégorie": "Loisirs",
+    "Image": ""
+  },
+  {
+    "ID": 80,
+    "Nom": "Pince à linge inox 20pcs",
+    "Description": "Pince solide inoxydable",
+    "Marque": "Brabantia",
+    "Fourchette de prix": "3,90 € – 7,90 €",
+    "Prix": "5,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 81,
+    "Nom": "Cahier A4 96 pages",
+    "Description": "Cahier spirale",
+    "Marque": "Oxford",
+    "Fourchette de prix": "2,90 € – 5,90 €",
+    "Prix": "4,40 €",
+    "Catégorie": "Bureau",
+    "Image": ""
+  },
+  {
+    "ID": 82,
+    "Nom": "Trousse de premiers soins",
+    "Description": "Kit basique pansements",
+    "Marque": "Lifesystems",
+    "Fourchette de prix": "9,90 € – 17,90 €",
+    "Prix": "13,90 €",
+    "Catégorie": "Santé",
+    "Image": ""
+  },
+  {
+    "ID": 83,
+    "Nom": "Support tablette cuisine",
+    "Description": "Support pliable antidérapant",
+    "Marque": "Ikea",
+    "Fourchette de prix": "12,90 € – 22,90 €",
+    "Prix": "17,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 84,
+    "Nom": "Coussin de chaise",
+    "Description": "Coussin rembourré 40x40",
+    "Marque": "Ikea",
+    "Fourchette de prix": "8,90 € – 16,90 €",
+    "Prix": "12,40 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 85,
+    "Nom": "Gants de jardinage",
+    "Description": "Gants renforcés extérieur",
+    "Marque": "Gardena",
+    "Fourchette de prix": "6,90 € – 12,90 €",
+    "Prix": "9,40 €",
+    "Catégorie": "Jardin",
+    "Image": ""
+  },
+  {
+    "ID": 86,
+    "Nom": "Bouteille filtrante 600ml",
+    "Description": "Bouteille avec filtre charbon",
+    "Marque": "Brita",
+    "Fourchette de prix": "14,90 € – 24,90 €",
+    "Prix": "19,40 €",
+    "Catégorie": "Sport",
+    "Image": ""
+  },
+  {
+    "ID": 87,
+    "Nom": "Sacoche ordinateur 15",
+    "Description": "Sacoche rembourrée",
+    "Marque": "Case Logic",
+    "Fourchette de prix": "19,90 € – 34,90 €",
+    "Prix": "26,90 €",
+    "Catégorie": "Informatique",
+    "Image": ""
+  },
+  {
+    "ID": 88,
+    "Nom": "Bouilloire inox premium",
+    "Description": "1,7L thermostat réglable",
+    "Marque": "Russell Hobbs",
+    "Fourchette de prix": "29,90 € – 49,90 €",
+    "Prix": "39,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 89,
+    "Nom": "Grille électrique 2000W",
+    "Description": "Grill intérieur anti‑fumée",
+    "Marque": "Tefal",
+    "Fourchette de prix": "34,90 € – 59,90 €",
+    "Prix": "47,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 90,
+    "Nom": "Lampe de bureau architecte",
+    "Description": "Lampe articulée métal",
+    "Marque": "Anglepoise",
+    "Fourchette de prix": "24,90 € – 44,90 €",
+    "Prix": "34,90 €",
+    "Catégorie": "Bureau",
+    "Image": ""
+  },
+  {
+    "ID": 91,
+    "Nom": "Couteau santoku 18cm",
+    "Description": "Couteau japonais acier",
+    "Marque": "Arcos",
+    "Fourchette de prix": "22,90 € – 39,90 €",
+    "Prix": "30,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 92,
+    "Nom": "Casque sport Bluetooth",
+    "Description": "Casque léger étanche",
+    "Marque": "JBL",
+    "Fourchette de prix": "29,90 € – 49,90 €",
+    "Prix": "39,90 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 93,
+    "Nom": "Sac de voyage 60L",
+    "Description": "Sac grande capacité",
+    "Marque": "Forclaz",
+    "Fourchette de prix": "29,90 € – 54,90 €",
+    "Prix": "42,40 €",
+    "Catégorie": "Loisirs",
+    "Image": ""
+  },
+  {
+    "ID": 94,
+    "Nom": "Radiateur soufflant céramique",
+    "Description": "Chauffage d’appoint 1500W",
+    "Marque": "Rowenta",
+    "Fourchette de prix": "39,90 € – 69,90 €",
+    "Prix": "54,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 95,
+    "Nom": "Clé USB 256Go",
+    "Description": "Clé haute vitesse",
+    "Marque": "SanDisk",
+    "Fourchette de prix": "29,90 € – 59,90 €",
+    "Prix": "44,90 €",
+    "Catégorie": "Informatique",
+    "Image": ""
+  },
+  {
+    "ID": 96,
+    "Nom": "Souris gaming RGB",
+    "Description": "Souris 7 boutons programmable",
+    "Marque": "Razer",
+    "Fourchette de prix": "29,90 € – 49,90 €",
+    "Prix": "39,90 €",
+    "Catégorie": "Informatique",
+    "Image": ""
+  },
+  {
+    "ID": 97,
+    "Nom": "Cafetière expresso manuelle",
+    "Description": "Machine pression 15 bars",
+    "Marque": "Krups",
+    "Fourchette de prix": "49,90 € – 89,90 €",
+    "Prix": "69,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 98,
+    "Nom": "Barre de son Bluetooth",
+    "Description": "Barre audio TV 40W",
+    "Marque": "LG",
+    "Fourchette de prix": "59,90 € – 109,90 €",
+    "Prix": "84,90 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 99,
+    "Nom": "Tondeuse cheveux pro",
+    "Description": "Tondeuse moteur puissant",
+    "Marque": "Philips",
+    "Fourchette de prix": "49,90 € – 89,90 €",
+    "Prix": "69,90 €",
+    "Catégorie": "Santé",
+    "Image": ""
+  },
+  {
+    "ID": 100,
+    "Nom": "Machine à smoothie 600W",
+    "Description": "Blender individuel",
+    "Marque": "Moulinex",
+    "Fourchette de prix": "39,90 € – 69,90 €",
+    "Prix": "54,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 101,
+    "Nom": "Lot de 3 boîtes hermétiques",
+    "Description": "Boîtes alimentaires plastique",
+    "Marque": "Curver",
+    "Fourchette de prix": "6,90 € – 12,90 €",
+    "Prix": "9,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 102,
+    "Nom": "Porte-savon mural",
+    "Description": "Porte-savon plastique ou inox",
+    "Marque": "Ikea",
+    "Fourchette de prix": "3,90 € – 7,90 €",
+    "Prix": "5,90 €",
+    "Catégorie": "Salle de bain",
+    "Image": ""
+  },
+  {
+    "ID": 103,
+    "Nom": "Mini réveil digital",
+    "Description": "Réveil simple écran LCD",
+    "Marque": "Lexibook",
+    "Fourchette de prix": "5,90 € – 11,90 €",
+    "Prix": "8,40 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 104,
+    "Nom": "Set de 2 torchons cuisine",
+    "Description": "Torchons coton absorbants",
+    "Marque": "Soleil d’Ocre",
+    "Fourchette de prix": "4,90 € – 9,90 €",
+    "Prix": "7,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 105,
+    "Nom": "Brosse à vaisselle",
+    "Description": "Brosse manche ergonomique",
+    "Marque": "Ikea",
+    "Fourchette de prix": "2,90 € – 5,90 €",
+    "Prix": "4,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 106,
+    "Nom": "Pochette documents A4",
+    "Description": "Pochette zip plastique",
+    "Marque": "Exacompta",
+    "Fourchette de prix": "1,90 € – 4,90 €",
+    "Prix": "3,40 €",
+    "Catégorie": "Bureau",
+    "Image": ""
+  },
+  {
+    "ID": 107,
+    "Nom": "Gants anti‑coupure cuisine",
+    "Description": "Gants niveau 5",
+    "Marque": "Tefal",
+    "Fourchette de prix": "9,90 € – 17,90 €",
+    "Prix": "13,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 108,
+    "Nom": "Support mural serviette",
+    "Description": "Support métal salle de bain",
+    "Marque": "Ikea",
+    "Fourchette de prix": "7,90 € – 14,90 €",
+    "Prix": "11,40 €",
+    "Catégorie": "Salle de bain",
+    "Image": ""
+  },
+  {
+    "ID": 109,
+    "Nom": "Tapis de voiture universel",
+    "Description": "Tapis caoutchouc avant/arrière",
+    "Marque": "Norauto",
+    "Fourchette de prix": "14,90 € – 24,90 €",
+    "Prix": "19,40 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 110,
+    "Nom": "Bouteille isotherme 750ml",
+    "Description": "Bouteille inox sport",
+    "Marque": "Qwetch",
+    "Fourchette de prix": "12,90 € – 22,90 €",
+    "Prix": "17,40 €",
+    "Catégorie": "Sport",
+    "Image": ""
+  },
+  {
+    "ID": 111,
+    "Nom": "Câble HDMI 2m",
+    "Description": "Câble haute vitesse",
+    "Marque": "Belkin",
+    "Fourchette de prix": "7,90 € – 14,90 €",
+    "Prix": "11,40 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 112,
+    "Nom": "Trousse de maquillage",
+    "Description": "Trousse zip compacte",
+    "Marque": "Songmics",
+    "Fourchette de prix": "8,90 € – 16,90 €",
+    "Prix": "12,40 €",
+    "Catégorie": "Beauté",
+    "Image": ""
+  },
+  {
+    "ID": 113,
+    "Nom": "Bouilloire rétro 1,7L",
+    "Description": "Bouilloire style vintage",
+    "Marque": "Ariete",
+    "Fourchette de prix": "24,90 € – 44,90 €",
+    "Prix": "34,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 114,
+    "Nom": "Plancha de table 1800W",
+    "Description": "Surface antiadhésive",
+    "Marque": "Tefal",
+    "Fourchette de prix": "29,90 € – 54,90 €",
+    "Prix": "42,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 115,
+    "Nom": "Lampe LED solaire extérieure",
+    "Description": "Lampe jardin détecteur",
+    "Marque": "Philips",
+    "Fourchette de prix": "19,90 € – 34,90 €",
+    "Prix": "26,90 €",
+    "Catégorie": "Jardin",
+    "Image": ""
+  },
+  {
+    "ID": 116,
+    "Nom": "Couteau à pain 22cm",
+    "Description": "Lame dentelée inox",
+    "Marque": "Arcos",
+    "Fourchette de prix": "14,90 € – 24,90 €",
+    "Prix": "19,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 117,
+    "Nom": "Casque audio filaire pro",
+    "Description": "Casque monitoring entrée gamme",
+    "Marque": "Audio-Technica",
+    "Fourchette de prix": "29,90 € – 49,90 €",
+    "Prix": "39,90 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 118,
+    "Nom": "Sac à dos PC 17",
+    "Description": "Sacoche renforcée ordinateur",
+    "Marque": "Case Logic",
+    "Fourchette de prix": "29,90 € – 54,90 €",
+    "Prix": "42,40 €",
+    "Catégorie": "Informatique",
+    "Image": ""
+  },
+  {
+    "ID": 119,
+    "Nom": "Radiateur bain d’huile 1500W",
+    "Description": "Chauffage silencieux",
+    "Marque": "Delonghi",
+    "Fourchette de prix": "49,90 € – 89,90 €",
+    "Prix": "69,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 120,
+    "Nom": "Clavier sans fil premium",
+    "Description": "Clavier compact rechargeable",
+    "Marque": "Logitech",
+    "Fourchette de prix": "39,90 € – 69,90 €",
+    "Prix": "54,90 €",
+    "Catégorie": "Informatique",
+    "Image": ""
+  },
+  {
+    "ID": 121,
+    "Nom": "Cafetière filtre inox premium",
+    "Description": "Cafetière programmable",
+    "Marque": "Moulinex",
+    "Fourchette de prix": "49,90 € – 89,90 €",
+    "Prix": "69,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 122,
+    "Nom": "Barbecue électrique compact",
+    "Description": "Grill extérieur 2000W",
+    "Marque": "Severin",
+    "Fourchette de prix": "59,90 € – 109,90 €",
+    "Prix": "84,90 €",
+    "Catégorie": "Jardin",
+    "Image": ""
+  },
+  {
+    "ID": 123,
+    "Nom": "Tondeuse multifonction 10‑en‑1",
+    "Description": "Tondeuse barbe/cheveux/corps",
+    "Marque": "Philips",
+    "Fourchette de prix": "49,90 € – 89,90 €",
+    "Prix": "69,90 €",
+    "Catégorie": "Santé",
+    "Image": ""
+  },
+  {
+    "ID": 124,
+    "Nom": "Machine à pâtes électrique",
+    "Description": "Machine automatique",
+    "Marque": "H.Koenig",
+    "Fourchette de prix": "69,90 € – 129,90 €",
+    "Prix": "99,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 125,
+    "Nom": "Lot de 3 éponges microfibre",
+    "Description": "Éponges nettoyage multi‑usage",
+    "Marque": "Spontex",
+    "Fourchette de prix": "3,90 € – 7,90 €",
+    "Prix": "5,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 126,
+    "Nom": "Pinceau de cuisine silicone",
+    "Description": "Pinceau résistant chaleur",
+    "Marque": "Tefal",
+    "Fourchette de prix": "2,90 € – 5,90 €",
+    "Prix": "4,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 127,
+    "Nom": "Mini trousse à outils",
+    "Description": "Kit 6 outils basiques",
+    "Marque": "Stanley",
+    "Fourchette de prix": "5,90 € – 11,90 €",
+    "Prix": "8,40 €",
+    "Catégorie": "Bricolage",
+    "Image": ""
+  },
+  {
+    "ID": 128,
+    "Nom": "Porte‑bouteille vélo",
+    "Description": "Support bouteille universel",
+    "Marque": "Decathlon (Btwin)",
+    "Fourchette de prix": "4,90 € – 9,90 €",
+    "Prix": "7,40 €",
+    "Catégorie": "Sport",
+    "Image": ""
+  },
+  {
+    "ID": 129,
+    "Nom": "Set de 4 cuillères doseuses",
+    "Description": "Cuillères plastique graduées",
+    "Marque": "Ikea",
+    "Fourchette de prix": "2,90 € – 5,90 €",
+    "Prix": "4,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 130,
+    "Nom": "Brosse cheveux simple",
+    "Description": "Brosse plastique antistatique",
+    "Marque": "Dessange",
+    "Fourchette de prix": "3,90 € – 7,90 €",
+    "Prix": "5,90 €",
+    "Catégorie": "Beauté",
+    "Image": ""
+  },
+  {
+    "ID": 131,
+    "Nom": "Tapis de coffre voiture",
+    "Description": "Tapis caoutchouc universel",
+    "Marque": "Norauto",
+    "Fourchette de prix": "14,90 € – 24,90 €",
+    "Prix": "19,40 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 132,
+    "Nom": "Support mural smartphone",
+    "Description": "Support adhésif salle de bain",
+    "Marque": "Belkin",
+    "Fourchette de prix": "7,90 € – 14,90 €",
+    "Prix": "11,40 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 133,
+    "Nom": "Ciseaux couture premium",
+    "Description": "Ciseaux acier 21cm",
+    "Marque": "Fiskars",
+    "Fourchette de prix": "9,90 € – 17,90 €",
+    "Prix": "13,40 €",
+    "Catégorie": "Bricolage",
+    "Image": ""
+  },
+  {
+    "ID": 134,
+    "Nom": "Bouteille sport graduée 1L",
+    "Description": "Bouteille plastique résistante",
+    "Marque": "Nalgene",
+    "Fourchette de prix": "9,90 € – 16,90 €",
+    "Prix": "12,40 €",
+    "Catégorie": "Sport",
+    "Image": ""
+  },
+  {
+    "ID": 135,
+    "Nom": "Lampe de lecture pince",
+    "Description": "Lampe LED rechargeable",
+    "Marque": "Philips",
+    "Fourchette de prix": "12,90 € – 22,90 €",
+    "Prix": "17,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 136,
+    "Nom": "Trousse de voyage étanche",
+    "Description": "Trousse zip imperméable",
+    "Marque": "Travelite",
+    "Fourchette de prix": "8,90 € – 16,90 €",
+    "Prix": "12,40 €",
+    "Catégorie": "Accessoires",
+    "Image": ""
+  },
+  {
+    "ID": 137,
+    "Nom": "Bouilloire inox rapide",
+    "Description": "1,7L 2200W",
+    "Marque": "Russell Hobbs",
+    "Fourchette de prix": "24,90 € – 44,90 €",
+    "Prix": "34,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 138,
+    "Nom": "Cafetière piston 1L",
+    "Description": "Cafetière verre borosilicate",
+    "Marque": "Bodum",
+    "Fourchette de prix": "19,90 € – 34,90 €",
+    "Prix": "26,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 139,
+    "Nom": "Lampe LED bureau USB",
+    "Description": "Lampe articulée 3 modes",
+    "Marque": "Xiaomi",
+    "Fourchette de prix": "22,90 € – 39,90 €",
+    "Prix": "30,90 €",
+    "Catégorie": "Bureau",
+    "Image": ""
+  },
+  {
+    "ID": 140,
+    "Nom": "Couteau de cuisine 3pcs",
+    "Description": "Set couteaux inox",
+    "Marque": "Arcos",
+    "Fourchette de prix": "24,90 € – 44,90 €",
+    "Prix": "34,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 141,
+    "Nom": "Casque Bluetooth sport",
+    "Description": "Casque étanche IPX5",
+    "Marque": "JBL",
+    "Fourchette de prix": "29,90 € – 49,90 €",
+    "Prix": "39,90 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 142,
+    "Nom": "Sac de randonnée 40L",
+    "Description": "Sac extérieur résistant",
+    "Marque": "Quechua",
+    "Fourchette de prix": "29,90 € – 54,90 €",
+    "Prix": "42,40 €",
+    "Catégorie": "Sport",
+    "Image": ""
+  },
+  {
+    "ID": 143,
+    "Nom": "Radiateur soufflant mural",
+    "Description": "Chauffage salle de bain",
+    "Marque": "Rowenta",
+    "Fourchette de prix": "49,90 € – 89,90 €",
+    "Prix": "69,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 144,
+    "Nom": "Clavier gaming mécanique",
+    "Description": "Clavier RGB switches bleus",
+    "Marque": "Corsair",
+    "Fourchette de prix": "49,90 € – 89,90 €",
+    "Prix": "69,90 €",
+    "Catégorie": "Informatique",
+    "Image": ""
+  },
+  {
+    "ID": 145,
+    "Nom": "Cafetière expresso compacte",
+    "Description": "Machine 15 bars",
+    "Marque": "Krups",
+    "Fourchette de prix": "59,90 € – 109,90 €",
+    "Prix": "84,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 146,
+    "Nom": "Barbecue électrique balcon",
+    "Description": "Grill compact extérieur",
+    "Marque": "Tefal",
+    "Fourchette de prix": "69,90 € – 129,90 €",
+    "Prix": "99,90 €",
+    "Catégorie": "Jardin",
+    "Image": ""
+  },
+  {
+    "ID": 147,
+    "Nom": "Tondeuse barbe précision",
+    "Description": "Tondeuse réglages fins",
+    "Marque": "Philips",
+    "Fourchette de prix": "49,90 € – 89,90 €",
+    "Prix": "54,90 €",
+    "Catégorie": "Santé",
+    "Image": ""
+  },
+  {
+    "ID": 148,
+    "Nom": "Machine à jus lente",
+    "Description": "Extracteur de jus",
+    "Marque": "Moulinex",
+    "Fourchette de prix": "79,90 € – 139,90 €",
+    "Prix": "109,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 149,
+    "Nom": "Lot de 6 cintres bois",
+    "Description": "Cintres robustes en bois",
+    "Marque": "Ikea",
+    "Fourchette de prix": "9,90 € – 17,90 €",
+    "Prix": "9,40 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 150,
+    "Nom": "Pinceau maquillage poudre",
+    "Description": "Pinceau doux synthétique",
+    "Marque": "Real Techniques",
+    "Fourchette de prix": "3,90 € – 7,90 €",
+    "Prix": "5,90 €",
+    "Catégorie": "Beauté",
+    "Image": ""
+  },
+  {
+    "ID": 151,
+    "Nom": "Mini boîte à bijoux",
+    "Description": "Boîte compacte velours",
+    "Marque": "Songmics",
+    "Fourchette de prix": "4,90 € – 9,90 €",
+    "Prix": "7,40 €",
+    "Catégorie": "Accessoires",
+    "Image": ""
+  },
+  {
+    "ID": 152,
+    "Nom": "Set de 3 spatules silicone",
+    "Description": "Spatules cuisine résistantes",
+    "Marque": "Tefal",
+    "Fourchette de prix": "4,90 € – 9,90 €",
+    "Prix": "8,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 153,
+    "Nom": "Gobelet inox isotherme",
+    "Description": "Gobelet double paroi",
+    "Marque": "Ikea",
+    "Fourchette de prix": "3,90 € – 7,90 €",
+    "Prix": "9,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 154,
+    "Nom": "Brosse pour animaux",
+    "Description": "Brosse démêlante poils",
+    "Marque": "Furminator",
+    "Fourchette de prix": "5,90 € – 11,90 €",
+    "Prix": "8,40 €",
+    "Catégorie": "Accessoires",
+    "Image": ""
+  },
+  {
+    "ID": 155,
+    "Nom": "Tapis de yoga basique",
+    "Description": "Tapis mousse antidérapant",
+    "Marque": "Domyos",
+    "Fourchette de prix": "12,90 € – 22,90 €",
+    "Prix": "17,90 €",
+    "Catégorie": "Sport",
+    "Image": ""
+  },
+  {
+    "ID": 156,
+    "Nom": "Support mural casque audio",
+    "Description": "Support adhésif ou vissé",
+    "Marque": "Trust",
+    "Fourchette de prix": "9,90 € – 17,90 €",
+    "Prix": "13,40 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 157,
+    "Nom": "Ciseaux de jardinage",
+    "Description": "Ciseaux taille légère",
+    "Marque": "Gardena",
+    "Fourchette de prix": "9,90 € – 17,90 €",
+    "Prix": "12,40 €",
+    "Catégorie": "Jardin",
+    "Image": ""
+  },
+  {
+    "ID": 158,
+    "Nom": "Bouteille sport inox 1L",
+    "Description": "Bouteille isotherme robuste",
+    "Marque": "Qwetch",
+    "Fourchette de prix": "12,90 € – 22,90 €",
+    "Prix": "17,90 €",
+    "Catégorie": "Sport",
+    "Image": ""
+  },
+  {
+    "ID": 159,
+    "Nom": "Lampe torche rechargeable",
+    "Description": "Lampe LED USB",
+    "Marque": "Varta",
+    "Fourchette de prix": "14,90 € – 24,90 €",
+    "Prix": "19,40 €",
+    "Catégorie": "Loisirs",
+    "Image": ""
+  },
+  {
+    "ID": 160,
+    "Nom": "Trousse de couture complète",
+    "Description": "Kit aiguilles + accessoires",
+    "Marque": "Singer",
+    "Fourchette de prix": "12,90 € – 22,90 €",
+    "Prix": "13,40 €",
+    "Catégorie": "Bricolage",
+    "Image": ""
+  },
+  {
+    "ID": 161,
+    "Nom": "Bouilloire verre premium",
+    "Description": "1,7L LED + filtre",
+    "Marque": "Aigostar",
+    "Fourchette de prix": "29,90 € – 49,90 €",
+    "Prix": "39,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 162,
+    "Nom": "Cafetière filtre compacte",
+    "Description": "Cafetière 6 tasses",
+    "Marque": "Moulinex",
+    "Fourchette de prix": "24,90 € – 44,90 €",
+    "Prix": "26,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 163,
+    "Nom": "Lampe de chevet RGB",
+    "Description": "Lampe tactile multicolore",
+    "Marque": "Philips Hue",
+    "Fourchette de prix": "22,90 € – 39,90 €",
+    "Prix": "30,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 164,
+    "Nom": "Couteau chef 3pcs",
+    "Description": "Set couteaux inox cuisine",
+    "Marque": "Arcos",
+    "Fourchette de prix": "24,90 € – 44,90 €",
+    "Prix": "34,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 165,
+    "Nom": "Casque gaming entrée gamme",
+    "Description": "Casque micro LED",
+    "Marque": "Trust Gaming",
+    "Fourchette de prix": "29,90 € – 49,90 €",
+    "Prix": "39,90 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 166,
+    "Nom": "Sac de sport renforcé 50L",
+    "Description": "Sac grande capacité",
+    "Marque": "Adidas",
+    "Fourchette de prix": "29,90 € – 54,90 €",
+    "Prix": "34,90 €",
+    "Catégorie": "Sport",
+    "Image": ""
+  },
+  {
+    "ID": 167,
+    "Nom": "Radiateur soufflant 2000W",
+    "Description": "Chauffage rapide salle de bain",
+    "Marque": "Rowenta",
+    "Fourchette de prix": "39,90 € – 69,90 €",
+    "Prix": "54,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 168,
+    "Nom": "Clavier sans fil rétroéclairé",
+    "Description": "Clavier LED rechargeable",
+    "Marque": "Logitech",
+    "Fourchette de prix": "49,90 € – 89,90 €",
+    "Prix": "54,90 €",
+    "Catégorie": "Informatique",
+    "Image": ""
+  },
+  {
+    "ID": 169,
+    "Nom": "Cafetière expresso inox",
+    "Description": "Machine 15 bars compacte",
+    "Marque": "Krups",
+    "Fourchette de prix": "59,90 € – 109,90 €",
+    "Prix": "69,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 170,
+    "Nom": "Barbecue électrique 2200W",
+    "Description": "Grill extérieur haute puissance",
+    "Marque": "Severin",
+    "Fourchette de prix": "79,90 € – 139,90 €",
+    "Prix": "99,90 €",
+    "Catégorie": "Jardin",
+    "Image": ""
+  },
+  {
+    "ID": 171,
+    "Nom": "Tondeuse cheveux premium",
+    "Description": "Tondeuse moteur pro",
+    "Marque": "Philips",
+    "Fourchette de prix": "49,90 € – 89,90 €",
+    "Prix": "69,90 €",
+    "Catégorie": "Santé",
+    "Image": ""
+  },
+  {
+    "ID": 172,
+    "Nom": "Machine à soupe chauffante",
+    "Description": "Appareil cuisson + mixage",
+    "Marque": "Moulinex",
+    "Fourchette de prix": "69,90 € – 129,90 €",
+    "Prix": "109,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 173,
+    "Nom": "Lot de 3 boîtes repas verre",
+    "Description": "Boîtes hermétiques verre",
+    "Marque": "Pyrex",
+    "Fourchette de prix": "9,90 € – 17,90 €",
+    "Prix": "13,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 174,
+    "Nom": "Porte‑savon silicone",
+    "Description": "Porte-savon antidérapant",
+    "Marque": "Ikea",
+    "Fourchette de prix": "3,90 € – 7,90 €",
+    "Prix": "5,90 €",
+    "Catégorie": "Salle de bain",
+    "Image": ""
+  },
+  {
+    "ID": 175,
+    "Nom": "Mini lampe LED magnétique",
+    "Description": "Lampe poche aimantée",
+    "Marque": "Varta",
+    "Fourchette de prix": "4,90 € – 9,90 €",
+    "Prix": "7,40 €",
+    "Catégorie": "Loisirs",
+    "Image": ""
+  },
+  {
+    "ID": 176,
+    "Nom": "Set de 2 maniques cuisine",
+    "Description": "Maniques coton isolantes",
+    "Marque": "Ikea",
+    "Fourchette de prix": "4,90 € – 9,90 €",
+    "Prix": "7,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 177,
+    "Nom": "Brosse vaisselle bambou",
+    "Description": "Brosse écologique",
+    "Marque": "Brabantia",
+    "Fourchette de prix": "3,90 € – 7,90 €",
+    "Prix": "5,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 178,
+    "Nom": "Pochette téléphone étanche",
+    "Description": "Pochette waterproof",
+    "Marque": "Decathlon (Nabaiji)",
+    "Fourchette de prix": "5,90 € – 11,90 €",
+    "Prix": "8,40 €",
+    "Catégorie": "Accessoires",
+    "Image": ""
+  },
+  {
+    "ID": 179,
+    "Nom": "Tapis de cuisine mousse",
+    "Description": "Tapis anti‑fatigue 120x45",
+    "Marque": "Ikea",
+    "Fourchette de prix": "12,90 € – 22,90 €",
+    "Prix": "17,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 180,
+    "Nom": "Support mural sèche‑cheveux",
+    "Description": "Support métal salle de bain",
+    "Marque": "Ikea",
+    "Fourchette de prix": "9,90 € – 17,90 €",
+    "Prix": "13,40 €",
+    "Catégorie": "Salle de bain",
+    "Image": ""
+  },
+  {
+    "ID": 181,
+    "Nom": "Ciseaux de cuisine premium",
+    "Description": "Ciseaux inox multifonctions",
+    "Marque": "Fiskars",
+    "Fourchette de prix": "9,90 € – 17,90 €",
+    "Prix": "13,40 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 182,
+    "Nom": "Bouteille sport 1,2L",
+    "Description": "Bouteille graduée robuste",
+    "Marque": "Nalgene",
+    "Fourchette de prix": "12,90 € – 22,90 €",
+    "Prix": "17,90 €",
+    "Catégorie": "Sport",
+    "Image": ""
+  },
+  {
+    "ID": 183,
+    "Nom": "Lampe torche aluminium",
+    "Description": "Lampe LED puissante",
+    "Marque": "Maglite",
+    "Fourchette de prix": "14,90 € – 24,90 €",
+    "Prix": "19,40 €",
+    "Catégorie": "Loisirs",
+    "Image": ""
+  },
+  {
+    "ID": 184,
+    "Nom": "Trousse de toilette rigide",
+    "Description": "Trousse coque protectrice",
+    "Marque": "Travelite",
+    "Fourchette de prix": "12,90 € – 22,90 €",
+    "Prix": "17,90 €",
+    "Catégorie": "Accessoires",
+    "Image": ""
+  },
+  {
+    "ID": 185,
+    "Nom": "Bouilloire inox thermostat",
+    "Description": "Bouilloire réglable 40–100°C",
+    "Marque": "Russell Hobbs",
+    "Fourchette de prix": "29,90 € – 49,90 €",
+    "Prix": "39,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 186,
+    "Nom": "Cafetière filtre verre",
+    "Description": "Cafetière 10 tasses",
+    "Marque": "Moulinex",
+    "Fourchette de prix": "24,90 € – 44,90 €",
+    "Prix": "34,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 187,
+    "Nom": "Lampe de bureau tactile",
+    "Description": "Lampe LED 3 modes",
+    "Marque": "Xiaomi",
+    "Fourchette de prix": "22,90 € – 39,90 €",
+    "Prix": "30,90 €",
+    "Catégorie": "Bureau",
+    "Image": ""
+  },
+  {
+    "ID": 188,
+    "Nom": "Couteau chef 20cm pro",
+    "Description": "Couteau inox haute qualité",
+    "Marque": "Arcos",
+    "Fourchette de prix": "24,90 € – 44,90 €",
+    "Prix": "34,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 189,
+    "Nom": "Casque Bluetooth urbain",
+    "Description": "Casque sans fil pliable",
+    "Marque": "Sony",
+    "Fourchette de prix": "29,90 € – 49,90 €",
+    "Prix": "39,90 €",
+    "Catégorie": "High-Tech",
+    "Image": ""
+  },
+  {
+    "ID": 190,
+    "Nom": "Sac de voyage 70L",
+    "Description": "Sac grande capacité renforcé",
+    "Marque": "Forclaz",
+    "Fourchette de prix": "29,90 € – 54,90 €",
+    "Prix": "42,40 €",
+    "Catégorie": "Loisirs",
+    "Image": ""
+  },
+  {
+    "ID": 191,
+    "Nom": "Radiateur soufflant 1800W",
+    "Description": "Chauffage rapide compact",
+    "Marque": "Rowenta",
+    "Fourchette de prix": "39,90 € – 69,90 €",
+    "Prix": "54,90 €",
+    "Catégorie": "Maison",
+    "Image": ""
+  },
+  {
+    "ID": 192,
+    "Nom": "Clavier mécanique compact",
+    "Description": "Clavier RGB switches rouges",
+    "Marque": "Corsair",
+    "Fourchette de prix": "49,90 € – 89,90 €",
+    "Prix": "69,90 €",
+    "Catégorie": "Informatique",
+    "Image": ""
+  },
+  {
+    "ID": 193,
+    "Nom": "Cafetière expresso premium",
+    "Description": "Machine 15 bars inox",
+    "Marque": "Delonghi",
+    "Fourchette de prix": "59,90 € – 109,90 €",
+    "Prix": "84,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 194,
+    "Nom": "Barbecue électrique XL",
+    "Description": "Grill extérieur 2400W",
+    "Marque": "Tefal",
+    "Fourchette de prix": "79,90 € – 139,90 €",
+    "Prix": "109,90 €",
+    "Catégorie": "Jardin",
+    "Image": ""
+  },
+  {
+    "ID": 195,
+    "Nom": "Tondeuse cheveux 12‑en‑1",
+    "Description": "Tondeuse multi‑accessoires",
+    "Marque": "Philips",
+    "Fourchette de prix": "49,90 € – 89,90 €",
+    "Prix": "69,90 €",
+    "Catégorie": "Santé",
+    "Image": ""
+  },
+  {
+    "ID": 196,
+    "Nom": "Machine à smoothie pro",
+    "Description": "Blender 1000W",
+    "Marque": "Moulinex",
+    "Fourchette de prix": "69,90 € – 129,90 €",
+    "Prix": "99,90 €",
+    "Catégorie": "Cuisine",
+    "Image": ""
+  },
+  {
+    "ID": 204,
+    "Nom": "Dacia Sandero SCe 65",
+    "Description": "Citadine simple, aides à la conduite, très économique",
+    "Marque": "Dacia",
+    "Fourchette de prix": "11 500 € – 13 000 €",
+    "Prix": "11 990 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 205,
+    "Nom": "Renault Clio",
+    "Description": "Polyvalente, hybride disponible, bon confort",
+    "Marque": "Renault",
+    "Fourchette de prix": "18 000 € – 22 000 €",
+    "Prix": "19 600 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 206,
+    "Nom": "Peugeot 208",
+    "Description": "Design moderne, versions essence & électrique",
+    "Marque": "Peugeot",
+    "Fourchette de prix": "17 000 € – 23 000 €",
+    "Prix": "17 000 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 207,
+    "Nom": "Citroën C3 YOU!",
+    "Description": "Confort, aides à la conduite, style moderne",
+    "Marque": "Citroën",
+    "Fourchette de prix": "15 000 € – 18 000 €",
+    "Prix": "16 590 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 208,
+    "Nom": "Toyota Aygo X",
+    "Description": "Citadine fiable, faible consommation",
+    "Marque": "Toyota",
+    "Fourchette de prix": "16 000 € – 18 000 €",
+    "Prix": "16 500 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 209,
+    "Nom": "Hyundai i10",
+    "Description": "Très bien équipée, connectivité, sécurité",
+    "Marque": "Hyundai",
+    "Fourchette de prix": "15 500 € – 17 500 €",
+    "Prix": "15 990 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 210,
+    "Nom": "Suzuki Swift Hybrid",
+    "Description": "Micro‑hybridation, robuste, faible conso",
+    "Marque": "Suzuki",
+    "Fourchette de prix": "17 000 € – 19 000 €",
+    "Prix": "17 500 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 211,
+    "Nom": "Fiat Panda Hybrid",
+    "Description": "Maniable, pratique, économique",
+    "Marque": "Fiat",
+    "Fourchette de prix": "13 000 € – 15 000 €",
+    "Prix": "13 600 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 212,
+    "Nom": "Dacia Spring Electric",
+    "Description": "Électrique la moins chère, 230 km autonomie",
+    "Marque": "Dacia",
+    "Fourchette de prix": "16 000 € – 18 000 €",
+    "Prix": "16 900 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 213,
+    "Nom": "MG4 Electric",
+    "Description": "Électrique 450 km autonomie, très bien équipée",
+    "Marque": "MG",
+    "Fourchette de prix": "27 000 € – 30 000 €",
+    "Prix": "28 000 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 214,
+    "Nom": "Renault Captur TCe 90",
+    "Description": "SUV compact, confortable, polyvalent",
+    "Marque": "Renault",
+    "Fourchette de prix": "22 000 € – 25 000 €",
+    "Prix": "23 400 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 215,
+    "Nom": "Hyundai Bayon",
+    "Description": "SUV compact, faible consommation",
+    "Marque": "Hyundai",
+    "Fourchette de prix": "20 000 € – 22 000 €",
+    "Prix": "20 500 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 216,
+    "Nom": "Dacia Duster",
+    "Description": "SUV robuste, franchisseur, très bon rapport qualité/prix",
+    "Marque": "Dacia",
+    "Fourchette de prix": "18 500 € – 21 000 €",
+    "Prix": "18 900 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 217,
+    "Nom": "Kia Ceed",
+    "Description": "Compacte fiable, garantie 7 ans",
+    "Marque": "Kia",
+    "Fourchette de prix": "22 000 € – 24 000 €",
+    "Prix": "23 000 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 218,
+    "Nom": "Skoda Scala",
+    "Description": "Très grande habitabilité, compacte économique",
+    "Marque": "Škoda",
+    "Fourchette de prix": "21 000 € – 23 500 €",
+    "Prix": "21 900 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 219,
+    "Nom": "Hyundai i30",
+    "Description": "Compacte, consommation maîtrisée",
+    "Marque": "Hyundai",
+    "Fourchette de prix": "22 000 € – 24 000 €",
+    "Prix": "22 500 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 220,
+    "Nom": "Kia Sportage",
+    "Description": "SUV familial, très bien équipé",
+    "Marque": "Kia",
+    "Fourchette de prix": "29 000 € – 32 000 €",
+    "Prix": "29 900 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 221,
+    "Nom": "Skoda Karoq",
+    "Description": "SUV familial, grand coffre, fiabilité",
+    "Marque": "Škoda",
+    "Fourchette de prix": "30 000 € – 33 000 €",
+    "Prix": "31 000 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 222,
+    "Nom": "Renault 5 E‑Tech",
+    "Description": "Électrique moderne, très demandée",
+    "Marque": "Renault",
+    "Fourchette de prix": "28 000 € – 32 000 €",
+    "Prix": "30 000 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  },
+  {
+    "ID": 223,
+    "Nom": "Tesla Model Y",
+    "Description": "SUV électrique, très spacieux, autopilot",
+    "Marque": "Tesla",
+    "Fourchette de prix": "45 000 € – 50 000 €",
+    "Prix": "47 000 €",
+    "Catégorie": "Auto",
+    "Image": ""
+  }
+]

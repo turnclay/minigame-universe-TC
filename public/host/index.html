@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MiniGame Universe — HOST</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/host.css">
+  <link rel="icon" type="image/png" href="/images/LogoMiniGame.png">
+</head>
+<body class="host-body">
+
+  <!-- ── AUTH ── -->
+  <div id="host-auth" class="host-screen">
+    <div class="auth-card">
+      <img src="/images/LogoMiniGame.png" alt="Logo" class="auth-logo">
+      <h1>Accès Host</h1>
+      <p class="auth-sub">Interface maître — accès réservé</p>
+<form onsubmit="return false;" autocomplete="off">
+    <input type="text" autocomplete="username" style="display:none;"
+           aria-hidden="true" tabindex="-1">
+    <input type="password" id="auth-password" class="input-primary"
+           placeholder="Mot de passe host…" autocomplete="current-password">
+    <button id="auth-btn" class="btn-primary" type="button">Se connecter</button>
+</form>
+      <p id="auth-error" class="auth-error" hidden></p>
+    </div>
+  </div>
+
+  <!-- ── LOBBY ── -->
+  <div id="host-lobby" class="host-screen" hidden>
+    <header class="host-header">
+      <h1>🎮 MiniGame Universe <span class="badge-host">HOST</span></h1>
+      <div class="host-status">
+        <span id="ws-indicator" class="ws-dot ws-disconnected"></span>
+        <span id="ws-label">Déconnecté</span>
+      </div>
+    </header>
+
+    <div class="host-layout">
+
+      <!-- Colonne gauche : créer une partie -->
+      <section class="host-panel">
+        <h2>➕ Nouvelle partie</h2>
+
+        <label>Nom de la partie
+          <input type="text" id="h-nom-partie" class="input-primary"
+                 placeholder="Ex: Soirée du vendredi" maxlength="50">
+        </label>
+
+        <label>Jeu
+          <select id="h-jeu" class="select-primary">
+            <option value="quiz">❓ Quiz</option>
+            <option value="justeprix">💰 Le Juste Prix</option>
+            <option value="undercover">🕵️ Undercover</option>
+            <option value="lml">📖 Maxi Lettres</option>
+            <option value="mimer">🎭 Mimer/Dessiner</option>
+            <option value="pendu">🪢 Le Pendu</option>
+            <option value="petitbac">📝 Petit Bac</option>
+            <option value="memoire">🧠 Mémoire Flash</option>
+            <option value="morpion">⭕ Morpion</option>
+            <option value="puissance4">🔴 Puissance 4</option>
+          </select>
+        </label>
+
+        <label>Mode
+          <select id="h-mode" class="select-primary">
+            <option value="solo">👤 Chacun pour soi</option>
+            <option value="team">👥 Équipes</option>
+          </select>
+        </label>
+
+        <!-- Bloc équipes (visible si mode=team) -->
+        <div id="h-equipes-bloc" class="h-equipes-bloc" hidden>
+          <h3>Équipes</h3>
+          <div class="h-equipe-create">
+            <input type="text" id="h-equipe-input" class="input-primary"
+                   placeholder="Nom de l'équipe…" maxlength="20">
+            <button id="h-equipe-ajouter" class="btn-secondary">＋</button>
+          </div>
+          <div id="h-equipes-liste" class="h-equipes-liste"></div>
+        </div>
+
+        <button id="h-btn-creer" class="btn-primary h-btn-full">
+          🚀 Créer la partie
+        </button>
+      </section>
+
+      <!-- Colonne droite : gestion de la partie active -->
+      <section class="host-panel" id="h-game-panel" hidden>
+        <h2>🎯 Partie en cours</h2>
+
+        <div class="h-game-info">
+          <span id="h-info-nom" class="h-info-val"></span>
+          <span id="h-info-jeu" class="h-info-badge"></span>
+          <span id="h-info-statut" class="h-info-statut">● Lobby</span>
+        </div>
+
+        <!-- QR / lien joueur -->
+        <div class="h-join-block">
+          <p>Lien pour les joueurs :</p>
+          <a id="h-join-link" class="h-join-link" target="_blank"></a>
+          <div id="h-qr" class="h-qr"></div>
+        </div>
+
+        <!-- Joueurs connectés -->
+        <div class="h-section">
+          <h3>👥 Joueurs connectés <span id="h-nb-joueurs" class="gj-count">0</span></h3>
+          <div id="h-joueurs-liste" class="h-joueurs-liste"></div>
+        </div>
+
+        <!-- Scores -->
+        <div class="h-section">
+          <h3>📊 Scores</h3>
+          <div id="h-scores-liste" class="h-scores-liste"></div>
+        </div>
+
+        <!-- Contrôles -->
+        <div class="h-controls">
+          <button id="h-btn-start" class="btn-primary">▶ Lancer la partie</button>
+          <button id="h-btn-end"   class="btn-danger"  hidden>⏹ Terminer</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script type="module" src="/js/host.js"></script>
+</body>
+</html>

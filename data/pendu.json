@@ -1,0 +1,4074 @@
+[
+  {
+    "MOT": "BISCUIT",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "CHOCOLAT",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "BAGUETTE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "BONBON",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "CACAHUÈTE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "CASSOULET",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "CROISSANT",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "FARINE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "HUMMUS",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "KETCHUP",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "KOMBUCHA",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "LIMONADE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "BOISSON",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "CACAO",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "COMPOTE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "CROQUETTE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "DAHL",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "FARINEUX",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "GALETTE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "GUIMAUVE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "AMANDES",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "BACON",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "BARBECUE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "BEURRE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "BIÈRE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "BOLOGNAISE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "BOUILLON",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "BRIOCHE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "CAMEMBERT",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "CARAMEL",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "CASSEROLE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "CAVIAR",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "CÉRÉALES",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "CHAPELURE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "CHEESECAKE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "CRÈME",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "CROQUANT",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "ÉMINCÉ",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "FROMAGE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "GELATINE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "GRENADINE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "JAMBON",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "LASAGNE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "MAYONNAISE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "MERGUEZ",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "MOUSSE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "OMELETTE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "PAIN",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "RACLETTE",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "YAOURT",
+    "THEME": "ALIMENT"
+  },
+  {
+    "MOT": "AIGLE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "ANTILOPE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "ARAIGNÉE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CAMÉLÉON",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CANARD",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CHAMEAU",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CIGOGNE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "COCCINELLE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "DAUPHIN",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "ÉCUREUIL",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "ESCARGOT",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "FOURMI",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "GIRAFE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "GRENOUILLE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "HÉRISSON",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "INSECTE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "JAGUAR",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "KOALA",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "LÉOPARD",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "LIMACE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "LUCIOLE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "MOUETTE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "ORNITHORYNQUE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "PANDA",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "PAPILLON",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "PÉLICAN",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "ALBATROS",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "ARA",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "AUTRUCHE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "AXOLOTL",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "BALEINE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "BÉLIER",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "BISON",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "BOUGON",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "BOURDON",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "BROCHET",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CAFARD",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CALMAR",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CARDINAL",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CARPE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CASTOR",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CERF",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CHENILLE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CHEVALIER",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CHOUCAS",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CIGALE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "COLIBRI",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CORBEAU",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CRABE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CREVETTE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CROCODILE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CYGNE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "DAIM",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "DINDE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "DINGO",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "DODO",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "DORADE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "ÉCREVISSE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "ÉLÉPHANT",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "ESPADON",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "FALCON",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "FAUCON",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "FLAMANT",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "FRELON",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "GAZELLE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "GIBBON",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "GRIZZLI",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "GRUE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "HAMSTER",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "HENNISSEMENT",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "HIBOU",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "HOMARD",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "HYÈNE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "IGUANE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "KANGOUROU",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "LAMA",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "LÉZARD",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "LOUP",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "LYNX",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "AIGRETTE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "ALPAGA",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "ANGUILLE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "BABOUIN",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "BÉCASSE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "BÉCASSINE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "BOEUF",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CACHALOT",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CANARI",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CAPYBARA",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CARNASSIER",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CATÉGORE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CHAMOIS",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CHATON",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CHIPMUNK",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CHOUETTE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CIGALON",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "COBAYE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "COBRA",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CORGI",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CORMORAN",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CORNEILLE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "CRAPAUD",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "DIPLODOCUS",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "DORIPHORUS",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "DROMADAIRE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "ÉCREVISSON",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "ÉLAN",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "ÉPERVIER",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "ESCARGOTIN",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "ESPADONNIER",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "ÉTOURNEAU",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "FENNEC",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "FROG",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "GAMBETTE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "GÉLINOTTE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "GÉOTROUPE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "GOBE-MOUCHE",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "GOUJON",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "GRILLON",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "GRIZZLINA",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "GUÊPIER",
+    "THEME": "ANIMAL"
+  },
+  {
+    "MOT": "COMÈTE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "ÉCLIPSE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "GALAXIE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "MÉTÉORITE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "PLANÈTE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "BORÉALIS",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "CÉLESTE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "ÉQUINOXE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "ÉTOILE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "FUSEE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "HALO",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "ASTRONEF",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "AURORA",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "COMÈTE ROUGE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "GALAXITE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "ASTROLABE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "ASTÉROÏDE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "COSMOS",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "NEBULEUSE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "SUPERNOVA",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "QUASAR",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "PULSAR",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "ORBITALE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "ASTROPHYSIQUE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "BIG BANG",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "CONSTELLATION",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "CORONA",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "COSMONAUTE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "EXOPLANÈTE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "GALACTIQUE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "GRAVITATION",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "HORIZON DES ÉVÉNEMENTS",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "INTERSTELLAIRE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "IONOSPHÈRE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "LUNARIS",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "MAGNÉTAR",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "MASSE NOIRE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "MÉGASTRUCTURE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "NEUTRINO",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "ORBITE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "PARALLAXE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "PHOTON",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "PLANÉTAIRE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "SATELLITE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "SOLARIS",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "SPATIAL",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "TÉLESCOPIQUE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "VOIE LACTÉE",
+    "THEME": "ASTRONOMIE"
+  },
+  {
+    "MOT": "DRAGON",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "FANTÔME",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "KRAKEN",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "LÉGION",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "LICORNE",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "ARLEQUIN",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "DÉMÉTER",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "DIABLE",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "DRAGONNET",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "FARFADDET",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "GORGONE",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "ALCHIMISTE",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "BANSHEE",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "BARDE",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "BESTIAIRE",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "CHAMAN",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "CHIMÈRE",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "CONJUREUR",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "CRISTAL MAGIQUE",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "DJINN",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "DRUIDE",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "ELFE",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "ENCHANTEUR",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "ENTITÉ",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "FÉE",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "FEU FOLLET",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "GÉANT",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "GOLEM",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "GRIMOIRE",
+    "THEME": "FANTASY"
+  },
+  {
+    "MOT": "ABRICOT",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "MANGUE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "PAPAYE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "POMME",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "ANANAS",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "AVOCAT",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "CERISE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "CITRON",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "COING",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "FRAMBOISE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "GROSEILLE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "KAKI",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "KUMQUAT",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "LITCHI",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "APRICOT",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "CASSIS",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "CHERIMOYA",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "CLÉMENTINE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "COCONUT",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "ABRICOT SEC",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "AIRELLE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "AMANDON",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "BANANE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "BERGAMOTE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "CANTALOUP",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "CARAMBOLLE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "DATTE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "FIGUE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "FRAISE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "FRUIT DE LA PASSION",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "GOYAVE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "GRENADE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "JACKFRUIT",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "KIWI",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "LONGANE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "MANDARINE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "MELON",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "MIRABELLE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "MÛRE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "MYRTILLE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "NECTARINE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "ORANGE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "PASTEQUE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "PECHE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "PERSIMMON",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "PHYSALIS",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "POMELO",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "PRUNE",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "RAISIN",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "TAMARIN",
+    "THEME": "FRUIT"
+  },
+  {
+    "MOT": "ARCHIPEL",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "CANYON",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "CRATÈRE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "DÉERT",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "FALAISE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "MONTAGNE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "OCÉAN",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "ATOLL",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "CHENAL",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "COLLINE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "CORNICHE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "DUNE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "ESTUAIRE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "GOUFFRE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "ILET",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "LAC",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "COTEAU",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "CRATON",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "ALTITUDE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "ARCHIPELAGOS",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "BAIE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "CAP",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "CHAÎNE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "CONTINENT",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "DELTA",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "DÉPRESSION",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "ÉTANG",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "FJORD",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "GOLFE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "ISTHME",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "LITTORAL",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "MARÉCAGE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "MER",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "MORAINE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "PÉNINSULE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "PLATEAU",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "PLAINE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "RAVIN",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "RÉCIF",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "RIVAGE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "RIVIÈRE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "STEPPE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "TERRITOIRE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "TUNDRA",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "VAL",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "VALLÉE",
+    "THEME": "GÉOGRAPHIE"
+  },
+  {
+    "MOT": "ALGORITHME",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "CIRCUIT",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "CLAVIER",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "CONSOLE",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "DÉCODEUR",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "NAVIGATEUR",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "ROBOT",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "ANTIVIRUS",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "APPLICATION",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "ARCHITECTURE",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "AUTOMATE",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "BASE DE DONNÉES",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "BITCOIN",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "CARTE GRAPHIQUE",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "CHIFFREMENT",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "COMPILATEUR",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "CYBERSÉCURITÉ",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "DÉBOGAGE",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "DÉVELOPPEUR",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "DOMOTIQUE",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "ENCRYPTION",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "FIREWALL",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "FIRMWARE",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "HACKER",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "HÉBERGEMENT",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "INFORMATIQUE",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "INTELLIGENCE",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "INTERFACE",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "INTERNET",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "LAPTOP",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "LOGICIEL",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "MALWARE",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "MICROPROCESSEUR",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "MODÉM",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "NAVIGATION",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "NUMÉRIQUE",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "ORDINATEUR",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "PARE-FEU",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "PÉRIPHÉRIQUE",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "PIRATAGE",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "PLATEFORME",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "PROCESSEUR",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "PROGRAMMEUR",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "PROTOCOLE",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "RÉSEAU",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "SERVEUR",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "SYSTÈME",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "TABLEUR",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "VIRUS",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "WEBCAM",
+    "THEME": "INFORMATIQUE"
+  },
+  {
+    "MOT": "APOSTROPHE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "ACCENT",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "ADVERBE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "AFFIXE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "ALPHABET",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "ANALOGIE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "ANTONYMIE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "ARGOT",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "ARTICLE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "ASSONANCE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "BARBARISME",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "CONJUGAISON",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "CONSONNE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "CONTEXTUEL",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "DECLINAISON",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "DIACRITIQUE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "DIALECTE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "DIPHTONGUE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "ÉLOCUTION",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "ÉNONCÉ",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "ÉPITHÈTE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "ÉTYMOLOGIE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "EXPRESSION",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "FIGURATIF",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "FONÉTIQUE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "GRAMMATIQUE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "HOMOGRAPHE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "HOMONYME",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "IDIOME",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "INFÉRENCE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "INTERJECTION",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "LEXIQUE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "LINGUISTIQUE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "LOCUTION",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "MÉTAPHORE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "MORPHÈME",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "NÉOLOGISME",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "ORTHOGRAPHE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "PARAGRAPHE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "PARONYME",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "PHONÈME",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "PRONOM",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "PROVERBE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "SEMANTIQUE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "SUBSTANTIF",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "SYLLABE",
+    "THEME": "LANGUE"
+  },
+  {
+    "MOT": "CAROTTE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "CITROUILLE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "COURGETTE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "ARTICHAUT",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "ASPERGE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "AUBERGINE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "CORNICHON",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "CÉLÉRI",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "AIL",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "BETTERAVE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "BROCOLI",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "CHOU",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "CHOU-FLEUR",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "CHOU-KALE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "CHOU-ROUGE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "CHOUX DE BRUXELLES",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "CONCOMBRE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "COURGE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "DAIKON",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "ÉPINARD",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "ENDIVE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "FENOUIL",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "FLAGEOLET",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "HARICOT",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "IGNAME",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "JICAMA",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "KALE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "LENTILLE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "MÂCHE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "NAVET",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "OIGNON",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "PANAIS",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "PATATE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "PATATE DOUCE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "PETIT POIS",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "POIREAU",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "POIS CHICHE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "POIVRON",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "POMME DE TERRE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "POTIMARRON",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "RADIS",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "RATTE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "RUTABAGA",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "SALICORNE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "SALSAFI",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "TOPINAMBOUR",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "TOMATE",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "YAM",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "ZUCCHINI",
+    "THEME": "LÉGUME"
+  },
+  {
+    "MOT": "APPARTEMENT",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "BIBLIOTHÈQUE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "CATHÉDRALE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "IGLOO",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "JARDIN",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "PÉPINIÈRE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "PYRAMIDE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "AEROPORT",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "ALCOVE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "BERGERIE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "CABANE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "DÉDALE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "DOMAINE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "FERMIÈRE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "FONTAINE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "HACIENDA",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "HIPPODROME",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "IMPRIMERIE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "ISBA",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "KIOSQUE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "ALPAGE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "ATELIER",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "AUBERGE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "BAMBOUSERAIE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "BASILIQUE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "BISCUITERIE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "CAMPING",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "CARAVANSÉRAIL",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "CASTEL",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "CÉNACLE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "CHAPITEAU",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "CHÊNAIE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "CONTRÉE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "DAUPHINÉ",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "DOLMEN",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "ESTAMINET",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "FOUGERAIE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "BASSIN",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "AQUEDUC",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "BUNKER",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "CITADELLE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "COLONNADE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "CRYPTE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "DOJO",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "GROTTE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "MONASTÈRE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "PORTAIL",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "OBSERVATOIRE",
+    "THEME": "LIEU"
+  },
+  {
+    "MOT": "ARGENT",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "COTON",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "DENTELLE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "ESSENCE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "INDIGO",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "LIGNEUX",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "ARGILE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "BÉTON",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "BRIQUE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "CARBONE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "CHARBON",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "CUIR",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "ÉCORCE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "FERRAILLE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "FOIN",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "FONTE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "GLYCÉRINE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "GRANIT",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "GRAVIER",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "DIAMANT",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "ACIER",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "ALUMINIUM",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "AMBRE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "BASALTE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "BRONZE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "CALCAIRE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "CÉRAMIQUE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "CHALK",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "CUIVRE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "ÉTAIN",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "FIBRE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "GAZON",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "GEL",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "GNEISS",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "HÉMORITE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "IVOIRE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "JADE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "LAINE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "MARBRE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "MÉTAL",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "NICKEL",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "OBSIDIENNE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "ONYX",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "PAPIER",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "PLÂTRE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "PLASTIQUE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "QUARTZ",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "SABLE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "SOIE",
+    "THEME": "MATIÈRE"
+  },
+  {
+    "MOT": "ANTICYCLONE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "BROUILLARD",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "NUAGE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "OURAGAN",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "ARC-EN-CIEL",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "BLIZZARD",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "DÉLUGE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "FLOCON",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "GIVRE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "HOULE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "BRUME",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "CIRRUS",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "CYCLONE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "DÉGEL",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "DILUVIEN",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "BRISE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "AVERSE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "CANICULE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "CHALEUR",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "CRAQUELURE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "DRACHÉE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "ÉCLAIR",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "ÉLECTRICITÉ STATIQUE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "FROID",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "GIBOULÉE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "GRÊLE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "HUMIDITÉ",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "LUMIÈRE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "MISTRAL",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "NEIGE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "ORAGE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "PLUIE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "RAFRAÎCHISSEMENT",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "RAFALE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "ROSÉE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "SECOUSSE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "SOLEIL",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "TEMPÊTE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "TONNERRE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "TORNADE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "TYPHON",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "VENT",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "ZÉPHYR",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "BRUME SÈCHE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "HARMATTAN",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "GELÉE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "POLLEN",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "POUSSIÈRE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "SÉCHERESSE",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "VAPEUR",
+    "THEME": "MÉTÉO"
+  },
+  {
+    "MOT": "ACROBATE",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "AMIRAL",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "ARTISAN",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "AVENTURIER",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "BARYTON",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "ÉLAGUEUR",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "ÉMOULEUR",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "ÉPIERREUR",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "ÉQUILIBRISTE",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "FAUCONNIER",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "ASTRONAUTE",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "ARCHITECTE",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "ASTRONOME",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "BOULANGER",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "BRASSEUR",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "CAPITAINE",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "CHARPENTIER",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "CHIRURGIEN",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "COUTURIER",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "CUISINIER",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "DÉTECTIVE",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "DOCTEUR",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "ÉCRIVAIN",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "ÉLECTRICIEN",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "ÉTUDIANT",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "FACTEUR",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "FORGERON",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "GARDE",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "GÉOLOGUE",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "HORTICULTEUR",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "INFIRMIER",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "INGÉNIEUR",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "JARDINIER",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "JONGLEUR",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "JOURNALISTE",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "MAÇON",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "MARIN",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "MENUISIER",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "MUSICIEN",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "PÂTISSIER",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "PEINTRE",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "PHOTOGRAPHE",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "PILOTE",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "PLOMBIER",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "POLICIER",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "POMPIER",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "PROFESSEUR",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "SCULPTEUR",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "SERRURIER",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "VÉTÉRINAIRE",
+    "THEME": "MÉTIER"
+  },
+  {
+    "MOT": "AVALANCHE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "CORAIL",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "FORÊT",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "HORIZON",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "PRAIRIE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "AMMONITE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "BANQUISE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "BRINDILLE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "COCON",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "DÉSERTIQUE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "ÉMOUSTILLE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "FLAMME",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "GALET",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "GÉODE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "GRAINE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "INCENDIE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "JOUVENCE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "JUNGLE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "AXONE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "BASSINAGE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "CAROTIDIEN",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "CASCADE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "CHRYSALIDE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "CLAIRIÈRE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "DUNE MOBILE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "ÉCLOSION",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "FLORE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "GÉODE BLEUE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "GRAPPE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "GLACIER",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "SAVANE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "FOUGÈRE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "AUBE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "CIME",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "ÉCORCE TERRESTRE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "ÉTINCELLE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "LUEUR",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "MUSCADE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "NÉBULEUSE TERRESTRE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "OMBRE",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "ROCHER",
+    "THEME": "NATURE"
+  },
+  {
+    "MOT": "ANCRE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ARMURE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BALAI",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BOUSSOLE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CALCULATRICE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "COFFRE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ÉOLIENNE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ÉPÉE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "FENÊTRE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "GOUVERNAIL",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "LABYRINTHE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "LANTERNE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "LIVRE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "MARTEAU",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "PARACHUTE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "PHARE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "PLUMEAU",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ABAT-JOUR",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "AGRAFEUSE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "AIGUILLE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "AMPHORE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ANTENNE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ARDOISE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ARMOIRE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BAMBOULA",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BAROMÈTRE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BERCEAU",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BIBERON",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BIJOU",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BOCAL",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BOUGIE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BRACELET",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BROUETTE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BULLE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CANNE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CAPSULE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CARNET",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CHENET",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CLOCHETTE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "COFFRET",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "COMPAS",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CORDE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "COURONNE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CRAYON",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "DICTIONNAIRE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "DRAPEAU",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ÉGOUTTOIR",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ÉMERAUDE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ÉPINGLE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ESCALIER",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "FAUTEUIL",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "FLÉCHETTE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "GOBELET",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "HARPE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "JARRE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "JAVELLE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "KIVIAT",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "LAMPE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "LINGE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "LUCARNE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ALAMBIC",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "AMÉTHYSTE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ANCREUR",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ARCHE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ARMOIRETTE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "AUTEL",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "AVIRON",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BAGAGE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BAHUT",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BALISTE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BANDEAU",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BATTERIE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BIBERONNE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BILLET",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BLASON",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BONBONNIÈRE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BORNE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BOUCHON",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BOURSE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BRASERO",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "BROUILLON",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CADRAN",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CAFETIÈRE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CALICE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CAMÉRA",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CANAPÉ",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CANIVEAU",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CARTABLE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CASQUE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CERF-VOLANT",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CHALUMEAU",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CHANDELIER",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CHARIOT",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CHAUDRON",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CHAUSSURE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CHIFFON",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CLOISON",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "COFFRETIN",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "COHIBA",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CONQUE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CORNET",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CRISTAL",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "DÉODORANT",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "DIAPASON",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "DIODE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "DOMINO",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "DRISSE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ÉCARTÈRE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ÉGIDE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ÉLÉGIE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ÉLIXIR",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ÉOLITE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ESCARPIN",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "ESSOREUSE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "FALOURDE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "FICELLE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "FILAMENT",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "FLÉAU",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "FLÛTE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "FUSELAGE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "GABION",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "GADGET",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "GANGUI",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "GARDE-MANGER",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "GARGOUILLE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "GIBECIÈRE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "GOND",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "GOURDE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "GUITOUNE",
+    "THEME": "OBJET"
+  },
+  {
+    "MOT": "CHÊNE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "BAMBOU",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "CACTUS",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "CHAMPIGNON",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "FLEUR",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "ORCHIDÉE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "RACINE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "ROSEAU",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "ACAJOU",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "ALGUE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "AMARANTE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "BASILIC",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "BONSAÏ",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "BRUYÈRE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "CADE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "CHARDON",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "CONIFÈRE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "DAHLIA",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "DATTIER",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "ÉDELWEISS",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "FICUS",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "GÉRANIUM",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "GLYCINE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "HÉMÉROCALLE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "HOUX",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "HYDRANGEA",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "IRIS",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "JACINTHE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "JONQUILLE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "LOTUS",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "ABRICOTIER",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "ARBRE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "AROMATE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "ASPERGILLUS",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "AZALÉE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "BIGNONE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "BLEUET",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "BOUGAINVILLÉE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "BULBILLE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "CALENDULA",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "CAMPANULE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "CARDAMOME",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "CHANTERELLE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "CITRONNIER",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "COLZA",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "COQUELICOT",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "CORNOUILLER",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "COTONNIER",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "COURGETTIER",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "ÉDELWEISS NOIR",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "ÉPICÉA",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "ÉPILOBE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "ÉRABLE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "EUPHORBE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "FIGUIER",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "FLAMBOYANT",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "FRAGON",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "FRÊNE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "FUMETERRE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "GÉNÉPI",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "GIRASOL",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "GLAND",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "LAVANDE",
+    "THEME": "PLANTE"
+  },
+  {
+    "MOT": "BATEAU",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "CARAVANE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "KAYAK",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "PIROGUE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "AMBULANCE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "ARMADA",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "CAMION",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "CARAVELLE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "CATAMARAN",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "CHALUTIER",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "AÉROGLISSEUR",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "BARQUE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "CABRIOLET",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "CHAVIRAGE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "CITADINE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "CLIPPER",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "DÉRIVEUR",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "DINGHY",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "FRIGATE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "AVION",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "BALAISE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "BICYCLETTE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "BUS",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "CARGO",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "CHENILLETTE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "DIRIGEABLE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "DRONE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "FERRY",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "FIACRE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "FUNICULAIRE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "GONDOLA",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "HÉLICOPTÈRE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "JET",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "LUGE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "MÉTRO",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "MOBYLETTE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "MONORAIL",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "MOTONEIGE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "NAVETTE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "PAQUEBOT",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "PATIN",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "QUAD",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "RAIL",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "ROULOTTE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "SCOOTER",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "TÉLÉPHÉRIQUE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "TRAMWAY",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "TROTTINETTE",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "VOILIER",
+    "THEME": "TRANSPORT"
+  },
+  {
+    "MOT": "ANORAK",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "CHASUBLE",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "COMBINAISON",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "DÉBARDEUR",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "BASKET",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "BÉRET",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "BLOUSON",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "BODYSUIT",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "BONNET",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "BOTTINE",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "BRASSIÈRE",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "CACHEMIRE",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "CALEÇON",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "CAPUCHE",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "CARDIGAN",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "CASQUETTE",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "CEINTURE",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "CHEMISE",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "CHEMISIER",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "COLLANT",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "CRAVATE",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "DOUDOUNE",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "ÉCHARPE",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "ESPADRILLE",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "GANT",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "GILET",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "HOODIE",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "IMPERMÉABLE",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "JEAN",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "JUPE",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "KIMONO",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "KILT",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "LÉGGING",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "MANTEAU",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "MOCASSIN",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "PANTALON",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "PARKA",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "PULL",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "PONCHO",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "POLO",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "ROBE",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "SALOPETTE",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "SANDALE",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "SHORT",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "SLIP",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "SWEAT",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "T-SHIRT",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "TALON",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "VESTE",
+    "THEME": "VÊTEMENT"
+  },
+  {
+    "MOT": "VESTON",
+    "THEME": "VÊTEMENT"
+  }
+]

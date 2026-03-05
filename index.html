@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <!-- ============================================ -->
+  <!-- 🎯 META TAGS & SEO -->
+  <!-- ============================================ -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MiniGame Universe - Collection de mini-jeux multijoueurs : Quiz, Juste Prix, Undercover, Le Mot le Plus Long et plus encore !">
+  <meta name="keywords" content="jeux, mini-jeux, quiz, multijoueur, party game, undercover">
+  <meta name="author" content="TurnClay">
+  <meta name="theme-color" content="#6366f1">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="MiniGame Universe - Mini jeux, Maxi sensations !">
+  <meta property="og:description" content="Collection de mini-jeux multijoueurs pour s'amuser entre amis">
+  <meta property="og:image" content="images/LogoMiniGame.png">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MiniGame Universe">
+  <meta name="twitter:description" content="Collection de mini-jeux multijoueurs">
+
+  <title>MiniGame Universe – Jeux Multijoueurs</title>
+
+  <!-- ============================================ -->
+  <!-- 🎨 STYLES & FONTS -->
+  <!-- ============================================ -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/gestion.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="images/LogoMiniGame.png">
+</head>
+
+<body>
+
+  <!-- ============================================ -->
+  <!-- 🌟 SPLASH SCREEN -->
+  <!-- ============================================ -->
+  <div id="splash-screen" class="splash-screen" role="presentation">
+    <img src="images/LogoMiniGame.png" alt="Logo MiniGame Universe" class="splash-logo">
+  </div>
+
+  <!-- ============================================ -->
+  <!-- ⏳ LOADER -->
+  <!-- ============================================ -->
+  <div id="loader" class="loader" role="status" aria-live="polite">
+    <div class="spinner" aria-hidden="true"></div>
+    <p>Chargement en cours…</p>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 🧮 SCOREBOARD LATÉRAL -->
+  <!-- ============================================ -->
+  <aside id="scoreboard" class="scoreboard" aria-label="Tableau des scores">
+    <h2 class="scoreboard-title">
+      Scores
+      <button id="toggle-scores" class="score-btn eye-toggle" aria-label="Afficher/Masquer les scores" title="Toggle scores">
+        👁️
+      </button>
+    </h2>
+    <div id="score-list" class="score-list" role="list"></div>
+  </aside>
+
+  <!-- ============================================ -->
+  <!-- 🏠 BARRE DE NAVIGATION PERMANENTE -->
+  <!-- ============================================ -->
+  <div class="top-nav-bar">
+
+    <!-- Bouton Retour -->
+    <button class="btn-retour-permanent" id="btn-retour-permanent" aria-label="Retour" hidden>
+      ⬅️
+    </button>
+
+    <!-- Bouton Accueil -->
+    <button class="btn-home-permanent" id="btn-home-permanent" aria-label="Retour à l'accueil">
+      🏠
+    </button>
+
+    <!-- Musique -->
+    <audio id="bg-music" src="audio/ambiance.mp3" loop></audio>
+    <button class="btn-music" id="toggle-music" aria-label="Activer/Désactiver la musique">
+      🔊
+    </button>
+
+    <!-- Bouton Menu -->
+    <button class="btn-menu-permanent" id="btn-menu-permanent" aria-label="Ouvrir le menu">
+      ☰
+    </button>
+
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 📋 MENU LATÉRAL -->
+  <!-- ============================================ -->
+
+  <!-- Overlay -->
+  <div class="menu-overlay" id="menu-overlay" hidden></div>
+
+  <!-- Panneau latéral -->
+  <nav class="menu-panel" id="menu-panel" hidden aria-label="Menu principal">
+
+    <div class="menu-header">
+      <h2>Centre de contrôle</h2>
+      <button class="btn-close-menu" id="btn-close-menu" aria-label="Fermer le menu">✖</button>
+    </div>
+
+    <div class="menu-nav">
+
+      <button class="menu-item" id="menu-reglages">
+        <span class="menu-icon">⚙️</span>
+        <span class="menu-text">Réglages</span>
+      </button>
+
+      <button class="menu-item" id="menu-home">
+        <span class="menu-icon">📊</span>
+        <span class="menu-text">Statistiques</span>
+      </button>
+
+      <button class="menu-item" id="menu-parties">
+        <span class="menu-icon">📜</span>
+        <span class="menu-text">Parties enregistrées</span>
+      </button>
+
+      <button class="menu-item" id="menu-joueurs">
+        <span class="menu-icon">👤</span>
+        <span class="menu-text">Gestion des joueurs</span>
+      </button>
+
+      <button class="menu-item" id="menu-equipes">
+        <span class="menu-icon">⚔️</span>
+        <span class="menu-text">Gestion des équipes</span>
+      </button>
+
+    </div>
+
+  </nav>
+
+  <!-- ============================================ -->
+  <!-- 🏠 ÉCRAN D'ACCUEIL -->
+  <!-- ============================================ -->
+  <section id="home" class="screen" hidden aria-labelledby="home-title">
+    <h1 id="home-title" class="main-title">Bienvenue dans MiniGame Universe</h1>
+    <p class="subtitle">Mini jeux...</p>
+    <p class="subtitle">Maxi sensations !</p>
+
+    <div id="hub-accueil" class="hub-container">
+
+      <!-- Nouvelle partie -->
+      <div id="newgame-block" class="hub-card">
+        <h2 class="hub-card-title">Nouvelle partie</h2>
+        <button id="btn-nouveau-jeu" class="btn btn-primary">
+          Choisir un jeu
+        </button>
+      </div>
+
+      <!-- Continuer partie -->
+      <div id="continue-block" class="hub-card" hidden>
+        <h2 class="hub-card-title">Continuer partie</h2>
+        <button id="btn-continuer" class="btn btn-primary">
+          Charger
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- 🎮 CHOIX DU JEU -->
+  <!-- ============================================ -->
+  <section id="choix-jeu" class="screen" hidden aria-labelledby="choix-jeu-title">
+
+    <h1 id="choix-jeu-title" class="section-title">Choisis ton jeu</h1>
+
+    <div class="games-grid" role="list">
+
+      <button class="game-btn" data-game="quiz" role="listitem">
+        <span class="game-icon" aria-hidden="true">❓</span>
+        <span class="game-name">Quiz</span>
+      </button>
+
+      <button class="game-btn" data-game="justeprix" role="listitem">
+        <span class="game-icon" aria-hidden="true">💰</span>
+        <span class="game-name">Le Juste Prix</span>
+      </button>
+
+      <button class="game-btn" data-game="undercover" role="listitem">
+        <span class="game-icon" aria-hidden="true">🕵️</span>
+        <span class="game-name">Undercover</span>
+      </button>
+
+      <button class="game-btn" data-game="lml" role="listitem">
+        <span class="game-icon" aria-hidden="true">📖</span>
+        <span class="game-name">Maxi Lettres</span>
+      </button>
+
+      <button class="game-btn" data-game="mimer" role="listitem">
+        <span class="game-icon" aria-hidden="true">🎭✏️</span>
+        <span class="game-name">Mimer ou Dessiner</span>
+      </button>
+
+      <button class="game-btn" data-game="pendu" role="listitem">
+        <span class="game-icon" aria-hidden="true">🪢</span>
+        <span class="game-name">Pendu</span>
+      </button>
+
+      <button class="game-btn" data-game="petitbac" role="listitem">
+        <span class="game-icon" aria-hidden="true">📝</span>
+        <span class="game-name">Petit Bac</span>
+      </button>
+
+      <button class="game-btn" data-game="memoire" role="listitem">
+        <span class="game-icon" aria-hidden="true">🧠</span>
+        <span class="game-name">Mémoire Flash</span>
+      </button>
+
+      <button class="game-btn" data-game="morpion" role="listitem">
+        <span class="game-icon" aria-hidden="true">⭕</span>
+        <span class="game-name">Morpion</span>
+      </button>
+
+      <button class="game-btn" data-game="puissance4" role="listitem">
+        <span class="game-icon" aria-hidden="true">🔴</span>
+        <span class="game-name">Puissance 4</span>
+      </button>
+
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- 🎯 CHOIX DU MODE -->
+  <!-- ============================================ -->
+  <section id="choix-mode" class="screen" hidden aria-labelledby="titre-mode-jeu">
+
+    <h1 id="titre-mode-jeu" class="mode-title" style="text-align:center; width:100%;"></h1>
+
+    <!-- Nom de la partie -->
+    <div id="bloc-nom-partie" class="partie-nom">
+      <label for="nom-partie" class="label-primary">
+        <h2>Nom de la partie</h2>
+      </label>
+      <input
+        id="nom-partie"
+        type="text"
+        placeholder="Ma super partie"
+        maxlength="50"
+        aria-required="true"
+        class="input-primary"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        list="suggestions-parties"
+      />
+      <datalist id="suggestions-parties"></datalist>
+    </div>
+
+    <!-- Modes de jeu -->
+    <div class="mode-container">
+
+      <div class="mode-card" data-mode="solo" role="button" tabindex="0"
+           aria-label="Mode chacun pour soi">
+        <div class="mode-icon" aria-hidden="true">👤</div>
+        <h2 class="mode-card-title">Chacun pour soi</h2>
+        <p class="mode-card-description">Un ou plusieurs joueurs s'affrontent individuellement.</p>
+      </div>
+
+      <div class="mode-card" data-mode="team" role="button" tabindex="0"
+           aria-label="Mode équipes">
+        <div class="mode-icon" aria-hidden="true">👥</div>
+        <h2 class="mode-card-title">On est ensemble</h2>
+        <p class="mode-card-description">Formez vos équipes et affrontez-vous en groupe.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- 👤 FORMULAIRE SOLO -->
+  <!-- ============================================ -->
+  <section id="form-solo" class="screen" hidden aria-labelledby="form-solo-title" style="text-align:center;">
+
+    <h1 id="form-solo-title">Joueurs (chacun pour soi)</h1>
+
+    <!-- Joueurs sélectionnés -->
+    <div id="joueurs-selectionnes-container" class="joueurs-selectionnes" role="list"
+         aria-label="Joueurs sélectionnés"></div>
+
+    <!-- Charger joueur existant -->
+    <div class="solo-block">
+      <h2>Choisir un joueur existant</h2>
+      <label for="liste-joueurs" class="sr-only">Liste des joueurs existants</label>
+      <select id="liste-joueurs" class="select-primary" aria-label="Sélectionner un joueur"></select>
+      <button id="charger-joueur" class="btn btn-secondary">
+        <span class="btn-icon">➕</span>
+        Ajouter
+      </button>
+    </div>
+
+    <hr class="separator">
+
+    <!-- Créer nouveau joueur -->
+    <div class="solo-block">
+      <h2>Créer un nouveau joueur</h2>
+      <div style="display:flex; gap:10px; align-items:center; justify-content:center;">
+        <label for="pseudo-solo" class="sr-only">Pseudo du nouveau joueur</label>
+        <input
+          id="pseudo-solo"
+          type="text"
+          placeholder="Nouveau pseudo"
+          maxlength="20"
+          class="input-primary"
+          style="flex:1; max-width:300px;"
+          autocomplete="off"
+        >
+        <button id="creer-joueur" class="btn btn-secondary">
+          <span class="btn-icon">✨</span>
+          Créer et ajouter
+        </button>
+      </div>
+    </div>
+
+    <!-- Bouton démarrer -->
+    <button id="btn-start-solo" class="btn-start-game" aria-label="Démarrer la partie"
+            style="margin:30px auto; display:block;">
+      <span class="btn-icon">🚀</span>
+      Commencer la partie
+    </button>
+
+  </section>
+
+<!-- ============================================ -->
+  <!-- 👥 FORMULAIRE ÉQUIPES                        -->
+  <!-- ============================================ -->
+  <section id="form-equipes" class="screen" hidden aria-labelledby="form-equipes-title">
+
+    <h2 class="section-title">⚔️ Configuration des équipes</h2>
+
+    <!-- Bloc création d'équipe -->
+    <div class="eq-form-layout">
+      <div class="eq-create-block">
+        <label class="label-primary">Nom de la nouvelle équipe</label>
+        <div class="eq-create-row">
+          <input
+            type="text"
+            id="eq-input-nom"
+            class="input-primary"
+            placeholder="Ex: Les Champions…"
+            maxlength="20"
+            autocomplete="off"
+          />
+          <button id="eq-btn-creer" class="btn-primary">✨ Créer et ajouter</button>
+        </div>
+      </div>
+
+      <!-- Toggle mode membres -->
+      <div class="eq-mode-toggle-block">
+        <span class="eq-mode-label">Mode équipe :</span>
+        <div class="eq-mode-toggle" role="group" aria-label="Mode de définition des membres">
+          <button
+            class="eq-toggle-btn active"
+            id="eq-toggle-joueurs"
+            data-mode="joueurs"
+            title="Sélectionner les joueurs membres"
+          >
+            👤 Joueurs nommés
+          </button>
+          <button
+            class="eq-toggle-btn"
+            id="eq-toggle-nombre"
+            data-mode="nombre"
+            title="Indiquer uniquement le nombre de joueurs"
+          >
+            🔢 Nombre seulement
+          </button>
+        </div>
+      </div>
+
+      <!-- Liste des équipes créées (injectée dynamiquement) -->
+      <div class="eq-equipes-liste" id="eq-equipes-liste">
+        <p class="eq-empty">Aucune équipe créée. Ajoute une équipe !</p>
+      </div>
+    </div>
+
+    <!-- Bouton lancer -->
+    <button id="btn-start-equipes" class="btn-start-game">
+      🚀 Lancer la partie
+    </button>
+
+  </section>
+
+  <!-- ============================================ -->
+  <!-- 📋 LISTE DES PARTIES -->
+  <!-- ============================================ -->
+  <section id="liste-parties" class="screen" hidden aria-labelledby="liste-parties-title">
+    <h1 id="liste-parties-title">Parties sauvegardées</h1>
+    <div id="parties-container" class="parties-container" role="list"></div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- 🎯 CONTENEUR DES JEUX -->
+  <!-- ============================================ -->
+  <main id="container" class="game-container" hidden>
+
+    <!-- ❓ QUIZ -->
+    <section id="quiz" class="game-screen" hidden aria-labelledby="quiz-title">
+      <header id="quiz-header" class="game-header">
+        <div id="theme-display" class="theme-display"></div>
+      </header>
+
+      <div id="timer" class="timer" role="timer" aria-live="polite">01:00</div>
+
+      <div class="question-header">
+        <button id="btn-prev" class="fleche" aria-label="Question précédente">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+          </svg>
+        </button>
+
+        <div id="question-container" class="question-container">
+          <h2 id="question" class="question-text"></h2>
+        </div>
+
+        <button id="btn-next-arrow" class="fleche" aria-label="Question suivante">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="indices-container">
+        <div class="ligne">
+          <button id="btn-indice1" class="btn-indice">Indice 1</button>
+          <p id="indice1" class="indice-text"></p>
+        </div>
+        <div class="ligne">
+          <button id="btn-indice2" class="btn-indice">Indice 2</button>
+          <p id="indice2" class="indice-text"></p>
+        </div>
+        <div class="ligne">
+          <button id="btn-reponse" class="btn-reponse">Réponse</button>
+          <p id="reponse" class="reponse-text"></p>
+        </div>
+      </div>
+
+      <button id="btn-next" class="btn-next-question">
+        <span class="btn-icon">➡️</span>
+        Question suivante
+      </button>
+    </section>
+
+    <!-- 💰 JUSTE PRIX -->
+    <section id="justeprix" class="game-screen" hidden aria-labelledby="justeprix-title">
+      <header id="jp-header" class="game-header">
+        <div id="jp-categorie" class="categorie-display"></div>
+      </header>
+
+      <div id="jp-timer" class="timer" role="timer" aria-live="polite">01:00</div>
+
+      <div id="jp-produit-container" class="produit-container">
+        <button id="jp-btn-prev" class="jp-fleche" aria-label="Produit précédent">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+          </svg>
+        </button>
+
+        <h2 id="jp-produit-nom" class="produit-nom"></h2>
+
+        <button id="jp-btn-next" class="jp-fleche" aria-label="Produit suivant">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+          </svg>
+        </button>
+      </div>
+
+      <p id="jp-produit-description" class="produit-description"></p>
+
+      <div id="jp-image-block" class="image-block">
+        <img id="jp-produit-image" alt="Image du produit" class="produit-image">
+
+        <button id="jp-produit-prix" class="jp-btn-prix">
+          <span class="btn-icon">👁️</span>
+          Afficher le prix
+        </button>
+
+        <a id="jp-produit-lien" class="btn btn-link" target="_blank" rel="noopener noreferrer">
+          <span class="btn-icon">🔗</span>
+          <span class="text">Voir sur Google Shopping</span>
+        </a>
+
+        <button id="btn-next-jp" class="btn-next-question">
+          <span class="btn-icon">➡️</span>
+          Produit suivant
+        </button>
+      </div>
+    </section>
+
+    <!-- 📖 LE MOT LE PLUS LONG -->
+    <section id="lml" class="game-screen" hidden aria-labelledby="lml-title">
+      <header class="game-header">
+        <h2 id="lml-title" class="sr-only">Le Mot le Plus Long</h2>
+      </header>
+
+      <div id="lml-timer" class="timer-lml" role="timer" aria-live="polite">01:00</div>
+
+      <div id="lml-lettres" class="lml-lettres lml-lettres-styled" role="list"
+           aria-label="Lettres disponibles"></div>
+
+      <label for="lml-input" class="sr-only">Entrez votre mot</label>
+      <input
+        id="lml-input"
+        type="text"
+        placeholder="Votre mot..."
+        class="lml-input"
+        aria-describedby="lml-resultat"
+        autocomplete="off"
+      >
+
+      <button id="lml-valider" class="btn-lml">
+        <span class="btn-icon">✅</span>
+        Valider
+      </button>
+
+      <p id="lml-resultat" class="lml-resultat" role="status" aria-live="polite"></p>
+
+      <button id="lml-rejouer" class="btn-lml">
+        <span class="btn-icon">🔄</span>
+        Rejouer
+      </button>
+    </section>
+
+    <!-- 🕵️ CONFIGURATION UNDERCOVER -->
+    <section id="undercover-config" class="screen" aria-labelledby="undercover-config-title">
+
+      <h1 id="undercover-config-title">Configuration</h1>
+
+      <div class="config-block">
+        <label>Nombre de joueurs :
+          <span id="uc-nb-joueurs" class="info-value"></span>
+        </label>
+      </div>
+
+      <div class="config-block">
+        <label for="uc-nb-misterwhite">
+          Mister White :
+          <input
+            id="uc-nb-misterwhite"
+            type="number"
+            min="0"
+            max="3"
+            value="1"
+            class="input-number"
+          >
+        </label>
+      </div>
+
+      <div class="config-block">
+        <label for="uc-nb-undercover">
+          Undercover :
+          <input
+            id="uc-nb-undercover"
+            type="number"
+            min="1"
+            max="5"
+            value="1"
+            class="input-number"
+          >
+        </label>
+      </div>
+
+      <button id="btn-start-undercover-config" class="btn-valider-equipes">
+        <span class="btn-icon">✅</span>
+        Confirmer
+      </button>
+
+      <div id="undercover-distribution" class="undercover-distribution" hidden>
+        <h2>Distribution des rôles</h2>
+        <div id="undercover-cartes-joueurs" class="undercover-cartes-joueurs"></div>
+        <div id="uc-carte-role" class="carte-role" hidden>
+          <h3>Ton rôle :</h3>
+          <p id="uc-carte-nom" class="role-player"></p>
+          <p id="uc-carte-role-texte" class="role-name"></p>
+          <p id="uc-carte-role-mot" class="role-word"></p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 🕵️ UNDERCOVER – Écran de jeu -->
+    <section id="undercover" class="game-screen" hidden aria-labelledby="undercover-game-title">
+      <header class="game-header">
+        <h2 id="undercover-game-title">Undercover – Débat &amp; Votes</h2>
+      </header>
+
+      <div id="undercover-phase" class="undercover-phase">
+        <p id="undercover-phase-texte" class="undercover-phase-texte">
+          🗣️ Phase de débat en cours...
+        </p>
+        <div class="uc-joueur uc-titre-section">Joueurs :</div>
+        <div id="undercover-joueurs" class="undercover-joueurs"></div>
+        <button id="undercover-voter" class="btn-primary">Passer au vote</button>
+      </div>
+    </section>
+
+    <!-- 🎭✏️ MIMER/DESSINER -->
+    <section id="mimer" class="game-screen" hidden aria-labelledby="mimer-title">
+      <header class="game-header">
+        <h2 id="mimer-title">Mimer ou Dessiner</h2>
+      </header>
+      <div id="mimer-timer" class="timer" role="timer">03:00</div>
+      <div id="mimer-content" class="mimer-content"></div>
+    </section>
+
+    <!-- 🪢 PENDU -->
+    <section id="pendu" class="game-screen" hidden aria-labelledby="pendu-title">
+      <header class="game-header">
+        <h2 id="pendu-title">Le Pendu</h2>
+      </header>
+
+      <div class="pendu-theme-container">
+        <button id="pendu-theme-toggle" class="btn-theme">🎯 Afficher le thème</button>
+        <div id="pendu-theme-display" class="pendu-theme-display" style="display:none;"></div>
+      </div>
+
+      <div id="pendu-dessin" class="pendu-dessin" aria-label="Dessin du pendu"></div>
+      <div id="pendu-mot" class="pendu-mot" role="status"></div>
+      <div id="pendu-clavier" class="pendu-clavier" role="group" aria-label="Clavier"></div>
+      <p id="pendu-erreurs" class="pendu-erreurs">
+        Erreurs : <span id="pendu-nb-erreurs">0</span>/7
+      </p>
+      <button id="pendu-rejouer" class="btn-secondary" hidden>Rejouer</button>
+    </section>
+
+    <!-- 📝 PETIT BAC -->
+    <section id="petitbac" class="game-screen" hidden aria-labelledby="petitbac-title">
+      <header class="game-header">
+        <h2 id="petitbac-title">Petit Bac</h2>
+      </header>
+      <div id="petitbac-timer" class="timer" role="timer">02:00</div>
+      <div id="petitbac-lettre" class="petitbac-lettre">
+        Lettre : <span id="petitbac-lettre-actuelle">A</span>
+      </div>
+      <div id="petitbac-categories" class="petitbac-grid"></div>
+      <button id="petitbac-valider" class="btn-primary">Valider mes réponses</button>
+    </section>
+
+    <!-- 🧠 MÉMOIRE -->
+    <section id="memoire" class="game-screen" hidden aria-labelledby="memoire-title">
+      <header class="game-header">
+        <h2 id="memoire-title">Jeu de Mémoire</h2>
+      </header>
+      <div id="memoire-score" class="memoire-score">
+        Score : <span id="memoire-points">0</span>
+      </div>
+      <div id="memoire-grille" class="memoire-grille" role="grid"></div>
+      <button id="memoire-recommencer" class="btn-secondary">Recommencer</button>
+
+      <div class="compte-a-rebours-overlay variant-sunset">
+        <div class="countdown-circle">
+          <svg class="countdown-svg">
+            <circle class="countdown-bg" cx="100" cy="100" r="90"></circle>
+            <circle class="countdown-progress" cx="100" cy="100" r="90"></circle>
+          </svg>
+          <div class="countdown-number">3</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ⭕ MORPION -->
+    <section id="morpion" class="game-screen" hidden aria-labelledby="morpion-title">
+      <div id="morpion-container"></div>
+    </section>
+
+    <!-- 🔴 PUISSANCE 4 -->
+    <section id="puissance4" class="game-screen" hidden aria-labelledby="puissance4-title">
+      <header class="game-header">
+        <h2 id="puissance4-title">Puissance 4</h2>
+      </header>
+      <div id="puissance4-status" class="puissance4-status" role="status">Au tour de : 🔴</div>
+      <div id="puissance4-grille" class="puissance4-grille" role="grid"></div>
+      <button id="puissance4-rejouer" class="btn-secondary">Nouvelle partie</button>
+    </section>
+
+  </main>
+
+  <!-- ============================================ -->
+  <!-- 📌 SCRIPTS -->
+  <!-- ============================================ -->
+
+  <!-- Module central -->
+  <script type="module" src="js/main.js"></script>
+
+  <!-- Jeux -->
+  <script type="module" src="js/jeux/quiz.js"></script>
+  <script type="module" src="js/jeux/justeprix.js"></script>
+  <script type="module" src="js/jeux/lml.js"></script>
+  <script type="module" src="js/jeux/morpion.js"></script>
+  <script type="module" src="js/jeux/undercover.js"></script>
+  <script type="module" src="js/jeux/pendu.js"></script>
+
+  <!-- Initialisation de la navigation -->
+  <script type="module">
+    import { initNavigation } from "./js/navigation.js";
+    initNavigation();
+  </script>
+
+</body>
+</html>

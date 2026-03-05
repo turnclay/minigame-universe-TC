@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MiniGame Universe — Rejoindre</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/player.css">
+  <link rel="icon" type="image/png" href="/images/LogoMiniGame.png">
+</head>
+<body class="player-body">
+
+  <!-- ── IDENTIFICATION ── -->
+  <div id="player-join" class="player-screen">
+    <div class="join-card">
+      <img src="/images/LogoMiniGame.png" alt="Logo" class="join-logo">
+      <h1>Rejoindre une partie</h1>
+
+      <label for="p-pseudo">Ton pseudo</label>
+      <input type="text" id="p-pseudo" class="input-primary"
+             placeholder="Ton pseudo…" maxlength="20"
+             autocomplete="off" autocorrect="off" autocapitalize="words">
+
+      <!-- Liste des parties disponibles -->
+      <label for="p-partie-select">Partie</label>
+      <select id="p-partie-select" class="select-primary">
+        <option value="">Chargement…</option>
+      </select>
+
+      <!-- Sélection d'équipe (visible si mode team) -->
+      <div id="p-equipe-bloc" hidden>
+        <label for="p-equipe-select">Équipe</label>
+        <select id="p-equipe-select" class="select-primary">
+          <option value="">-- Choisir une équipe --</option>
+        </select>
+      </div>
+
+      <button id="p-btn-join" class="btn-primary p-btn-full">
+        ✅ Rejoindre
+      </button>
+
+      <p id="p-join-error" class="p-error" hidden></p>
+    </div>
+  </div>
+
+  <!-- ── SALLE D'ATTENTE ── -->
+  <div id="player-lobby" class="player-screen" hidden>
+    <div class="lobby-card">
+      <h2>⏳ En attente du lancement…</h2>
+      <div class="lobby-player-info">
+        <div class="lobby-avatar" id="p-avatar"></div>
+        <div>
+          <p class="lobby-pseudo" id="p-pseudo-display"></p>
+          <p class="lobby-equipe" id="p-equipe-display"></p>
+        </div>
+      </div>
+      <div class="lobby-status">
+        <div class="lobby-spinner"></div>
+        <p>Le host va bientôt lancer la partie…</p>
+      </div>
+      <div id="p-autres-joueurs" class="lobby-autres">
+        <h3>Joueurs connectés</h3>
+        <div id="p-liste-joueurs" class="lobby-joueurs-liste"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── JEU EN COURS ── -->
+  <div id="player-game" class="player-screen" hidden>
+    <header class="player-header">
+      <span id="p-header-pseudo" class="p-header-info"></span>
+      <span id="p-header-equipe" class="p-header-info p-header-equipe"></span>
+      <span id="p-header-score"  class="p-header-score">0 pts</span>
+    </header>
+
+    <!-- Zone de jeu — contenu injecté selon le jeu -->
+    <main id="player-game-content" class="player-game-content">
+      <div class="p-waiting">
+        <div class="lobby-spinner"></div>
+        <p>En attente d'une action du host…</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- ── RÉSULTATS ── -->
+  <div id="player-results" class="player-screen" hidden>
+    <div class="results-card">
+      <h2>🏁 Partie terminée !</h2>
+      <div id="p-results-content" class="results-content"></div>
+      <button id="p-btn-rejouer" class="btn-primary">Rejoindre une nouvelle partie</button>
+    </div>
+  </div>
+
+  <script type="module" src="/js/player.js"></script>
+</body>
+</html>
