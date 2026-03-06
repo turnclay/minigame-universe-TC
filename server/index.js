@@ -75,7 +75,7 @@ app.use("/join", express.static(path.join(ROOT, "public", "join")));
 
 // Page d'accueil
 app.get("/", (req, res) => {
-    res.sendFile(path.join(ROOT, "index.html"));
+    res.redirect("/host");
 });
 
 // ─────────────────────────────────────────────
