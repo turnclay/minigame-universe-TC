@@ -231,7 +231,7 @@ export function initialiserUndercover() {
         try {
             console.log("[UC] 🔄 Chargement des duos de mots depuis undercover.json...");
 
-            const response = await fetch("../../data/undercover.json");
+            const response = await fetch("data/undercover.json");
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -927,4 +927,4 @@ export function initialiserUndercover() {
 // ======================================================
 // 🚀 Initialisation automatique du module Undercover
 // ======================================================
-initialiserUndercover();
+// Auto-init removed — called from main.js
