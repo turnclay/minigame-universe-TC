@@ -1,0 +1,18 @@
+# Ne jamais envoyer les dépendances
+node_modules/
+
+# Fichiers d'environnement
+.env
+
+# Dossiers d'IDE
+.idea/
+.vscode/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Builds
+dist/
+build/
