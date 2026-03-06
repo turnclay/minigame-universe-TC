@@ -70,8 +70,8 @@ function broadcastToHost(wss, partieId, type, payload) {
 // ── Validation du mot de passe HOST ───────────────
 function verifierMotDePasseHost(password) {
     const secret = process.env.HOST_PASSWORD;
-    if (!secret || !password) return false;
 
+    if (!secret || !password) return false;
     if (password.length !== secret.length) return false;
 
     let diff = 0;
@@ -89,27 +89,6 @@ function setupWebSocket(wss) {
 
         console.log(`[WS] Nouvelle connexion : ${socketId}`);
 
-        // ─────────────────────────────────────────────
-        // (Optionnel) Rate-limit WebSocket propre
-        // ─────────────────────────────────────────────
-        /*
-        const { RateLimiterMemory } = require("rate-limiter-flexible");
-        const wsLimiter = new RateLimiterMemory({ points: 60, duration: 10 });
-
-        ws.on("message", async raw => {
-            try {
-                await wsLimiter.consume(socketId);
-            } catch {
-                send(ws, MSG_OUT.ERROR, { code: "RATE_LIMIT" });
-                return ws.close();
-            }
-            handleRawMessage(raw);
-        });
-        */
-
-        // ─────────────────────────────────────────────
-        // Handler message normal
-        // ─────────────────────────────────────────────
         ws.on("message", (raw) => {
             let msg;
             try {
