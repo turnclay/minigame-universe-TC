@@ -35,14 +35,30 @@ function initAuth() {
     const btnAuth = $("auth-btn");
     const input   = $("auth-password");
 
+    // Log de debug pour vérifier l’envoi
+    console.log("INIT AUTH — prêt à envoyer");
+
     const tenter = () => {
         const password = input.value;
         if (!password) return;
-        socket.send("HOST_AUTH", { password });
+
+        console.log("ENVOI AUTH :", {
+            type: "HOST_AUTH",
+            payload: { password }
+        });
+
+        // 🔥 Envoi correct du message JSON
+        socket.send(JSON.stringify({
+            type: "HOST_AUTH",
+            payload: { password }
+        }));
     };
 
     btnAuth.onclick = tenter;
-    input.onkeydown = e => { if (e.key === "Enter") tenter(); };
+
+    input.onkeydown = e => {
+        if (e.key === "Enter") tenter();
+    };
 
     socket.on("AUTH_OK", () => {
         hide("host-auth");
