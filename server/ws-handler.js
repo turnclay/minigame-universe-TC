@@ -370,4 +370,6 @@ function handleMessage(wss, ws, socketId, type, payload) {
     }
 }
 
-module.exports = { setup
+module.exports = {
+    setupWebSocket
+};
