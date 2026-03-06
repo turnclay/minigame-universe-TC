@@ -1,7 +1,7 @@
 # --- CONFIGURATION ---
 $projectPath = "C:\Users\clayt\PycharmProjects\MiniGameV3"
-$renderServiceId = "A REMPLIR"
-$renderApiKey = "A REMPLIR"
+$renderServiceId = "srv-d6kv2u5m5p6s7389veag"
+$renderApiKey = "rnd_h5AV4uaXG6HYErpoqf0y5fbVQQIU"
 
 # --- SCRIPT ---
 Set-Location $projectPath
