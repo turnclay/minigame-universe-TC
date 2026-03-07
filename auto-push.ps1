@@ -16,9 +16,6 @@ if ($changes) {
     git commit -m "Auto update"
 
     Write-Host "Push vers GitHub..."
-    git push github main
-
-    Write-Host "Push vers Render..."
     git push origin main
 
     Write-Host "Déclenchement du redeploy Render..."
@@ -27,15 +24,10 @@ if ($changes) {
         "Authorization" = "Bearer $renderApiKey"
     }
 
-    $body = @{
-        "clearCache" = $true
-    } | ConvertTo-Json
-
     Invoke-RestMethod `
         -Method POST `
         -Uri "https://api.render.com/v1/services/$renderServiceId/deploys" `
         -Headers $headers `
-        -Body $body `
         -ContentType "application/json"
 
     Write-Host "Redeploy lancé !"
