@@ -28,23 +28,23 @@ const state = {
     equipe:   null,
     partieId: null,
     scores:   {},
-    statut:   null
+    statut:   null,
+    jeu:      null,
+    mode:     null,
 };
 
 // =============================================
 // 📋 FORMULAIRE D'INSCRIPTION
 // =============================================
 async function initJoin() {
-    // Récupère la liste des parties en lobby via REST
     await chargerParties();
 
-    // Si partieId en URL (?partieId=xxx), pré-sélectionner
-    const urlParams = new URLSearchParams(location.search);
+    // Pré-sélection via ?partieId=xxx dans l'URL
+    const urlParams  = new URLSearchParams(location.search);
     const partieIdUrl = urlParams.get("partieId");
     if (partieIdUrl) {
-        const select = $("p-partie-select");
-        // Attend que le select soit rempli
         setTimeout(() => {
+            const select = $("p-partie-select");
             if ([...select.options].some(o => o.value === partieIdUrl)) {
                 select.value = partieIdUrl;
                 onPartieChange();
@@ -54,28 +54,34 @@ async function initJoin() {
 
     $("p-partie-select").onchange = onPartieChange;
 
-    $("p-btn-join").onclick = () => {
-        const pseudo   = $("p-pseudo").value.trim();
-        const partieId = $("p-partie-select").value;
-        const equipe   = $("p-equipe-select")?.value || null;
-
-        if (!pseudo) {
-            afficherErreur("Entre ton pseudo."); return;
-        }
-        if (!partieId) {
-            afficherErreur("Sélectionne une partie."); return;
-        }
-
-        state.pseudo   = pseudo;
-        state.partieId = partieId;
-        state.equipe   = equipe || null;
-
-        socket.send("PLAYER_JOIN", { pseudo, partieId, equipe });
+    $("p-btn-refresh").onclick = async () => {
+        $("p-btn-refresh").textContent = "⏳ Chargement…";
+        await chargerParties();
+        $("p-btn-refresh").textContent = "🔄 Actualiser les parties";
     };
 
-    $("p-pseudo").onkeydown = e => {
-        if (e.key === "Enter") $("p-btn-join").click();
-    };
+    $("p-btn-join").onclick = tenterRejoindre;
+    $("p-pseudo").onkeydown = e => { if (e.key === "Enter") tenterRejoindre(); };
+}
+
+function tenterRejoindre() {
+    const pseudo   = $("p-pseudo").value.trim();
+    const partieId = $("p-partie-select").value;
+    const equipe   = $("p-equipe-select")?.value || null;
+
+    if (!pseudo) {
+        afficherErreur("Entre ton pseudo."); return;
+    }
+    if (!partieId) {
+        afficherErreur("Sélectionne une partie."); return;
+    }
+
+    state.pseudo   = pseudo;
+    state.partieId = partieId;
+    state.equipe   = equipe || null;
+
+    // ✅ Utilisation correcte de socket.send(type, payload)
+    socket.send("PLAYER_JOIN", { pseudo, partieId, equipe });
 }
 
 async function chargerParties() {
@@ -89,14 +95,16 @@ async function chargerParties() {
             return;
         }
 
-        select.innerHTML = list.map(p => `
-            <option value="${esc(p.id)}"
-                    data-mode="${esc(p.mode)}"
-                    data-equipes='${JSON.stringify(p.equipes || [])}'>
-                ${esc(p.nom)} — ${esc(p.jeu.toUpperCase())}
-                (${p.nbJoueurs} joueur${p.nbJoueurs > 1 ? "s" : ""})
-            </option>
-        `).join("");
+        select.innerHTML = `<option value="">-- Choisir une partie --</option>` +
+            list.map(p => `
+                <option value="${esc(p.id)}"
+                        data-mode="${esc(p.mode)}"
+                        data-jeu="${esc(p.jeu)}"
+                        data-equipes='${JSON.stringify(p.equipes || [])}'>
+                    ${esc(p.nom)} — ${esc(p.jeu.toUpperCase())}
+                    (${p.nbJoueurs} joueur${p.nbJoueurs > 1 ? "s" : ""})
+                </option>
+            `).join("");
     } catch {
         select.innerHTML = `<option value="">Erreur de chargement</option>`;
     }
@@ -107,7 +115,7 @@ function onPartieChange() {
     const opt    = select.options[select.selectedIndex];
     if (!opt || !opt.value) return;
 
-    const mode   = opt.dataset.mode;
+    const mode      = opt.dataset.mode;
     const equipeBloc = $("p-equipe-bloc");
 
     if (mode === "team") {
@@ -126,6 +134,7 @@ function onPartieChange() {
 
 function afficherErreur(msg) {
     const el = $("p-join-error");
+    if (!el) return;
     el.textContent = msg;
     el.hidden = false;
     setTimeout(() => { el.hidden = true; }, 4000);
@@ -137,20 +146,28 @@ function afficherErreur(msg) {
 function afficherLobby(snapshot) {
     afficherEcran("player-lobby");
 
-    $("p-avatar").textContent        = state.pseudo?.charAt(0).toUpperCase() || "?";
+    state.jeu  = snapshot?.jeu;
+    state.mode = snapshot?.mode;
+
+    $("p-avatar").textContent         = (state.pseudo || "?").charAt(0).toUpperCase();
     $("p-pseudo-display").textContent = state.pseudo || "";
-    $("p-equipe-display").textContent = state.equipe
-        ? `🛡️ Équipe : ${state.equipe}` : "";
+    $("p-equipe-display").textContent = state.equipe ? `🛡️ Équipe : ${state.equipe}` : "";
+
+    const badgeJeu  = $("p-lobby-jeu");
+    const badgeMode = $("p-lobby-mode");
+    if (badgeJeu)  badgeJeu.textContent  = snapshot?.jeu?.toUpperCase() || "";
+    if (badgeMode) badgeMode.textContent = snapshot?.mode === "team" ? "👥 Équipes" : "👤 Solo";
 
     renderAutresJoueurs(snapshot?.joueurs || []);
 }
 
 function renderAutresJoueurs(joueurs) {
     const liste = $("p-liste-joueurs");
+    if (!liste) return;
     liste.innerHTML = joueurs.map(j => `
         <span class="lobby-joueur-tag">
             ${esc(j.pseudo)}
-            ${j.equipe ? `<small>🛡️${esc(j.equipe)}</small>` : ""}
+            ${j.equipe ? `<small>🛡️ ${esc(j.equipe)}</small>` : ""}
         </span>
     `).join("") || `<p class="h-empty">Tu es le premier !</p>`;
 }
@@ -173,6 +190,7 @@ function mettreAJourScore(scores) {
     const monScore = scores?.[cible] ?? 0;
     const el = $("p-header-score");
     if (el) el.textContent = `${monScore} pts`;
+    state.scores = scores;
 }
 
 // =============================================
@@ -181,23 +199,24 @@ function mettreAJourScore(scores) {
 function afficherResultats(snapshot) {
     afficherEcran("player-results");
 
-    const entries = Object.entries(snapshot?.scores || {})
-        .sort((a, b) => b[1] - a[1]);
+    const entries = Object.entries(snapshot?.scores || {}).sort((a, b) => b[1] - a[1]);
+    const medals  = ["🥇", "🥈", "🥉"];
+    const cible   = state.equipe || state.pseudo;
 
-    const medals = ["🥇", "🥈", "🥉"];
-    const cible  = state.equipe || state.pseudo;
-
-    $("p-results-content").innerHTML = entries.map(([nom, pts], i) => `
-        <div class="result-row ${nom === cible ? "result-me" : ""}">
-            <span>${medals[i] || `${i+1}.`}</span>
-            <span>${esc(nom)}</span>
-            <span><strong>${pts} pts</strong></span>
-        </div>
-    `).join("");
+    $("p-results-content").innerHTML = entries.length === 0
+        ? `<p class="h-empty">Aucun score enregistré.</p>`
+        : entries.map(([nom, pts], i) => `
+            <div class="result-row ${nom === cible ? "result-me" : ""}">
+                <span class="result-pos">${medals[i] || `${i+1}.`}</span>
+                <span class="result-nom">${esc(nom)}</span>
+                <span class="result-pts"><strong>${pts} pts</strong></span>
+            </div>
+        `).join("");
 
     $("p-btn-rejouer").onclick = () => {
-        // Reset état et retour au formulaire
-        state.pseudo = state.equipe = state.partieId = null;
+        // Réinitialiser l'état
+        state.pseudo = state.equipe = state.partieId = state.jeu = state.mode = null;
+        state.scores = {};
         chargerParties();
         afficherEcran("player-join");
     };
@@ -207,6 +226,19 @@ function afficherResultats(snapshot) {
 // 📡 ÉVÉNEMENTS WEBSOCKET ENTRANTS
 // =============================================
 function initSocketEvents() {
+
+    // ── Connexion/déconnexion WS ──────────────────────
+    socket.on("__connected__", () => {
+        const banner = document.querySelector(".player-disconnect-banner");
+        if (banner) banner.hidden = true;
+    });
+
+    socket.on("__disconnected__", () => {
+        const banner = document.querySelector(".player-disconnect-banner");
+        if (banner) banner.hidden = false;
+    });
+
+    // ── Rejoindre ─────────────────────────────────────
     socket.on("JOIN_OK", ({ pseudo, equipe, snapshot }) => {
         state.pseudo   = pseudo;
         state.equipe   = equipe;
@@ -218,19 +250,20 @@ function initSocketEvents() {
         afficherErreur(error || "Impossible de rejoindre la partie.");
     });
 
+    // ── Mise à jour lobby ─────────────────────────────
     socket.on("PLAYER_JOINED", ({ joueurs }) => {
-        // Mise à jour de la liste dans le lobby
-        if (!$("player-lobby").hidden) {
+        if (!$("player-lobby")?.hidden) {
             renderAutresJoueurs(joueurs);
         }
     });
 
     socket.on("PLAYER_LEFT", ({ joueurs }) => {
-        if (!$("player-lobby").hidden) {
+        if (!$("player-lobby")?.hidden) {
             renderAutresJoueurs(joueurs);
         }
     });
 
+    // ── Jeu ───────────────────────────────────────────
     socket.on("GAME_STARTED", ({ snapshot }) => {
         afficherJeu(snapshot);
     });
@@ -243,26 +276,21 @@ function initSocketEvents() {
         afficherResultats(snapshot);
     });
 
+    // ── Expulsion ─────────────────────────────────────
     socket.on("PLAYER_KICKED", ({ reason }) => {
-        alert(`Tu as été expulsé : ${reason}`);
+        alert(`Tu as été expulsé : ${reason || "sans raison."}`);
+        state.pseudo = state.equipe = state.partieId = null;
+        chargerParties();
         afficherEcran("player-join");
     });
 
-    socket.on("__disconnected__", () => {
-        // Affiche un bandeau discret sans bloquer le jeu
-        const banner = document.querySelector(".player-disconnect-banner");
-        if (banner) banner.hidden = false;
-    });
-
-    socket.on("__connected__", () => {
-        const banner = document.querySelector(".player-disconnect-banner");
-        if (banner) banner.hidden = true;
-    });
-
+    // ── Erreurs ───────────────────────────────────────
     socket.on("ERROR", ({ code }) => {
-        if (code === "RATE_LIMIT") {
-            afficherErreur("Trop de messages envoyés. Ralentis !");
-        }
+        const messages = {
+            RATE_LIMIT: "Trop de messages envoyés. Ralentis !",
+        };
+        if (messages[code]) afficherErreur(messages[code]);
+        else console.warn("[PLAYER] Erreur serveur :", code);
     });
 }
 

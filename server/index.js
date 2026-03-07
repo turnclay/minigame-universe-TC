@@ -1,3 +1,4 @@
+// server/server.js
 require("dotenv").config();
 
 const express    = require("express");
@@ -12,10 +13,7 @@ const { setupWebSocket } = require("./ws-handler.js");
 const app    = express();
 const server = http.createServer(app);
 
-// Render fournit automatiquement process.env.PORT
 const PORT   = process.env.PORT || 3000;
-
-// ORIGIN dynamique (Render ou local)
 const ORIGIN = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
 const IS_DEV = process.env.NODE_ENV !== "production";
 
@@ -26,10 +24,10 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com"],
-            imgSrc: ["'self'", "data:", "blob:"],
+            scriptSrc:  ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+            styleSrc:   ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc:    ["'self'", "https://fonts.gstatic.com"],
+            imgSrc:     ["'self'", "data:", "blob:"],
             connectSrc: [
                 "'self'",
                 ORIGIN.replace("https://", "wss://").replace("http://", "ws://"),
@@ -58,16 +56,33 @@ app.use("/api", async (req, res, next) => {
 });
 
 // ─────────────────────────────────────────────
-// Fichiers statiques (CORRIGÉ)
+// Fichiers statiques
 // ─────────────────────────────────────────────
 const ROOT = path.join(__dirname, "..");
 
-// Sert tout le dossier public
-app.use(express.static(path.join(ROOT, "public")));
+// ✅ Sert tout le dossier public (inclut /css, /js, /images)
+app.use(express.static(path.join(ROOT, "public"), {
+    // S'assure que les fichiers statiques ont le bon cache
+    maxAge: IS_DEV ? 0 : "1h"
+}));
 
-// Page d'accueil
+// ─────────────────────────────────────────────
+// Routes HTML (SPA multi-écrans)
+// ─────────────────────────────────────────────
+
+// Accueil → redirect vers /host
 app.get("/", (req, res) => {
     res.redirect("/host");
+});
+
+// Interface Host
+app.get("/host", (req, res) => {
+    res.sendFile(path.join(ROOT, "public", "host.html"));
+});
+
+// Interface Player (avec support ?partieId=xxx en URL)
+app.get("/join", (req, res) => {
+    res.sendFile(path.join(ROOT, "public", "join.html"));
 });
 
 // ─────────────────────────────────────────────
@@ -87,6 +102,11 @@ app.get("/api/parties", (req, res) => {
             nbJoueurs: store.getJoueursPartie(p.id).length
         }));
     res.json(parties);
+});
+
+// Ping / santé
+app.get("/api/ping", (req, res) => {
+    res.json({ ok: true, ts: Date.now() });
 });
 
 // ─────────────────────────────────────────────

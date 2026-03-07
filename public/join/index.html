@@ -6,88 +6,120 @@
   <title>MiniGame Universe — Rejoindre</title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/player.css">
+  <!-- ✅ Chemin correct vers le logo -->
   <link rel="icon" type="image/png" href="/images/LogoMiniGame.png">
 </head>
 <body class="player-body">
 
-  <!-- ── IDENTIFICATION ── -->
+  <!-- ── Bandeau déconnexion ── -->
+  <div class="player-disconnect-banner" hidden>
+    ⚠️ Connexion perdue — reconnexion en cours…
+  </div>
+
+  <!-- ── ÉCRAN 1 : Formulaire de connexion ── -->
   <div id="player-join" class="player-screen">
     <div class="join-card">
       <img src="/images/LogoMiniGame.png" alt="Logo" class="join-logo">
       <h1>Rejoindre une partie</h1>
 
-      <label for="p-pseudo">Ton pseudo</label>
-      <input type="text" id="p-pseudo" class="input-primary"
-             placeholder="Ton pseudo…" maxlength="20"
-             autocomplete="off" autocorrect="off" autocapitalize="words">
+      <label>Ton pseudo
+        <input type="text" id="p-pseudo" class="input-primary"
+               placeholder="Ex: SuperJoueur42" maxlength="20" autocomplete="off">
+      </label>
 
-      <!-- Liste des parties disponibles -->
-      <label for="p-partie-select">Partie</label>
-      <select id="p-partie-select" class="select-primary">
-        <option value="">Chargement…</option>
-      </select>
-
-      <!-- Sélection d'équipe (visible si mode team) -->
-      <div id="p-equipe-bloc" hidden>
-        <label for="p-equipe-select">Équipe</label>
-        <select id="p-equipe-select" class="select-primary">
-          <option value="">-- Choisir une équipe --</option>
+      <label>Partie
+        <select id="p-partie-select" class="select-primary">
+          <option value="">Chargement…</option>
         </select>
+      </label>
+
+      <!-- Bloc équipe (affiché en mode team uniquement) -->
+      <div id="p-equipe-bloc" hidden>
+        <label>Équipe
+          <select id="p-equipe-select" class="select-primary">
+            <option value="">-- Choisir une équipe --</option>
+          </select>
+        </label>
       </div>
 
-      <button id="p-btn-join" class="btn-primary p-btn-full">
-        ✅ Rejoindre
+      <p id="p-join-error" class="join-error" hidden></p>
+
+      <button id="p-btn-join" class="btn-primary btn-full">
+        🎮 Rejoindre
       </button>
 
-      <p id="p-join-error" class="p-error" hidden></p>
+      <button id="p-btn-refresh" class="btn-secondary btn-full" style="margin-top:8px">
+        🔄 Actualiser les parties
+      </button>
     </div>
   </div>
 
-  <!-- ── SALLE D'ATTENTE ── -->
+  <!-- ── ÉCRAN 2 : Lobby d'attente ── -->
   <div id="player-lobby" class="player-screen" hidden>
     <div class="lobby-card">
-      <h2>⏳ En attente du lancement…</h2>
-      <div class="lobby-player-info">
-        <div class="lobby-avatar" id="p-avatar"></div>
-        <div>
-          <p class="lobby-pseudo" id="p-pseudo-display"></p>
-          <p class="lobby-equipe" id="p-equipe-display"></p>
+
+      <div class="lobby-avatar-block">
+        <div class="lobby-avatar" id="p-avatar">?</div>
+        <div class="lobby-pseudo-block">
+          <span class="lobby-pseudo" id="p-pseudo-display"></span>
+          <span class="lobby-equipe" id="p-equipe-display"></span>
         </div>
       </div>
-      <div class="lobby-status">
+
+      <div class="lobby-waiting">
         <div class="lobby-spinner"></div>
-        <p>Le host va bientôt lancer la partie…</p>
+        <p>En attente du host…</p>
       </div>
-      <div id="p-autres-joueurs" class="lobby-autres">
-        <h3>Joueurs connectés</h3>
+
+      <div class="lobby-joueurs-section">
+        <h3>👥 Joueurs connectés</h3>
         <div id="p-liste-joueurs" class="lobby-joueurs-liste"></div>
+      </div>
+
+      <div class="lobby-game-info">
+        <span id="p-lobby-jeu" class="badge-jeu"></span>
+        <span id="p-lobby-mode" class="badge-mode"></span>
       </div>
     </div>
   </div>
 
-  <!-- ── JEU EN COURS ── -->
+  <!-- ── ÉCRAN 3 : Jeu en cours ── -->
   <div id="player-game" class="player-screen" hidden>
-    <header class="player-header">
-      <span id="p-header-pseudo" class="p-header-info"></span>
-      <span id="p-header-equipe" class="p-header-info p-header-equipe"></span>
-      <span id="p-header-score"  class="p-header-score">0 pts</span>
+
+    <!-- Header fixe avec infos joueur -->
+    <header class="player-game-header">
+      <span class="pg-pseudo" id="p-header-pseudo"></span>
+      <span class="pg-equipe" id="p-header-equipe"></span>
+      <span class="pg-score" id="p-header-score">0 pts</span>
     </header>
 
-    <!-- Zone de jeu — contenu injecté selon le jeu -->
-    <main id="player-game-content" class="player-game-content">
-      <div class="p-waiting">
-        <div class="lobby-spinner"></div>
-        <p>En attente d'une action du host…</p>
+    <!-- Zone de contenu du jeu (le host envoie des instructions) -->
+    <main class="player-game-main">
+      <div id="p-game-content" class="game-content">
+        <div class="game-waiting">
+          <div class="game-icon">🎮</div>
+          <p>La partie est en cours !</p>
+          <p class="game-sub">Suis les instructions du host.</p>
+        </div>
+      </div>
+
+      <!-- Bouton action générique (peut être caché/affiché par la logique de jeu) -->
+      <div id="p-action-zone" class="action-zone" hidden>
+        <button id="p-btn-action" class="btn-primary btn-xl">
+          Répondre
+        </button>
       </div>
     </main>
   </div>
 
-  <!-- ── RÉSULTATS ── -->
+  <!-- ── ÉCRAN 4 : Résultats ── -->
   <div id="player-results" class="player-screen" hidden>
     <div class="results-card">
-      <h2>🏁 Partie terminée !</h2>
-      <div id="p-results-content" class="results-content"></div>
-      <button id="p-btn-rejouer" class="btn-primary">Rejoindre une nouvelle partie</button>
+      <h1>🏁 Fin de partie !</h1>
+      <div id="p-results-content" class="results-list"></div>
+      <button id="p-btn-rejouer" class="btn-primary btn-full">
+        🔄 Rejoindre une autre partie
+      </button>
     </div>
   </div>
 
