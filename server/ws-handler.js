@@ -226,46 +226,6 @@ function handleMessage(wss, ws, socketId, type, payload) {
             break;
         }
 
-        // 🟦 HOST : Modifier les scores
-        case MSG_IN.HOST_ADD_POINTS:
-        case MSG_IN.HOST_REMOVE_POINTS: {
-            const conn = store.getConnexion(socketId);
-            if (!conn || conn.role !== "host" || !conn.partieId) return;
-
-            const { cible, points = 1 } = payload;
-            if (!cible) return;
-
-            const delta = type === MSG_IN.HOST_ADD_POINTS ? points : -points;
-            store.ajouterPointsPartie(conn.partieId, cible, delta);
-
-            const snapshot = store.snapshotPartie(conn.partieId);
-
-            broadcastToPartie(wss, conn.partieId, MSG_OUT.SCORES_UPDATE, {
-                scores: snapshot.scores
-            });
-
-            break;
-        }
-
-        // 🟦 HOST : Expulser un joueur
-        case MSG_IN.HOST_KICK_PLAYER: {
-            const conn = store.getConnexion(socketId);
-            if (!conn || conn.role !== "host") return;
-
-            const { pseudo } = payload;
-            if (!pseudo) return;
-
-            wss.clients.forEach(client => {
-                const c = store.getConnexion(client._socketId);
-                if (c && c.pseudo === pseudo && c.role === "player") {
-                    send(client, MSG_OUT.PLAYER_KICKED, { reason: "Expulsé par le host." });
-                    setTimeout(() => client.close(), 200);
-                }
-            });
-
-            break;
-        }
-
         // 🟩 PLAYER : Rejoindre une partie
         case MSG_IN.PLAYER_JOIN: {
             const { pseudo, partieId, equipe = null } = payload;

@@ -62,16 +62,8 @@ app.use("/api", async (req, res, next) => {
 // ─────────────────────────────────────────────
 const ROOT = path.join(__dirname, "..");
 
-// Dossiers front-end
-app.use("/css",    express.static(path.join(ROOT, "css")));
-app.use("/js",     express.static(path.join(ROOT, "js")));
-app.use("/images", express.static(path.join(ROOT, "images")));
-app.use("/audio",  express.static(path.join(ROOT, "audio")));
-app.use("/data",   express.static(path.join(ROOT, "data")));
-
-// Interfaces Host & Join
-app.use("/host", express.static(path.join(ROOT, "public", "host")));
-app.use("/join", express.static(path.join(ROOT, "public", "join")));
+// Sert tout le dossier public
+app.use(express.static(path.join(ROOT, "public")));
 
 // Page d'accueil
 app.get("/", (req, res) => {

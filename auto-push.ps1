@@ -10,16 +10,18 @@ Set-Location $projectPath
 $changes = git status --porcelain
 
 if ($changes) {
-    Write-Host "🔄 Modifications détectées, push en cours..."
+    Write-Host "Modifications détectées, push en cours..."
 
     git add .
     git commit -m "Auto update"
-    git push
 
-    Write-Host "📤 Push effectué."
+    Write-Host "Push vers GitHub..."
+    git push github main
 
-    # Redeploy Render
-    Write-Host "🚀 Déclenchement du redeploy Render..."
+    Write-Host "Push vers Render..."
+    git push origin main
+
+    Write-Host "Déclenchement du redeploy Render..."
 
     $headers = @{
         "Authorization" = "Bearer $renderApiKey"
@@ -36,8 +38,8 @@ if ($changes) {
         -Body $body `
         -ContentType "application/json"
 
-    Write-Host "🎉 Redeploy lancé !"
+    Write-Host "Redeploy lancé !"
 }
 else {
-    Write-Host "✔️ Aucun changement détecté."
+    Write-Host "Aucun changement détecté."
 }
