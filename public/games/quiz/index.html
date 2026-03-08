@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<!-- Jeu : Quiz — /public/quiz/index.html -->
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz — MiniGame Universe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/games.css">
+  <link rel="icon" type="image/png" href="/images/LogoMiniGame.png">
+</head>
+<body class="game-body">
+
+<div id="toast-container" class="toast-container"></div>
+
+<!-- ── Topbar ── -->
+<nav class="game-topbar">
+  <button id="btn-retour" class="topbar-back" onclick="history.back()">‹</button>
+  <div class="game-topbar-center">
+    <span class="game-topbar-icon">❓</span>
+    <span class="game-topbar-title">Quiz</span>
+  </div>
+  <div id="timer" class="game-timer">1:00</div>
+</nav>
+
+<!-- ── Scoreboard flottant ── -->
+<div id="scoreboard" class="scoreboard-float" hidden></div>
+
+<!-- ── Contenu Quiz ── -->
+<main class="game-main">
+  <div class="quiz-meta">
+    <span id="theme-display" class="quiz-theme-badge"></span>
+  </div>
+
+  <div id="question" class="quiz-question"></div>
+
+  <div class="quiz-indices">
+    <div id="indice1" class="indice indice1"></div>
+    <div id="indice2" class="indice indice2"></div>
+  </div>
+
+  <div id="reponse" class="quiz-reponse"></div>
+</main>
+
+<!-- ── Actions ── -->
+<footer class="game-footer">
+  <div class="quiz-actions">
+    <button id="btn-indice1"  class="btn-secondary">💡 Indice 1</button>
+    <button id="btn-indice2"  class="btn-secondary">💡 Indice 2</button>
+    <button id="btn-reponse"  class="btn-success">✅ Bonne réponse</button>
+  </div>
+  <div class="quiz-nav">
+    <button id="btn-prev"        class="btn-ghost">‹ Préc.</button>
+    <button id="btn-next"        class="btn-primary">Suiv. ›</button>
+    <button id="btn-next-arrow"  class="btn-primary" style="display:none">›</button>
+  </div>
+</footer>
+
+<script type="module" src="/js/main.js"></script>
+<script type="module" src="/js/games/quiz.js"></script>
+<script type="module">
+  import { initialiserQuiz } from "/js/games/quiz.js";
+  import { GameState } from "/js/core/state.js";
+  // GameState est chargé depuis sessionStorage ou passé via URL
+  const raw = sessionStorage.getItem("mgu_game_session");
+  if (raw) Object.assign(GameState, JSON.parse(raw));
+  document.addEventListener("DOMContentLoaded", () => initialiserQuiz());
+</script>
+</body>
+</html>

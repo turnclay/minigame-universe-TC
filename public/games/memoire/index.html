@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<!-- Jeu : Mémoire Flash — /public/memoire/index.html -->
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mémoire Flash — MiniGame Universe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/games.css">
+  <link rel="icon" type="image/png" href="/images/LogoMiniGame.png">
+</head>
+<body class="game-body">
+
+<div id="toast-container" class="toast-container"></div>
+
+<nav class="game-topbar">
+  <button class="topbar-back" onclick="history.back()">‹</button>
+  <div class="game-topbar-center">
+    <span class="game-topbar-icon">🧠</span>
+    <span class="game-topbar-title">Mémoire Flash</span>
+  </div>
+  <div class="game-topbar-right"></div>
+</nav>
+
+<div id="scoreboard" class="scoreboard-float" hidden></div>
+
+<!-- Le contenu est généré dynamiquement par memoire.js dans #memoire -->
+<div id="memoire" class="game-main memoire-root"></div>
+
+<script type="module" src="/js/main.js"></script>
+<script type="module">
+  import { initialiserMemoire } from "/js/games/memoire.js";
+  import { GameState } from "/js/core/state.js";
+  const raw = sessionStorage.getItem("mgu_game_session");
+  if (raw) Object.assign(GameState, JSON.parse(raw));
+  document.addEventListener("DOMContentLoaded", () => initialiserMemoire());
+</script>
+</body>
+</html>
