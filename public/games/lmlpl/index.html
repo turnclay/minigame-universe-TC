@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quiz — MiniGame Universe</title>
+  <title>Le Mot le Plus Long — MiniGame Universe</title>
   <link rel="stylesheet" href="../../css/style.css" />
   <link rel="stylesheet" href="../../css/games.css" />
 </head>
@@ -14,9 +14,9 @@
 ════════════════════════════════════════════ -->
 <header class="game-topbar">
   <a href="../../" class="btn-icon" title="Accueil">🏠</a>
-  <h1 class="game-title">🧠 Quiz</h1>
+  <h1 class="game-title">🔤 Le Mot le Plus Long</h1>
   <div class="topbar-right">
-    <span id="quiz-timer" class="game-timer">01:00</span>
+    <span id="lml-timer" class="game-timer">01:00</span>
   </div>
 </header>
 
@@ -26,17 +26,33 @@
 <div id="scoreboard-float" class="scoreboard-float"></div>
 
 <!-- ═══════════════════════════════════════════
-     CONTENU PRINCIPAL (géré par quiz.js)
+     CONTENU PRINCIPAL
 ════════════════════════════════════════════ -->
 <main class="game-main">
-  <section id="quiz" class="game-section">
-    <!-- quiz.js injecte ici :
-         - #quiz-question
-         - #quiz-answers
-         - #quiz-indice1, #quiz-indice2
-         - #quiz-feedback
-         - #quiz-score-local
-    -->
+  <section id="lml" class="game-section">
+
+    <!-- Lettres disponibles (cliquables) -->
+    <div class="lml-lettres-wrapper">
+      <p class="lml-label">Lettres disponibles — cliquez pour composer</p>
+      <div id="lml-lettres" class="lml-lettres"></div>
+    </div>
+
+    <!-- Zone de saisie du mot -->
+    <div class="lml-input-wrapper">
+      <input
+        type="text"
+        id="lml-input"
+        class="lml-input"
+        placeholder="Votre mot…"
+        autocomplete="off"
+        autocapitalize="characters"
+        spellcheck="false"
+      />
+    </div>
+
+    <!-- Résultat -->
+    <div id="lml-resultat" class="lml-resultat"></div>
+
   </section>
 </main>
 
@@ -44,9 +60,9 @@
      FOOTER ACTIONS
 ════════════════════════════════════════════ -->
 <footer class="game-footer">
-  <button id="quiz-btn-next" class="btn-primary">➡️ Question suivante</button>
-  <button id="quiz-btn-indice1" class="btn-secondary">💡 Indice 1</button>
-  <button id="quiz-btn-indice2" class="btn-secondary">💡 Indice 2</button>
+  <button id="lml-melanger" class="btn-secondary">🔀 Mélanger</button>
+  <button id="lml-valider" class="btn-primary">✅ Valider</button>
+  <button id="lml-rejouer" class="btn-secondary">🔄 Rejouer</button>
 </footer>
 
 <!-- ═══════════════════════════════════════════
@@ -54,16 +70,15 @@
 ════════════════════════════════════════════ -->
 <script type="module">
   import { GameState } from "../../js/core/state.js";
-  import { initialiserQuiz } from "../../js/games/quiz.js";
+  import { initialiserLML } from "../../js/games/lml.js";
 
-  // Restaurer la session de jeu
   const session = sessionStorage.getItem("mgu_game_session");
   if (session) {
     try { Object.assign(GameState, JSON.parse(session)); } catch(e) {}
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    initialiserQuiz();
+    initialiserLML();
   });
 </script>
 

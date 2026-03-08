@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quiz — MiniGame Universe</title>
+  <title>Juste Prix — MiniGame Universe</title>
   <link rel="stylesheet" href="../../css/style.css" />
   <link rel="stylesheet" href="../../css/games.css" />
 </head>
@@ -14,9 +14,9 @@
 ════════════════════════════════════════════ -->
 <header class="game-topbar">
   <a href="../../" class="btn-icon" title="Accueil">🏠</a>
-  <h1 class="game-title">🧠 Quiz</h1>
+  <h1 class="game-title">💶 Juste Prix</h1>
   <div class="topbar-right">
-    <span id="quiz-timer" class="game-timer">01:00</span>
+    <span id="jp-timer" class="game-timer">01:00</span>
   </div>
 </header>
 
@@ -26,17 +26,33 @@
 <div id="scoreboard-float" class="scoreboard-float"></div>
 
 <!-- ═══════════════════════════════════════════
-     CONTENU PRINCIPAL (géré par quiz.js)
+     CONTENU PRINCIPAL
 ════════════════════════════════════════════ -->
 <main class="game-main">
-  <section id="quiz" class="game-section">
-    <!-- quiz.js injecte ici :
-         - #quiz-question
-         - #quiz-answers
-         - #quiz-indice1, #quiz-indice2
-         - #quiz-feedback
-         - #quiz-score-local
-    -->
+  <section id="justeprix" class="game-section">
+
+    <!-- Badge catégorie -->
+    <div class="jp-header">
+      <span id="jp-categorie" class="badge-categorie"></span>
+    </div>
+
+    <!-- Carte produit -->
+    <div class="jp-card">
+      <img id="jp-produit-image" src="" alt="Produit" class="jp-image" />
+      <div class="jp-info">
+        <h2 id="jp-produit-nom" class="jp-nom">Chargement…</h2>
+        <p id="jp-produit-description" class="jp-desc"></p>
+        <a id="jp-produit-lien" href="#" target="_blank" rel="noopener" class="jp-lien">
+          🔍 Rechercher sur Google Shopping
+        </a>
+      </div>
+    </div>
+
+    <!-- Prix (cliquable pour révéler) -->
+    <button id="jp-produit-prix" class="jp-prix-btn">
+      💶 Afficher le prix
+    </button>
+
   </section>
 </main>
 
@@ -44,9 +60,8 @@
      FOOTER ACTIONS
 ════════════════════════════════════════════ -->
 <footer class="game-footer">
-  <button id="quiz-btn-next" class="btn-primary">➡️ Question suivante</button>
-  <button id="quiz-btn-indice1" class="btn-secondary">💡 Indice 1</button>
-  <button id="quiz-btn-indice2" class="btn-secondary">💡 Indice 2</button>
+  <button id="jp-btn-prev" class="btn-secondary">⬅️ Précédent</button>
+  <button id="jp-btn-next" class="btn-primary">➡️ Suivant</button>
 </footer>
 
 <!-- ═══════════════════════════════════════════
@@ -54,16 +69,15 @@
 ════════════════════════════════════════════ -->
 <script type="module">
   import { GameState } from "../../js/core/state.js";
-  import { initialiserQuiz } from "../../js/games/quiz.js";
+  import { initialiserJustePrix } from "../../js/games/justeprix.js";
 
-  // Restaurer la session de jeu
   const session = sessionStorage.getItem("mgu_game_session");
   if (session) {
     try { Object.assign(GameState, JSON.parse(session)); } catch(e) {}
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    initialiserQuiz();
+    initialiserJustePrix();
   });
 </script>
 

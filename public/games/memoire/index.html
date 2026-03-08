@@ -15,27 +15,176 @@
 
 <div id="toast-container" class="toast-container"></div>
 
+<!-- ── Topbar ── -->
 <nav class="game-topbar">
-  <button class="topbar-back" onclick="history.back()">‹</button>
+  <button class="topbar-back" onclick="history.back()" title="Retour">‹</button>
   <div class="game-topbar-center">
     <span class="game-topbar-icon">🧠</span>
     <span class="game-topbar-title">Mémoire Flash</span>
   </div>
-  <div class="game-topbar-right"></div>
+  <!-- Infos joueur/équipe actif affichées dynamiquement -->
+  <div id="memoire-joueur-actif" class="game-topbar-right" style="font-size:0.8rem;color:var(--c-accent);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
 </nav>
 
+<!-- ── Scoreboard flottant ── -->
 <div id="scoreboard" class="scoreboard-float" hidden></div>
 
-<!-- Le contenu est généré dynamiquement par memoire.js dans #memoire -->
+<!--
+  Architecture :
+  - En mode HOST   → le host voit le menu des défis, choisit un défi pour la salle
+  - En mode PLAYER → le joueur actif joue dans sa fenêtre
+  - Le contenu est généré dynamiquement par memoire.js dans #memoire
+  - GameState (mode, joueurs, equipes) est lu depuis sessionStorage "mgu_game_session"
+-->
 <div id="memoire" class="game-main memoire-root"></div>
 
-<script type="module" src="/js/main.js"></script>
+<!-- ═══════════════════════════════════════════════════
+     SECTION HOST UNIQUEMENT : panneau de contrôle
+     Visible seulement si role === "host" dans GameState
+     ═══════════════════════════════════════════════════ -->
+<div id="host-panel" class="host-control-panel" hidden>
+  <div class="host-panel-header">
+    <span>🎛️ Panneau Host</span>
+    <span id="hp-mode-badge" class="game-mode-badge"></span>
+  </div>
+
+  <!-- Sélection du joueur / équipe actif (mode solo = liste joueurs, mode team = liste équipes) -->
+  <div class="hp-section">
+    <label class="hp-label">Joueur / Équipe actif</label>
+    <div id="hp-participants-list" class="hp-participants"></div>
+  </div>
+
+  <!-- Validation du résultat : le host confirme si le joueur a réussi ou échoué -->
+  <div class="hp-section" id="hp-validation-section" hidden>
+    <label class="hp-label">Valider le résultat</label>
+    <div class="hp-validation-btns">
+      <button id="hp-btn-succes"  class="btn-success">✅ Réussi</button>
+      <button id="hp-btn-echec"   class="btn-danger">❌ Raté</button>
+    </div>
+  </div>
+
+  <!-- Scores en direct -->
+  <div class="hp-section">
+    <label class="hp-label">Scores</label>
+    <div id="hp-scores" class="hp-scores-list"></div>
+  </div>
+</div>
+
 <script type="module">
   import { initialiserMemoire } from "/js/games/memoire.js";
-  import { GameState } from "/js/core/state.js";
+  import { GameState }          from "/js/core/state.js";
+
+  // ── Charger l'état de session ──────────────────────────
   const raw = sessionStorage.getItem("mgu_game_session");
-  if (raw) Object.assign(GameState, JSON.parse(raw));
-  document.addEventListener("DOMContentLoaded", () => initialiserMemoire());
+  if (raw) {
+    try { Object.assign(GameState, JSON.parse(raw)); } catch(e) {}
+  }
+
+  // ── Afficher l'info du joueur actif dans la topbar ─────
+  function majTopbarJoueur() {
+    const el = document.getElementById("memoire-joueur-actif");
+    if (!el) return;
+    if (GameState.mode === "team" && GameState.equipes?.length) {
+      el.textContent = "🛡️ " + (GameState.equipes[0]?.nom || "");
+    } else if (GameState.joueurs?.length) {
+      el.textContent = "👤 " + GameState.joueurs[0];
+    }
+  }
+
+  // ── Panneau HOST ────────────────────────────────────────
+  function initHostPanel() {
+    const panel = document.getElementById("host-panel");
+    if (!panel) return;
+
+    // Afficher le panneau host si role === "host"
+    if (GameState.role !== "host") return;
+    panel.hidden = false;
+
+    // Badge mode
+    const badge = document.getElementById("hp-mode-badge");
+    if (badge) badge.textContent = GameState.mode === "team" ? "🛡️ Équipes" : "👤 Solo";
+
+    // Liste participants
+    const listEl = document.getElementById("hp-participants-list");
+    if (listEl) {
+      const participants = GameState.mode === "team"
+        ? (GameState.equipes || []).map(e => e.nom)
+        : (GameState.joueurs || []);
+
+      listEl.innerHTML = participants.map((p, i) => `
+        <button class="hp-participant-btn ${i === 0 ? 'active' : ''}" data-nom="${p}">
+          ${GameState.mode === "team" ? "🛡️" : "👤"} ${p}
+        </button>
+      `).join("");
+
+      listEl.querySelectorAll(".hp-participant-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          listEl.querySelectorAll(".hp-participant-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          // Mettre à jour le joueur actif dans GameState et relancer la vue
+          if (GameState.mode === "team") {
+            const eq = (GameState.equipes || []).find(e => e.nom === btn.dataset.nom);
+            GameState.equipes = [eq, ...(GameState.equipes || []).filter(e => e.nom !== btn.dataset.nom)];
+          } else {
+            const idx = GameState.joueurs.indexOf(btn.dataset.nom);
+            if (idx > 0) {
+              const arr = [...GameState.joueurs];
+              arr.splice(idx, 1); arr.unshift(btn.dataset.nom);
+              GameState.joueurs = arr;
+            }
+          }
+          initialiserMemoire();
+          majScoresHost();
+        });
+      });
+    }
+
+    // Boutons validation host
+    const valSection = document.getElementById("hp-validation-section");
+    const btnSucces  = document.getElementById("hp-btn-succes");
+    const btnEchec   = document.getElementById("hp-btn-echec");
+
+    if (btnSucces) btnSucces.addEventListener("click", () => {
+      // Injecter un résultat "succès" fictif dans la page pour que memoire.js calcule le score
+      window.dispatchEvent(new CustomEvent("host-validate", { detail: { succes: true } }));
+      if (valSection) valSection.hidden = true;
+      majScoresHost();
+    });
+    if (btnEchec) btnEchec.addEventListener("click", () => {
+      window.dispatchEvent(new CustomEvent("host-validate", { detail: { succes: false } }));
+      if (valSection) valSection.hidden = true;
+      majScoresHost();
+    });
+
+    // Écouter quand un défi est lancé pour afficher la validation
+    window.addEventListener("memoire-defi-started", () => {
+      if (valSection) valSection.hidden = false;
+    });
+
+    majScoresHost();
+  }
+
+  function majScoresHost() {
+    const el = document.getElementById("hp-scores");
+    if (!el) return;
+    const scores = GameState.scores || {};
+    const entries = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+    if (!entries.length) { el.innerHTML = '<span style="color:var(--c-text-mute);font-size:0.8rem">Aucun score</span>'; return; }
+    el.innerHTML = entries.map(([nom, pts], i) => `
+      <div class="hp-score-row">
+        <span>${["🥇","🥈","🥉"][i] || (i+1)+"."}</span>
+        <span class="hp-score-nom">${nom}</span>
+        <span class="hp-score-pts">${pts} pts</span>
+      </div>
+    `).join("");
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    majTopbarJoueur();
+    initialiserMemoire();
+    initHostPanel();
+  });
 </script>
+
 </body>
 </html>

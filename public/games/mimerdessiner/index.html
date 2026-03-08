@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<!-- Jeu : Mimer / Dessiner — /public/mimer/index.html -->
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mimer / Dessiner — MiniGame Universe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/games.css">
+  <link rel="icon" type="image/png" href="/images/LogoMiniGame.png">
+</head>
+<body class="game-body">
+
+<div id="toast-container" class="toast-container"></div>
+
+<!-- ── Topbar ── -->
+<nav class="game-topbar">
+  <button class="topbar-back" onclick="history.back()" title="Retour">‹</button>
+  <div class="game-topbar-center">
+    <span class="game-topbar-icon">🎭</span>
+    <span class="game-topbar-title">Mimer / Dessiner</span>
+  </div>
+  <!-- Timer affiché ici par mimedessine.js -->
+  <div id="mimer-timer" class="game-timer">03:00</div>
+</nav>
+
+<!-- ── Scoreboard flottant ── -->
+<div id="scoreboard" class="scoreboard-float" hidden></div>
+
+<!--
+  Architecture :
+  - Ce jeu est "présentiel" : un joueur joue devant tout le monde.
+  - mode HOST   → même vue que PLAYER (le host joue aussi / anime)
+  - mode PLAYER → affichage de la vue joueur standard
+  - La logique de tours (participantActuelIndex) est dans mimedessine.js
+  - #mimer-content est le conteneur principal alimenté par le module
+-->
+
+<!-- ══ VUE COMMUNE (Host + Player) ══════════════════════════════════ -->
+<main class="game-main mimer-root">
+
+  <!--
+    mimedessine.js attend #mimer-content pour injecter son HTML dynamique.
+    Le timer #mimer-timer est dans la topbar (id identique à ce que lis le module).
+  -->
+  <div id="mimer-content" class="mimer-content-area"></div>
+
+</main>
+
+<!--
+  ══ PANNEAU HOST UNIQUEMENT ══════════════════════════════════════════
+  Visible uniquement si GameState.role === "host"
+  Permet au host de :
+   - Voir la liste de tous les participants
+   - Forcer le passage au participant suivant
+   - Ajuster les scores manuellement
+-->
+<div id="host-panel" class="host-control-panel" hidden>
+  <div class="host-panel-header">
+    <span>🎛️ Panneau Host</span>
+    <span id="hp-mode-badge" class="game-mode-badge"></span>
+  </div>
+
+  <div class="hp-section">
+    <label class="hp-label">Participants</label>
+    <div id="hp-participants-list" class="hp-participants"></div>
+  </div>
+
+  <div class="hp-section">
+    <label class="hp-label">Actions host</label>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+      <button id="hp-btn-suivant" class="btn-secondary btn-sm">➡️ Joueur suivant</button>
+      <button id="hp-btn-reset"   class="btn-ghost btn-sm">🔄 Recommencer</button>
+    </div>
+  </div>
+
+  <div class="hp-section">
+    <label class="hp-label">Scores</label>
+    <div id="hp-scores" class="hp-scores-list"></div>
+  </div>
+</div>
+
+<script type="module">
+  import { initialiserMimer } from "/js/games/mimedessine.js";
+  import { GameState }        from "/js/core/state.js";
+
+  // ── Charger l'état de session ──────────────────────────
+  const raw = sessionStorage.getItem("mgu_game_session");
+  if (raw) {
+    try { Object.assign(GameState, JSON.parse(raw)); } catch(e) {}
+  }
+
+  // ── Panneau HOST ────────────────────────────────────────
+  function initHostPanel() {
+    const panel = document.getElementById("host-panel");
+    if (!panel || GameState.role !== "host") return;
+    panel.hidden = false;
+
+    const badge = document.getElementById("hp-mode-badge");
+    if (badge) badge.textContent = GameState.mode === "team" ? "🛡️ Équipes" : "👤 Solo";
+
+    // Liste participants (pour affichage info)
+    const listEl = document.getElementById("hp-participants-list");
+    if (listEl) {
+      const participants = GameState.mode === "team"
+        ? (GameState.equipes || []).map(e => e.nom)
+        : (GameState.joueurs || []);
+      listEl.innerHTML = participants.map(p => `
+        <div class="hp-participant-item">
+          ${GameState.mode === "team" ? "🛡️" : "👤"} <strong>${p}</strong>
+        </div>
+      `).join("");
+    }
+
+    // Bouton joueur suivant : déclenche un clic sur le bouton interne du jeu
+    document.getElementById("hp-btn-suivant")?.addEventListener("click", () => {
+      const btnInterne = document.getElementById("mimer-suivant")
+        || document.getElementById("mimer-classement");
+      if (btnInterne) btnInterne.click();
+      else {
+        // Si la manche est en cours, simuler fin de timer
+        window.dispatchEvent(new CustomEvent("mimer-force-fin"));
+      }
+      majScoresHost();
+    });
+
+    // Reset
+    document.getElementById("hp-btn-reset")?.addEventListener("click", () => {
+      if (confirm("Recommencer le jeu depuis le début ?")) {
+        initialiserMimer();
+        majScoresHost();
+      }
+    });
+
+    majScoresHost();
+  }
+
+  function majScoresHost() {
+    const el = document.getElementById("hp-scores");
+    if (!el) return;
+    const scores = GameState.scores || {};
+    const entries = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+    if (!entries.length) {
+      el.innerHTML = '<span style="color:var(--c-text-mute);font-size:0.8rem">Aucun score</span>';
+      return;
+    }
+    el.innerHTML = entries.map(([nom, pts], i) => `
+      <div class="hp-score-row">
+        <span>${["🥇","🥈","🥉"][i] || (i+1)+"."}</span>
+        <span class="hp-score-nom">${nom}</span>
+        <span class="hp-score-pts">${pts} pts</span>
+      </div>
+    `).join("");
+  }
+
+  // Écouter les mises à jour de scores émises par mimedessine.js
+  window.addEventListener("scores-updated", majScoresHost);
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    await initialiserMimer();
+    initHostPanel();
+  });
+</script>
+
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quiz — MiniGame Universe</title>
+  <title>Petit Bac — MiniGame Universe</title>
   <link rel="stylesheet" href="../../css/style.css" />
   <link rel="stylesheet" href="../../css/games.css" />
 </head>
@@ -14,9 +14,13 @@
 ════════════════════════════════════════════ -->
 <header class="game-topbar">
   <a href="../../" class="btn-icon" title="Accueil">🏠</a>
-  <h1 class="game-title">🧠 Quiz</h1>
+  <h1 class="game-title">📝 Petit Bac</h1>
   <div class="topbar-right">
-    <span id="quiz-timer" class="game-timer">01:00</span>
+    <!-- Lettre du tour -->
+    <span class="topbar-info">Lettre :</span>
+    <span id="petitbac-lettre-actuelle" class="game-timer" style="min-width:2rem;text-align:center">?</span>
+    <!-- Timer -->
+    <span id="petitbac-timer" class="game-timer">02:00</span>
   </div>
 </header>
 
@@ -26,17 +30,14 @@
 <div id="scoreboard-float" class="scoreboard-float"></div>
 
 <!-- ═══════════════════════════════════════════
-     CONTENU PRINCIPAL (géré par quiz.js)
+     CONTENU PRINCIPAL
 ════════════════════════════════════════════ -->
 <main class="game-main">
-  <section id="quiz" class="game-section">
-    <!-- quiz.js injecte ici :
-         - #quiz-question
-         - #quiz-answers
-         - #quiz-indice1, #quiz-indice2
-         - #quiz-feedback
-         - #quiz-score-local
-    -->
+  <section id="petitbac" class="game-section">
+
+    <!-- Grille des catégories (injectée dynamiquement par petitbac.js) -->
+    <div id="petitbac-categories" class="petitbac-categories"></div>
+
   </section>
 </main>
 
@@ -44,9 +45,7 @@
      FOOTER ACTIONS
 ════════════════════════════════════════════ -->
 <footer class="game-footer">
-  <button id="quiz-btn-next" class="btn-primary">➡️ Question suivante</button>
-  <button id="quiz-btn-indice1" class="btn-secondary">💡 Indice 1</button>
-  <button id="quiz-btn-indice2" class="btn-secondary">💡 Indice 2</button>
+  <button id="petitbac-valider" class="btn-primary">✅ Valider mes réponses</button>
 </footer>
 
 <!-- ═══════════════════════════════════════════
@@ -54,16 +53,15 @@
 ════════════════════════════════════════════ -->
 <script type="module">
   import { GameState } from "../../js/core/state.js";
-  import { initialiserQuiz } from "../../js/games/quiz.js";
+  import { initialiserPetitBac } from "../../js/games/petitbac.js";
 
-  // Restaurer la session de jeu
   const session = sessionStorage.getItem("mgu_game_session");
   if (session) {
     try { Object.assign(GameState, JSON.parse(session)); } catch(e) {}
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    initialiserQuiz();
+    initialiserPetitBac();
   });
 </script>
 

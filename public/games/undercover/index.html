@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<!-- Jeu : Undercover — /public/undercover/index.html -->
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Undercover — MiniGame Universe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/games.css">
+  <link rel="icon" type="image/png" href="/images/LogoMiniGame.png">
+</head>
+<body class="game-body">
+
+<div id="toast-container" class="toast-container"></div>
+
+<!-- ── Topbar ── -->
+<nav class="game-topbar">
+  <button class="topbar-back" onclick="history.back()" title="Retour">‹</button>
+  <div class="game-topbar-center">
+    <span class="game-topbar-icon">🕵️</span>
+    <span class="game-topbar-title">Undercover</span>
+  </div>
+  <div class="game-topbar-right"></div>
+</nav>
+
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  ARCHITECTURE UNDERCOVER
+  ═══════════════════════════════════════════════════════════════════
+
+  undercover.js attend EXACTEMENT ces IDs dans le DOM :
+
+  CONFIG (écran 1) :
+    #undercover-config           → section config (affichée en premier)
+    #uc-nb-joueurs               → span affichant le nb de joueurs
+    #uc-nb-misterwhite           → input nombre de Mister White
+    #uc-nb-undercover            → input nombre d'Undercover
+    #btn-start-undercover-config → bouton "Confirmer la configuration"
+
+  DISTRIBUTION (écran 2) :
+    #undercover-distribution     → section distribution des cartes
+    #undercover-cartes-joueurs   → conteneur des cartes flip
+
+  JEU (écran 3) :
+    #container                   → wrapper de l'écran de jeu (REQUIS par undercover.js)
+    #undercover                  → section de jeu principale
+    #undercover-joueurs          → zone liste joueurs en cours de jeu
+    #undercover-phase-texte      → texte de la phase actuelle
+    #undercover-phase            → conteneur de la phase (bouton vote s'y ajoute)
+    #undercover-voter            → bouton "Passer au vote"
+
+  COMPORTEMENT SELON LE RÔLE :
+    - role "host"   → Voit tout, peut gérer la configuration
+    - role "player" → Retourne seulement sa propre carte (identifiée par son pseudo)
+                      En pratique Undercover est un jeu présentiel : tout le monde
+                      passe la tablette/écran pour voir sa carte.
+                      Les joueurs distants (mode player) voient uniquement leur carte.
+  ═══════════════════════════════════════════════════════════════════
+-->
+
+<!-- ═══ ÉCRAN 1 : CONFIGURATION ════════════════════════════════════ -->
+<section id="undercover-config" class="game-main uc-screen">
+
+  <div class="uc-config-card">
+    <h2 class="uc-config-title">⚙️ Configuration de la partie</h2>
+
+    <!-- Info joueurs (rempli depuis GameState) -->
+    <div class="uc-config-row">
+      <span class="uc-config-label">👥 Joueurs</span>
+      <span id="uc-nb-joueurs" class="uc-config-val uc-accent">0</span>
+    </div>
+
+    <!-- Nombre de Mister White -->
+    <div class="uc-config-row">
+      <label class="uc-config-label" for="uc-nb-misterwhite">
+        🟨 Mister White
+        <span class="uc-config-hint">Connaît aucun mot — doit deviner</span>
+      </label>
+      <div class="uc-config-counter">
+        <button class="uc-counter-btn" data-target="uc-nb-misterwhite" data-delta="-1">−</button>
+        <input type="number" id="uc-nb-misterwhite" class="uc-counter-input"
+               value="0" min="0" max="3" readonly>
+        <button class="uc-counter-btn" data-target="uc-nb-misterwhite" data-delta="1">+</button>
+      </div>
+    </div>
+
+    <!-- Nombre d'Undercover -->
+    <div class="uc-config-row">
+      <label class="uc-config-label" for="uc-nb-undercover">
+        🟥 Undercover
+        <span class="uc-config-hint">Mot différent — doit se cacher</span>
+      </label>
+      <div class="uc-config-counter">
+        <button class="uc-counter-btn" data-target="uc-nb-undercover" data-delta="-1">−</button>
+        <input type="number" id="uc-nb-undercover" class="uc-counter-input"
+               value="1" min="1" max="5" readonly>
+        <button class="uc-counter-btn" data-target="uc-nb-undercover" data-delta="1">+</button>
+      </div>
+    </div>
+
+    <!-- Résumé composition -->
+    <div id="uc-composition-resume" class="uc-composition-resume"></div>
+
+    <!-- Bouton confirmer -->
+    <button id="btn-start-undercover-config" class="btn-primary btn-full btn-uc-start">
+      <span>🚀</span> Distribuer les rôles
+    </button>
+
+    <!-- Règles rapides -->
+    <details class="uc-regles-details">
+      <summary>📜 Règles rapides</summary>
+      <div class="uc-regles-content">
+        <p>Chaque <strong>Civil</strong> reçoit le même mot. L'<strong>Undercover</strong> reçoit un mot légèrement différent. Le <strong>Mister White</strong> ne reçoit aucun mot.</p>
+        <p>À tour de rôle, chaque joueur décrit son mot sans le dire. Puis on vote pour éliminer l'espion.</p>
+        <p>Les <strong>Civils</strong> gagnent en éliminant tous les rôles spéciaux. L'<strong>Undercover</strong> gagne s'il devient majoritaire. <strong>Mister White</strong> gagne s'il est éliminé et devine le mot civil.</p>
+      </div>
+    </details>
+  </div>
+
+</section>
+
+<!-- ═══ ÉCRAN 2 : DISTRIBUTION DES CARTES ══════════════════════════ -->
+<section id="undercover-distribution" class="game-main uc-screen" hidden>
+
+  <div class="uc-distribution-header">
+    <h2>🎴 Chaque joueur retourne sa carte</h2>
+    <p class="uc-distribution-hint">Passez l'écran à chaque joueur. Appuyez sur votre carte pour voir votre rôle.</p>
+  </div>
+
+  <!-- undercover.js génère les cartes flip ici -->
+  <div id="undercover-cartes-joueurs" class="uc-cartes-grid"></div>
+
+  <!-- Le bouton "Commencer" est ajouté dynamiquement par undercover.js
+       quand tous les joueurs ont vu leur rôle -->
+
+</section>
+
+<!-- ═══ ÉCRAN 3 : JEU EN COURS ══════════════════════════════════════ -->
+<!-- #container est REQUIS par undercover.js -->
+<div id="container" hidden>
+  <section id="undercover" class="game-main uc-screen uc-jeu-screen">
+
+    <!-- Phase actuelle -->
+    <div id="undercover-phase" class="uc-phase-container">
+      <div id="undercover-phase-texte" class="undercover-phase-texte">
+        🗣️ Phase de débat en cours...
+      </div>
+      <!-- bouton vote ajouté par undercover.js -->
+      <button id="undercover-voter" class="btn-primary uc-btn-vote">
+        🗳️ Passer au vote
+      </button>
+    </div>
+
+    <!-- Liste des joueurs en jeu (remplie dynamiquement) -->
+    <div id="undercover-joueurs" class="uc-joueurs-zone"></div>
+
+  </section>
+</div>
+
+<script type="module">
+  import { initialiserUndercover } from "/js/games/undercover.js";
+  import { GameState }             from "/js/core/state.js";
+
+  // ── Charger l'état de session ──────────────────────────
+  const raw = sessionStorage.getItem("mgu_game_session");
+  if (raw) {
+    try { Object.assign(GameState, JSON.parse(raw)); } catch(e) {}
+  }
+
+  // ── Remplir le nb joueurs dans la config ────────────────
+  function majNbJoueurs() {
+    const el = document.getElementById("uc-nb-joueurs");
+    if (el) el.textContent = (GameState.joueurs || []).length;
+  }
+
+  // ── Boutons +/− des compteurs ───────────────────────────
+  function initCounters() {
+    document.querySelectorAll(".uc-counter-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const input = document.getElementById(btn.dataset.target);
+        if (!input) return;
+        const delta   = parseInt(btn.dataset.delta);
+        const val     = parseInt(input.value) + delta;
+        const min     = parseInt(input.min);
+        const max     = parseInt(input.max);
+        input.value   = Math.min(max, Math.max(min, val));
+        majResume();
+      });
+    });
+  }
+
+  // ── Résumé composition (X civils, Y undercover, Z MW) ──
+  function majResume() {
+    const nbJ  = (GameState.joueurs || []).length;
+    const nbMW = parseInt(document.getElementById("uc-nb-misterwhite")?.value || "0");
+    const nbUC = parseInt(document.getElementById("uc-nb-undercover")?.value  || "1");
+    const nbCiv = Math.max(0, nbJ - nbMW - nbUC);
+
+    const el = document.getElementById("uc-composition-resume");
+    if (!el) return;
+
+    const invalide = nbMW + nbUC >= nbJ || nbCiv < 1;
+    el.className = "uc-composition-resume" + (invalide ? " uc-invalide" : "");
+    el.innerHTML = invalide
+      ? `<span>⚠️ Configuration invalide — il faut au moins 1 Civil</span>`
+      : `
+        <div class="uc-resume-item uc-civil">🟩 ${nbCiv} Civil${nbCiv>1?"s":""}</div>
+        ${nbUC > 0 ? `<div class="uc-resume-item uc-undercover">🟥 ${nbUC} Undercover</div>` : ""}
+        ${nbMW > 0 ? `<div class="uc-resume-item uc-mw">🟨 ${nbMW} Mister White</div>` : ""}
+      `;
+  }
+
+  // ── Gestion mode Player distant ─────────────────────────
+  // Si le joueur arrive via /join (mode player), on masque la config
+  // et on attend que le host initialise via WebSocket.
+  // Pour l'instant, on affiche simplement la config complète.
+  // (Le flux WebSocket HOST→PLAYER pour ce jeu pourrait être ajouté ici.)
+
+  document.addEventListener("DOMContentLoaded", () => {
+    majNbJoueurs();
+    initCounters();
+    majResume();
+
+    // Écouter les changements de compteurs pour maj résumé
+    document.querySelectorAll(".uc-counter-input").forEach(input => {
+      input.addEventListener("change", majResume);
+    });
+
+    initialiserUndercover();
+  });
+</script>
+
+</body>
+</html>

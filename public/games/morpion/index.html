@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<!-- Jeu : Morpion — /public/morpion/index.html -->
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Morpion — MiniGame Universe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/games.css">
+  <link rel="icon" type="image/png" href="/images/LogoMiniGame.png">
+</head>
+<body class="game-body">
+
+<div id="toast-container" class="toast-container"></div>
+
+<!-- ── Topbar ── -->
+<nav class="game-topbar">
+  <button class="topbar-back" id="btn-retour-morpion" onclick="history.back()" title="Retour">‹</button>
+  <div class="game-topbar-center">
+    <span class="game-topbar-icon">⭕</span>
+    <span class="game-topbar-title">Morpion</span>
+  </div>
+  <div id="morpion-tour-info" class="game-topbar-right" style="font-size:0.75rem;color:var(--c-accent);text-align:right;max-width:110px;"></div>
+</nav>
+
+<!-- ── Scoreboard flottant (mode multi-parties) ── -->
+<div id="scoreboard" class="scoreboard-float" hidden></div>
+
+<!--
+  Architecture Morpion :
+  ─────────────────────
+  Ce jeu est ENTIÈREMENT LOCAL (pas de WebSocket pendant le jeu).
+  GameState fournit : joueurs[], equipes[], mode ("solo"|"team")
+
+  • mode "solo"  + 2 joueurs  → Morpion classique 2 joueurs
+  • mode "solo"  + 3 joueurs  → Morpion 3 joueurs (grille 4×4, aligner 3)
+  • mode "solo"  + 4 joueurs  → Morpion 4 joueurs (grille 5×5, aligner 3)
+  • mode "team"  + 4 joueurs  → 2v2 avec jetons de blocage (mode avancé disponible)
+
+  Le host PEUT jouer directement sur la page s'il est présent.
+  Le rôle "host" n'a pas de panneau spécial ici, car tout le monde joue
+  sur le même écran (jeu présentiel/tableau commun).
+
+  morpion.js s'attend à trouver #morpion-container.
+-->
+<main class="game-main">
+
+  <!--
+    morpion.js injecte dynamiquement son HTML ici :
+    - Écran de configuration (taille grille, mode classique/avancé)
+    - Plateau de jeu
+    - Résultats
+  -->
+  <div id="morpion-container" class="morpion-root"></div>
+
+</main>
+
+<!--
+  ══ BANNIÈRE MODE ══════════════════════════════════════════════════
+  Affichée sous la topbar pour rappeler le contexte de la partie
+-->
+<div id="morpion-context-banner" class="game-context-banner" hidden>
+  <span id="morpion-ctx-mode"></span>
+  <span id="morpion-ctx-joueurs"></span>
+</div>
+
+<script type="module">
+  import { initialiserMorpion } from "/js/games/morpion.js";
+  import { GameState }          from "/js/core/state.js";
+
+  // ── Charger l'état de session ──────────────────────────
+  const raw = sessionStorage.getItem("mgu_game_session");
+  if (raw) {
+    try { Object.assign(GameState, JSON.parse(raw)); } catch(e) {}
+  }
+
+  // ── Bannière contextuelle ───────────────────────────────
+  function afficherContexte() {
+    const banner    = document.getElementById("morpion-context-banner");
+    const modeEl    = document.getElementById("morpion-ctx-mode");
+    const joueursEl = document.getElementById("morpion-ctx-joueurs");
+    if (!banner) return;
+
+    const nbJoueurs = (GameState.joueurs || []).length;
+    if (!nbJoueurs) return; // Pas de joueurs → rien à afficher
+
+    banner.hidden = false;
+
+    if (modeEl) {
+      modeEl.textContent = GameState.mode === "team" ? "🛡️ Mode Équipes" : "👤 Mode Solo";
+    }
+
+    if (joueursEl) {
+      if (GameState.mode === "team" && GameState.equipes?.length) {
+        joueursEl.textContent = GameState.equipes.map(e => e.nom).join(" vs ");
+      } else {
+        joueursEl.textContent = GameState.joueurs.join(" · ");
+      }
+    }
+  }
+
+  // ── Mise à jour de l'info tour dans la topbar ──────────
+  // morpion.js expose window.MorpionCurrentPlayer (nom du joueur actif)
+  // On poll toutes les 500ms pour l'afficher dans la topbar
+  function pollTourInfo() {
+    const el = document.getElementById("morpion-tour-info");
+    if (!el) return;
+    setInterval(() => {
+      if (window.MorpionCurrentPlayer) {
+        el.textContent = "Tour : " + window.MorpionCurrentPlayer;
+      }
+    }, 500);
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    afficherContexte();
+    initialiserMorpion();
+    pollTourInfo();
+  });
+</script>
+
+</body>
+</html>
