@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,16 +12,13 @@
 <body>
 
 <!-- ══════════════════════════════════════════
-     🔝 BARRE DE NAVIGATION PERMANENTE
+     🔝 TOPBAR
 ════════════════════════════════════════════ -->
 <nav class="topbar" id="topbar">
   <div class="topbar-left">
-    <button id="btn-retour-permanent" class="topbar-btn btn-retour-nav" hidden aria-label="Retour">
-      ‹
-    </button>
-    <a class="topbar-logo" id="btn-home-permanent" href="#" aria-label="Accueil">
-      <img src="/images/LogoMiniGame.png" alt="Logo" class="topbar-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline'">
-      <span style="display:none">🎮</span>
+    <a class="topbar-logo" href="/main/" aria-label="Accueil">
+      <img src="/images/LogoMiniGame.png" alt="Logo" class="topbar-logo-img"
+           onerror="this.style.display='none'">
       <span class="topbar-logo-text">MiniGame</span>
     </a>
   </div>
@@ -41,403 +38,455 @@
     <button id="btn-close-menu" class="menu-close">✕</button>
   </div>
   <nav class="menu-nav">
-    <button id="menu-parties"  class="menu-item">📋 <span>Mes parties</span></button>
-    <button id="menu-joueurs"  class="menu-item">👥 <span>Joueurs</span></button>
-    <button id="menu-equipes"  class="menu-item">🛡️ <span>Équipes</span></button>
-    <button id="menu-home"     class="menu-item">📊 <span>Statistiques</span></button>
-    <button id="menu-reglages" class="menu-item">⚙️ <span>Paramètres</span></button>
+    <button class="menu-item" id="menu-btn-host">
+      🎙️ <span>Créer une partie (Host)</span>
+    </button>
+    <button class="menu-item" id="menu-btn-join">
+      🎮 <span>Rejoindre une partie</span>
+    </button>
+    <div style="height:1px;background:var(--c-border);margin:0.5rem 0"></div>
+    <button class="menu-item" id="menu-btn-parties">
+      📋 <span>Mes parties</span>
+    </button>
+    <button class="menu-item" id="menu-btn-joueurs">
+      👥 <span>Joueurs</span>
+    </button>
+    <button class="menu-item" id="menu-btn-equipes">
+      🛡️ <span>Équipes</span>
+    </button>
+    <button class="menu-item" id="menu-btn-stats">
+      📊 <span>Statistiques</span>
+    </button>
   </nav>
 </div>
 
-<!-- Scoreboard flottant -->
-<div id="scoreboard" class="scoreboard-float" hidden></div>
+<!-- Toasts -->
+<div id="toast-container" class="toast-container"></div>
 
 <!-- ══════════════════════════════════════════
-     🏠 ACCUEIL
+     🏠 ÉCRAN ACCUEIL
 ════════════════════════════════════════════ -->
-<section id="home" class="screen screen-home" aria-label="Accueil">
+<section id="screen-home" class="screen screen-home">
   <div class="home-hero">
     <div class="home-glow-ring"></div>
-    <img src="/images/LogoMiniGame.png" alt="MiniGame Universe" class="home-logo" onerror="this.style.display='none'">
-    <h1 class="home-title">MiniGame<br><span class="home-title-accent">Universe</span></h1>
+
+    <img src="/images/LogoMiniGame.png" alt="MiniGame Universe" class="home-logo"
+         onerror="this.style.display='none'">
+
+    <h1 class="home-title">
+      MiniGame<br>
+      <span class="home-title-accent">Universe</span>
+    </h1>
+
     <p class="home-subtitle">La plateforme de jeux pour vos soirées</p>
-    <button id="btn-jouer" class="btn-primary btn-hero">
-      <span class="btn-icon">🚀</span> Jouer maintenant
-    </button>
-    <button id="btn-home-stats" class="btn-ghost">📊 Statistiques</button>
+
+    <div class="home-cta-group">
+      <!-- ✅ Bouton HOST → /host/ -->
+      <button id="btn-go-host" class="btn-primary btn-hero">
+        <span class="btn-icon">🎙️</span> Créer une partie
+      </button>
+      <!-- ✅ Bouton REJOINDRE → /join/ -->
+      <button id="btn-go-join" class="btn-ghost" style="border-radius:50px;padding:0.75rem 2rem;font-size:0.95rem;">
+        <span class="btn-icon">🎮</span> Rejoindre une partie
+      </button>
+    </div>
   </div>
 
-  <div class="home-stats-bar">
+  <!-- Stats bar -->
+  <div class="home-stats-bar" id="home-stats-bar">
     <div class="home-stat">
-      <span class="home-stat-val" data-stat="parties">0</span>
+      <span class="home-stat-val" id="stat-parties">0</span>
       <span class="home-stat-label">Parties</span>
     </div>
     <div class="home-stat">
-      <span class="home-stat-val" data-stat="joueurs">0</span>
+      <span class="home-stat-val" id="stat-joueurs">0</span>
       <span class="home-stat-label">Joueurs</span>
     </div>
     <div class="home-stat">
-      <span class="home-stat-val" data-stat="points">0</span>
+      <span class="home-stat-val" id="stat-points">0</span>
       <span class="home-stat-label">Points</span>
     </div>
   </div>
 </section>
 
 <!-- ══════════════════════════════════════════
-     🎮 CHOIX DU JEU
+     📋 ÉCRAN MES PARTIES
 ════════════════════════════════════════════ -->
-<section id="choix-jeu" class="screen" hidden aria-label="Choisir un jeu">
-  <h2 class="section-title">🎮 Quel jeu ?</h2>
-  <div class="jeux-grid">
-    <button class="jeu-card" data-jeu="quiz">
-      <span class="jeu-icon">❓</span>
-      <span class="jeu-name">Quiz</span>
-      <span class="jeu-desc">Questions & réponses</span>
-    </button>
-    <button class="jeu-card" data-jeu="justeprix">
-      <span class="jeu-icon">💰</span>
-      <span class="jeu-name">Juste Prix</span>
-      <span class="jeu-desc">Devine les prix</span>
-    </button>
-    <button class="jeu-card" data-jeu="undercover">
-      <span class="jeu-icon">🕵️</span>
-      <span class="jeu-name">Undercover</span>
-      <span class="jeu-desc">Déniche l'espion</span>
-    </button>
-    <button class="jeu-card" data-jeu="lml">
-      <span class="jeu-icon">📖</span>
-      <span class="jeu-name">Maxi Lettres</span>
-      <span class="jeu-desc">Mot le plus long</span>
-    </button>
-    <button class="jeu-card" data-jeu="mimer">
-      <span class="jeu-icon">🎭</span>
-      <span class="jeu-name">Mimer / Dessiner</span>
-      <span class="jeu-desc">Fais deviner !</span>
-    </button>
-    <button class="jeu-card" data-jeu="pendu">
-      <span class="jeu-icon">🪢</span>
-      <span class="jeu-name">Le Pendu</span>
-      <span class="jeu-desc">Devine le mot</span>
-    </button>
-    <button class="jeu-card" data-jeu="petitbac">
-      <span class="jeu-icon">📝</span>
-      <span class="jeu-name">Petit Bac</span>
-      <span class="jeu-desc">Une lettre, tout les thèmes</span>
-    </button>
-    <button class="jeu-card" data-jeu="memoire">
-      <span class="jeu-icon">🧠</span>
-      <span class="jeu-name">Mémoire Flash</span>
-      <span class="jeu-desc">Mémorise vite !</span>
-    </button>
-    <button class="jeu-card" data-jeu="morpion">
-      <span class="jeu-icon">⭕</span>
-      <span class="jeu-name">Morpion</span>
-      <span class="jeu-desc">2-4 joueurs</span>
-    </button>
-    <button class="jeu-card" data-jeu="puissance4">
-      <span class="jeu-icon">🔴</span>
-      <span class="jeu-name">Puissance 4</span>
-      <span class="jeu-desc">Aligne 4 jetons</span>
-    </button>
+<section id="screen-parties" class="screen" hidden aria-label="Mes parties">
+  <h2 class="section-title">📋 Mes parties</h2>
+  <div id="parties-list" class="parties-list">
+    <p class="list-empty">Aucune partie enregistrée pour l'instant.</p>
   </div>
 </section>
 
 <!-- ══════════════════════════════════════════
-     🔀 CHOIX DU MODE
+     👥 ÉCRAN JOUEURS
 ════════════════════════════════════════════ -->
-<section id="choix-mode" class="screen" hidden aria-label="Choisir le mode">
-  <h2 class="section-title">👥 Mode de jeu</h2>
-  <div class="mode-cards">
-    <button id="btn-mode-solo" class="mode-card">
-      <span class="mode-icon">👤</span>
-      <span class="mode-name">Chacun pour soi</span>
-      <span class="mode-desc">Chaque joueur joue individuellement</span>
-    </button>
-    <button id="btn-mode-equipes" class="mode-card">
-      <span class="mode-icon">🛡️</span>
-      <span class="mode-name">Équipes</span>
-      <span class="mode-desc">Jouez en équipe et coopérez</span>
-    </button>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════════
-     📝 FORMULAIRE SOLO
-════════════════════════════════════════════ -->
-<section id="form-solo" class="screen" hidden aria-label="Configuration solo">
-  <h2 class="section-title">👤 Configuration</h2>
-
+<section id="screen-joueurs" class="screen" hidden aria-label="Joueurs">
+  <h2 class="section-title">👥 Joueurs</h2>
   <div class="form-block">
-    <label for="input-nom-partie-solo" class="form-label">Nom de la partie</label>
-    <input type="text" id="input-nom-partie-solo" class="input-primary"
-           placeholder="Ex: Soirée du vendredi…" maxlength="50">
-  </div>
-
-  <div class="form-block">
-    <label class="form-label">Joueurs participants</label>
+    <label class="form-label">Ajouter un joueur</label>
     <div class="add-joueur-row">
-      <input type="text" id="input-new-joueur-solo" class="input-primary"
-             placeholder="Nouveau joueur…" maxlength="20"
-             autocomplete="off" autocorrect="off" autocapitalize="words">
-      <button id="btn-add-joueur-solo" class="btn-secondary">＋</button>
+      <input type="text" id="input-new-joueur" class="input-primary"
+             placeholder="Nom du joueur…" maxlength="20" autocomplete="off">
+      <button id="btn-add-joueur" class="btn-secondary btn-icon-only">＋</button>
     </div>
-    <div id="liste-joueurs-solo" class="joueurs-checkboxes"></div>
   </div>
-
-  <button id="btn-start-solo" class="btn-primary btn-full">
-    <span class="btn-icon">🚀</span> Lancer la partie
-  </button>
+  <div id="joueurs-list" class="joueurs-checkboxes"></div>
 </section>
 
 <!-- ══════════════════════════════════════════
-     📝 FORMULAIRE ÉQUIPES
+     🛡️ ÉCRAN ÉQUIPES
 ════════════════════════════════════════════ -->
-<section id="form-equipes" class="screen" hidden aria-label="Configuration équipes">
-  <h2 class="section-title">🛡️ Configuration équipes</h2>
-
-  <div class="form-block">
-    <label for="input-nom-partie-equipes" class="form-label">Nom de la partie</label>
-    <input type="text" id="input-nom-partie-equipes" class="input-primary"
-           placeholder="Ex: Soirée du vendredi…" maxlength="50">
-  </div>
-
+<section id="screen-equipes" class="screen" hidden aria-label="Équipes">
+  <h2 class="section-title">🛡️ Équipes</h2>
   <div class="form-block">
     <label class="form-label">Créer une équipe</label>
     <div class="add-joueur-row">
-      <input type="text" id="input-nom-equipe" class="input-primary"
+      <input type="text" id="input-new-equipe" class="input-primary"
              placeholder="Nom de l'équipe…" maxlength="20">
-      <button id="btn-add-equipe" class="btn-secondary">＋</button>
+      <button id="btn-add-equipe" class="btn-secondary btn-icon-only">＋</button>
     </div>
-    <div id="liste-equipes-form" class="equipes-form-list"></div>
   </div>
-
-  <button id="btn-start-equipes" class="btn-primary btn-full">
-    <span class="btn-icon">🚀</span> Lancer la partie
-  </button>
+  <div id="equipes-list" class="equipes-form-list"></div>
 </section>
 
 <!-- ══════════════════════════════════════════
-     📋 LISTE DES PARTIES
+     📊 ÉCRAN STATISTIQUES
 ════════════════════════════════════════════ -->
-<section id="liste-parties" class="screen" hidden aria-label="Mes parties">
-  <h2 class="section-title">📋 Mes parties</h2>
-  <div id="liste-parties-content" class="parties-list"></div>
+<section id="screen-stats" class="screen" hidden aria-label="Statistiques">
+  <h2 class="section-title">📊 Statistiques</h2>
+  <div id="stats-content">
+    <p class="list-empty">Aucune statistique disponible.</p>
+  </div>
 </section>
-
-<!-- ══════════════════════════════════════════
-     👥 GESTION DES JOUEURS
-════════════════════════════════════════════ -->
-<section id="gestion-joueurs-panel" class="screen" hidden aria-label="Gestion des joueurs"></section>
-
-<!-- ══════════════════════════════════════════
-     🛡️ GESTION DES ÉQUIPES
-════════════════════════════════════════════ -->
-<section id="gestion-equipes-panel" class="screen" hidden aria-label="Gestion des équipes"></section>
-
-<!-- ══════════════════════════════════════════
-     📊 STATS DASHBOARD (généré dynamiquement)
-════════════════════════════════════════════ -->
-<!-- Généré par navigation.js → afficherStatsDashboard() -->
-
-<!-- ══════════════════════════════════════════
-     🎮 CONTENEUR DE JEU
-════════════════════════════════════════════ -->
-<div id="container" class="game-container" hidden>
-
-  <!-- ── UNDERCOVER CONFIG ── -->
-  <section id="undercover-config" class="screen" hidden aria-label="Configuration Undercover">
-    <div class="game-header">
-      <h2 class="section-title">🕵️ Undercover — Config</h2>
-    </div>
-    <div class="uc-config-form">
-      <div class="uc-info-joueurs">
-        <span>Joueurs : </span>
-        <strong id="uc-nb-joueurs">0</strong>
-      </div>
-      <div class="form-block">
-        <label class="form-label">Mister White(s)</label>
-        <input type="number" id="uc-nb-misterwhite" class="input-primary"
-               value="0" min="0" max="3" style="width:80px">
-      </div>
-      <div class="form-block">
-        <label class="form-label">Undercover(s)</label>
-        <input type="number" id="uc-nb-undercover" class="input-primary"
-               value="1" min="1" max="3" style="width:80px">
-      </div>
-      <button id="btn-start-undercover-config" class="btn-primary btn-full">
-        <span class="btn-icon">🎴</span> Distribuer les rôles
-      </button>
-    </div>
-  </section>
-
-  <!-- ── UNDERCOVER DISTRIBUTION ── -->
-  <section id="undercover-distribution" class="screen" hidden aria-label="Distribution des rôles">
-    <div class="game-header">
-      <h2 class="section-title">🎴 Qui regarde en premier ?</h2>
-      <p class="section-sub">Chaque joueur retourne sa carte pour voir son rôle en secret</p>
-    </div>
-    <div id="undercover-cartes-joueurs" class="uc-cartes-grid"></div>
-  </section>
-
-  <!-- ── UNDERCOVER JEU ── -->
-  <section id="undercover" class="screen" hidden aria-label="Undercover">
-    <div class="game-header">
-      <h2 class="section-title">🕵️ Undercover</h2>
-    </div>
-    <div id="undercover-phase" class="undercover-phase">
-      <p id="undercover-phase-texte" class="undercover-phase-texte">🗣️ Phase de débat</p>
-      <div id="undercover-joueurs" class="undercover-joueurs"></div>
-      <button id="undercover-voter" class="btn-primary">🗳️ Passer au vote</button>
-    </div>
-  </section>
-
-  <!-- ── QUIZ ── -->
-  <section id="quiz" class="screen" hidden aria-label="Quiz">
-    <div class="game-header">
-      <h2 class="section-title">❓ Quiz</h2>
-      <div id="timer" class="timer-display">1:00</div>
-    </div>
-    <div class="quiz-body">
-      <div class="quiz-meta">
-        <span id="theme-display" class="quiz-theme"></span>
-      </div>
-      <div id="question" class="quiz-question"></div>
-      <div class="quiz-indices">
-        <div id="indice1" class="indice indice1"></div>
-        <div id="indice2" class="indice indice2"></div>
-      </div>
-      <div id="reponse" class="quiz-reponse"></div>
-    </div>
-    <div class="quiz-actions">
-      <button id="btn-indice1" class="btn-secondary">💡 Indice 1</button>
-      <button id="btn-indice2" class="btn-secondary">💡 Indice 2</button>
-      <button id="btn-reponse" class="btn-success">✅ Bonne réponse</button>
-    </div>
-    <div class="quiz-nav">
-      <button id="btn-prev" class="btn-ghost">‹ Préc.</button>
-      <button id="btn-next" class="btn-primary">Suiv. ›</button>
-      <button id="btn-next-arrow" class="btn-primary" style="display:none">›</button>
-    </div>
-  </section>
-
-  <!-- ── JUSTE PRIX ── -->
-  <section id="justeprix" class="screen" hidden aria-label="Juste Prix">
-    <div class="game-header">
-      <h2 class="section-title">💰 Le Juste Prix</h2>
-      <div id="jp-timer" class="timer-display">1:00</div>
-    </div>
-    <div class="jp-body">
-      <div id="jp-categorie" class="jp-categorie"></div>
-      <div class="jp-produit-card">
-        <img id="jp-produit-image" class="jp-produit-img" src="" alt="Produit">
-        <div class="jp-produit-info">
-          <h3 id="jp-produit-nom" class="jp-produit-nom"></h3>
-          <p id="jp-produit-description" class="jp-produit-desc"></p>
-          <a id="jp-produit-lien" class="jp-lien" href="#" target="_blank">🔍 Rechercher</a>
-        </div>
-      </div>
-      <button id="jp-produit-prix" class="btn-primary jp-btn-prix">💶 Afficher le prix</button>
-    </div>
-    <div class="jp-nav">
-      <button id="jp-btn-prev" class="btn-ghost">‹</button>
-      <button id="jp-btn-next" class="btn-primary">›</button>
-      <button id="btn-next-jp"   style="display:none">›</button>
-      <button id="btn-next-arrow" style="display:none">›</button>
-    </div>
-  </section>
-
-  <!-- ── MAXI LETTRES ── -->
-  <section id="lml" class="screen" hidden aria-label="Le Mot le Plus Long">
-    <div class="game-header">
-      <h2 class="section-title">📖 Maxi Lettres</h2>
-      <div id="lml-timer" class="timer-display">01:00</div>
-    </div>
-    <div class="lml-body">
-      <div id="lml-lettres" class="lml-lettres"></div>
-      <div class="lml-input-row">
-        <input type="text" id="lml-input" class="input-primary lml-input"
-               placeholder="Ton mot…" autocomplete="off" autocorrect="off"
-               autocapitalize="characters" spellcheck="false">
-      </div>
-      <div id="lml-resultat" class="lml-resultat"></div>
-    </div>
-    <div class="lml-actions">
-      <button id="lml-melanger" class="btn-secondary">🔀 Mélanger</button>
-      <button id="lml-valider"  class="btn-primary">✅ Valider</button>
-      <button id="lml-rejouer"  class="btn-ghost">🔄 Rejouer</button>
-    </div>
-  </section>
-
-  <!-- ── PENDU ── -->
-  <section id="pendu" class="screen" hidden aria-label="Le Pendu">
-    <div class="game-header">
-      <h2 class="section-title">🪢 Le Pendu</h2>
-      <div class="pendu-erreurs">
-        Erreurs : <span id="pendu-nb-erreurs">0</span> / 7
-      </div>
-    </div>
-    <div class="pendu-body">
-      <div id="pendu-dessin" class="pendu-dessin"></div>
-      <div id="pendu-mot" class="pendu-mot"></div>
-    </div>
-    <div class="pendu-theme-zone">
-      <button id="pendu-theme-toggle" class="btn-secondary">🎯 Afficher le thème</button>
-      <div id="pendu-theme-display" class="pendu-theme-display" style="display:none"></div>
-    </div>
-    <div id="pendu-clavier" class="pendu-clavier"></div>
-    <button id="pendu-rejouer" class="btn-primary" hidden>🔄 Nouvelle partie</button>
-  </section>
-
-  <!-- ── PETIT BAC ── -->
-  <section id="petitbac" class="screen" hidden aria-label="Petit Bac">
-    <div class="game-header">
-      <h2 class="section-title">📝 Petit Bac</h2>
-      <div id="petitbac-timer" class="timer-display">02:00</div>
-    </div>
-    <div class="petitbac-lettre-zone">
-      <span class="petitbac-lettre-label">Lettre :</span>
-      <span id="petitbac-lettre-actuelle" class="petitbac-lettre-big">?</span>
-    </div>
-    <div id="petitbac-categories" class="petitbac-categories"></div>
-    <button id="petitbac-valider" class="btn-primary btn-full">✅ Valider mes réponses</button>
-  </section>
-
-  <!-- ── MÉMOIRE ── -->
-  <section id="memoire" class="screen" hidden aria-label="Mémoire Flash"></section>
-
-  <!-- ── MORPION ── -->
-  <section id="morpion" class="screen" hidden aria-label="Morpion">
-    <div id="morpion-container"></div>
-  </section>
-
-  <!-- ── PUISSANCE 4 ── -->
-  <section id="puissance4" class="screen" hidden aria-label="Puissance 4">
-    <div class="game-header">
-      <h2 class="section-title">🔴 Puissance 4</h2>
-    </div>
-    <div id="puissance4-status" class="p4-status"></div>
-    <div id="puissance4-grille" class="p4-grille"></div>
-    <button id="puissance4-rejouer" class="btn-primary" style="display:none">🔄 Rejouer</button>
-  </section>
-
-  <!-- ── MIMER / DESSINER ── -->
-  <section id="mimer" class="screen" hidden aria-label="Mimer ou Dessiner">
-    <div class="game-header">
-      <h2 class="section-title">🎭 Mimer / Dessiner</h2>
-      <div id="mimer-timer" class="timer-display">03:00</div>
-    </div>
-    <div id="mimer-content" class="mimer-content"></div>
-  </section>
-
-</div><!-- /container -->
 
 <!-- ══════════════════════════════════════════
      📜 SCRIPTS
 ════════════════════════════════════════════ -->
-<!-- Core storage (non-module, chargé en premier) -->
-<script type="module" src="/js/main.js"></script>
-<!-- Undercover auto-init -->
-<script type="module" src="/js/games/undercover.js"></script>
+<script type="module">
+// ======================================================
+// main/index.html — Logique inline de l'accueil
+// ======================================================
+
+// ── Helpers DOM ──────────────────────────────────────
+const $ = id => document.getElementById(id);
+const show = id => { const el = $(id); if (el) el.hidden = false; };
+const hide = id => { const el = $(id); if (el) el.hidden = true; };
+const esc  = s  => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+// ── Routes ───────────────────────────────────────────
+const ROUTES = {
+    host: "/host/",
+    join: "/join/",
+};
+
+function naviguer(route, params = {}) {
+    const url = new URL(ROUTES[route], location.origin);
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    location.href = url.toString();
+}
+
+// ── Toast ────────────────────────────────────────────
+function toast(msg, type = "info", ms = 3000) {
+    const container = $("toast-container");
+    if (!container) return;
+    const icons = { info:"ℹ️", success:"✅", error:"❌", warning:"⚠️" };
+    const el = document.createElement("div");
+    el.className = `toast toast-${type}`;
+    el.innerHTML = `<span>${icons[type]||"ℹ️"}</span><span>${esc(msg)}</span>`;
+    container.appendChild(el);
+    requestAnimationFrame(() => el.classList.add("toast-visible"));
+    setTimeout(() => {
+        el.classList.remove("toast-visible");
+        el.classList.add("toast-hiding");
+        setTimeout(() => el.remove(), 400);
+    }, ms);
+}
+window.showToast = toast;
+
+// ── Navigation entre écrans ──────────────────────────
+const SCREENS = ["screen-home","screen-parties","screen-joueurs","screen-equipes","screen-stats"];
+let screenActif = "screen-home";
+
+function afficherEcran(id) {
+    SCREENS.forEach(s => hide(s));
+    show(id);
+    screenActif = id;
+
+    // Breadcrumb
+    const bc = $("topbar-breadcrumb");
+    const labels = {
+        "screen-home":    "",
+        "screen-parties": "📋 Mes parties",
+        "screen-joueurs": "👥 Joueurs",
+        "screen-equipes": "🛡️ Équipes",
+        "screen-stats":   "📊 Statistiques",
+    };
+    if (bc) bc.innerHTML = labels[id]
+        ? `<span class="topbar-breadcrumb-text">${labels[id]}</span>`
+        : "";
+
+    // Fermer le menu
+    fermerMenu();
+}
+
+// ── Menu ─────────────────────────────────────────────
+function ouvrirMenu() {
+    const panel   = $("menu-panel");
+    const overlay = $("menu-overlay");
+    if (panel)   panel.hidden   = false;
+    if (overlay) overlay.hidden = false;
+}
+
+function fermerMenu() {
+    const panel   = $("menu-panel");
+    const overlay = $("menu-overlay");
+    if (panel)   panel.hidden   = true;
+    if (overlay) overlay.hidden = true;
+}
+
+// ── LocalStorage helpers ─────────────────────────────
+function getJoueurs() {
+    try { return JSON.parse(localStorage.getItem("mgu_joueurs") || "[]"); } catch { return []; }
+}
+function setJoueurs(arr) {
+    localStorage.setItem("mgu_joueurs", JSON.stringify(arr));
+}
+
+function getEquipes() {
+    try { return JSON.parse(localStorage.getItem("mgu_equipes") || "[]"); } catch { return []; }
+}
+function setEquipes(arr) {
+    localStorage.setItem("mgu_equipes", JSON.stringify(arr));
+}
+
+function getParties() {
+    try { return JSON.parse(localStorage.getItem("mgu_parties") || "[]"); } catch { return []; }
+}
+
+// ── Stats ────────────────────────────────────────────
+function chargerStats() {
+    const parties = getParties();
+    const joueurs = getJoueurs();
+    let totalPoints = 0;
+    parties.forEach(p => {
+        Object.values(p.scores || {}).forEach(v => { totalPoints += (v || 0); });
+    });
+
+    const elP = $("stat-parties");
+    const elJ = $("stat-joueurs");
+    const elPt = $("stat-points");
+    if (elP)  elP.textContent  = parties.length;
+    if (elJ)  elJ.textContent  = joueurs.length;
+    if (elPt) elPt.textContent = totalPoints;
+}
+
+// ── Rendu parties ────────────────────────────────────
+function renderParties() {
+    const container = $("parties-list");
+    if (!container) return;
+    const parties = getParties();
+
+    if (parties.length === 0) {
+        container.innerHTML = `<p class="list-empty">Aucune partie enregistrée pour l'instant.</p>`;
+        return;
+    }
+
+    container.innerHTML = parties
+        .slice().reverse()
+        .map(p => {
+            const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString("fr-FR") : "—";
+            return `
+                <div class="partie-card">
+                    <span class="partie-card-icon">${p.jeuIcon || "🎮"}</span>
+                    <div class="partie-card-info">
+                        <div class="partie-card-nom">${esc(p.nom || "Partie")}</div>
+                        <div class="partie-card-meta">
+                            <span>${esc(p.jeu || "—")}</span>
+                            <span>·</span>
+                            <span>${p.mode === "team" ? "Équipes" : "Solo"}</span>
+                            <span>·</span>
+                            <span>${date}</span>
+                        </div>
+                    </div>
+                    <span class="partie-card-score">${p.gagnant || ""}</span>
+                </div>
+            `;
+        }).join("");
+}
+
+// ── Rendu joueurs ─────────────────────────────────────
+function renderJoueurs() {
+    const container = $("joueurs-list");
+    if (!container) return;
+    const joueurs = getJoueurs();
+
+    if (joueurs.length === 0) {
+        container.innerHTML = `<p class="list-empty">Aucun joueur enregistré.</p>`;
+        return;
+    }
+
+    container.innerHTML = joueurs.map((j, i) => `
+        <div class="joueur-chip">
+            <span>${esc(j)}</span>
+            <button class="joueur-chip-del" data-i="${i}" title="Supprimer">×</button>
+        </div>
+    `).join("");
+
+    container.querySelectorAll(".joueur-chip-del").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const arr = getJoueurs();
+            arr.splice(parseInt(btn.dataset.i), 1);
+            setJoueurs(arr);
+            renderJoueurs();
+            chargerStats();
+        });
+    });
+}
+
+// ── Rendu équipes ─────────────────────────────────────
+function renderEquipes() {
+    const container = $("equipes-list");
+    if (!container) return;
+    const equipes = getEquipes();
+
+    if (equipes.length === 0) {
+        container.innerHTML = `<p class="list-empty">Aucune équipe créée.</p>`;
+        return;
+    }
+
+    container.innerHTML = equipes.map((eq, i) => `
+        <div class="equipe-form-card">
+            <div class="equipe-form-card-header">
+                <span>🛡️</span>
+                <span class="equipe-form-card-nom">${esc(eq.nom || eq)}</span>
+                <button class="equipe-form-card-del" data-i="${i}" title="Supprimer">×</button>
+            </div>
+        </div>
+    `).join("");
+
+    container.querySelectorAll(".equipe-form-card-del").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const arr = getEquipes();
+            arr.splice(parseInt(btn.dataset.i), 1);
+            setEquipes(arr);
+            renderEquipes();
+        });
+    });
+}
+
+// ── Rendu stats ──────────────────────────────────────
+function renderStats() {
+    const container = $("stats-content");
+    if (!container) return;
+    const parties = getParties();
+    const joueurs = getJoueurs();
+
+    if (parties.length === 0) {
+        container.innerHTML = `<p class="list-empty">Aucune statistique disponible. Lancez d'abord quelques parties !</p>`;
+        return;
+    }
+
+    // Comptage jeux
+    const jeux = {};
+    parties.forEach(p => {
+        jeux[p.jeu] = (jeux[p.jeu] || 0) + 1;
+    });
+
+    const topJeu = Object.entries(jeux).sort((a,b) => b[1]-a[1])[0];
+
+    container.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1.2rem">
+            <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius);padding:1rem;text-align:center">
+                <div style="font-family:var(--font-display);font-size:1.8rem;color:var(--c-accent)">${parties.length}</div>
+                <div style="font-size:0.78rem;color:var(--c-text-mute);text-transform:uppercase;letter-spacing:0.06em">Parties</div>
+            </div>
+            <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius);padding:1rem;text-align:center">
+                <div style="font-family:var(--font-display);font-size:1.8rem;color:var(--c-accent)">${joueurs.length}</div>
+                <div style="font-size:0.78rem;color:var(--c-text-mute);text-transform:uppercase;letter-spacing:0.06em">Joueurs</div>
+            </div>
+        </div>
+        ${topJeu ? `
+        <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius);padding:1rem">
+            <div style="font-size:0.78rem;color:var(--c-text-mute);margin-bottom:0.3rem">Jeu le plus joué</div>
+            <div style="font-weight:700;color:var(--c-accent)">${esc(topJeu[0])} <span style="color:var(--c-text-mute);font-weight:400">(${topJeu[1]}×)</span></div>
+        </div>` : ""}
+    `;
+}
+
+// ══════════════════════════════════════════════════════
+// INIT — Liaisons événements
+// ══════════════════════════════════════════════════════
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    // ── Navigation principale ────────────────────────
+    $("btn-go-host")?.addEventListener("click", () => naviguer("host"));
+    $("btn-go-join")?.addEventListener("click", () => naviguer("join"));
+
+    // ── Menu ─────────────────────────────────────────
+    $("btn-menu-permanent")?.addEventListener("click", ouvrirMenu);
+    $("btn-close-menu")?.addEventListener("click", fermerMenu);
+    $("menu-overlay")?.addEventListener("click", fermerMenu);
+
+    $("menu-btn-host")?.addEventListener("click",    () => naviguer("host"));
+    $("menu-btn-join")?.addEventListener("click",    () => naviguer("join"));
+    $("menu-btn-parties")?.addEventListener("click", () => { renderParties(); afficherEcran("screen-parties"); });
+    $("menu-btn-joueurs")?.addEventListener("click", () => { renderJoueurs(); afficherEcran("screen-joueurs"); });
+    $("menu-btn-equipes")?.addEventListener("click", () => { renderEquipes(); afficherEcran("screen-equipes"); });
+    $("menu-btn-stats")?.addEventListener("click",   () => { renderStats();   afficherEcran("screen-stats");   });
+
+    // ── Logo → retour accueil ─────────────────────────
+    document.querySelectorAll(".topbar-logo").forEach(el => {
+        el.addEventListener("click", e => {
+            e.preventDefault();
+            afficherEcran("screen-home");
+        });
+    });
+
+    // ── Ajouter un joueur ─────────────────────────────
+    const inputJoueur = $("input-new-joueur");
+    $("btn-add-joueur")?.addEventListener("click", () => {
+        const nom = inputJoueur?.value.trim();
+        if (!nom) return;
+        const arr = getJoueurs();
+        if (arr.includes(nom)) { toast("Joueur déjà existant.", "warning"); return; }
+        arr.push(nom);
+        setJoueurs(arr);
+        if (inputJoueur) inputJoueur.value = "";
+        renderJoueurs();
+        chargerStats();
+        toast(`${nom} ajouté !`, "success", 1500);
+    });
+    inputJoueur?.addEventListener("keydown", e => {
+        if (e.key === "Enter") $("btn-add-joueur")?.click();
+    });
+
+    // ── Ajouter une équipe ────────────────────────────
+    const inputEquipe = $("input-new-equipe");
+    $("btn-add-equipe")?.addEventListener("click", () => {
+        const nom = inputEquipe?.value.trim();
+        if (!nom) return;
+        const arr = getEquipes();
+        if (arr.some(eq => (eq.nom || eq) === nom)) { toast("Équipe déjà existante.", "warning"); return; }
+        arr.push({ nom });
+        setEquipes(arr);
+        if (inputEquipe) inputEquipe.value = "";
+        renderEquipes();
+        toast(`Équipe "${nom}" créée !`, "success", 1500);
+    });
+    inputEquipe?.addEventListener("keydown", e => {
+        if (e.key === "Enter") $("btn-add-equipe")?.click();
+    });
+
+    // ── Chargement initial ────────────────────────────
+    chargerStats();
+    afficherEcran("screen-home");
+
+    console.log("[MAIN] ✅ Accueil initialisé");
+});
+</script>
 
 </body>
 </html>

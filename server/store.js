@@ -1,325 +1,250 @@
-// server/store.js
-// =============================================
-// 🗄️ ÉTAT GLOBAL DU JEU (en mémoire serveur)
-// Source de vérité unique — jamais le client
-// =============================================
+// /server/store.js
+// ======================================================
+// 🗄️ STORE — État serveur MiniGame Universe
+// ======================================================
 
-/**
- * Structure d'une partie :
- * {
- *   id:            string,
- *   nom:           string,
- *   jeu:           string,
- *   mode:          "solo" | "team",
- *   statut:        "lobby" | "en_cours" | "terminee",
- *   equipes:       [{ nom, membres: [pseudo] }],
- *   joueursSolo:   [string],          // joueurs ajoutés manuellement par le host
- *   scores:        { [nomOuEquipe]: number },
- *   gameState:     object | null,     // état interne du jeu actif (question, phase, etc.)
- *   createdAt:     Date,
- *   updatedAt:     Date,
- *   hostSocketId:  string | null,
- *   hostJoue:      boolean,           // le host participe-t-il ?
- *   hostPseudo:    string | null,     // pseudo du host s'il joue
- * }
- *
- * Structure d'un joueur connecté :
- * {
- *   socketId:    string,
- *   pseudo:      string,
- *   equipe:      string | null,
- *   role:        "host" | "player",
- *   partieId:    string | null,
- *   connectedAt: Date
- * }
- */
+const { v4: uuidv4 } = require("uuid");
 
-class GameStore {
-    constructor() {
-        /** @type {Map<string, object>} partieId → partie */
-        this.parties = new Map();
+// Stockage en mémoire
+const parties = new Map();   // partieId → partie
+let _partieActiveId = null;  // Une seule partie active à la fois
+const _hostSockets  = new Map(); // partieId → ws
 
-        /** @type {Map<string, object>} socketId → joueur */
-        this.connexions = new Map();
+// ══════════════════════════════════════════════════════
+// 🏗️ CRÉATION
+// ══════════════════════════════════════════════════════
 
-        /** @type {Map<string, string>} pseudo → socketId (évite les doublons) */
-        this.pseudoIndex = new Map();
+function creerPartie({ nom, jeu, mode, equipes, joueursSolo, hostJoue, hostPseudo }) {
+    const id = uuidv4();
+
+    // Initialiser les scores
+    const scores = {};
+
+    if (mode === "team") {
+        (equipes || []).forEach(eq => { scores[eq.nom] = 0; });
+    } else {
+        (joueursSolo || []).forEach(j => { scores[j] = 0; });
+        if (hostJoue && hostPseudo) { scores[hostPseudo] = 0; }
     }
 
-    // ──────────────────────────────────────────
-    // 🎮 PARTIES
-    // ──────────────────────────────────────────
+    const partie = {
+        id,
+        nom,
+        jeu,
+        mode,
+        statut:      "lobby",
+        equipes:     equipes     || [],
+        joueursSolo: joueursSolo || [],
+        joueurs:     [],           // joueurs WS connectés
+        scores,
+        gameState:   null,
+        hostJoue:    hostJoue    || false,
+        hostPseudo:  hostPseudo  || null,
+        createdAt:   Date.now(),
+        updatedAt:   Date.now(),
+    };
 
-    /**
-     * Crée une nouvelle partie.
-     * Retourne null si l'id existe déjà (unicité garantie).
-     */
-    creerPartie({ id, nom, jeu, mode, equipes = [], joueursSolo = [], hostSocketId = null, hostJoue = false, hostPseudo = null }) {
-        if (this.parties.has(id)) return null;
+    parties.set(id, partie);
+    _partieActiveId = id;
 
-        // Initialiser les scores
-        const scores = {};
-        if (mode === "team") {
-            equipes.forEach(e => { scores[e.nom] = 0; });
-        } else {
-            // Mode solo : joueurs ajoutés manuellement + host s'il joue
-            joueursSolo.forEach(j => { scores[j] = 0; });
-            if (hostJoue && hostPseudo && !scores[hostPseudo]) {
-                scores[hostPseudo] = 0;
-            }
-        }
-
-        const partie = {
-            id,
-            nom,
-            jeu,
-            mode,
-            statut:       "lobby",
-            equipes,
-            joueursSolo,
-            scores,
-            gameState:    null,   // État interne du jeu (géré par les modules)
-            createdAt:    new Date(),
-            updatedAt:    new Date(),
-            hostSocketId,
-            hostJoue,
-            hostPseudo
-        };
-
-        this.parties.set(id, partie);
-        console.log(`[STORE] Partie créée : "${nom}" (${jeu}, ${mode}) — ${id}`);
-        return partie;
-    }
-
-    getPartie(id) {
-        return this.parties.get(id) || null;
-    }
-
-    getAllParties() {
-        return [...this.parties.values()];
-    }
-
-    updatePartieStatut(id, statut) {
-        const p = this.parties.get(id);
-        if (!p) return false;
-        p.statut    = statut;
-        p.updatedAt = new Date();
-        return true;
-    }
-
-    // ──────────────────────────────────────────
-    // 🎯 ÉTAT DU JEU (gameState)
-    // ──────────────────────────────────────────
-
-    /**
-     * Met à jour l'état interne d'un jeu.
-     * Permet de persister la progression (question actuelle, phase, etc.)
-     * @param {string} partieId
-     * @param {object} gameState — objet libre, défini par chaque module de jeu
-     */
-    updateGameState(partieId, gameState) {
-        const p = this.parties.get(partieId);
-        if (!p) return false;
-        p.gameState = { ...gameState, _updatedAt: Date.now() };
-        p.updatedAt = new Date();
-        return true;
-    }
-
-    /**
-     * Retourne l'état interne du jeu, ou null.
-     */
-    getGameState(partieId) {
-        return this.parties.get(partieId)?.gameState || null;
-    }
-
-    /**
-     * Fusionne partiellement l'état du jeu (patch).
-     */
-    patchGameState(partieId, patch) {
-        const p = this.parties.get(partieId);
-        if (!p) return false;
-        p.gameState = { ...(p.gameState || {}), ...patch, _updatedAt: Date.now() };
-        p.updatedAt = new Date();
-        return true;
-    }
-
-    // ──────────────────────────────────────────
-    // 🏆 SCORES
-    // ──────────────────────────────────────────
-
-    ajouterPointsPartie(partieId, cible, delta) {
-        const p = this.parties.get(partieId);
-        if (!p) return false;
-        if (!(cible in p.scores)) p.scores[cible] = 0;
-        p.scores[cible] = Math.max(0, p.scores[cible] + delta);
-        p.updatedAt     = new Date();
-        return true;
-    }
-
-    /**
-     * Remplace complètement le tableau des scores.
-     */
-    setScores(partieId, scores) {
-        const p = this.parties.get(partieId);
-        if (!p) return false;
-        p.scores    = { ...scores };
-        p.updatedAt = new Date();
-        return true;
-    }
-
-    /**
-     * Ajoute un participant au tableau des scores s'il n'y est pas.
-     */
-    initialiserScoreParticipant(partieId, cible) {
-        const p = this.parties.get(partieId);
-        if (!p) return false;
-        if (!(cible in p.scores)) {
-            p.scores[cible] = 0;
-            p.updatedAt     = new Date();
-        }
-        return true;
-    }
-
-    supprimerPartie(id) {
-        return this.parties.delete(id);
-    }
-
-    // ──────────────────────────────────────────
-    // 🔌 CONNEXIONS
-    // ──────────────────────────────────────────
-
-    enregistrerConnexion(socketId, { pseudo, role, partieId = null, equipe = null }) {
-        // Unicité du pseudo (joueurs uniquement)
-        if (role === "player" && this.pseudoIndex.has(pseudo)) {
-            return { ok: false, error: "PSEUDO_DEJA_PRIS" };
-        }
-
-        const joueur = {
-            socketId,
-            pseudo,
-            role,
-            partieId,
-            equipe,
-            connectedAt: new Date()
-        };
-
-        this.connexions.set(socketId, joueur);
-        if (role === "player") this.pseudoIndex.set(pseudo, socketId);
-
-        return { ok: true, joueur };
-    }
-
-    getConnexion(socketId) {
-        return this.connexions.get(socketId) || null;
-    }
-
-    supprimerConnexion(socketId) {
-        const joueur = this.connexions.get(socketId);
-        if (!joueur) return;
-        if (joueur.role === "player") this.pseudoIndex.delete(joueur.pseudo);
-        this.connexions.delete(socketId);
-    }
-
-    getJoueursPartie(partieId) {
-        return [...this.connexions.values()].filter(
-            c => c.partieId === partieId && c.role === "player"
-        );
-    }
-
-    assignerEquipe(socketId, equipe) {
-        const joueur = this.connexions.get(socketId);
-        if (!joueur) return false;
-        joueur.equipe = equipe;
-        return true;
-    }
-
-    pseudoDisponible(pseudo) {
-        return !this.pseudoIndex.has(pseudo);
-    }
-
-    // ──────────────────────────────────────────
-    // 📸 SNAPSHOT (diffusion sécurisée)
-    // ──────────────────────────────────────────
-
-    /**
-     * Retourne un snapshot de la partie à diffuser aux clients.
-     * N'expose jamais les données internes sensibles (hostSocketId, etc.)
-     *
-     * @param {string}  partieId
-     * @param {boolean} avecGameState — inclure l'état du jeu (pour le host uniquement)
-     */
-    snapshotPartie(partieId, avecGameState = false) {
-        const p = this.parties.get(partieId);
-        if (!p) return null;
-
-        const snapshot = {
-            id:      p.id,
-            nom:     p.nom,
-            jeu:     p.jeu,
-            mode:    p.mode,
-            statut:  p.statut,
-            equipes: p.equipes,
-            scores:  p.scores,
-            joueurs: this.getJoueursPartie(partieId).map(j => ({
-                pseudo: j.pseudo,
-                equipe: j.equipe
-            })),
-            // Infos host (sans les données sensibles)
-            hostJoue:   p.hostJoue,
-            hostPseudo: p.hostPseudo,
-        };
-
-        // L'état du jeu n'est partagé qu'au host (ou si explicitement demandé)
-        if (avecGameState && p.gameState) {
-            snapshot.gameState = p.gameState;
-        }
-
-        return snapshot;
-    }
-
-    /**
-     * Snapshot allégé pour les joueurs (pas de gameState, pas de hostPseudo).
-     */
-    snapshotPublic(partieId) {
-        const p = this.parties.get(partieId);
-        if (!p) return null;
-        return {
-            id:      p.id,
-            nom:     p.nom,
-            jeu:     p.jeu,
-            mode:    p.mode,
-            statut:  p.statut,
-            equipes: p.equipes.map(e => ({ nom: e.nom })), // membres masqués
-            scores:  p.scores,
-            joueurs: this.getJoueursPartie(partieId).map(j => ({
-                pseudo: j.pseudo,
-                equipe: j.equipe
-            }))
-        };
-    }
-
-    // ──────────────────────────────────────────
-    // 🛠️ UTILITAIRES
-    // ──────────────────────────────────────────
-
-    /**
-     * Retourne un résumé de l'état du store (debug / monitoring).
-     */
-    debug() {
-        return {
-            parties:    this.parties.size,
-            connexions: this.connexions.size,
-            pseudos:    this.pseudoIndex.size,
-            detail: [...this.parties.values()].map(p => ({
-                id:      p.id,
-                nom:     p.nom,
-                jeu:     p.jeu,
-                statut:  p.statut,
-                joueurs: this.getJoueursPartie(p.id).length,
-                scores:  p.scores
-            }))
-        };
-    }
+    console.log(`[STORE] ✅ Partie créée : ${id} (${nom})`);
+    return partie;
 }
 
-module.exports = new GameStore();
+// ══════════════════════════════════════════════════════
+// 📖 LECTURE
+// ══════════════════════════════════════════════════════
+
+function getPartie(id) {
+    return parties.get(id) || null;
+}
+
+/** Retourne la partie active en cours (lobby ou en_cours) */
+function getPartieActive() {
+    if (!_partieActiveId) return null;
+    const p = parties.get(_partieActiveId);
+    if (!p || p.statut === "terminee") {
+        _partieActiveId = null;
+        return null;
+    }
+    return p;
+}
+
+function getJoueurs(partieId) {
+    const p = getPartie(partieId);
+    return p ? [...p.joueurs] : [];
+}
+
+function getScores(partieId) {
+    const p = getPartie(partieId);
+    return p ? { ...p.scores } : {};
+}
+
+function getGameState(partieId) {
+    const p = getPartie(partieId);
+    return p ? p.gameState : null;
+}
+
+// ══════════════════════════════════════════════════════
+// ✏️ MODIFICATION
+// ══════════════════════════════════════════════════════
+
+function setStatut(partieId, statut) {
+    const p = getPartie(partieId);
+    if (!p) return;
+    p.statut    = statut;
+    p.updatedAt = Date.now();
+}
+
+function terminerPartie(partieId) {
+    setStatut(partieId, "terminee");
+    if (_partieActiveId === partieId) {
+        _partieActiveId = null;
+    }
+    console.log(`[STORE] 🏁 Partie terminée : ${partieId}`);
+}
+
+function ajouterJoueur(partieId, { pseudo, equipe }) {
+    const p = getPartie(partieId);
+    if (!p) return;
+
+    // Éviter les doublons
+    if (!p.joueurs.find(j => j.pseudo === pseudo)) {
+        p.joueurs.push({ pseudo, equipe: equipe || null });
+    }
+
+    // Initialiser le score si besoin
+    if (p.mode === "solo" && !(pseudo in p.scores)) {
+        p.scores[pseudo] = 0;
+    }
+
+    p.updatedAt = Date.now();
+}
+
+function retirerJoueur(partieId, pseudo) {
+    const p = getPartie(partieId);
+    if (!p) return;
+    p.joueurs   = p.joueurs.filter(j => j.pseudo !== pseudo);
+    p.updatedAt = Date.now();
+}
+
+function modifierScore(partieId, cible, delta) {
+    const p = getPartie(partieId);
+    if (!p) return;
+
+    if (!(cible in p.scores)) p.scores[cible] = 0;
+    p.scores[cible] = Math.max(0, p.scores[cible] + delta);
+    p.updatedAt = Date.now();
+}
+
+function setScores(partieId, scores) {
+    const p = getPartie(partieId);
+    if (!p) return;
+    p.scores    = { ...scores };
+    p.updatedAt = Date.now();
+}
+
+function updateGameState(partieId, gameState) {
+    const p = getPartie(partieId);
+    if (!p) return;
+    p.gameState = gameState;
+    p.updatedAt = Date.now();
+}
+
+function patchGameState(partieId, patch) {
+    const p = getPartie(partieId);
+    if (!p) return;
+    p.gameState = { ...(p.gameState || {}), ...patch };
+    p.updatedAt = Date.now();
+}
+
+// ══════════════════════════════════════════════════════
+// 🔌 SOCKETS HOST
+// ══════════════════════════════════════════════════════
+
+function setHostSocket(partieId, ws) {
+    _hostSockets.set(partieId, ws);
+}
+
+function getHostSocket(partieId) {
+    return _hostSockets.get(partieId) || null;
+}
+
+// ══════════════════════════════════════════════════════
+// 📸 SNAPSHOTS
+// ══════════════════════════════════════════════════════
+
+/** Snapshot complet pour le host */
+function snapshotPartie(partieId, avecGameState = false) {
+    const p = getPartie(partieId);
+    if (!p) return null;
+
+    const snap = {
+        id:          p.id,
+        nom:         p.nom,
+        jeu:         p.jeu,
+        mode:        p.mode,
+        statut:      p.statut,
+        equipes:     p.equipes,
+        joueursSolo: p.joueursSolo,
+        joueurs:     [...p.joueurs],
+        scores:      { ...p.scores },
+        hostJoue:    p.hostJoue,
+        hostPseudo:  p.hostPseudo,
+        createdAt:   p.createdAt,
+    };
+
+    if (avecGameState) snap.gameState = p.gameState;
+    return snap;
+}
+
+/** Snapshot allégé pour les joueurs */
+function snapshotPublic(partieId) {
+    const p = getPartie(partieId);
+    if (!p) return null;
+
+    return {
+        id:      p.id,
+        nom:     p.nom,
+        jeu:     p.jeu,
+        mode:    p.mode,
+        statut:  p.statut,
+        equipes: p.equipes.map(e => ({ nom: e.nom })),
+        scores:  { ...p.scores },
+        nbJoueurs: p.joueurs.length,
+    };
+}
+
+// ══════════════════════════════════════════════════════
+// 🐛 DEBUG
+// ══════════════════════════════════════════════════════
+
+function debug() {
+    console.log(`[STORE] Parties: ${parties.size} | Active: ${_partieActiveId || "aucune"}`);
+    parties.forEach((p, id) => {
+        console.log(`  → ${id.slice(0, 8)}… | ${p.nom} | ${p.statut} | ${p.joueurs.length} joueurs`);
+    });
+}
+
+// ══════════════════════════════════════════════════════
+module.exports = {
+    creerPartie,
+    getPartie,
+    getPartieActive,
+    getJoueurs,
+    getScores,
+    getGameState,
+    setStatut,
+    terminerPartie,
+    ajouterJoueur,
+    retirerJoueur,
+    modifierScore,
+    setScores,
+    updateGameState,
+    patchGameState,
+    setHostSocket,
+    getHostSocket,
+    snapshotPartie,
+    snapshotPublic,
+    debug,
+};
