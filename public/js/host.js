@@ -1,12 +1,11 @@
 // /public/js/host.js
 // ======================================================
-// 🟦 HOST.JS — Interface maître de jeu
+// 🟦 HOST.JS v3 — Interface maître de jeu
 // ======================================================
 
 import { socket } from "./core/socket.js";
-import { showToast } from "./main.js";
 
-// ── Helpers DOM ─────────────────────────────────────
+// ── Helpers DOM ───────────────────────────────────────
 const $    = id  => document.getElementById(id);
 const show = id  => { const el = $(id); if (el) el.hidden = false; };
 const hide = id  => { const el = $(id); if (el) el.hidden = true; };
@@ -14,30 +13,87 @@ const esc  = str => String(str || "")
     .replace(/&/g,"&amp;").replace(/</g,"&lt;")
     .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 
-// ── URL WebSocket ────────────────────────────────────
 const WS_URL = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`;
 
+// ── Toast local (pas d'import main.js pour éviter conflits) ──
+function toast(msg, type = "info", ms = 3000) {
+    const container = $("toast-container") || (() => {
+        const d = document.createElement("div");
+        d.id = "toast-container"; d.className = "toast-container";
+        document.body.appendChild(d); return d;
+    })();
+    const icons = { info:"ℹ️", success:"✅", error:"❌", warning:"⚠️" };
+    const el = document.createElement("div");
+    el.className = `toast toast-${type}`;
+    el.innerHTML = `<span>${icons[type]||"ℹ️"}</span><span>${esc(msg)}</span>`;
+    container.appendChild(el);
+    requestAnimationFrame(() => el.classList.add("toast-visible"));
+    setTimeout(() => {
+        el.classList.remove("toast-visible");
+        el.classList.add("toast-hiding");
+        setTimeout(() => el.remove(), 400);
+    }, ms);
+}
+
 // ======================================================
-// 🗂️ STATE LOCAL DU HOST
+// 🗂️ STATE
 // ======================================================
 
 const HostState = {
-    partieId:    null,
-    partieNom:   null,
-    jeu:         null,
-    mode:        "solo",
-    equipes:     [],
-    joueursSolo: [],
-    joueurs:     [],
-    scores:      {},
-    statut:      null,
-    hostJoue:    false,
-    hostPseudo:  null,
+    partieId:     null,
+    partieNom:    null,
+    jeu:          null,
+    mode:         "solo",
+    equipes:      [],
+    joueursSolo:  [],
+    joueurs:      [],
+    scores:       {},
+    statut:       null,
+    hostJoue:     false,
+    hostPseudo:   null,
     partieActive: false,
 };
 
 // ======================================================
-// 🔌 INDICATEUR DE CONNEXION WS
+// 💾 PERSISTENCE LOCALE DES PARTIES CRÉÉES
+// ======================================================
+
+function sauvegarderPartieLocale(snapshot) {
+    try {
+        const parties = JSON.parse(localStorage.getItem("mgu_parties") || "[]");
+        const idx = parties.findIndex(p => p.partieId === snapshot.id);
+        const entry = {
+            partieId:  snapshot.id,
+            id:        snapshot.id,
+            nom:       snapshot.nom,
+            jeu:       snapshot.jeu,
+            mode:      snapshot.mode,
+            equipes:   snapshot.equipes || [],
+            joueurs:   snapshot.joueurs || [],
+            scores:    snapshot.scores  || {},
+            statut:    snapshot.statut,
+            createdAt: Date.now(),
+        };
+        if (idx >= 0) parties[idx] = { ...parties[idx], ...entry };
+        else parties.push(entry);
+        localStorage.setItem("mgu_parties", JSON.stringify(parties));
+    } catch(e) { console.warn("[HOST] Sauvegarde locale échouée:", e); }
+}
+
+function mettreAJourStatutLocal(partieId, statut, scores) {
+    try {
+        const parties = JSON.parse(localStorage.getItem("mgu_parties") || "[]");
+        const idx = parties.findIndex(p => p.partieId === partieId || p.id === partieId);
+        if (idx >= 0) {
+            parties[idx].statut = statut;
+            if (scores) parties[idx].scores = scores;
+            localStorage.setItem("mgu_parties", JSON.stringify(parties));
+        }
+    } catch(e) {}
+}
+
+// ======================================================
+// 🔌 SOCKET STATUS
 // ======================================================
 
 function initSocketStatus() {
@@ -47,7 +103,6 @@ function initSocketStatus() {
     socket.on("__connected__", () => {
         if (dot)   dot.className     = "ws-dot ws-ok";
         if (label) label.textContent = "Connecté";
-        // ✅ AUTH automatique SANS mot de passe
         socket.send("HOST_AUTH", {});
     });
 
@@ -59,40 +114,44 @@ function initSocketStatus() {
     socket.on("__reconnect_failed__", () => {
         if (dot)   dot.className     = "ws-dot ws-ko";
         if (label) label.textContent = "Connexion perdue";
-        showToast("Connexion au serveur perdue. Rechargez la page.", "error", 6000);
+        toast("Connexion perdue. Rechargez la page.", "error", 0);
     });
 }
 
 // ======================================================
-// 🔐 AUTHENTIFICATION
+// 🔐 AUTH
 // ======================================================
 
 function initAuth() {
     socket.on("AUTH_OK", () => {
-        console.log("[HOST] ✅ Authentifié comme host");
-        showToast("Connecté en tant que host", "success", 2000);
+        toast("Connecté en tant que host", "success", 2000);
     });
 
     socket.on("AUTH_FAIL", ({ error }) => {
-        console.error("[HOST] Auth échouée:", error);
-        showToast(error || "Authentification échouée", "error");
+        toast(error || "Auth échouée", "error");
     });
 
-    // ✅ Restauration si partie déjà active côté serveur
+    // ✅ FIX PRINCIPAL : La restauration automatique est désactivée côté serveur
+    // (store.resetStore() au démarrage). Côté client, on ignore GAME_RESTORED
+    // sauf si on vient explicitement de "continuer une partie".
     socket.on("GAME_RESTORED", ({ partieId, snapshot }) => {
-        console.log("[HOST] 🔄 Partie restaurée:", partieId);
-        HostState.partieActive = true;
-        applySnapshot(snapshot);
-        show("panel-game");
-        // ✅ Ne PAS afficher l'alerte — c'est une restauration, pas un conflit
-        hide("alerte-partie-active");
-        renderGamePanel();
-        showToast("Partie en cours restaurée", "info", 3000);
+        // Ne restaurer que si l'URL contient un partieId correspondant
+        const urlParams = new URLSearchParams(location.search);
+        const urlPartieId = urlParams.get("partieId");
+        if (urlPartieId && urlPartieId === partieId) {
+            HostState.partieActive = true;
+            applySnapshot(snapshot);
+            show("panel-game");
+            hide("alerte-partie-active");
+            renderGamePanel();
+            toast("Partie restaurée ✓", "info", 3000);
+        }
+        // Sinon on ignore silencieusement
     });
 }
 
 // ======================================================
-// 🎮 MODE DE JEU — TOGGLE
+// 🎮 MODE TOGGLE
 // ======================================================
 
 function initModeToggle() {
@@ -103,14 +162,8 @@ function initModeToggle() {
         HostState.mode = mode;
         btnSolo?.classList.toggle("mode-btn-active",   mode === "solo");
         btnEquipe?.classList.toggle("mode-btn-active", mode === "team");
-
-        if (mode === "solo") {
-            show("bloc-solo");
-            hide("bloc-equipes");
-        } else {
-            hide("bloc-solo");
-            show("bloc-equipes");
-        }
+        if (mode === "solo") { show("bloc-solo"); hide("bloc-equipes"); }
+        else                 { hide("bloc-solo"); show("bloc-equipes"); }
     };
 
     btnSolo?.addEventListener("click",   () => setMode("solo"));
@@ -119,13 +172,12 @@ function initModeToggle() {
 }
 
 // ======================================================
-// 👤 HOST JOUE — TOGGLE
+// 👤 HOST JOUE TOGGLE
 // ======================================================
 
 function initHostRoleToggle() {
     const checkbox   = $("h-host-joue");
     const pseudoWrap = $("h-host-pseudo-wrap");
-
     checkbox?.addEventListener("change", () => {
         HostState.hostJoue = checkbox.checked;
         if (pseudoWrap) pseudoWrap.hidden = !checkbox.checked;
@@ -133,7 +185,7 @@ function initHostRoleToggle() {
 }
 
 // ======================================================
-// 👥 GESTION DES JOUEURS (mode solo — ajout manuel)
+// 👥 JOUEURS SOLO
 // ======================================================
 
 function initJoueursSolo() {
@@ -143,9 +195,7 @@ function initJoueursSolo() {
     const ajouter = () => {
         const nom = input?.value.trim();
         if (!nom) return;
-        if (HostState.joueursSolo.includes(nom)) {
-            showToast("Ce joueur existe déjà.", "warning"); return;
-        }
+        if (HostState.joueursSolo.includes(nom)) { toast("Joueur déjà existant.", "warning"); return; }
         HostState.joueursSolo.push(nom);
         if (input) input.value = "";
         renderJoueursSoloForm();
@@ -161,15 +211,14 @@ function renderJoueursSoloForm() {
     if (!container) return;
 
     if (HostState.joueursSolo.length === 0) {
-        container.innerHTML = `<p class="list-empty">Aucun joueur ajouté — les joueurs peuvent rejoindre via le lien</p>`;
+        container.innerHTML = `<p class="list-empty">Aucun joueur — rejoignez via le lien</p>`;
         return;
     }
-
     container.innerHTML = HostState.joueursSolo.map((j, i) => `
         <div class="joueur-tag">
             <span class="joueur-tag-avatar">${j.charAt(0).toUpperCase()}</span>
             <span class="joueur-tag-nom">${esc(j)}</span>
-            <button class="btn-remove" data-i="${i}" title="Retirer">×</button>
+            <button class="btn-remove" data-i="${i}">×</button>
         </div>
     `).join("");
 
@@ -182,7 +231,7 @@ function renderJoueursSoloForm() {
 }
 
 // ======================================================
-// 🛡️ GESTION DES ÉQUIPES
+// 🛡️ ÉQUIPES
 // ======================================================
 
 function initEquipes() {
@@ -193,7 +242,7 @@ function initEquipes() {
         const nom = input?.value.trim();
         if (!nom) return;
         if (HostState.equipes.some(e => e.nom.toLowerCase() === nom.toLowerCase())) {
-            showToast("Ce nom d'équipe existe déjà.", "warning"); return;
+            toast("Équipe déjà existante.", "warning"); return;
         }
         HostState.equipes.push({ nom, membres: [] });
         if (input) input.value = "";
@@ -213,13 +262,12 @@ function renderEquipesForm() {
         container.innerHTML = `<p class="list-empty">Créez au moins 2 équipes</p>`;
         return;
     }
-
     container.innerHTML = HostState.equipes.map((eq, i) => `
         <div class="equipe-form-item">
             <div class="equipe-form-header">
-                <span class="equipe-form-icon">🛡️</span>
+                <span>🛡️</span>
                 <span class="equipe-form-nom">${esc(eq.nom)}</span>
-                <button class="btn-remove btn-del-equipe" data-i="${i}" title="Supprimer">×</button>
+                <button class="btn-remove btn-del-equipe" data-i="${i}">×</button>
             </div>
         </div>
     `).join("");
@@ -233,15 +281,14 @@ function renderEquipesForm() {
 }
 
 // ======================================================
-// 🚀 CRÉATION DE PARTIE
+// 🚀 CRÉER PARTIE
 // ======================================================
 
 function initCreerPartie() {
     $("h-btn-creer")?.addEventListener("click", () => {
-        // ✅ Guard : partie déjà active
         if (HostState.partieActive) {
             show("alerte-partie-active");
-            showToast("Terminez la partie en cours avant d'en créer une nouvelle.", "warning");
+            toast("Terminez la partie en cours d'abord.", "warning");
             return;
         }
 
@@ -249,15 +296,15 @@ function initCreerPartie() {
         const jeu  = $("h-jeu")?.value;
         const mode = HostState.mode;
 
-        if (!nom) { showToast("Donnez un nom à la partie.", "warning"); return; }
+        if (!nom) { toast("Donnez un nom à la partie.", "warning"); return; }
         if (mode === "team" && HostState.equipes.length < 2) {
-            showToast("Il faut au moins 2 équipes.", "warning"); return;
+            toast("Il faut au moins 2 équipes.", "warning"); return;
         }
 
         let hostPseudo = null;
         if (HostState.hostJoue) {
             hostPseudo = $("h-host-pseudo")?.value.trim();
-            if (!hostPseudo) { showToast("Entrez votre pseudo pour jouer.", "warning"); return; }
+            if (!hostPseudo) { toast("Entrez votre pseudo.", "warning"); return; }
             HostState.hostPseudo = hostPseudo;
         }
 
@@ -272,7 +319,7 @@ function initCreerPartie() {
 }
 
 // ======================================================
-// 📡 ÉVÉNEMENTS WEBSOCKET ENTRANTS
+// 📡 SOCKET EVENTS
 // ======================================================
 
 function initSocketEvents() {
@@ -282,30 +329,32 @@ function initSocketEvents() {
         HostState.partieActive = true;
         applySnapshot(snapshot);
 
-        show("panel-game");
-        hide("alerte-partie-active"); // ✅ Toujours masquer après création réussie
-        renderGamePanel();
+        // ✅ Sauvegarder localement pour "Continuer une partie"
+        sauvegarderPartieLocale(snapshot);
 
-        showToast(`Partie "${HostState.partieNom}" créée !`, "success");
-        console.log("[HOST] Partie créée :", partieId);
+        show("panel-game");
+        hide("alerte-partie-active");
+        renderGamePanel();
+        toast(`Partie "${HostState.partieNom}" créée !`, "success");
     });
 
     socket.on("PLAYER_JOINED", ({ pseudo, equipe, joueurs }) => {
         HostState.joueurs = joueurs;
         renderJoueursConnectes();
         renderScores();
-        showToast(`${pseudo} a rejoint la partie`, "info", 2000);
+        toast(`${pseudo} a rejoint`, "info", 2000);
     });
 
     socket.on("PLAYER_LEFT", ({ pseudo, joueurs }) => {
         HostState.joueurs = joueurs;
         renderJoueursConnectes();
-        showToast(`${pseudo} a quitté la partie`, "warning", 2000);
+        toast(`${pseudo} a quitté`, "warning", 2000);
     });
 
     socket.on("SCORES_UPDATE", ({ scores }) => {
         HostState.scores = scores;
         renderScores();
+        mettreAJourStatutLocal(HostState.partieId, HostState.statut, scores);
     });
 
     socket.on("GAME_STARTED", ({ snapshot }) => {
@@ -314,7 +363,8 @@ function initSocketEvents() {
         _setStatutBadge("en_cours");
         hide("h-btn-start");
         show("h-btn-end");
-        showToast("La partie est lancée !", "success");
+        mettreAJourStatutLocal(HostState.partieId, "en_cours", null);
+        toast("Partie lancée !", "success");
     });
 
     socket.on("GAME_ENDED", ({ snapshot }) => {
@@ -324,12 +374,12 @@ function initSocketEvents() {
         _setStatutBadge("terminee");
         hide("h-btn-end");
         show("h-btn-nouvelle");
+        mettreAJourStatutLocal(HostState.partieId, "terminee", snapshot.scores);
         renderResultats();
-        showToast("Partie terminée !", "info");
+        toast("Partie terminée !", "info");
     });
 
     socket.on("PLAYER_ACTION", ({ pseudo, equipe, action }) => {
-        console.log("[HOST] Action joueur :", pseudo, action);
         if (typeof window.onPlayerAction === "function") {
             window.onPlayerAction({ pseudo, equipe, action });
         }
@@ -340,24 +390,18 @@ function initSocketEvents() {
             NOT_HOST:       "Accès refusé.",
             NO_ACTIVE_GAME: "Aucune partie active.",
             MISSING_FIELDS: "Données manquantes.",
-            // ✅ GAME_EXISTS = partie serveur déjà active, pas un bug client
-            GAME_EXISTS:    "Une partie est déjà en cours sur le serveur.",
+            GAME_EXISTS:    "Une partie est déjà active sur le serveur.",
         };
-        const msg = messages[code] || `Erreur serveur (${code})`;
-
-        // ✅ Afficher l'alerte seulement si GAME_EXISTS
         if (code === "GAME_EXISTS") {
             HostState.partieActive = true;
             show("alerte-partie-active");
         }
-
-        showToast(msg, "error");
-        console.error("[HOST] Erreur serveur :", code);
+        toast(messages[code] || `Erreur (${code})`, "error");
     });
 }
 
 // ======================================================
-// 🎮 CONTRÔLES DE LA PARTIE
+// 🎮 CONTRÔLES
 // ======================================================
 
 function initControles() {
@@ -372,33 +416,30 @@ function initControles() {
     });
 
     $("h-btn-nouvelle")?.addEventListener("click", () => {
-        // ✅ Reset complet du state
-        HostState.partieId     = null;
-        HostState.partieNom    = null;
-        HostState.jeu          = null;
-        HostState.joueurs      = [];
-        HostState.scores       = {};
-        HostState.statut       = null;
-        HostState.partieActive = false;
-
-        // ✅ Reset UI propre
+        // Reset
+        Object.assign(HostState, {
+            partieId: null, partieNom: null, jeu: null,
+            joueurs: [], scores: {}, statut: null, partieActive: false
+        });
         hide("panel-game");
         hide("h-btn-nouvelle");
-        hide("alerte-partie-active"); // ✅ toujours masquée au reset
+        hide("alerte-partie-active");
         show("h-btn-start");
-
         const nomInput = $("h-nom-partie");
         if (nomInput) nomInput.value = "";
-
-        showToast("Prêt pour une nouvelle partie !", "info");
+        toast("Prêt pour une nouvelle partie !", "info");
     });
 
     $("h-btn-copy")?.addEventListener("click", () => {
         const link = $("h-join-link");
         if (!link?.href || link.href === "#") return;
         navigator.clipboard.writeText(link.href)
-            .then(() => showToast("Lien copié !", "success", 1500))
-            .catch(() => showToast("Copie impossible", "error"));
+            .then(() => toast("Lien copié !", "success", 1500))
+            .catch(() => toast("Copie impossible", "error"));
+    });
+
+    $("btn-go-home")?.addEventListener("click", () => {
+        location.href = "/main/";
     });
 }
 
@@ -460,22 +501,18 @@ function renderJoueursConnectes() {
             equipesCont.innerHTML = Object.entries(equipesAvecMembres).map(([nom, membres]) => `
                 <div class="equipe-connectee-card">
                     <div class="equipe-connectee-header">
-                        <span class="equipe-connectee-icon">🛡️</span>
+                        <span>🛡️</span>
                         <span class="equipe-connectee-nom">${esc(nom)}</span>
                         <span class="equipe-connectee-count">${membres.length} joueur${membres.length > 1 ? "s" : ""}</span>
                     </div>
                     <div class="equipe-connectee-membres">
                         ${membres.length > 0
-                            ? membres.map(m => `
-                                <span class="membre-chip">
-                                    <span class="membre-avatar">${m.charAt(0).toUpperCase()}</span>
-                                    ${esc(m)}
-                                </span>`).join("")
+                            ? membres.map(m => `<span class="membre-chip"><span class="membre-avatar">${m.charAt(0).toUpperCase()}</span>${esc(m)}</span>`).join("")
                             : `<span class="membre-empty">Aucun joueur</span>`
                         }
                     </div>
                 </div>
-            `).join("") || `<p class="list-empty">En attente de joueurs…</p>`;
+            `).join("") || `<p class="list-empty">En attente…</p>`;
         }
         return;
     }
@@ -509,26 +546,24 @@ function renderScores() {
     const entries = Object.entries(HostState.scores).sort((a, b) => b[1] - a[1]);
 
     if (entries.length === 0) {
-        container.innerHTML = `<p class="list-empty">Aucun score pour l'instant</p>`;
+        container.innerHTML = `<p class="list-empty">Aucun score</p>`;
         return;
     }
 
     const max    = entries[0]?.[1] || 1;
-    const medals = ["🥇", "🥈", "🥉"];
+    const medals = ["🥇","🥈","🥉"];
 
     container.innerHTML = entries.map(([nom, pts], i) => {
         const pct = max > 0 ? Math.round((pts / max) * 100) : 0;
         return `
             <div class="score-row">
-                <span class="score-medal">${medals[i] || `${i + 1}.`}</span>
+                <span class="score-medal">${medals[i] || `${i+1}.`}</span>
                 <span class="score-nom">${esc(nom)}</span>
-                <div class="score-bar-wrap">
-                    <div class="score-bar" style="width: ${pct}%"></div>
-                </div>
-                <span class="score-pts">${pts} <small>pts</small></span>
+                <div class="score-bar-wrap"><div class="score-bar" style="width:${pct}%"></div></div>
+                <span class="score-pts">${pts}<small> pts</small></span>
                 <div class="score-actions">
-                    <button class="btn-pts btn-plus"  data-cible="${esc(nom)}" data-delta="1"  title="+1">＋</button>
-                    <button class="btn-pts btn-minus" data-cible="${esc(nom)}" data-delta="-1" title="-1">－</button>
+                    <button class="btn-pts btn-plus"  data-cible="${esc(nom)}" data-delta="1">＋</button>
+                    <button class="btn-pts btn-minus" data-cible="${esc(nom)}" data-delta="-1">－</button>
                 </div>
             </div>
         `;
@@ -537,54 +572,45 @@ function renderScores() {
     container.querySelectorAll(".btn-pts").forEach(btn => {
         btn.addEventListener("click", () => {
             const delta = parseInt(btn.dataset.delta);
-            const cible = btn.dataset.cible;
-            socket.send(delta > 0 ? "HOST_ADD_POINTS" : "HOST_REMOVE_POINTS", { cible, points: 1 });
+            socket.send(delta > 0 ? "HOST_ADD_POINTS" : "HOST_REMOVE_POINTS", {
+                cible: btn.dataset.cible, points: 1
+            });
         });
     });
 }
 
 function renderResultats() {
     const entries = Object.entries(HostState.scores).sort((a, b) => b[1] - a[1]);
-    const medals  = ["🥇", "🥈", "🥉"];
-
+    const medals  = ["🥇","🥈","🥉"];
     const html = `
         <div class="resultats-finaux">
             <h3 class="resultats-titre">🏁 Résultats finaux</h3>
             ${entries.map(([nom, pts], i) => `
-                <div class="resultat-row ${i === 0 ? "resultat-winner" : ""}">
-                    <span class="resultat-medal">${medals[i] || `${i + 1}.`}</span>
+                <div class="resultat-row ${i===0?"resultat-winner":""}">
+                    <span class="resultat-medal">${medals[i] || `${i+1}.`}</span>
                     <span class="resultat-nom">${esc(nom)}</span>
                     <span class="resultat-pts">${pts} pts</span>
                 </div>
             `).join("")}
-        </div>
-    `;
-
-    const scoresSection = $("h-scores-liste");
-    if (scoresSection) scoresSection.insertAdjacentHTML("afterend", html);
+        </div>`;
+    $("h-scores-liste")?.insertAdjacentHTML("afterend", html);
 }
 
 function _renderQR(url) {
     const container = $("h-qr");
     if (!container) return;
-
-    const size  = 120;
+    const size = 120;
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(url)}&bgcolor=0d0d1a&color=00d4ff&margin=2`;
-
-    container.innerHTML = `
-        <img src="${qrUrl}" alt="QR Code pour rejoindre" class="qr-img"
-             onerror="this.closest('.qr-container').innerHTML='<p class=\\'qr-error\\'>QR indisponible</p>'">
-    `;
+    container.innerHTML = `<img src="${qrUrl}" alt="QR Code" class="qr-img" onerror="this.closest('.qr-container').innerHTML='<p style=color:var(--c-text-mute)>QR indisponible</p>'">`;
 }
 
 function _setStatutBadge(statut) {
     const badge = $("h-statut-badge");
     if (!badge) return;
-
     const map = {
-        lobby:    { text: "● Lobby",     cls: "statut-lobby"    },
-        en_cours: { text: "● En cours",  cls: "statut-en-cours" },
-        terminee: { text: "● Terminée",  cls: "statut-terminee" },
+        lobby:    { text: "● Lobby",    cls: "statut-lobby"    },
+        en_cours: { text: "● En cours", cls: "statut-en-cours" },
+        terminee: { text: "● Terminée", cls: "statut-terminee" },
     };
     const info = map[statut] || map.lobby;
     badge.textContent = info.text;
@@ -592,19 +618,32 @@ function _setStatutBadge(statut) {
 }
 
 // ======================================================
-// 🔄 APPLIQUER UN SNAPSHOT SERVEUR
+// 🔄 SNAPSHOT
 // ======================================================
 
-function applySnapshot(snapshot) {
-    if (!snapshot) return;
-    HostState.partieId  = snapshot.id      ?? HostState.partieId;
-    HostState.partieNom = snapshot.nom     ?? HostState.partieNom;
-    HostState.jeu       = snapshot.jeu     ?? HostState.jeu;
-    HostState.mode      = snapshot.mode    ?? HostState.mode;
-    HostState.equipes   = snapshot.equipes ?? HostState.equipes;
-    HostState.scores    = snapshot.scores  ?? HostState.scores;
-    HostState.statut    = snapshot.statut  ?? HostState.statut;
-    HostState.joueurs   = snapshot.joueurs ?? HostState.joueurs;
+function applySnapshot(snap) {
+    if (!snap) return;
+    HostState.partieId  = snap.id      ?? HostState.partieId;
+    HostState.partieNom = snap.nom     ?? HostState.partieNom;
+    HostState.jeu       = snap.jeu     ?? HostState.jeu;
+    HostState.mode      = snap.mode    ?? HostState.mode;
+    HostState.equipes   = snap.equipes ?? HostState.equipes;
+    HostState.scores    = snap.scores  ?? HostState.scores;
+    HostState.statut    = snap.statut  ?? HostState.statut;
+    HostState.joueurs   = snap.joueurs ?? HostState.joueurs;
+}
+
+// ======================================================
+// 📥 PRÉ-REMPLISSAGE DEPUIS URL (jeu présélectionné)
+// ======================================================
+
+function initFromUrl() {
+    const params = new URLSearchParams(location.search);
+    const jeuId = params.get("jeu");
+    if (jeuId) {
+        const select = $("h-jeu");
+        if (select) select.value = jeuId;
+    }
 }
 
 // ======================================================
@@ -612,7 +651,6 @@ function applySnapshot(snapshot) {
 // ======================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-    // ✅ S'assurer que l'alerte est masquée au démarrage
     hide("alerte-partie-active");
 
     initSocketStatus();
@@ -624,10 +662,11 @@ document.addEventListener("DOMContentLoaded", () => {
     initEquipes();
     initCreerPartie();
     initControles();
+    initFromUrl();
 
     socket.connect(WS_URL);
 
-    console.log("[HOST] 🎮 Interface host initialisée");
+    console.log("[HOST] 🎮 v3 initialisé");
 });
 
 window.HostState = HostState;

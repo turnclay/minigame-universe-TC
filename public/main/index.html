@@ -11,14 +11,16 @@
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════
-     🔝 TOPBAR
-════════════════════════════════════════════ -->
+<!-- ══ OFFLINE BANNER ════════════════════════════════ -->
+<div id="offline-banner" class="offline-banner" hidden>
+  ⚠️ Connexion perdue — vérifiez votre réseau
+</div>
+
+<!-- ══ TOPBAR ════════════════════════════════════════ -->
 <nav class="topbar" id="topbar">
   <div class="topbar-left">
-    <a class="topbar-logo" href="/main/" aria-label="Accueil">
-      <img src="/images/LogoMiniGame.png" alt="Logo" class="topbar-logo-img"
-           onerror="this.style.display='none'">
+    <a class="topbar-logo" href="#" aria-label="Accueil">
+      <img src="/images/LogoMiniGame.png" alt="Logo" class="topbar-logo-img" onerror="this.style.display='none'">
       <span class="topbar-logo-text">MiniGame</span>
     </a>
   </div>
@@ -28,72 +30,50 @@
   </div>
 </nav>
 
-<!-- Menu overlay -->
+<!-- ══ MENU OVERLAY ══════════════════════════════════ -->
 <div id="menu-overlay" class="menu-overlay" hidden></div>
-
-<!-- Menu panel -->
 <div id="menu-panel" class="menu-panel" hidden>
   <div class="menu-panel-header">
     <span class="menu-title">🎮 Menu</span>
     <button id="btn-close-menu" class="menu-close">✕</button>
   </div>
   <nav class="menu-nav">
-    <button class="menu-item" id="menu-btn-host">
-      🎙️ <span>Créer une partie (Host)</span>
-    </button>
-    <button class="menu-item" id="menu-btn-join">
-      🎮 <span>Rejoindre une partie</span>
-    </button>
-    <div style="height:1px;background:var(--c-border);margin:0.5rem 0"></div>
-    <button class="menu-item" id="menu-btn-parties">
-      📋 <span>Mes parties</span>
-    </button>
-    <button class="menu-item" id="menu-btn-joueurs">
-      👥 <span>Joueurs</span>
-    </button>
-    <button class="menu-item" id="menu-btn-equipes">
-      🛡️ <span>Équipes</span>
-    </button>
-    <button class="menu-item" id="menu-btn-stats">
-      📊 <span>Statistiques</span>
-    </button>
+    <button class="menu-item" id="menu-btn-host">🎙️ <span>Créer une partie</span></button>
+    <button class="menu-item" id="menu-btn-join">🎮 <span>Rejoindre une partie</span></button>
+    <div class="menu-divider"></div>
+    <button class="menu-item" id="menu-btn-jeux">🃏 <span>Les jeux</span></button>
+    <button class="menu-item" id="menu-btn-parties">📋 <span>Mes parties</span></button>
   </nav>
 </div>
 
-<!-- Toasts -->
+<!-- ══ TOASTS ═════════════════════════════════════════ -->
 <div id="toast-container" class="toast-container"></div>
 
-<!-- ══════════════════════════════════════════
+<!-- ══════════════════════════════════════════════════
      🏠 ÉCRAN ACCUEIL
-════════════════════════════════════════════ -->
+════════════════════════════════════════════════════ -->
 <section id="screen-home" class="screen screen-home">
   <div class="home-hero">
     <div class="home-glow-ring"></div>
-
-    <img src="/images/LogoMiniGame.png" alt="MiniGame Universe" class="home-logo"
-         onerror="this.style.display='none'">
-
-    <h1 class="home-title">
-      MiniGame<br>
-      <span class="home-title-accent">Universe</span>
-    </h1>
-
-    <p class="home-subtitle">La plateforme de jeux pour vos soirées</p>
+    <img src="/images/LogoMiniGame.png" alt="MiniGame Universe" class="home-logo" onerror="this.style.display='none'">
+    <h1 class="home-title">MiniGame<br><span class="home-title-accent">Universe</span></h1>
+    <p class="home-subtitle">La plateforme de mini-jeux pour vos soirées entre amis</p>
 
     <div class="home-cta-group">
-      <!-- ✅ Bouton HOST → /host/ -->
       <button id="btn-go-host" class="btn-primary btn-hero">
-        <span class="btn-icon">🎙️</span> Créer une partie
+        <span>🚀</span> Nouvelle partie
       </button>
-      <!-- ✅ Bouton REJOINDRE → /join/ -->
-      <button id="btn-go-join" class="btn-ghost" style="border-radius:50px;padding:0.75rem 2rem;font-size:0.95rem;">
-        <span class="btn-icon">🎮</span> Rejoindre une partie
+      <button id="btn-continuer" class="btn-secondary btn-hero-ghost">
+        <span>📋</span> Continuer une partie
+      </button>
+      <button id="btn-voir-jeux" class="btn-ghost btn-hero-link">
+        🃏 Voir tous les jeux & règles
       </button>
     </div>
   </div>
 
   <!-- Stats bar -->
-  <div class="home-stats-bar" id="home-stats-bar">
+  <div class="home-stats-bar">
     <div class="home-stat">
       <span class="home-stat-val" id="stat-parties">0</span>
       <span class="home-stat-label">Parties</span>
@@ -104,389 +84,68 @@
     </div>
     <div class="home-stat">
       <span class="home-stat-val" id="stat-points">0</span>
-      <span class="home-stat-label">Points</span>
+      <span class="home-stat-label">Points totaux</span>
+    </div>
+  </div>
+
+  <!-- Quick jeux preview -->
+  <div class="home-jeux-preview">
+    <p class="home-jeux-label">10 jeux disponibles</p>
+    <div class="home-jeux-icons">
+      <span title="Quiz">❓</span>
+      <span title="Juste Prix">💰</span>
+      <span title="Undercover">🕵️</span>
+      <span title="Maxi Lettres">📖</span>
+      <span title="Mimer/Dessiner">🎭</span>
+      <span title="Le Pendu">🪢</span>
+      <span title="Petit Bac">📝</span>
+      <span title="Mémoire Flash">🧠</span>
+      <span title="Morpion">⭕</span>
+      <span title="Puissance 4">🔴</span>
     </div>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════════
-     📋 ÉCRAN MES PARTIES
-════════════════════════════════════════════ -->
-<section id="screen-parties" class="screen" hidden aria-label="Mes parties">
-  <h2 class="section-title">📋 Mes parties</h2>
-  <div id="parties-list" class="parties-list">
-    <p class="list-empty">Aucune partie enregistrée pour l'instant.</p>
+<!-- ══════════════════════════════════════════════════
+     🃏 ÉCRAN JEUX
+════════════════════════════════════════════════════ -->
+<section id="screen-jeux" class="screen" hidden aria-label="Les jeux">
+  <div class="screen-header">
+    <h2 class="screen-title">🃏 Les Jeux</h2>
+    <p class="screen-sub">Cliquez sur un jeu pour voir ses règles et créer une partie.</p>
   </div>
+  <div id="jeux-grid" class="jeux-grid"></div>
 </section>
 
-<!-- ══════════════════════════════════════════
-     👥 ÉCRAN JOUEURS
-════════════════════════════════════════════ -->
-<section id="screen-joueurs" class="screen" hidden aria-label="Joueurs">
-  <h2 class="section-title">👥 Joueurs</h2>
-  <div class="form-block">
-    <label class="form-label">Ajouter un joueur</label>
-    <div class="add-joueur-row">
-      <input type="text" id="input-new-joueur" class="input-primary"
-             placeholder="Nom du joueur…" maxlength="20" autocomplete="off">
-      <button id="btn-add-joueur" class="btn-secondary btn-icon-only">＋</button>
-    </div>
-  </div>
-  <div id="joueurs-list" class="joueurs-checkboxes"></div>
+<!-- ══════════════════════════════════════════════════
+     🔍 ÉCRAN DÉTAIL JEU
+════════════════════════════════════════════════════ -->
+<section id="screen-jeu-detail" class="screen" hidden aria-label="Détail du jeu">
+  <div id="jeu-detail-content"></div>
 </section>
 
-<!-- ══════════════════════════════════════════
-     🛡️ ÉCRAN ÉQUIPES
-════════════════════════════════════════════ -->
-<section id="screen-equipes" class="screen" hidden aria-label="Équipes">
-  <h2 class="section-title">🛡️ Équipes</h2>
-  <div class="form-block">
-    <label class="form-label">Créer une équipe</label>
-    <div class="add-joueur-row">
-      <input type="text" id="input-new-equipe" class="input-primary"
-             placeholder="Nom de l'équipe…" maxlength="20">
-      <button id="btn-add-equipe" class="btn-secondary btn-icon-only">＋</button>
-    </div>
+<!-- ══════════════════════════════════════════════════
+     📋 ÉCRAN CONTINUER UNE PARTIE
+════════════════════════════════════════════════════ -->
+<section id="screen-parties" class="screen" hidden aria-label="Continuer une partie">
+  <div class="screen-header">
+    <h2 class="screen-title">📋 Mes parties</h2>
+    <p class="screen-sub">Chargez une partie existante pour la reprendre ou la continuer.</p>
+    <button class="btn-primary btn-sm" id="btn-parties-nouvelle" style="margin-top:.5rem">
+      + Nouvelle partie
+    </button>
   </div>
-  <div id="equipes-list" class="equipes-form-list"></div>
+  <div id="parties-continuer-list" class="parties-continuer-list"></div>
 </section>
 
-<!-- ══════════════════════════════════════════
-     📊 ÉCRAN STATISTIQUES
-════════════════════════════════════════════ -->
-<section id="screen-stats" class="screen" hidden aria-label="Statistiques">
-  <h2 class="section-title">📊 Statistiques</h2>
-  <div id="stats-content">
-    <p class="list-empty">Aucune statistique disponible.</p>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════════
-     📜 SCRIPTS
-════════════════════════════════════════════ -->
-<script type="module">
-// ======================================================
-// main/index.html — Logique inline de l'accueil
-// ======================================================
-
-// ── Helpers DOM ──────────────────────────────────────
-const $ = id => document.getElementById(id);
-const show = id => { const el = $(id); if (el) el.hidden = false; };
-const hide = id => { const el = $(id); if (el) el.hidden = true; };
-const esc  = s  => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-
-// ── Routes ───────────────────────────────────────────
-const ROUTES = {
-    host: "/host/",
-    join: "/join/",
-};
-
-function naviguer(route, params = {}) {
-    const url = new URL(ROUTES[route], location.origin);
-    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-    location.href = url.toString();
-}
-
-// ── Toast ────────────────────────────────────────────
-function toast(msg, type = "info", ms = 3000) {
-    const container = $("toast-container");
-    if (!container) return;
-    const icons = { info:"ℹ️", success:"✅", error:"❌", warning:"⚠️" };
-    const el = document.createElement("div");
-    el.className = `toast toast-${type}`;
-    el.innerHTML = `<span>${icons[type]||"ℹ️"}</span><span>${esc(msg)}</span>`;
-    container.appendChild(el);
-    requestAnimationFrame(() => el.classList.add("toast-visible"));
-    setTimeout(() => {
-        el.classList.remove("toast-visible");
-        el.classList.add("toast-hiding");
-        setTimeout(() => el.remove(), 400);
-    }, ms);
-}
-window.showToast = toast;
-
-// ── Navigation entre écrans ──────────────────────────
-const SCREENS = ["screen-home","screen-parties","screen-joueurs","screen-equipes","screen-stats"];
-let screenActif = "screen-home";
-
-function afficherEcran(id) {
-    SCREENS.forEach(s => hide(s));
-    show(id);
-    screenActif = id;
-
-    // Breadcrumb
-    const bc = $("topbar-breadcrumb");
-    const labels = {
-        "screen-home":    "",
-        "screen-parties": "📋 Mes parties",
-        "screen-joueurs": "👥 Joueurs",
-        "screen-equipes": "🛡️ Équipes",
-        "screen-stats":   "📊 Statistiques",
-    };
-    if (bc) bc.innerHTML = labels[id]
-        ? `<span class="topbar-breadcrumb-text">${labels[id]}</span>`
-        : "";
-
-    // Fermer le menu
-    fermerMenu();
-}
-
-// ── Menu ─────────────────────────────────────────────
-function ouvrirMenu() {
-    const panel   = $("menu-panel");
-    const overlay = $("menu-overlay");
-    if (panel)   panel.hidden   = false;
-    if (overlay) overlay.hidden = false;
-}
-
-function fermerMenu() {
-    const panel   = $("menu-panel");
-    const overlay = $("menu-overlay");
-    if (panel)   panel.hidden   = true;
-    if (overlay) overlay.hidden = true;
-}
-
-// ── LocalStorage helpers ─────────────────────────────
-function getJoueurs() {
-    try { return JSON.parse(localStorage.getItem("mgu_joueurs") || "[]"); } catch { return []; }
-}
-function setJoueurs(arr) {
-    localStorage.setItem("mgu_joueurs", JSON.stringify(arr));
-}
-
-function getEquipes() {
-    try { return JSON.parse(localStorage.getItem("mgu_equipes") || "[]"); } catch { return []; }
-}
-function setEquipes(arr) {
-    localStorage.setItem("mgu_equipes", JSON.stringify(arr));
-}
-
-function getParties() {
-    try { return JSON.parse(localStorage.getItem("mgu_parties") || "[]"); } catch { return []; }
-}
-
-// ── Stats ────────────────────────────────────────────
-function chargerStats() {
-    const parties = getParties();
-    const joueurs = getJoueurs();
-    let totalPoints = 0;
-    parties.forEach(p => {
-        Object.values(p.scores || {}).forEach(v => { totalPoints += (v || 0); });
+<script type="module" src="/js/main.js"></script>
+<script>
+  // Bouton "Nouvelle partie" dans l'écran parties
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("btn-parties-nouvelle")?.addEventListener("click", () => {
+      location.href = "/host/";
     });
-
-    const elP = $("stat-parties");
-    const elJ = $("stat-joueurs");
-    const elPt = $("stat-points");
-    if (elP)  elP.textContent  = parties.length;
-    if (elJ)  elJ.textContent  = joueurs.length;
-    if (elPt) elPt.textContent = totalPoints;
-}
-
-// ── Rendu parties ────────────────────────────────────
-function renderParties() {
-    const container = $("parties-list");
-    if (!container) return;
-    const parties = getParties();
-
-    if (parties.length === 0) {
-        container.innerHTML = `<p class="list-empty">Aucune partie enregistrée pour l'instant.</p>`;
-        return;
-    }
-
-    container.innerHTML = parties
-        .slice().reverse()
-        .map(p => {
-            const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString("fr-FR") : "—";
-            return `
-                <div class="partie-card">
-                    <span class="partie-card-icon">${p.jeuIcon || "🎮"}</span>
-                    <div class="partie-card-info">
-                        <div class="partie-card-nom">${esc(p.nom || "Partie")}</div>
-                        <div class="partie-card-meta">
-                            <span>${esc(p.jeu || "—")}</span>
-                            <span>·</span>
-                            <span>${p.mode === "team" ? "Équipes" : "Solo"}</span>
-                            <span>·</span>
-                            <span>${date}</span>
-                        </div>
-                    </div>
-                    <span class="partie-card-score">${p.gagnant || ""}</span>
-                </div>
-            `;
-        }).join("");
-}
-
-// ── Rendu joueurs ─────────────────────────────────────
-function renderJoueurs() {
-    const container = $("joueurs-list");
-    if (!container) return;
-    const joueurs = getJoueurs();
-
-    if (joueurs.length === 0) {
-        container.innerHTML = `<p class="list-empty">Aucun joueur enregistré.</p>`;
-        return;
-    }
-
-    container.innerHTML = joueurs.map((j, i) => `
-        <div class="joueur-chip">
-            <span>${esc(j)}</span>
-            <button class="joueur-chip-del" data-i="${i}" title="Supprimer">×</button>
-        </div>
-    `).join("");
-
-    container.querySelectorAll(".joueur-chip-del").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const arr = getJoueurs();
-            arr.splice(parseInt(btn.dataset.i), 1);
-            setJoueurs(arr);
-            renderJoueurs();
-            chargerStats();
-        });
-    });
-}
-
-// ── Rendu équipes ─────────────────────────────────────
-function renderEquipes() {
-    const container = $("equipes-list");
-    if (!container) return;
-    const equipes = getEquipes();
-
-    if (equipes.length === 0) {
-        container.innerHTML = `<p class="list-empty">Aucune équipe créée.</p>`;
-        return;
-    }
-
-    container.innerHTML = equipes.map((eq, i) => `
-        <div class="equipe-form-card">
-            <div class="equipe-form-card-header">
-                <span>🛡️</span>
-                <span class="equipe-form-card-nom">${esc(eq.nom || eq)}</span>
-                <button class="equipe-form-card-del" data-i="${i}" title="Supprimer">×</button>
-            </div>
-        </div>
-    `).join("");
-
-    container.querySelectorAll(".equipe-form-card-del").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const arr = getEquipes();
-            arr.splice(parseInt(btn.dataset.i), 1);
-            setEquipes(arr);
-            renderEquipes();
-        });
-    });
-}
-
-// ── Rendu stats ──────────────────────────────────────
-function renderStats() {
-    const container = $("stats-content");
-    if (!container) return;
-    const parties = getParties();
-    const joueurs = getJoueurs();
-
-    if (parties.length === 0) {
-        container.innerHTML = `<p class="list-empty">Aucune statistique disponible. Lancez d'abord quelques parties !</p>`;
-        return;
-    }
-
-    // Comptage jeux
-    const jeux = {};
-    parties.forEach(p => {
-        jeux[p.jeu] = (jeux[p.jeu] || 0) + 1;
-    });
-
-    const topJeu = Object.entries(jeux).sort((a,b) => b[1]-a[1])[0];
-
-    container.innerHTML = `
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1.2rem">
-            <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius);padding:1rem;text-align:center">
-                <div style="font-family:var(--font-display);font-size:1.8rem;color:var(--c-accent)">${parties.length}</div>
-                <div style="font-size:0.78rem;color:var(--c-text-mute);text-transform:uppercase;letter-spacing:0.06em">Parties</div>
-            </div>
-            <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius);padding:1rem;text-align:center">
-                <div style="font-family:var(--font-display);font-size:1.8rem;color:var(--c-accent)">${joueurs.length}</div>
-                <div style="font-size:0.78rem;color:var(--c-text-mute);text-transform:uppercase;letter-spacing:0.06em">Joueurs</div>
-            </div>
-        </div>
-        ${topJeu ? `
-        <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius);padding:1rem">
-            <div style="font-size:0.78rem;color:var(--c-text-mute);margin-bottom:0.3rem">Jeu le plus joué</div>
-            <div style="font-weight:700;color:var(--c-accent)">${esc(topJeu[0])} <span style="color:var(--c-text-mute);font-weight:400">(${topJeu[1]}×)</span></div>
-        </div>` : ""}
-    `;
-}
-
-// ══════════════════════════════════════════════════════
-// INIT — Liaisons événements
-// ══════════════════════════════════════════════════════
-
-document.addEventListener("DOMContentLoaded", () => {
-
-    // ── Navigation principale ────────────────────────
-    $("btn-go-host")?.addEventListener("click", () => naviguer("host"));
-    $("btn-go-join")?.addEventListener("click", () => naviguer("join"));
-
-    // ── Menu ─────────────────────────────────────────
-    $("btn-menu-permanent")?.addEventListener("click", ouvrirMenu);
-    $("btn-close-menu")?.addEventListener("click", fermerMenu);
-    $("menu-overlay")?.addEventListener("click", fermerMenu);
-
-    $("menu-btn-host")?.addEventListener("click",    () => naviguer("host"));
-    $("menu-btn-join")?.addEventListener("click",    () => naviguer("join"));
-    $("menu-btn-parties")?.addEventListener("click", () => { renderParties(); afficherEcran("screen-parties"); });
-    $("menu-btn-joueurs")?.addEventListener("click", () => { renderJoueurs(); afficherEcran("screen-joueurs"); });
-    $("menu-btn-equipes")?.addEventListener("click", () => { renderEquipes(); afficherEcran("screen-equipes"); });
-    $("menu-btn-stats")?.addEventListener("click",   () => { renderStats();   afficherEcran("screen-stats");   });
-
-    // ── Logo → retour accueil ─────────────────────────
-    document.querySelectorAll(".topbar-logo").forEach(el => {
-        el.addEventListener("click", e => {
-            e.preventDefault();
-            afficherEcran("screen-home");
-        });
-    });
-
-    // ── Ajouter un joueur ─────────────────────────────
-    const inputJoueur = $("input-new-joueur");
-    $("btn-add-joueur")?.addEventListener("click", () => {
-        const nom = inputJoueur?.value.trim();
-        if (!nom) return;
-        const arr = getJoueurs();
-        if (arr.includes(nom)) { toast("Joueur déjà existant.", "warning"); return; }
-        arr.push(nom);
-        setJoueurs(arr);
-        if (inputJoueur) inputJoueur.value = "";
-        renderJoueurs();
-        chargerStats();
-        toast(`${nom} ajouté !`, "success", 1500);
-    });
-    inputJoueur?.addEventListener("keydown", e => {
-        if (e.key === "Enter") $("btn-add-joueur")?.click();
-    });
-
-    // ── Ajouter une équipe ────────────────────────────
-    const inputEquipe = $("input-new-equipe");
-    $("btn-add-equipe")?.addEventListener("click", () => {
-        const nom = inputEquipe?.value.trim();
-        if (!nom) return;
-        const arr = getEquipes();
-        if (arr.some(eq => (eq.nom || eq) === nom)) { toast("Équipe déjà existante.", "warning"); return; }
-        arr.push({ nom });
-        setEquipes(arr);
-        if (inputEquipe) inputEquipe.value = "";
-        renderEquipes();
-        toast(`Équipe "${nom}" créée !`, "success", 1500);
-    });
-    inputEquipe?.addEventListener("keydown", e => {
-        if (e.key === "Enter") $("btn-add-equipe")?.click();
-    });
-
-    // ── Chargement initial ────────────────────────────
-    chargerStats();
-    afficherEcran("screen-home");
-
-    console.log("[MAIN] ✅ Accueil initialisé");
-});
+  });
 </script>
-
 </body>
 </html>

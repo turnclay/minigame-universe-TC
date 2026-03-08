@@ -1,24 +1,25 @@
 // /server/store.js
 // ======================================================
-// 🗄️ STORE — État serveur MiniGame Universe
+// 🗄️ STORE — État serveur MiniGame Universe v3
 // ======================================================
 
 const { v4: uuidv4 } = require("uuid");
 
 // Stockage en mémoire
-const parties = new Map();   // partieId → partie
-let _partieActiveId = null;  // Une seule partie active à la fois
-const _hostSockets  = new Map(); // partieId → ws
+const parties    = new Map();       // partieId → partie
+let _partieActiveId = null;         // Dernière partie active
+const _hostSockets  = new Map();    // partieId → ws
 
 // ======================================================
-// 🧹 OPTION 1 — RESET DU STORE AU DÉMARRAGE
+// 🧹 RESET (appelé au démarrage du serveur)
+// ✅ FIX : empêche les parties fantômes après redéploiement
 // ======================================================
 
 function resetStore() {
     parties.clear();
     _partieActiveId = null;
     _hostSockets.clear();
-    console.log("[STORE] 🔄 Réinitialisé au démarrage");
+    console.log("[STORE] 🔄 Store réinitialisé");
 }
 
 // ======================================================
@@ -27,7 +28,6 @@ function resetStore() {
 
 function creerPartie({ nom, jeu, mode, equipes, joueursSolo, hostJoue, hostPseudo }) {
     const id = uuidv4();
-
     const scores = {};
 
     if (mode === "team") {
@@ -43,21 +43,21 @@ function creerPartie({ nom, jeu, mode, equipes, joueursSolo, hostJoue, hostPseud
         jeu,
         mode,
         statut: "lobby",
-        equipes: equipes || [],
+        equipes:     equipes     || [],
         joueursSolo: joueursSolo || [],
-        joueurs: [],
+        joueurs:     [],
         scores,
-        gameState: null,
-        hostJoue: hostJoue || false,
-        hostPseudo: hostPseudo || null,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
+        gameState:   null,
+        hostJoue:    hostJoue   || false,
+        hostPseudo:  hostPseudo || null,
+        createdAt:   Date.now(),
+        updatedAt:   Date.now(),
     };
 
     parties.set(id, partie);
     _partieActiveId = id;
 
-    console.log(`[STORE] ✅ Partie créée : ${id} (${nom})`);
+    console.log(`[STORE] ✅ Partie créée : ${id} — "${nom}"`);
     return partie;
 }
 
@@ -67,6 +67,11 @@ function creerPartie({ nom, jeu, mode, equipes, joueursSolo, hostJoue, hostPseud
 
 function getPartie(id) {
     return parties.get(id) || null;
+}
+
+// ✅ Exposer toutes les parties (pour /api/parties)
+function getAllParties() {
+    return Array.from(parties.values());
 }
 
 function getPartieActive() {
@@ -82,6 +87,11 @@ function getPartieActive() {
 function getJoueurs(partieId) {
     const p = getPartie(partieId);
     return p ? [...p.joueurs] : [];
+}
+
+// ✅ Alias pour compatibilité avec server.js
+function getJoueursPartie(partieId) {
+    return getJoueurs(partieId);
 }
 
 function getScores(partieId) {
@@ -101,46 +111,38 @@ function getGameState(partieId) {
 function setStatut(partieId, statut) {
     const p = getPartie(partieId);
     if (!p) return;
-    p.statut = statut;
+    p.statut    = statut;
     p.updatedAt = Date.now();
 }
 
 function terminerPartie(partieId) {
     setStatut(partieId, "terminee");
-
-    if (_partieActiveId === partieId) {
-        _partieActiveId = null;
-    }
-
+    if (_partieActiveId === partieId) _partieActiveId = null;
     console.log(`[STORE] 🏁 Partie terminée : ${partieId}`);
 }
 
 function ajouterJoueur(partieId, { pseudo, equipe }) {
     const p = getPartie(partieId);
     if (!p) return;
-
     if (!p.joueurs.find(j => j.pseudo === pseudo)) {
         p.joueurs.push({ pseudo, equipe: equipe || null });
     }
-
     if (p.mode === "solo" && !(pseudo in p.scores)) {
         p.scores[pseudo] = 0;
     }
-
     p.updatedAt = Date.now();
 }
 
 function retirerJoueur(partieId, pseudo) {
     const p = getPartie(partieId);
     if (!p) return;
-    p.joueurs = p.joueurs.filter(j => j.pseudo !== pseudo);
+    p.joueurs   = p.joueurs.filter(j => j.pseudo !== pseudo);
     p.updatedAt = Date.now();
 }
 
 function modifierScore(partieId, cible, delta) {
     const p = getPartie(partieId);
     if (!p) return;
-
     if (!(cible in p.scores)) p.scores[cible] = 0;
     p.scores[cible] = Math.max(0, p.scores[cible] + delta);
     p.updatedAt = Date.now();
@@ -149,7 +151,7 @@ function modifierScore(partieId, cible, delta) {
 function setScores(partieId, scores) {
     const p = getPartie(partieId);
     if (!p) return;
-    p.scores = { ...scores };
+    p.scores    = { ...scores };
     p.updatedAt = Date.now();
 }
 
@@ -186,22 +188,20 @@ function getHostSocket(partieId) {
 function snapshotPartie(partieId, avecGameState = false) {
     const p = getPartie(partieId);
     if (!p) return null;
-
     const snap = {
-        id: p.id,
-        nom: p.nom,
-        jeu: p.jeu,
-        mode: p.mode,
-        statut: p.statut,
-        equipes: p.equipes,
+        id:          p.id,
+        nom:         p.nom,
+        jeu:         p.jeu,
+        mode:        p.mode,
+        statut:      p.statut,
+        equipes:     p.equipes,
         joueursSolo: p.joueursSolo,
-        joueurs: [...p.joueurs],
-        scores: { ...p.scores },
-        hostJoue: p.hostJoue,
-        hostPseudo: p.hostPseudo,
-        createdAt: p.createdAt,
+        joueurs:     [...p.joueurs],
+        scores:      { ...p.scores },
+        hostJoue:    p.hostJoue,
+        hostPseudo:  p.hostPseudo,
+        createdAt:   p.createdAt,
     };
-
     if (avecGameState) snap.gameState = p.gameState;
     return snap;
 }
@@ -209,15 +209,15 @@ function snapshotPartie(partieId, avecGameState = false) {
 function snapshotPublic(partieId) {
     const p = getPartie(partieId);
     if (!p) return null;
-
     return {
-        id: p.id,
-        nom: p.nom,
-        jeu: p.jeu,
-        mode: p.mode,
-        statut: p.statut,
-        equipes: p.equipes.map(e => ({ nom: e.nom })),
-        scores: { ...p.scores },
+        id:        p.id,
+        nom:       p.nom,
+        jeu:       p.jeu,
+        mode:      p.mode,
+        statut:    p.statut,
+        equipes:   p.equipes.map(e => ({ nom: e.nom })),
+        scores:    { ...p.scores },
+        joueurs:   [...p.joueurs],
         nbJoueurs: p.joueurs.length,
     };
 }
@@ -229,7 +229,7 @@ function snapshotPublic(partieId) {
 function debug() {
     console.log(`[STORE] Parties: ${parties.size} | Active: ${_partieActiveId || "aucune"}`);
     parties.forEach((p, id) => {
-        console.log(`  → ${id.slice(0, 8)}… | ${p.nom} | ${p.statut} | ${p.joueurs.length} joueurs`);
+        console.log(`  → ${id.slice(0,8)}… | "${p.nom}" | ${p.statut} | ${p.joueurs.length} joueurs`);
     });
 }
 
@@ -238,8 +238,10 @@ module.exports = {
     resetStore,
     creerPartie,
     getPartie,
+    getAllParties,
     getPartieActive,
     getJoueurs,
+    getJoueursPartie,
     getScores,
     getGameState,
     setStatut,

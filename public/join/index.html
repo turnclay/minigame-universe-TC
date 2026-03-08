@@ -1,128 +1,141 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MiniGame Universe — Rejoindre</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/player.css">
-  <!-- ✅ Chemin correct vers le logo -->
   <link rel="icon" type="image/png" href="/images/LogoMiniGame.png">
 </head>
 <body class="player-body">
 
-  <!-- ── Bandeau déconnexion ── -->
-  <div class="player-disconnect-banner" hidden>
-    ⚠️ Connexion perdue — reconnexion en cours…
-  </div>
+<!-- Bandeau déco -->
+<div class="player-disconnect-banner" id="player-disconnect-banner" hidden>
+  ⚠️ Connexion perdue — reconnexion en cours…
+</div>
 
-  <!-- ── ÉCRAN 1 : Formulaire de connexion ── -->
-  <div id="player-join" class="player-screen">
-    <div class="join-card">
-      <img src="/images/LogoMiniGame.png" alt="Logo" class="join-logo">
-      <h1>Rejoindre une partie</h1>
+<div id="toast-container" class="toast-container"></div>
 
-      <label>Ton pseudo
+<!-- ══ ÉCRAN 1 : Join ════════════════════════════════ -->
+<div id="player-join" class="player-screen">
+  <div class="join-card">
+    <a href="/main/" class="join-back">← Accueil</a>
+
+    <img src="/images/LogoMiniGame.png" alt="Logo" class="join-logo">
+    <h1 class="join-title">Rejoindre<br><span class="join-title-accent">une partie</span></h1>
+
+    <div class="join-form">
+
+      <div class="join-field">
+        <label class="join-label-text" for="p-pseudo">Ton pseudo</label>
         <input type="text" id="p-pseudo" class="input-primary"
-               placeholder="Ex: SuperJoueur42" maxlength="20" autocomplete="off">
-      </label>
+               placeholder="Ex : SuperJoueur42" maxlength="20" autocomplete="off">
+      </div>
 
-      <label>Partie
+      <div class="join-field">
+        <div class="join-field-header">
+          <label class="join-label-text" for="p-partie-select">Partie</label>
+          <button id="p-btn-refresh" class="btn-refresh" title="Actualiser">🔄</button>
+        </div>
         <select id="p-partie-select" class="select-primary">
           <option value="">Chargement…</option>
         </select>
-      </label>
+        <p id="p-parties-loading" class="join-loading" hidden>⏳ Chargement des parties…</p>
+        <p id="p-parties-empty" class="join-empty" hidden>
+          Aucune partie en cours.
+          <a href="/host/" class="join-empty-link">Créer une partie →</a>
+        </p>
+      </div>
 
-      <!-- Bloc équipe (affiché en mode team uniquement) -->
       <div id="p-equipe-bloc" hidden>
-        <label>Équipe
+        <div class="join-field">
+          <label class="join-label-text" for="p-equipe-select">Équipe</label>
           <select id="p-equipe-select" class="select-primary">
             <option value="">-- Choisir une équipe --</option>
           </select>
-        </label>
+        </div>
       </div>
 
       <p id="p-join-error" class="join-error" hidden></p>
 
-      <button id="p-btn-join" class="btn-primary btn-full">
-        🎮 Rejoindre
+      <button id="p-btn-join" class="btn-primary btn-full btn-join-action">
+        🎮 Rejoindre la partie
       </button>
 
-      <button id="p-btn-refresh" class="btn-secondary btn-full" style="margin-top:8px">
-        🔄 Actualiser les parties
-      </button>
     </div>
   </div>
+</div>
 
-  <!-- ── ÉCRAN 2 : Lobby d'attente ── -->
-  <div id="player-lobby" class="player-screen" hidden>
-    <div class="lobby-card">
+<!-- ══ ÉCRAN 2 : Lobby ═══════════════════════════════ -->
+<div id="player-lobby" class="player-screen" hidden>
+  <div class="lobby-card">
 
-      <div class="lobby-avatar-block">
-        <div class="lobby-avatar" id="p-avatar">?</div>
-        <div class="lobby-pseudo-block">
-          <span class="lobby-pseudo" id="p-pseudo-display"></span>
-          <span class="lobby-equipe" id="p-equipe-display"></span>
-        </div>
-      </div>
-
-      <div class="lobby-waiting">
-        <div class="lobby-spinner"></div>
-        <p>En attente du host…</p>
-      </div>
-
-      <div class="lobby-joueurs-section">
-        <h3>👥 Joueurs connectés</h3>
-        <div id="p-liste-joueurs" class="lobby-joueurs-liste"></div>
-      </div>
-
-      <div class="lobby-game-info">
-        <span id="p-lobby-jeu" class="badge-jeu"></span>
-        <span id="p-lobby-mode" class="badge-mode"></span>
+    <div class="lobby-avatar-block">
+      <div class="lobby-avatar" id="p-avatar">?</div>
+      <div class="lobby-pseudo-block">
+        <span class="lobby-pseudo" id="p-pseudo-display"></span>
+        <span class="lobby-equipe" id="p-equipe-display"></span>
       </div>
     </div>
-  </div>
 
-  <!-- ── ÉCRAN 3 : Jeu en cours ── -->
-  <div id="player-game" class="player-screen" hidden>
-
-    <!-- Header fixe avec infos joueur -->
-    <header class="player-game-header">
-      <span class="pg-pseudo" id="p-header-pseudo"></span>
-      <span class="pg-equipe" id="p-header-equipe"></span>
-      <span class="pg-score" id="p-header-score">0 pts</span>
-    </header>
-
-    <!-- Zone de contenu du jeu (le host envoie des instructions) -->
-    <main class="player-game-main">
-      <div id="p-game-content" class="game-content">
-        <div class="game-waiting">
-          <div class="game-icon">🎮</div>
-          <p>La partie est en cours !</p>
-          <p class="game-sub">Suis les instructions du host.</p>
-        </div>
-      </div>
-
-      <!-- Bouton action générique (peut être caché/affiché par la logique de jeu) -->
-      <div id="p-action-zone" class="action-zone" hidden>
-        <button id="p-btn-action" class="btn-primary btn-xl">
-          Répondre
-        </button>
-      </div>
-    </main>
-  </div>
-
-  <!-- ── ÉCRAN 4 : Résultats ── -->
-  <div id="player-results" class="player-screen" hidden>
-    <div class="results-card">
-      <h1>🏁 Fin de partie !</h1>
-      <div id="p-results-content" class="results-list"></div>
-      <button id="p-btn-rejouer" class="btn-primary btn-full">
-        🔄 Rejoindre une autre partie
-      </button>
+    <div class="lobby-waiting">
+      <div class="lobby-spinner"></div>
+      <p>En attente du host…</p>
     </div>
-  </div>
 
-  <script type="module" src="/js/player.js"></script>
+    <div class="lobby-game-info">
+      <span id="p-lobby-jeu" class="badge-jeu"></span>
+      <span id="p-lobby-mode" class="badge-mode"></span>
+    </div>
+
+    <div class="lobby-joueurs-section">
+      <h3>👥 Joueurs connectés</h3>
+      <div id="p-liste-joueurs" class="lobby-joueurs-liste">
+        <span class="lobby-joueur-empty">En attente…</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ ÉCRAN 3 : Jeu ═════════════════════════════════ -->
+<div id="player-game" class="player-screen" hidden>
+  <header class="player-game-header">
+    <span class="pg-pseudo" id="p-header-pseudo"></span>
+    <span class="pg-equipe" id="p-header-equipe"></span>
+    <span class="pg-score" id="p-header-score">0 pts</span>
+  </header>
+  <main class="player-game-main">
+    <div id="p-game-content" class="game-content">
+      <div class="game-waiting">
+        <div class="game-icon">🎮</div>
+        <p>La partie est en cours !</p>
+        <p class="game-sub">Suis les instructions du host.</p>
+      </div>
+    </div>
+    <div id="p-action-zone" class="action-zone" hidden>
+      <button id="p-btn-action" class="btn-primary btn-xl">Répondre</button>
+    </div>
+  </main>
+</div>
+
+<!-- ══ ÉCRAN 4 : Résultats ═══════════════════════════ -->
+<div id="player-results" class="player-screen" hidden>
+  <div class="results-card">
+    <h1>🏁 Fin de partie !</h1>
+    <div id="p-results-content" class="results-list"></div>
+    <button id="p-btn-rejouer" class="btn-primary btn-full">
+      🔄 Rejoindre une autre partie
+    </button>
+    <a href="/main/" class="btn-ghost btn-full" style="text-align:center;margin-top:.5rem;display:block;">
+      🏠 Retour à l'accueil
+    </a>
+  </div>
+</div>
+
+<script type="module" src="/js/player.js"></script>
 </body>
 </html>

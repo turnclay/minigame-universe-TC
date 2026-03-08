@@ -12,35 +12,24 @@
 </head>
 <body class="host-body">
 
-<!-- ══════════════════════════════════════════
-     🔌 BANNER OFFLINE
-════════════════════════════════════════════ -->
 <div id="offline-banner" class="offline-banner" hidden>
-  ⚠️ Connexion perdue — tentative de reconnexion…
+  ⚠️ Connexion perdue — reconnexion en cours…
 </div>
-
-<!-- ══════════════════════════════════════════
-     🔔 TOASTS
-════════════════════════════════════════════ -->
 <div id="toast-container" class="toast-container"></div>
 
-<!-- ══════════════════════════════════════════
-     🏠 ÉCRAN : LOBBY HOST
-════════════════════════════════════════════ -->
 <div id="host-lobby" class="host-root">
 
   <!-- ── Header ── -->
   <header class="host-header">
     <div class="host-header-left">
-      <img src="/images/LogoMiniGame.png" alt="Logo" class="host-logo"
-           onerror="this.style.display='none'">
+      <button id="btn-go-home" class="btn-back" title="Retour à l'accueil">←</button>
+      <img src="/images/LogoMiniGame.png" alt="Logo" class="host-logo" onerror="this.style.display='none'">
       <div class="host-title-block">
         <h1 class="host-title">MiniGame <span class="host-title-accent">Universe</span></h1>
         <span class="host-badge">HOST</span>
       </div>
     </div>
     <div class="host-header-right">
-      <!-- Indicateur WebSocket -->
       <div class="ws-status" id="ws-status">
         <span class="ws-dot" id="ws-dot"></span>
         <span class="ws-label" id="ws-label">Connexion…</span>
@@ -48,35 +37,28 @@
     </div>
   </header>
 
-  <!-- ── Layout principal ── -->
   <main class="host-layout">
 
-    <!-- ════════════════════════════════════
-         COLONNE GAUCHE — Créer une partie
-    ════════════════════════════════════ -->
+    <!-- ═══ COLONNE GAUCHE — Créer ═══ -->
     <section class="host-panel host-panel-create" id="panel-create">
       <div class="panel-header">
         <span class="panel-icon">➕</span>
         <h2 class="panel-title">Nouvelle partie</h2>
       </div>
 
-      <!-- Alerte : partie déjà active -->
       <div id="alerte-partie-active" class="alerte-partie-active" hidden>
-        <span class="alerte-icon">⚠️</span>
+        <span>⚠️</span>
         <span>Une partie est déjà en cours. Terminez-la avant d'en créer une nouvelle.</span>
       </div>
 
-      <!-- Formulaire création -->
       <div id="form-create" class="form-create">
 
-        <!-- Nom de la partie -->
         <div class="form-group">
           <label class="form-label" for="h-nom-partie">Nom de la partie</label>
           <input type="text" id="h-nom-partie" class="input-primary"
                  placeholder="Ex : Soirée du vendredi…" maxlength="50" autocomplete="off">
         </div>
 
-        <!-- Choix du jeu -->
         <div class="form-group">
           <label class="form-label" for="h-jeu">Jeu</label>
           <select id="h-jeu" class="select-primary">
@@ -93,31 +75,25 @@
           </select>
         </div>
 
-        <!-- Mode de jeu -->
         <div class="form-group">
           <label class="form-label">Mode de jeu</label>
           <div class="mode-toggle">
-            <button class="mode-btn mode-btn-active" id="btn-mode-solo" data-mode="solo">
-              <span class="mode-btn-icon">👤</span>
-              <span>Chacun pour soi</span>
+            <button class="mode-btn mode-btn-active" id="btn-mode-solo">
+              <span class="mode-btn-icon">👤</span><span>Chacun pour soi</span>
             </button>
-            <button class="mode-btn" id="btn-mode-equipes" data-mode="team">
-              <span class="mode-btn-icon">🛡️</span>
-              <span>Équipes</span>
+            <button class="mode-btn" id="btn-mode-equipes">
+              <span class="mode-btn-icon">🛡️</span><span>Équipes</span>
             </button>
           </div>
         </div>
 
-        <!-- Host joueur ? -->
         <div class="form-group">
           <label class="form-label">Rôle du host</label>
           <div class="host-role-toggle">
             <label class="toggle-label">
               <input type="checkbox" id="h-host-joue" class="toggle-checkbox">
-              <span class="toggle-track">
-                <span class="toggle-thumb"></span>
-              </span>
-              <span class="toggle-text">Le host participe en tant que joueur</span>
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-text">Le host participe comme joueur</span>
             </label>
           </div>
           <div id="h-host-pseudo-wrap" class="host-pseudo-wrap" hidden>
@@ -126,29 +102,29 @@
           </div>
         </div>
 
-        <!-- ── MODE SOLO : liste des joueurs ── -->
+        <!-- Solo -->
         <div id="bloc-solo" class="bloc-joueurs">
           <div class="form-group">
             <label class="form-label">Joueurs participants</label>
             <div class="add-row">
               <input type="text" id="h-joueur-input" class="input-primary"
                      placeholder="Ajouter un joueur…" maxlength="20" autocomplete="off">
-              <button id="h-joueur-ajouter" class="btn-secondary btn-icon-only" title="Ajouter">＋</button>
+              <button id="h-joueur-ajouter" class="btn-secondary btn-icon-only">＋</button>
             </div>
             <div id="h-joueurs-list" class="joueurs-tags-list">
-              <p class="list-empty">Aucun joueur ajouté — les joueurs peuvent rejoindre via le lien</p>
+              <p class="list-empty">Aucun joueur — rejoignez via le lien</p>
             </div>
           </div>
         </div>
 
-        <!-- ── MODE ÉQUIPES ── -->
+        <!-- Équipes -->
         <div id="bloc-equipes" class="bloc-equipes" hidden>
           <div class="form-group">
             <label class="form-label">Créer une équipe</label>
             <div class="add-row">
               <input type="text" id="h-equipe-input" class="input-primary"
                      placeholder="Nom de l'équipe…" maxlength="20" autocomplete="off">
-              <button id="h-equipe-ajouter" class="btn-secondary btn-icon-only" title="Ajouter">＋</button>
+              <button id="h-equipe-ajouter" class="btn-secondary btn-icon-only">＋</button>
             </div>
             <div id="h-equipes-list" class="equipes-list">
               <p class="list-empty">Aucune équipe créée</p>
@@ -156,16 +132,13 @@
           </div>
         </div>
 
-        <!-- Bouton créer -->
         <button id="h-btn-creer" class="btn-primary btn-full btn-create">
-          <span class="btn-icon">🚀</span> Créer la partie
+          <span>🚀</span> Créer la partie
         </button>
       </div>
     </section>
 
-    <!-- ════════════════════════════════════
-         COLONNE DROITE — Gestion de la partie active
-    ════════════════════════════════════ -->
+    <!-- ═══ COLONNE DROITE — Partie active ═══ -->
     <section class="host-panel host-panel-game" id="panel-game" hidden>
       <div class="panel-header">
         <span class="panel-icon">🎯</span>
@@ -173,7 +146,6 @@
         <span id="h-statut-badge" class="statut-badge statut-lobby">● Lobby</span>
       </div>
 
-      <!-- Infos partie -->
       <div class="game-info-bar">
         <div class="game-info-item">
           <span class="game-info-label">Nom</span>
@@ -189,72 +161,64 @@
         </div>
       </div>
 
-      <!-- Lien rejoindre + QR -->
       <div class="join-block">
         <p class="join-label">🔗 Lien pour rejoindre :</p>
         <div class="join-link-row">
           <a id="h-join-link" class="join-link" href="#" target="_blank" rel="noopener">—</a>
-          <button id="h-btn-copy" class="btn-ghost btn-copy" title="Copier le lien">📋</button>
+          <button id="h-btn-copy" class="btn-ghost btn-copy">📋</button>
         </div>
         <div id="h-qr" class="qr-container">
-          <!-- QR généré dynamiquement -->
           <div class="qr-placeholder">
-            <span class="qr-placeholder-icon">📱</span>
-            <span>QR Code</span>
+            <span class="qr-placeholder-icon">📱</span><span>QR Code</span>
           </div>
         </div>
       </div>
 
-      <!-- Joueurs connectés (mode solo) -->
       <div id="bloc-joueurs-connectes" class="game-section">
         <div class="section-header">
-          <h3 class="section-title">👥 Joueurs connectés</h3>
+          <h3 class="section-title">👥 Joueurs</h3>
           <span id="h-nb-joueurs" class="count-badge">0</span>
         </div>
         <div id="h-joueurs-connectes" class="joueurs-connectes-list">
-          <p class="list-empty">En attente de joueurs…</p>
+          <p class="list-empty">En attente…</p>
         </div>
       </div>
 
-      <!-- Équipes + membres (mode team) -->
       <div id="bloc-equipes-connectees" class="game-section" hidden>
         <div class="section-header">
           <h3 class="section-title">🛡️ Équipes</h3>
           <span id="h-nb-equipes" class="count-badge">0</span>
         </div>
         <div id="h-equipes-connectees" class="equipes-connectees-list">
-          <p class="list-empty">En attente de joueurs…</p>
+          <p class="list-empty">En attente…</p>
         </div>
       </div>
 
-      <!-- Scores -->
       <div class="game-section">
         <div class="section-header">
           <h3 class="section-title">📊 Scores</h3>
         </div>
         <div id="h-scores-liste" class="scores-liste">
-          <p class="list-empty">Aucun score pour l'instant</p>
+          <p class="list-empty">Aucun score</p>
         </div>
       </div>
 
-      <!-- Contrôles -->
       <div class="game-controls">
         <button id="h-btn-start" class="btn-primary btn-full btn-start">
-          <span class="btn-icon">▶</span> Lancer la partie
+          <span>▶</span> Lancer la partie
         </button>
         <button id="h-btn-end" class="btn-danger btn-full" hidden>
-          <span class="btn-icon">⏹</span> Terminer la partie
+          <span>⏹</span> Terminer la partie
         </button>
         <button id="h-btn-nouvelle" class="btn-ghost btn-full" hidden>
-          <span class="btn-icon">🔄</span> Nouvelle partie
+          <span>🔄</span> Nouvelle partie
         </button>
       </div>
     </section>
 
   </main>
-</div><!-- /host-root -->
+</div>
 
-<script type="module" src="/js/main.js"></script>
 <script type="module" src="/js/host.js"></script>
 </body>
 </html>
