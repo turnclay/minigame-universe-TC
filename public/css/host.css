@@ -338,3 +338,187 @@
 .joueurs-connectes-list::-webkit-scrollbar-thumb,
 .joueurs-tags-list::-webkit-scrollbar-thumb,
 .equipes-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+/* ════════════════════════════════════════════
+   🖥️ ÉCRAN SPECTATEUR — host-spectateur
+════════════════════════════════════════════ */
+
+.host-spectateur-root {
+  min-height: 100vh;
+  background: var(--c-bg, #0d0d1a);
+  display: flex;
+  flex-direction: column;
+  font-family: 'Exo 2', sans-serif;
+}
+
+/* ── Header spectateur ── */
+.sp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .75rem 1.5rem;
+  background: rgba(255,255,255,.03);
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.sp-header-left {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+
+.sp-title-block {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+
+.sp-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  color: #00d4ff;
+  margin: 0;
+}
+
+.sp-header-right { display: flex; align-items: center; }
+
+.sp-info-chips {
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+.sp-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(0,212,255,.07);
+  border: 1px solid rgba(0,212,255,.2);
+  border-radius: 8px;
+  padding: .3rem .7rem;
+  min-width: 70px;
+  text-align: center;
+}
+
+.sp-chip-label {
+  font-size: .6rem;
+  color: rgba(255,255,255,.45);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.sp-chip strong {
+  font-size: .85rem;
+  color: #fff;
+  font-family: 'Orbitron', sans-serif;
+}
+
+/* ── Layout spectateur 3 colonnes ── */
+.sp-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr 260px;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  flex: 1;
+  overflow: auto;
+}
+
+@media (max-width: 900px) {
+  .sp-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Panels ── */
+.sp-panel {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.sp-panel-header { border-bottom: 1px solid rgba(255,255,255,.07); padding-bottom: .5rem; }
+
+.sp-panel-title {
+  font-size: .9rem;
+  font-family: 'Orbitron', sans-serif;
+  color: rgba(255,255,255,.7);
+  margin: 0;
+}
+
+/* ── Scores spectateur (plus grands) ── */
+.sp-scores-liste .score-row {
+  padding: .6rem .5rem;
+}
+
+.sp-scores-liste .score-pts {
+  font-size: 1.3rem;
+  font-family: 'Orbitron', sans-serif;
+  color: #00d4ff;
+  min-width: 70px;
+  text-align: right;
+}
+
+.sp-scores-liste .score-nom {
+  font-size: 1rem;
+}
+
+/* ── QR spectateur ── */
+.sp-qr {
+  align-self: center;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: .5rem;
+}
+
+.sp-qr .qr-img {
+  width: 160px;
+  height: 160px;
+  border-radius: 8px;
+}
+
+/* ── Actions spectateur ── */
+.sp-actions {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  margin-top: auto;
+}
+
+/* ── Résultats finaux ── */
+.resultats-finaux {
+  background: rgba(0,212,255,.05);
+  border: 1px solid rgba(0,212,255,.2);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-top: 1rem;
+}
+
+.resultats-titre {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  color: #00d4ff;
+  margin: 0 0 .75rem;
+}
+
+.resultat-row {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .4rem 0;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+
+.resultat-row:last-child { border-bottom: none; }
+
+.resultat-winner { color: #ffd700; }
+
+.resultat-medal { font-size: 1.2rem; min-width: 1.5rem; }
+.resultat-nom   { flex: 1; font-size: .95rem; }
+.resultat-pts   { font-family: 'Orbitron', sans-serif; font-size: 1rem; color: #00d4ff; }

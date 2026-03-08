@@ -17,12 +17,14 @@
 </div>
 <div id="toast-container" class="toast-container"></div>
 
+<!-- ════════════════════════════════════════════
+     🟦 ÉCRAN 1 : LOBBY (Création + Gestion)
+════════════════════════════════════════════ -->
 <div id="host-lobby" class="host-root">
 
-  <!-- ── Header ── -->
   <header class="host-header">
     <div class="host-header-left">
-      <button id="btn-go-home" class="btn-back" title="Retour à l'accueil">←</button>
+      <button id="btn-go-home" class="btn-back" title="Accueil">←</button>
       <img src="/images/LogoMiniGame.png" alt="Logo" class="host-logo" onerror="this.style.display='none'">
       <div class="host-title-block">
         <h1 class="host-title">MiniGame <span class="host-title-accent">Universe</span></h1>
@@ -44,11 +46,6 @@
       <div class="panel-header">
         <span class="panel-icon">➕</span>
         <h2 class="panel-title">Nouvelle partie</h2>
-      </div>
-
-      <div id="alerte-partie-active" class="alerte-partie-active" hidden>
-        <span>⚠️</span>
-        <span>Une partie est déjà en cours. Terminez-la avant d'en créer une nouvelle.</span>
       </div>
 
       <div id="form-create" class="form-create">
@@ -138,7 +135,7 @@
       </div>
     </section>
 
-    <!-- ═══ COLONNE DROITE — Partie active ═══ -->
+    <!-- ═══ COLONNE DROITE — Partie active (lobby) ═══ -->
     <section class="host-panel host-panel-game" id="panel-game" hidden>
       <div class="panel-header">
         <span class="panel-icon">🎯</span>
@@ -217,6 +214,73 @@
     </section>
 
   </main>
+</div>
+
+<!-- ════════════════════════════════════════════
+     🖥️ ÉCRAN 2 : SPECTATEUR (host qui ne joue pas)
+     Affiché après "Lancer la partie" si hostJoue=false
+════════════════════════════════════════════ -->
+<div id="host-spectateur" class="host-spectateur-root" hidden>
+
+  <header class="sp-header">
+    <div class="sp-header-left">
+      <img src="/images/LogoMiniGame.png" alt="Logo" class="host-logo" onerror="this.style.display='none'">
+      <div class="sp-title-block">
+        <h1 class="sp-title">🖥️ Tableau de bord</h1>
+        <span id="sp-statut-badge" class="statut-badge statut-en-cours">● En cours</span>
+      </div>
+    </div>
+    <div class="sp-header-right">
+      <div class="sp-info-chips">
+        <span class="sp-chip"><span class="sp-chip-label">Partie</span><strong id="sp-nom">—</strong></span>
+        <span class="sp-chip"><span class="sp-chip-label">Jeu</span><strong id="sp-jeu">—</strong></span>
+        <span class="sp-chip"><span class="sp-chip-label">Mode</span><strong id="sp-mode">—</strong></span>
+      </div>
+    </div>
+  </header>
+
+  <div class="sp-layout">
+
+    <!-- Colonne gauche : Joueurs -->
+    <aside class="sp-panel sp-panel-joueurs">
+      <div class="sp-panel-header">
+        <h2 class="sp-panel-title">👥 Joueurs connectés</h2>
+      </div>
+      <div id="sp-joueurs" class="joueurs-connectes-list">
+        <p class="list-empty">En attente de joueurs…</p>
+      </div>
+    </aside>
+
+    <!-- Colonne centrale : Scores en temps réel -->
+    <main class="sp-panel sp-panel-scores">
+      <div class="sp-panel-header">
+        <h2 class="sp-panel-title">📊 Scores en direct</h2>
+      </div>
+      <div id="sp-scores" class="scores-liste sp-scores-liste"></div>
+    </main>
+
+    <!-- Colonne droite : QR + contrôles -->
+    <aside class="sp-panel sp-panel-controls">
+      <div class="sp-panel-header">
+        <h2 class="sp-panel-title">🔗 Rejoindre</h2>
+      </div>
+      <div id="sp-qr" class="qr-container sp-qr">
+        <div class="qr-placeholder"><span class="qr-placeholder-icon">📱</span><span>QR Code</span></div>
+      </div>
+      <div class="sp-actions">
+        <button id="sp-btn-end" class="btn-danger btn-full">
+          <span>⏹</span> Terminer la partie
+        </button>
+        <button id="sp-btn-nouvelle" class="btn-ghost btn-full" hidden>
+          <span>🔄</span> Nouvelle partie
+        </button>
+        <button id="sp-btn-home" class="btn-ghost btn-full">
+          <span>🏠</span> Accueil
+        </button>
+      </div>
+    </aside>
+
+  </div>
 </div>
 
 <script type="module" src="/js/host.js"></script>
