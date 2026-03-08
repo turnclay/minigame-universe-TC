@@ -1,13 +1,15 @@
 // /server/ws-handler.js
 // ======================================================
 // 🔌 GESTIONNAIRE WEBSOCKET — MiniGame Universe
-// AUTH sans mot de passe
+// AUTH sans mot de passe (host libre)
 // ======================================================
 
 const store = require("./store.js");
 
-// Ensemble des sockets authentifiées comme host
+// Ensemble des sockets authentifiées comme host (info, pas critique)
 const hostSockets = new Set();
+
+// ── Helpers d'envoi ───────────────────────────────────
 
 function send(ws, type, payload = {}) {
     if (ws.readyState === 1) {
@@ -23,21 +25,42 @@ function broadcast(wss, type, payload = {}, excludeWs = null) {
     });
 }
 
-function broadcastToGame(wss, type, payload = {}) {
+/**
+ * Broadcast à tous les clients d'une même partie (host + joueurs)
+ * On filtre sur client._partieId === partieId
+ */
+function broadcastToGame(wss, partieId, type, payload = {}) {
     wss.clients.forEach(client => {
-        if (client.readyState === 1) {
-            client.send(JSON.stringify({ type, payload }));
-        }
+        if (client.readyState !== 1) return;
+        if (client._partieId !== partieId) return;
+        client.send(JSON.stringify({ type, payload }));
     });
 }
 
-module.exports = function setupWsHandler(wss) {
+/**
+ * Broadcast uniquement au host d'une partie
+ */
+function broadcastToHost(wss, partieId, type, payload = {}) {
+    wss.clients.forEach(client => {
+        if (client.readyState !== 1) return;
+        if (!client._isHost) return;
+        if (client._partieId !== partieId) return;
+        client.send(JSON.stringify({ type, payload }));
+    });
+}
+
+// ======================================================
+// 🔧 SETUP WEBSOCKET HANDLER
+// ======================================================
+
+function setupWebSocket(wss) {
     wss.on("connection", (ws) => {
         ws._pseudo   = null;
         ws._equipe   = null;
         ws._partieId = null;
         ws._isHost   = false;
 
+        // ── Réception de message ───────────────────────
         ws.on("message", (raw) => {
             let msg;
             try { msg = JSON.parse(raw); } catch { return; }
@@ -50,7 +73,6 @@ module.exports = function setupWsHandler(wss) {
                 // 🔐 AUTH HOST — sans mot de passe
                 // ══════════════════════════════════════════════
                 case "HOST_AUTH": {
-                    // Plus de vérification de mot de passe
                     ws._isHost = true;
                     hostSockets.add(ws);
                     send(ws, "AUTH_OK", { message: "Authentifié comme host" });
@@ -58,6 +80,7 @@ module.exports = function setupWsHandler(wss) {
                     // Si une partie existe déjà, envoyer le snapshot
                     const partieExistante = store.getPartieActive();
                     if (partieExistante) {
+                        ws._partieId = partieExistante.id;
                         store.setHostSocket(partieExistante.id, ws);
                         send(ws, "GAME_RESTORED", {
                             partieId: partieExistante.id,
@@ -87,12 +110,15 @@ module.exports = function setupWsHandler(wss) {
                     }
 
                     const partie = store.creerPartie({
-                        nom, jeu, mode,
+                        nom,
+                        jeu,
+                        mode,
                         equipes:     equipes     || [],
                         joueursSolo: joueursSolo || [],
                         hostJoue:    hostJoue    || false,
                         hostPseudo:  hostPseudo  || null,
-                        hostSocketId: ws._partieId
+                        // on laisse le store gérer le socket via setHostSocket
+                        hostSocketId: null
                     });
 
                     ws._partieId = partie.id;
@@ -120,9 +146,8 @@ module.exports = function setupWsHandler(wss) {
 
                     store.setStatut(partie.id, "en_cours");
 
-                    broadcastToGame(wss, "GAME_STARTED", {
-                        snapshot: store.snapshotPartie(partie.id)
-                    });
+                    const snapshot = store.snapshotPartie(partie.id);
+                    broadcastToGame(wss, partie.id, "GAME_STARTED", { snapshot });
                     break;
                 }
 
@@ -142,7 +167,7 @@ module.exports = function setupWsHandler(wss) {
                     const snapshot = store.snapshotPartie(partie.id);
                     store.terminerPartie(partie.id);
 
-                    broadcastToGame(wss, "GAME_ENDED", { snapshot });
+                    broadcastToGame(wss, partie.id, "GAME_ENDED", { snapshot });
                     break;
                 }
 
@@ -160,7 +185,7 @@ module.exports = function setupWsHandler(wss) {
                     const { cible, points = 1 } = payload;
                     store.modifierScore(partie.id, cible, Math.abs(points));
 
-                    broadcastToGame(wss, "SCORES_UPDATE", {
+                    broadcastToGame(wss, partie.id, "SCORES_UPDATE", {
                         scores: store.getScores(partie.id)
                     });
                     break;
@@ -180,7 +205,7 @@ module.exports = function setupWsHandler(wss) {
                     const { cible, points = 1 } = payload;
                     store.modifierScore(partie.id, cible, -Math.abs(points));
 
-                    broadcastToGame(wss, "SCORES_UPDATE", {
+                    broadcastToGame(wss, partie.id, "SCORES_UPDATE", {
                         scores: store.getScores(partie.id)
                     });
                     break;
@@ -207,7 +232,7 @@ module.exports = function setupWsHandler(wss) {
                         }
                     });
 
-                    broadcastToGame(wss, "PLAYER_LEFT", {
+                    broadcastToGame(wss, partie.id, "PLAYER_LEFT", {
                         pseudo,
                         joueurs: store.getJoueurs(partie.id)
                     });
@@ -246,12 +271,14 @@ module.exports = function setupWsHandler(wss) {
                     store.ajouterJoueur(partieId, { pseudo, equipe: equipe || null });
 
                     send(ws, "JOIN_OK", {
-                        pseudo, partieId,
+                        pseudo,
+                        partieId,
                         snapshot: store.snapshotPublic(partieId)
                     });
 
-                    broadcastToGame(wss, "PLAYER_JOINED", {
-                        pseudo, equipe,
+                    broadcastToGame(wss, partieId, "PLAYER_JOINED", {
+                        pseudo,
+                        equipe,
                         joueurs: store.getJoueurs(partieId)
                     });
                     break;
@@ -261,18 +288,16 @@ module.exports = function setupWsHandler(wss) {
                 // 🎯 ACTION JOUEUR (transmis au host)
                 // ══════════════════════════════════════════════
                 case "PLAYER_ACTION": {
-                    const partie = ws._partieId ? store.getPartie(ws._partieId) : store.getPartieActive();
+                    const partie = ws._partieId
+                        ? store.getPartie(ws._partieId)
+                        : store.getPartieActive();
                     if (!partie) return;
 
-                    // Relayer au host
-                    wss.clients.forEach(client => {
-                        if (client._isHost && client.readyState === 1) {
-                            send(client, "PLAYER_ACTION", {
-                                pseudo: ws._pseudo,
-                                equipe: ws._equipe,
-                                action: payload
-                            });
-                        }
+                    // Relayer uniquement au host de cette partie
+                    broadcastToHost(wss, partie.id, "PLAYER_ACTION", {
+                        pseudo: ws._pseudo,
+                        equipe: ws._equipe,
+                        action: payload
                     });
                     break;
                 }
@@ -296,7 +321,7 @@ module.exports = function setupWsHandler(wss) {
 
             store.retirerJoueur(ws._partieId, ws._pseudo);
 
-            broadcastToGame(wss, "PLAYER_LEFT", {
+            broadcastToGame(wss, ws._partieId, "PLAYER_LEFT", {
                 pseudo:  ws._pseudo,
                 joueurs: store.getJoueurs(ws._partieId)
             });
@@ -304,4 +329,6 @@ module.exports = function setupWsHandler(wss) {
 
         ws.on("error", err => console.error("[WS] Erreur socket:", err));
     });
-};
+}
+
+module.exports = { setupWebSocket };
