@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MiniGame Universe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" type="image/png" href="/images/LogoMiniGame.png">
+</head>
+<body>
+
+<!-- ══ OFFLINE BANNER ════════════════════════════════ -->
+<div id="offline-banner" class="offline-banner" hidden>
+  ⚠️ Connexion perdue — vérifiez votre réseau
+</div>
+
+<!-- ══ TOPBAR ════════════════════════════════════════ -->
+<nav class="topbar" id="topbar">
+  <div class="topbar-left">
+    <a class="topbar-logo" href="#" aria-label="Accueil">
+      <img src="/images/LogoMiniGame.png" alt="Logo" class="topbar-logo-img" onerror="this.style.display='none'">
+      <span class="topbar-logo-text">MiniGame</span>
+    </a>
+  </div>
+  <div class="topbar-center" id="topbar-breadcrumb"></div>
+  <div class="topbar-right">
+    <button id="btn-menu-permanent" class="topbar-btn" aria-label="Menu">☰</button>
+  </div>
+</nav>
+
+<!-- ══ MENU OVERLAY ══════════════════════════════════ -->
+<div id="menu-overlay" class="menu-overlay" hidden></div>
+<div id="menu-panel" class="menu-panel" hidden>
+  <div class="menu-panel-header">
+    <span class="menu-title">🎮 Menu</span>
+    <button id="btn-close-menu" class="menu-close">✕</button>
+  </div>
+  <nav class="menu-nav">
+    <button class="menu-item" id="menu-btn-host">🎙️ <span>Créer une partie</span></button>
+    <button class="menu-item" id="menu-btn-join">🎮 <span>Rejoindre une partie</span></button>
+    <div class="menu-divider"></div>
+    <button class="menu-item" id="menu-btn-jeux">🃏 <span>Les jeux</span></button>
+    <button class="menu-item" id="menu-btn-parties">📋 <span>Mes parties</span></button>
+  </nav>
+</div>
+
+<!-- ══ TOASTS ═════════════════════════════════════════ -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- ══════════════════════════════════════════════════
+     🏠 ÉCRAN ACCUEIL
+════════════════════════════════════════════════════ -->
+<section id="screen-home" class="screen screen-home">
+  <div class="home-hero">
+    <div class="home-glow-ring"></div>
+    <img src="/images/LogoMiniGame.png" alt="MiniGame Universe" class="home-logo" onerror="this.style.display='none'">
+    <h1 class="home-title">MiniGame<br><span class="home-title-accent">Universe</span></h1>
+    <p class="home-subtitle">La plateforme de mini-jeux pour vos soirées entre amis</p>
+
+    <div class="home-cta-group">
+      <button id="btn-go-host" class="btn-primary btn-hero">
+        <span>🚀</span> Nouvelle partie
+      </button>
+      <button id="btn-continuer" class="btn-secondary btn-hero-ghost">
+        <span>📋</span> Continuer une partie
+      </button>
+      <button id="btn-voir-jeux" class="btn-ghost btn-hero-link">
+        🃏 Voir tous les jeux & règles
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="home-stats-bar">
+    <div class="home-stat">
+      <span class="home-stat-val" id="stat-parties">0</span>
+      <span class="home-stat-label">Parties</span>
+    </div>
+    <div class="home-stat">
+      <span class="home-stat-val" id="stat-joueurs">0</span>
+      <span class="home-stat-label">Joueurs</span>
+    </div>
+    <div class="home-stat">
+      <span class="home-stat-val" id="stat-points">0</span>
+      <span class="home-stat-label">Points totaux</span>
+    </div>
+  </div>
+
+  <!-- Quick jeux preview -->
+  <div class="home-jeux-preview">
+    <p class="home-jeux-label">10 jeux disponibles</p>
+    <div class="home-jeux-icons">
+      <span title="Quiz">❓</span>
+      <span title="Juste Prix">💰</span>
+      <span title="Undercover">🕵️</span>
+      <span title="Maxi Lettres">📖</span>
+      <span title="Mimer/Dessiner">🎭</span>
+      <span title="Le Pendu">🪢</span>
+      <span title="Petit Bac">📝</span>
+      <span title="Mémoire Flash">🧠</span>
+      <span title="Morpion">⭕</span>
+      <span title="Puissance 4">🔴</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     🃏 ÉCRAN JEUX
+════════════════════════════════════════════════════ -->
+<section id="screen-jeux" class="screen" hidden aria-label="Les jeux">
+  <div class="screen-header">
+    <h2 class="screen-title">🃏 Les Jeux</h2>
+    <p class="screen-sub">Cliquez sur un jeu pour voir ses règles et créer une partie.</p>
+  </div>
+  <div id="jeux-grid" class="jeux-grid"></div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     🔍 ÉCRAN DÉTAIL JEU
+════════════════════════════════════════════════════ -->
+<section id="screen-jeu-detail" class="screen" hidden aria-label="Détail du jeu">
+  <div id="jeu-detail-content"></div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     📋 ÉCRAN CONTINUER UNE PARTIE
+════════════════════════════════════════════════════ -->
+<section id="screen-parties" class="screen" hidden aria-label="Continuer une partie">
+  <div class="screen-header">
+    <h2 class="screen-title">📋 Mes parties</h2>
+    <p class="screen-sub">Chargez une partie existante pour la reprendre ou la continuer.</p>
+    <button class="btn-primary btn-sm" id="btn-parties-nouvelle" style="margin-top:.5rem">
+      + Nouvelle partie
+    </button>
+  </div>
+  <div id="parties-continuer-list" class="parties-continuer-list"></div>
+</section>
+
+<script type="module" src="/js/main.js"></script>
+<script>
+  // Bouton "Nouvelle partie" dans l'écran parties
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("btn-parties-nouvelle")?.addEventListener("click", () => {
+      location.href = "/host/";
+    });
+  });
+</script>
+</body>
+</html>
