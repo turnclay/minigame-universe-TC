@@ -69,26 +69,32 @@ function setupWebSocket(wss) {
 
             switch (type) {
 
-                // ══════════════════════════════════════════════
-                // 🔐 AUTH HOST — sans mot de passe
-                // ══════════════════════════════════════════════
-                case "HOST_AUTH": {
-                    ws._isHost = true;
-                    hostSockets.add(ws);
-                    send(ws, "AUTH_OK", { message: "Authentifié comme host" });
+        // ══════════════════════════════════════════════
+// 🔐 AUTH HOST — sans mot de passe
+// ══════════════════════════════════════════════
+case "HOST_AUTH": {
+    ws._isHost = true;
+    hostSockets.add(ws);
+    send(ws, "AUTH_OK", { message: "Authentifié comme host" });
 
-                    // Si une partie existe déjà, envoyer le snapshot
-                    const partieExistante = store.getPartieActive();
-                    if (partieExistante) {
-                        ws._partieId = partieExistante.id;
-                        store.setHostSocket(partieExistante.id, ws);
-                        send(ws, "GAME_RESTORED", {
-                            partieId: partieExistante.id,
-                            snapshot: store.snapshotPartie(partieExistante.id)
-                        });
-                    }
-                    break;
-                }
+    // ❌ Désactivation de la restauration automatique
+    // Avant : si une partie existait, on renvoyait GAME_RESTORED
+    // Maintenant : on n'envoie plus rien, le host démarre toujours propre
+
+    /*
+    const partieExistante = store.getPartieActive();
+    if (partieExistante) {
+        ws._partieId = partieExistante.id;
+        store.setHostSocket(partieExistante.id, ws);
+        send(ws, "GAME_RESTORED", {
+            partieId: partieExistante.id,
+            snapshot: store.snapshotPartie(partieExistante.id)
+        });
+    }
+    */
+
+    break;
+}
 
                 // ══════════════════════════════════════════════
                 // 🎮 CRÉER UNE PARTIE
