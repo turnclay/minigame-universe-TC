@@ -60,27 +60,21 @@ app.use("/api", async (req, res, next) => {
 // ─────────────────────────────────────────────
 const ROOT = path.join(__dirname, "..");
 
-// ✅ Sert tout le dossier public (inclut /css, /js, /images)
 app.use(express.static(path.join(ROOT, "public"), {
-    // S'assure que les fichiers statiques ont le bon cache
     maxAge: IS_DEV ? 0 : "1h"
 }));
 
 // ─────────────────────────────────────────────
-// Routes HTML (SPA multi-écrans)
+// Routes HTML
 // ─────────────────────────────────────────────
-
-// Accueil → redirect vers /host
 app.get("/", (req, res) => {
     res.redirect("/host");
 });
 
-// Interface Host
 app.get("/host", (req, res) => {
     res.sendFile(path.join(ROOT, "public", "host.html"));
 });
 
-// Interface Player (avec support ?partieId=xxx en URL)
 app.get("/join", (req, res) => {
     res.sendFile(path.join(ROOT, "public", "join.html"));
 });
@@ -90,21 +84,24 @@ app.get("/join", (req, res) => {
 // ─────────────────────────────────────────────
 const store = require("./store.js");
 
+// 🔥🔥🔥 RESET DU STORE AU DÉMARRAGE (Option 1)
+store.resetStore();
+
 app.get("/api/parties", (req, res) => {
-    const parties = store.getAllParties()
-        .filter(p => p.statut === "lobby")
-        .map(p => ({
+    const parties = store.getAllParties?.()
+        ?.filter(p => p.statut === "lobby")
+        ?.map(p => ({
             id:        p.id,
             nom:       p.nom,
             jeu:       p.jeu,
             mode:      p.mode,
             equipes:   p.equipes || [],
-            nbJoueurs: store.getJoueursPartie(p.id).length
-        }));
+            nbJoueurs: store.getJoueursPartie?.(p.id)?.length || 0
+        })) || [];
+
     res.json(parties);
 });
 
-// Ping / santé
 app.get("/api/ping", (req, res) => {
     res.json({ ok: true, ts: Date.now() });
 });

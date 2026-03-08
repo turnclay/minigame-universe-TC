@@ -10,21 +10,31 @@ const parties = new Map();   // partieId → partie
 let _partieActiveId = null;  // Une seule partie active à la fois
 const _hostSockets  = new Map(); // partieId → ws
 
-// ══════════════════════════════════════════════════════
+// ======================================================
+// 🧹 OPTION 1 — RESET DU STORE AU DÉMARRAGE
+// ======================================================
+
+function resetStore() {
+    parties.clear();
+    _partieActiveId = null;
+    _hostSockets.clear();
+    console.log("[STORE] 🔄 Réinitialisé au démarrage");
+}
+
+// ======================================================
 // 🏗️ CRÉATION
-// ══════════════════════════════════════════════════════
+// ======================================================
 
 function creerPartie({ nom, jeu, mode, equipes, joueursSolo, hostJoue, hostPseudo }) {
     const id = uuidv4();
 
-    // Initialiser les scores
     const scores = {};
 
     if (mode === "team") {
         (equipes || []).forEach(eq => { scores[eq.nom] = 0; });
     } else {
         (joueursSolo || []).forEach(j => { scores[j] = 0; });
-        if (hostJoue && hostPseudo) { scores[hostPseudo] = 0; }
+        if (hostJoue && hostPseudo) scores[hostPseudo] = 0;
     }
 
     const partie = {
@@ -32,16 +42,16 @@ function creerPartie({ nom, jeu, mode, equipes, joueursSolo, hostJoue, hostPseud
         nom,
         jeu,
         mode,
-        statut:      "lobby",
-        equipes:     equipes     || [],
+        statut: "lobby",
+        equipes: equipes || [],
         joueursSolo: joueursSolo || [],
-        joueurs:     [],           // joueurs WS connectés
+        joueurs: [],
         scores,
-        gameState:   null,
-        hostJoue:    hostJoue    || false,
-        hostPseudo:  hostPseudo  || null,
-        createdAt:   Date.now(),
-        updatedAt:   Date.now(),
+        gameState: null,
+        hostJoue: hostJoue || false,
+        hostPseudo: hostPseudo || null,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
     };
 
     parties.set(id, partie);
@@ -51,15 +61,14 @@ function creerPartie({ nom, jeu, mode, equipes, joueursSolo, hostJoue, hostPseud
     return partie;
 }
 
-// ══════════════════════════════════════════════════════
+// ======================================================
 // 📖 LECTURE
-// ══════════════════════════════════════════════════════
+// ======================================================
 
 function getPartie(id) {
     return parties.get(id) || null;
 }
 
-/** Retourne la partie active en cours (lobby ou en_cours) */
 function getPartieActive() {
     if (!_partieActiveId) return null;
     const p = parties.get(_partieActiveId);
@@ -85,22 +94,24 @@ function getGameState(partieId) {
     return p ? p.gameState : null;
 }
 
-// ══════════════════════════════════════════════════════
+// ======================================================
 // ✏️ MODIFICATION
-// ══════════════════════════════════════════════════════
+// ======================================================
 
 function setStatut(partieId, statut) {
     const p = getPartie(partieId);
     if (!p) return;
-    p.statut    = statut;
+    p.statut = statut;
     p.updatedAt = Date.now();
 }
 
 function terminerPartie(partieId) {
     setStatut(partieId, "terminee");
+
     if (_partieActiveId === partieId) {
         _partieActiveId = null;
     }
+
     console.log(`[STORE] 🏁 Partie terminée : ${partieId}`);
 }
 
@@ -108,12 +119,10 @@ function ajouterJoueur(partieId, { pseudo, equipe }) {
     const p = getPartie(partieId);
     if (!p) return;
 
-    // Éviter les doublons
     if (!p.joueurs.find(j => j.pseudo === pseudo)) {
         p.joueurs.push({ pseudo, equipe: equipe || null });
     }
 
-    // Initialiser le score si besoin
     if (p.mode === "solo" && !(pseudo in p.scores)) {
         p.scores[pseudo] = 0;
     }
@@ -124,7 +133,7 @@ function ajouterJoueur(partieId, { pseudo, equipe }) {
 function retirerJoueur(partieId, pseudo) {
     const p = getPartie(partieId);
     if (!p) return;
-    p.joueurs   = p.joueurs.filter(j => j.pseudo !== pseudo);
+    p.joueurs = p.joueurs.filter(j => j.pseudo !== pseudo);
     p.updatedAt = Date.now();
 }
 
@@ -140,7 +149,7 @@ function modifierScore(partieId, cible, delta) {
 function setScores(partieId, scores) {
     const p = getPartie(partieId);
     if (!p) return;
-    p.scores    = { ...scores };
+    p.scores = { ...scores };
     p.updatedAt = Date.now();
 }
 
@@ -158,9 +167,9 @@ function patchGameState(partieId, patch) {
     p.updatedAt = Date.now();
 }
 
-// ══════════════════════════════════════════════════════
+// ======================================================
 // 🔌 SOCKETS HOST
-// ══════════════════════════════════════════════════════
+// ======================================================
 
 function setHostSocket(partieId, ws) {
     _hostSockets.set(partieId, ws);
@@ -170,54 +179,52 @@ function getHostSocket(partieId) {
     return _hostSockets.get(partieId) || null;
 }
 
-// ══════════════════════════════════════════════════════
+// ======================================================
 // 📸 SNAPSHOTS
-// ══════════════════════════════════════════════════════
+// ======================================================
 
-/** Snapshot complet pour le host */
 function snapshotPartie(partieId, avecGameState = false) {
     const p = getPartie(partieId);
     if (!p) return null;
 
     const snap = {
-        id:          p.id,
-        nom:         p.nom,
-        jeu:         p.jeu,
-        mode:        p.mode,
-        statut:      p.statut,
-        equipes:     p.equipes,
+        id: p.id,
+        nom: p.nom,
+        jeu: p.jeu,
+        mode: p.mode,
+        statut: p.statut,
+        equipes: p.equipes,
         joueursSolo: p.joueursSolo,
-        joueurs:     [...p.joueurs],
-        scores:      { ...p.scores },
-        hostJoue:    p.hostJoue,
-        hostPseudo:  p.hostPseudo,
-        createdAt:   p.createdAt,
+        joueurs: [...p.joueurs],
+        scores: { ...p.scores },
+        hostJoue: p.hostJoue,
+        hostPseudo: p.hostPseudo,
+        createdAt: p.createdAt,
     };
 
     if (avecGameState) snap.gameState = p.gameState;
     return snap;
 }
 
-/** Snapshot allégé pour les joueurs */
 function snapshotPublic(partieId) {
     const p = getPartie(partieId);
     if (!p) return null;
 
     return {
-        id:      p.id,
-        nom:     p.nom,
-        jeu:     p.jeu,
-        mode:    p.mode,
-        statut:  p.statut,
+        id: p.id,
+        nom: p.nom,
+        jeu: p.jeu,
+        mode: p.mode,
+        statut: p.statut,
         equipes: p.equipes.map(e => ({ nom: e.nom })),
-        scores:  { ...p.scores },
+        scores: { ...p.scores },
         nbJoueurs: p.joueurs.length,
     };
 }
 
-// ══════════════════════════════════════════════════════
+// ======================================================
 // 🐛 DEBUG
-// ══════════════════════════════════════════════════════
+// ======================================================
 
 function debug() {
     console.log(`[STORE] Parties: ${parties.size} | Active: ${_partieActiveId || "aucune"}`);
@@ -226,8 +233,9 @@ function debug() {
     });
 }
 
-// ══════════════════════════════════════════════════════
+// ======================================================
 module.exports = {
+    resetStore,
     creerPartie,
     getPartie,
     getPartieActive,
