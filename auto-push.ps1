@@ -6,6 +6,9 @@ $renderApiKey = "rnd_h5AV4uaXG6HYErpoqf0y5fbVQQIU"
 # --- SCRIPT ---
 Set-Location $projectPath
 
+# 🔥 Force un changement pour Render (OPTION A)
+Set-Content -Path "$projectPath\.render-restart" -Value (Get-Date).ToString()
+
 # Vérifie s'il y a des modifications
 $changes = git status --porcelain
 
