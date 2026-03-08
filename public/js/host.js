@@ -1,396 +1,653 @@
-// public/js/host.js
-// =============================================
-// 🟦 INTERFACE HOST
-// =============================================
+// /public/js/host.js
+// ======================================================
+// 🟦 HOST.JS — Interface maître de jeu
+// ======================================================
 
 import { socket } from "./core/socket.js";
+import { APP_CONFIG, showToast } from "./main.js";
 
-// ── Helpers DOM ────────────────────────────────────
-const $ = id => document.getElementById(id);
-const show = id => { const el = $(id); if (el) el.hidden = false; };
-const hide = id => { const el = $(id); if (el) el.hidden = true; };
+// ── Helpers DOM ─────────────────────────────────────
+const $  = id  => document.getElementById(id);
+const $$ = sel => document.querySelectorAll(sel);
+const show = id  => { const el = $(id); if (el) el.hidden = false; };
+const hide = id  => { const el = $(id); if (el) el.hidden = true; };
 const esc  = str => String(str || "")
     .replace(/&/g,"&amp;").replace(/</g,"&lt;")
     .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 
-// ── URL WebSocket ──────────────────────────────────
+// ── URL WebSocket ────────────────────────────────────
 const WS_URL = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`;
 
-// ── État local HOST ────────────────────────────────
-const state = {
+// ======================================================
+// 🗂️ STATE LOCAL DU HOST
+// ======================================================
+
+const HostState = {
     partieId:   null,
     partieNom:  null,
     jeu:        null,
-    mode:       null,
-    equipes:    [],
-    joueurs:    [],
-    scores:     {},
-    statut:     null
+    mode:       "solo",      // "solo" | "team"
+    equipes:    [],          // [{ nom, membres: [] }]
+    joueursSolo: [],         // joueurs ajoutés manuellement en mode solo
+    joueurs:    [],          // joueurs connectés via WS [{ pseudo, equipe }]
+    scores:     {},          // { nom: points }
+    statut:     null,        // "lobby" | "en_cours" | "terminee"
+    hostJoue:   false,       // Le host participe-t-il ?
+    hostPseudo: null,        // Pseudo du host s'il joue
+    partieActive: false,     // Une partie est-elle déjà créée ?
 };
 
-// =============================================
+// ======================================================
 // 🔌 INDICATEUR DE CONNEXION WS
-// =============================================
+// ======================================================
+
 function initSocketStatus() {
+    const dot   = $("ws-dot");
+    const label = $("ws-label");
+
     socket.on("__connected__", () => {
-        $("ws-indicator").className = "ws-dot ws-connected";
-        $("ws-label").textContent = "Connecté";
+        if (dot)   dot.className   = "ws-dot ws-ok";
+        if (label) label.textContent = "Connecté";
+        // Authentification automatique (sans mot de passe)
+        socket.send("HOST_AUTH", {});
     });
 
     socket.on("__disconnected__", () => {
-        $("ws-indicator").className = "ws-dot ws-disconnected";
-        $("ws-label").textContent = "Déconnecté — reconnexion…";
+        if (dot)   dot.className   = "ws-dot ws-ko";
+        if (label) label.textContent = "Déconnecté — reconnexion…";
     });
 
     socket.on("__reconnect_failed__", () => {
-        $("ws-indicator").className = "ws-dot ws-disconnected";
-        $("ws-label").textContent = "Connexion perdue";
+        if (dot)   dot.className   = "ws-dot ws-ko";
+        if (label) label.textContent = "Connexion perdue";
+        showToast("Connexion au serveur perdue. Rechargez la page.", "error", 6000);
     });
 }
 
-// =============================================
-// 🔐 AUTHENTIFICATION
-// =============================================
+// ======================================================
+// 🔐 AUTHENTIFICATION AUTOMATIQUE (sans mot de passe)
+// ======================================================
+
 function initAuth() {
-    const btnAuth = $("auth-btn");
-    const input   = $("auth-password");
-
-    const tenter = () => {
-        const password = input.value;
-        if (!password) return;
-
-        if (!socket.connected) {
-            afficherErreurAuth("Connexion au serveur en cours, réessaie dans un instant…");
-            return;
-        }
-
-        // ✅ Utilisation correcte de socket.send(type, payload)
-        socket.send("HOST_AUTH", { password });
-    };
-
-    btnAuth.onclick = tenter;
-    input.onkeydown = e => { if (e.key === "Enter") tenter(); };
-
     socket.on("AUTH_OK", () => {
-        hide("host-auth");
-        show("host-lobby");
-        initLobby();
+        console.log("[HOST] ✅ Authentifié comme host");
+        showToast("Connecté en tant que host", "success", 2000);
     });
 
     socket.on("AUTH_FAIL", ({ error }) => {
-        afficherErreurAuth(error || "Mot de passe incorrect.");
-        input.value = "";
-        input.focus();
+        console.error("[HOST] Auth échouée:", error);
+        showToast(error || "Authentification échouée", "error");
     });
 }
 
-function afficherErreurAuth(msg) {
-    const errEl = $("auth-error");
-    if (!errEl) return;
-    errEl.textContent = msg;
-    errEl.hidden = false;
-    setTimeout(() => { errEl.hidden = true; }, 4000);
+// ======================================================
+// 🎮 MODE DE JEU — TOGGLE
+// ======================================================
+
+function initModeToggle() {
+    const btnSolo   = $("btn-mode-solo");
+    const btnEquipe = $("btn-mode-equipes");
+
+    const setMode = (mode) => {
+        HostState.mode = mode;
+        btnSolo.classList.toggle("mode-btn-active",   mode === "solo");
+        btnEquipe.classList.toggle("mode-btn-active", mode === "team");
+
+        if (mode === "solo") {
+            show("bloc-solo");
+            hide("bloc-equipes");
+        } else {
+            hide("bloc-solo");
+            show("bloc-equipes");
+        }
+    };
+
+    btnSolo?.addEventListener("click",   () => setMode("solo"));
+    btnEquipe?.addEventListener("click", () => setMode("team"));
+
+    setMode("solo"); // Défaut
 }
 
-// =============================================
-// 🏠 LOBBY HOST — CRÉATION DE PARTIE
-// =============================================
-function initLobby() {
+// ======================================================
+// 👤 HOST JOUE — TOGGLE
+// ======================================================
 
-    // Toggle bloc équipes selon le mode
-    $("h-mode").onchange = () => {
-        const isTeam = $("h-mode").value === "team";
-        $("h-equipes-bloc").hidden = !isTeam;
-    };
+function initHostRoleToggle() {
+    const checkbox  = $("h-host-joue");
+    const pseudoWrap = $("h-host-pseudo-wrap");
 
-    // Ajouter une équipe
-    const addEquipe = () => {
-        const nom = $("h-equipe-input").value.trim();
+    checkbox?.addEventListener("change", () => {
+        HostState.hostJoue = checkbox.checked;
+        if (pseudoWrap) pseudoWrap.hidden = !checkbox.checked;
+    });
+}
+
+// ======================================================
+// 👥 GESTION DES JOUEURS (mode solo — ajout manuel)
+// ======================================================
+
+function initJoueursSolo() {
+    const input  = $("h-joueur-input");
+    const btnAdd = $("h-joueur-ajouter");
+
+    const ajouter = () => {
+        const nom = input?.value.trim();
         if (!nom) return;
-        if (state.equipes.some(e => e.nom.toLowerCase() === nom.toLowerCase())) {
-            alert("Ce nom d'équipe existe déjà."); return;
+
+        if (HostState.joueursSolo.includes(nom)) {
+            showToast("Ce joueur existe déjà.", "warning"); return;
         }
-        state.equipes.push({ nom, membres: [] });
-        $("h-equipe-input").value = "";
-        renderEquipesHost();
+
+        HostState.joueursSolo.push(nom);
+        if (input) input.value = "";
+        renderJoueursSoloForm();
     };
-    $("h-equipe-ajouter").onclick = addEquipe;
-    $("h-equipe-input").onkeydown = e => { if (e.key === "Enter") addEquipe(); };
 
-    // Créer la partie
-    $("h-btn-creer").onclick = () => {
-        const nom  = $("h-nom-partie").value.trim();
-        const jeu  = $("h-jeu").value;
-        const mode = $("h-mode").value;
+    btnAdd?.addEventListener("click", ajouter);
+    input?.addEventListener("keydown", e => { if (e.key === "Enter") ajouter(); });
 
-        if (!nom) { alert("Donne un nom à la partie."); return; }
-        if (mode === "team" && state.equipes.length < 2) {
-            alert("Il faut au moins 2 équipes."); return;
+    renderJoueursSoloForm();
+}
+
+function renderJoueursSoloForm() {
+    const container = $("h-joueurs-list");
+    if (!container) return;
+
+    if (HostState.joueursSolo.length === 0) {
+        container.innerHTML = `<p class="list-empty">Aucun joueur ajouté — les joueurs peuvent rejoindre via le lien</p>`;
+        return;
+    }
+
+    container.innerHTML = HostState.joueursSolo.map((j, i) => `
+        <div class="joueur-tag">
+            <span class="joueur-tag-avatar">${j.charAt(0).toUpperCase()}</span>
+            <span class="joueur-tag-nom">${esc(j)}</span>
+            <button class="btn-remove" data-i="${i}" title="Retirer">×</button>
+        </div>
+    `).join("");
+
+    container.querySelectorAll(".btn-remove").forEach(btn => {
+        btn.addEventListener("click", () => {
+            HostState.joueursSolo.splice(parseInt(btn.dataset.i), 1);
+            renderJoueursSoloForm();
+        });
+    });
+}
+
+// ======================================================
+// 🛡️ GESTION DES ÉQUIPES (mode team)
+// ======================================================
+
+function initEquipes() {
+    const input  = $("h-equipe-input");
+    const btnAdd = $("h-equipe-ajouter");
+
+    const ajouter = () => {
+        const nom = input?.value.trim();
+        if (!nom) return;
+
+        if (HostState.equipes.some(e => e.nom.toLowerCase() === nom.toLowerCase())) {
+            showToast("Ce nom d'équipe existe déjà.", "warning"); return;
+        }
+
+        HostState.equipes.push({ nom, membres: [] });
+        if (input) input.value = "";
+        renderEquipesForm();
+    };
+
+    btnAdd?.addEventListener("click", ajouter);
+    input?.addEventListener("keydown", e => { if (e.key === "Enter") ajouter(); });
+
+    renderEquipesForm();
+}
+
+function renderEquipesForm() {
+    const container = $("h-equipes-list");
+    if (!container) return;
+
+    if (HostState.equipes.length === 0) {
+        container.innerHTML = `<p class="list-empty">Créez au moins 2 équipes</p>`;
+        return;
+    }
+
+    container.innerHTML = HostState.equipes.map((eq, i) => `
+        <div class="equipe-form-item">
+            <div class="equipe-form-header">
+                <span class="equipe-form-icon">🛡️</span>
+                <span class="equipe-form-nom">${esc(eq.nom)}</span>
+                <button class="btn-remove btn-del-equipe" data-i="${i}" title="Supprimer">×</button>
+            </div>
+        </div>
+    `).join("");
+
+    container.querySelectorAll(".btn-del-equipe").forEach(btn => {
+        btn.addEventListener("click", () => {
+            HostState.equipes.splice(parseInt(btn.dataset.i), 1);
+            renderEquipesForm();
+        });
+    });
+}
+
+// ======================================================
+// 🚀 CRÉATION DE PARTIE
+// ======================================================
+
+function initCreerPartie() {
+    $("h-btn-creer")?.addEventListener("click", () => {
+        // Vérification : partie déjà active
+        if (HostState.partieActive) {
+            showToast("Terminez la partie en cours avant d'en créer une nouvelle.", "warning");
+            show("alerte-partie-active");
+            return;
+        }
+
+        const nom  = $("h-nom-partie")?.value.trim();
+        const jeu  = $("h-jeu")?.value;
+        const mode = HostState.mode;
+
+        if (!nom) { showToast("Donnez un nom à la partie.", "warning"); return; }
+
+        if (mode === "team" && HostState.equipes.length < 2) {
+            showToast("Il faut au moins 2 équipes.", "warning"); return;
+        }
+
+        // Pseudo du host s'il joue
+        let hostPseudo = null;
+        if (HostState.hostJoue) {
+            hostPseudo = $("h-host-pseudo")?.value.trim();
+            if (!hostPseudo) { showToast("Entrez votre pseudo pour jouer.", "warning"); return; }
+            HostState.hostPseudo = hostPseudo;
         }
 
         socket.send("HOST_CREATE_GAME", {
             nom, jeu, mode,
-            equipes: state.equipes
+            equipes:     HostState.equipes,
+            joueursSolo: HostState.joueursSolo,
+            hostJoue:    HostState.hostJoue,
+            hostPseudo
         });
-    };
-
-    // Démarrer
-    $("h-btn-start").onclick = () => {
-        socket.send("HOST_START_GAME", {});
-    };
-
-    // Terminer
-    $("h-btn-end").onclick = () => {
-        if (!confirm("Terminer la partie ?")) return;
-        socket.send("HOST_END_GAME", {});
-    };
+    });
 }
 
-// =============================================
+// ======================================================
 // 📡 ÉVÉNEMENTS WEBSOCKET ENTRANTS
-// =============================================
+// ======================================================
+
 function initSocketEvents() {
 
-    // ── Partie créée ──────────────────────────────────
+    // ── Partie créée ─────────────────────────────────
     socket.on("GAME_CREATED", ({ partieId, snapshot }) => {
-        state.partieId = partieId;
+        HostState.partieId    = partieId;
+        HostState.partieActive = true;
         applySnapshot(snapshot);
 
-        // Afficher le panel de gestion
-        show("h-game-panel");
+        show("panel-game");
+        hide("alerte-partie-active");
         renderGamePanel();
 
+        showToast(`Partie "${HostState.partieNom}" créée !`, "success");
         console.log("[HOST] Partie créée :", partieId);
     });
 
     // ── Joueur rejoint ────────────────────────────────
     socket.on("PLAYER_JOINED", ({ pseudo, equipe, joueurs }) => {
-        state.joueurs = joueurs;
-        renderJoueursHost();
-
-        // Ajouter le score si absent
-        const cible = state.mode === "team" ? equipe : pseudo;
-        if (cible && !(cible in state.scores)) {
-            state.scores[cible] = 0;
-            renderScoresHost();
-        }
+        HostState.joueurs = joueurs;
+        renderJoueursConnectes();
+        renderScores();
+        showToast(`${pseudo} a rejoint la partie`, "info", 2000);
     });
 
     // ── Joueur parti ──────────────────────────────────
     socket.on("PLAYER_LEFT", ({ pseudo, joueurs }) => {
-        state.joueurs = joueurs;
-        renderJoueursHost();
+        HostState.joueurs = joueurs;
+        renderJoueursConnectes();
+        showToast(`${pseudo} a quitté la partie`, "warning", 2000);
     });
 
-    // ── Mise à jour des scores ────────────────────────
+    // ── Scores mis à jour ─────────────────────────────
     socket.on("SCORES_UPDATE", ({ scores }) => {
-        state.scores = scores;
-        renderScoresHost();
+        HostState.scores = scores;
+        renderScores();
     });
 
     // ── Partie démarrée ───────────────────────────────
     socket.on("GAME_STARTED", ({ snapshot }) => {
         applySnapshot(snapshot);
-        state.statut = "en_cours";
+        HostState.statut = "en_cours";
+
+        _setStatutBadge("en_cours");
         hide("h-btn-start");
         show("h-btn-end");
-        $("h-info-statut").textContent = "● En cours";
-        $("h-info-statut").className = "h-info-statut statut-en-cours";
+
+        showToast("La partie est lancée !", "success");
     });
 
     // ── Partie terminée ───────────────────────────────
     socket.on("GAME_ENDED", ({ snapshot }) => {
         applySnapshot(snapshot);
-        state.statut = "terminee";
+        HostState.statut = "terminee";
+        HostState.partieActive = false;
+
+        _setStatutBadge("terminee");
         hide("h-btn-end");
-        $("h-info-statut").textContent = "● Terminée";
-        $("h-info-statut").className = "h-info-statut statut-terminee";
-        renderResultats(snapshot);
+        show("h-btn-nouvelle");
+
+        renderResultats();
+        showToast("Partie terminée !", "info");
     });
 
-    // ── Actions joueurs (reçues par le host) ──────────
+    // ── Actions joueurs ───────────────────────────────
     socket.on("PLAYER_ACTION", ({ pseudo, equipe, action }) => {
-        console.log("[HOST] Action reçue :", pseudo, action);
-        // Déléguer à la logique de jeu active si besoin
+        console.log("[HOST] Action joueur :", pseudo, action);
         if (typeof window.onPlayerAction === "function") {
             window.onPlayerAction({ pseudo, equipe, action });
         }
     });
 
-    // ── Erreurs ───────────────────────────────────────
+    // ── Erreurs serveur ───────────────────────────────
     socket.on("ERROR", ({ code }) => {
-        console.error("[HOST] Erreur serveur :", code);
         const messages = {
-            NOT_HOST:       "Accès refusé — non authentifié comme host.",
+            NOT_HOST:       "Accès refusé.",
             NO_ACTIVE_GAME: "Aucune partie active.",
-            MISSING_FIELDS: "Données manquantes pour créer la partie.",
+            MISSING_FIELDS: "Données manquantes.",
+            GAME_EXISTS:    "Une partie est déjà en cours sur ce serveur.",
         };
-        if (messages[code]) alert(messages[code]);
+        const msg = messages[code] || `Erreur serveur (${code})`;
+        showToast(msg, "error");
+        console.error("[HOST] Erreur serveur :", code);
     });
 }
 
-// =============================================
-// 🎨 RENDU DU PANEL DE JEU
-// =============================================
+// ======================================================
+// 🎮 CONTRÔLES DE LA PARTIE
+// ======================================================
+
+function initControles() {
+    // Démarrer
+    $("h-btn-start")?.addEventListener("click", () => {
+        if (!HostState.partieId) return;
+        socket.send("HOST_START_GAME", {});
+    });
+
+    // Terminer
+    $("h-btn-end")?.addEventListener("click", () => {
+        if (!confirm("Terminer la partie ?")) return;
+        socket.send("HOST_END_GAME", {});
+    });
+
+    // Nouvelle partie (après fin)
+    $("h-btn-nouvelle")?.addEventListener("click", () => {
+        // Reset state
+        HostState.partieId    = null;
+        HostState.partieNom   = null;
+        HostState.jeu         = null;
+        HostState.joueurs     = [];
+        HostState.scores      = {};
+        HostState.statut      = null;
+        HostState.partieActive = false;
+
+        // Reset UI
+        hide("panel-game");
+        hide("h-btn-nouvelle");
+        hide("alerte-partie-active");
+        show("h-btn-start");
+
+        // Vider le formulaire
+        const nomInput = $("h-nom-partie");
+        if (nomInput) nomInput.value = "";
+
+        showToast("Prêt pour une nouvelle partie !", "info");
+    });
+
+    // Copier le lien
+    $("h-btn-copy")?.addEventListener("click", () => {
+        const link = $("h-join-link");
+        if (!link?.href) return;
+        navigator.clipboard.writeText(link.href)
+            .then(() => showToast("Lien copié !", "success", 1500))
+            .catch(() => showToast("Copie impossible", "error"));
+    });
+}
+
+// ======================================================
+// 🎨 RENDU UI
+// ======================================================
+
 function renderGamePanel() {
-    if (!state.partieId) return;
+    const joinUrl = `${location.origin}/join/?partieId=${HostState.partieId}`;
 
-    // Infos partie
-    $("h-info-nom").textContent  = state.partieNom || "";
-    $("h-info-jeu").textContent  = state.jeu?.toUpperCase() || "";
-    $("h-info-statut").textContent = "● Lobby";
-    $("h-info-statut").className = "h-info-statut statut-lobby";
+    // Infos
+    const infoNom  = $("h-info-nom");
+    const infoJeu  = $("h-info-jeu");
+    const infoMode = $("h-info-mode");
+    if (infoNom)  infoNom.textContent  = HostState.partieNom || "—";
+    if (infoJeu)  infoJeu.textContent  = (HostState.jeu || "—").toUpperCase();
+    if (infoMode) infoMode.textContent = HostState.mode === "team" ? "🛡️ Équipes" : "👤 Solo";
 
-    // Lien joueur
-    const joinUrl = `${location.origin}/join?partieId=${state.partieId}`;
+    _setStatutBadge("lobby");
+
+    // Lien
     const link = $("h-join-link");
     if (link) { link.href = joinUrl; link.textContent = joinUrl; }
 
-    // QR Code (si librairie disponible)
-    const qrContainer = $("h-qr");
-    if (qrContainer && typeof QRCode !== "undefined") {
-        qrContainer.innerHTML = "";
-        new QRCode(qrContainer, { text: joinUrl, width: 120, height: 120 });
+    // QR Code
+    _renderQR(joinUrl);
+
+    // Afficher le bon bloc (joueurs ou équipes)
+    if (HostState.mode === "team") {
+        hide("bloc-joueurs-connectes");
+        show("bloc-equipes-connectees");
+    } else {
+        show("bloc-joueurs-connectes");
+        hide("bloc-equipes-connectees");
     }
 
-    renderJoueursHost();
-    renderScoresHost();
+    renderJoueursConnectes();
+    renderScores();
 }
 
-function renderEquipesHost() {
-    const liste = $("h-equipes-liste");
-    if (!liste) return;
+function renderJoueursConnectes() {
+    const container = $("h-joueurs-connectes");
+    const counter   = $("h-nb-joueurs");
+    if (!container) return;
 
-    if (state.equipes.length === 0) {
-        liste.innerHTML = `<p class="h-empty">Aucune équipe créée</p>`;
+    // Compteur
+    if (counter) counter.textContent = HostState.joueurs.length;
+
+    if (HostState.mode === "team") {
+        // Affichage par équipes
+        const equipesCont = $("h-equipes-connectees");
+        const nbEquipes   = $("h-nb-equipes");
+
+        const equipesAvecMembres = {};
+        HostState.equipes.forEach(eq => { equipesAvecMembres[eq.nom] = []; });
+        HostState.joueurs.forEach(j => {
+            const eq = j.equipe || "Sans équipe";
+            if (!equipesAvecMembres[eq]) equipesAvecMembres[eq] = [];
+            equipesAvecMembres[eq].push(j.pseudo);
+        });
+
+        const nbEq = Object.keys(equipesAvecMembres).length;
+        if (nbEquipes) nbEquipes.textContent = nbEq;
+
+        if (equipesCont) {
+            equipesCont.innerHTML = Object.entries(equipesAvecMembres).map(([nom, membres]) => `
+                <div class="equipe-connectee-card">
+                    <div class="equipe-connectee-header">
+                        <span class="equipe-connectee-icon">🛡️</span>
+                        <span class="equipe-connectee-nom">${esc(nom)}</span>
+                        <span class="equipe-connectee-count">${membres.length} joueur${membres.length > 1 ? "s" : ""}</span>
+                    </div>
+                    <div class="equipe-connectee-membres">
+                        ${membres.length > 0
+                            ? membres.map(m => `
+                                <span class="membre-chip">
+                                    <span class="membre-avatar">${m.charAt(0).toUpperCase()}</span>
+                                    ${esc(m)}
+                                </span>`).join("")
+                            : `<span class="membre-empty">Aucun joueur</span>`
+                        }
+                    </div>
+                </div>
+            `).join("") || `<p class="list-empty">En attente de joueurs…</p>`;
+        }
         return;
     }
 
-    liste.innerHTML = state.equipes.map((eq, i) => `
-        <div class="h-equipe-tag">
-            <span>🛡️ ${esc(eq.nom)}</span>
-            <button class="btn-del-equipe" data-i="${i}" title="Supprimer">✖</button>
-        </div>
-    `).join("");
-
-    liste.querySelectorAll(".btn-del-equipe").forEach(btn => {
-        btn.onclick = () => {
-            state.equipes.splice(parseInt(btn.dataset.i), 1);
-            renderEquipesHost();
-        };
-    });
-}
-
-function renderJoueursHost() {
-    const liste  = $("h-joueurs-liste");
-    const counter = $("h-nb-joueurs");
-    if (!liste) return;
-
-    if (counter) counter.textContent = state.joueurs.length;
-
-    if (state.joueurs.length === 0) {
-        liste.innerHTML = `<p class="h-empty">En attente de joueurs…</p>`;
+    // Mode solo
+    if (HostState.joueurs.length === 0) {
+        container.innerHTML = `<p class="list-empty">En attente de joueurs…</p>`;
         return;
     }
 
-    liste.innerHTML = state.joueurs.map(j => `
-        <div class="h-joueur-item">
-            <span class="h-joueur-avatar">${(j.pseudo || "?").charAt(0).toUpperCase()}</span>
-            <span class="h-joueur-pseudo">${esc(j.pseudo)}</span>
-            ${j.equipe ? `<span class="h-joueur-equipe">🛡️ ${esc(j.equipe)}</span>` : ""}
+    container.innerHTML = HostState.joueurs.map(j => `
+        <div class="joueur-connecte-item">
+            <span class="joueur-connecte-avatar">${(j.pseudo || "?").charAt(0).toUpperCase()}</span>
+            <span class="joueur-connecte-pseudo">${esc(j.pseudo)}</span>
             <button class="btn-kick" data-pseudo="${esc(j.pseudo)}" title="Expulser">✖</button>
         </div>
     `).join("");
 
-    liste.querySelectorAll(".btn-kick").forEach(btn => {
-        btn.onclick = () => {
+    container.querySelectorAll(".btn-kick").forEach(btn => {
+        btn.addEventListener("click", () => {
             if (confirm(`Expulser ${btn.dataset.pseudo} ?`)) {
                 socket.send("HOST_KICK_PLAYER", { pseudo: btn.dataset.pseudo });
             }
-        };
+        });
     });
 }
 
-function renderScoresHost() {
-    const liste = $("h-scores-liste");
-    if (!liste) return;
+function renderScores() {
+    const container = $("h-scores-liste");
+    if (!container) return;
 
-    const entries = Object.entries(state.scores).sort((a, b) => b[1] - a[1]);
+    const entries = Object.entries(HostState.scores).sort((a, b) => b[1] - a[1]);
 
     if (entries.length === 0) {
-        liste.innerHTML = `<p class="h-empty">Aucun score pour l'instant</p>`;
+        container.innerHTML = `<p class="list-empty">Aucun score pour l'instant</p>`;
         return;
     }
 
-    const max = entries[0]?.[1] || 1;
+    const max    = entries[0]?.[1] || 1;
     const medals = ["🥇", "🥈", "🥉"];
 
-    liste.innerHTML = entries.map(([nom, pts], i) => {
+    container.innerHTML = entries.map(([nom, pts], i) => {
         const pct = max > 0 ? Math.round((pts / max) * 100) : 0;
         return `
-            <div class="h-score-row">
-                <span class="h-score-medal">${medals[i] || `${i+1}.`}</span>
-                <span class="h-score-nom">${esc(nom)}</span>
-                <div class="h-score-bar-wrap">
-                    <div class="h-score-bar" style="width: ${pct}%"></div>
+            <div class="score-row">
+                <span class="score-medal">${medals[i] || `${i + 1}.`}</span>
+                <span class="score-nom">${esc(nom)}</span>
+                <div class="score-bar-wrap">
+                    <div class="score-bar" style="width: ${pct}%"></div>
                 </div>
-                <span class="h-score-pts">${pts} pts</span>
-                <div class="h-score-actions">
-                    <button class="btn-pts btn-plus" data-cible="${esc(nom)}" data-delta="1" title="+1">＋</button>
+                <span class="score-pts">${pts} <small>pts</small></span>
+                <div class="score-actions">
+                    <button class="btn-pts btn-plus"  data-cible="${esc(nom)}" data-delta="1"  title="+1">＋</button>
                     <button class="btn-pts btn-minus" data-cible="${esc(nom)}" data-delta="-1" title="-1">－</button>
                 </div>
             </div>
         `;
     }).join("");
 
-    // Boutons +/- points
-    liste.querySelectorAll(".btn-pts").forEach(btn => {
-        btn.onclick = () => {
+    container.querySelectorAll(".btn-pts").forEach(btn => {
+        btn.addEventListener("click", () => {
             const delta = parseInt(btn.dataset.delta);
             const cible = btn.dataset.cible;
             const type  = delta > 0 ? "HOST_ADD_POINTS" : "HOST_REMOVE_POINTS";
-            socket.send(type, { cible, points: Math.abs(delta) });
-        };
+            socket.send(type, { cible, points: 1 });
+        });
     });
 }
 
-function renderResultats(snapshot) {
-    // Optionnel : afficher un récapitulatif final dans le panel
-    const entries = Object.entries(snapshot?.scores || {}).sort((a, b) => b[1] - a[1]);
+function renderResultats() {
+    const entries = Object.entries(HostState.scores).sort((a, b) => b[1] - a[1]);
     const medals  = ["🥇", "🥈", "🥉"];
 
-    let html = `<div class="h-resultats"><h3>🏁 Résultats finaux</h3>`;
-    html += entries.map(([nom, pts], i) =>
-        `<div class="h-resultat-row">${medals[i] || `${i+1}.`} <strong>${esc(nom)}</strong> — ${pts} pts</div>`
-    ).join("");
-    html += `</div>`;
+    const html = `
+        <div class="resultats-finaux">
+            <h3 class="resultats-titre">🏁 Résultats finaux</h3>
+            ${entries.map(([nom, pts], i) => `
+                <div class="resultat-row ${i === 0 ? "resultat-winner" : ""}">
+                    <span class="resultat-medal">${medals[i] || `${i + 1}.`}</span>
+                    <span class="resultat-nom">${esc(nom)}</span>
+                    <span class="resultat-pts">${pts} pts</span>
+                </div>
+            `).join("")}
+        </div>
+    `;
 
-    // Ajouter après les scores
     const scoresSection = $("h-scores-liste");
-    if (scoresSection) scoresSection.insertAdjacentHTML("afterend", html);
+    if (scoresSection) {
+        scoresSection.insertAdjacentHTML("afterend", html);
+    }
 }
 
-// =============================================
+// ── QR Code ──────────────────────────────────────────
+function _renderQR(url) {
+    const container = $("h-qr");
+    if (!container) return;
+
+    // Utiliser une API QR simple (compatible sans lib externe)
+    const size = 120;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(url)}&bgcolor=1a1a2e&color=00d4ff&margin=2`;
+
+    container.innerHTML = `
+        <img src="${qrUrl}" alt="QR Code pour rejoindre" class="qr-img"
+             onerror="this.closest('.qr-container').innerHTML='<p class=\\'qr-error\\'>QR indisponible</p>'">
+    `;
+}
+
+// ── Badge statut ──────────────────────────────────────
+function _setStatutBadge(statut) {
+    const badge = $("h-statut-badge");
+    if (!badge) return;
+
+    const map = {
+        lobby:     { text: "● Lobby",     cls: "statut-lobby" },
+        en_cours:  { text: "● En cours",  cls: "statut-en-cours" },
+        terminee:  { text: "● Terminée",  cls: "statut-terminee" },
+    };
+    const info = map[statut] || map.lobby;
+    badge.textContent = info.text;
+    badge.className   = `statut-badge ${info.cls}`;
+}
+
+// ======================================================
 // 🔄 APPLIQUER UN SNAPSHOT SERVEUR
-// =============================================
+// ======================================================
+
 function applySnapshot(snapshot) {
     if (!snapshot) return;
-    state.partieId  = snapshot.id    ?? state.partieId;
-    state.partieNom = snapshot.nom   ?? state.partieNom;
-    state.jeu       = snapshot.jeu   ?? state.jeu;
-    state.mode      = snapshot.mode  ?? state.mode;
-    state.equipes   = snapshot.equipes ?? state.equipes;
-    state.scores    = snapshot.scores  ?? state.scores;
-    state.statut    = snapshot.statut  ?? state.statut;
-    state.joueurs   = snapshot.joueurs ?? state.joueurs;
+    HostState.partieId  = snapshot.id      ?? HostState.partieId;
+    HostState.partieNom = snapshot.nom     ?? HostState.partieNom;
+    HostState.jeu       = snapshot.jeu     ?? HostState.jeu;
+    HostState.mode      = snapshot.mode    ?? HostState.mode;
+    HostState.equipes   = snapshot.equipes ?? HostState.equipes;
+    HostState.scores    = snapshot.scores  ?? HostState.scores;
+    HostState.statut    = snapshot.statut  ?? HostState.statut;
+    HostState.joueurs   = snapshot.joueurs ?? HostState.joueurs;
 }
 
-// =============================================
+// ======================================================
 // 🚀 INIT
-// =============================================
+// ======================================================
+
 document.addEventListener("DOMContentLoaded", () => {
     initSocketStatus();
-    initSocketEvents();
-    socket.connect(WS_URL);
     initAuth();
+    initSocketEvents();
+    initModeToggle();
+    initHostRoleToggle();
+    initJoueursSolo();
+    initEquipes();
+    initCreerPartie();
+    initControles();
+
+    // Connexion WebSocket
+    socket.connect(WS_URL);
+
+    console.log("[HOST] 🎮 Interface host initialisée");
 });
+
+// Exposer l'état pour les modules jeux
+window.HostState = HostState;

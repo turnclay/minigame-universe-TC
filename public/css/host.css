@@ -1,215 +1,846 @@
-/* css/host.css — Interface HOST */
+/* ======================================================
+   host.css — Interface Host MiniGame Universe
+   ====================================================== */
 
+/* ── Layout racine ─────────────────────────────────── */
 .host-body {
-    background: #0f0f1a;
-    color: #e0e0f0;
-    font-family: 'Montserrat', sans-serif;
+    background: var(--c-bg);
     min-height: 100vh;
-    margin: 0;
 }
 
-/* ── AUTH ── */
-.host-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-.host-screen[hidden] { display: none !important; }
-
-.auth-card {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 20px;
-    padding: 40px 32px;
-    width: 100%;
-    max-width: 380px;
-    text-align: center;
+.host-root {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    min-height: 100vh;
 }
 
-.auth-logo { width: 80px; margin: 0 auto 8px; }
-.auth-card h1 { font-size: 1.6rem; margin: 0; }
-.auth-sub { opacity: 0.6; font-size: 0.85rem; margin: 0; }
-.auth-error { color: #f87171; font-size: 0.88rem; }
-
-/* ── HEADER ── */
+/* ── Header ────────────────────────────────────────── */
 .host-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 28px;
-    background: rgba(255,255,255,0.04);
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 0.9rem 1.5rem;
+    background: var(--c-surface);
+    border-bottom: 1px solid var(--c-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
-.host-header h1 { font-size: 1.2rem; margin: 0; }
-.badge-host {
-    background: #6366f1;
-    color: #fff;
-    font-size: 0.7rem;
-    padding: 2px 8px;
-    border-radius: 20px;
-    vertical-align: middle;
-    margin-left: 8px;
+.host-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
-.host-status { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; }
-.ws-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-.ws-connected    { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
-.ws-disconnected { background: #ef4444; }
+.host-logo {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+}
 
-/* ── LAYOUT ── */
-#host-lobby { display: block; min-height: 100vh; }
-#host-lobby[hidden] { display: none !important; }
+.host-title-block {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
 
+.host-title {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--c-text);
+    letter-spacing: 0.03em;
+}
+
+.host-title-accent {
+    color: var(--c-accent);
+}
+
+.host-badge {
+    background: var(--c-accent);
+    color: #000;
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    font-weight: 900;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    letter-spacing: 0.1em;
+}
+
+/* ── WS Status ─────────────────────────────────────── */
+.ws-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ws-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+    transition: background var(--transition), box-shadow var(--transition);
+}
+
+.ws-dot.ws-ok {
+    background: var(--c-success);
+    box-shadow: 0 0 8px var(--c-success);
+}
+
+.ws-dot.ws-ko {
+    background: var(--c-danger);
+    box-shadow: 0 0 8px var(--c-danger);
+}
+
+.ws-dot:not(.ws-ok):not(.ws-ko) {
+    background: var(--c-warning);
+    animation: pulse-dot 1.2s ease infinite;
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+}
+
+.ws-label {
+    font-size: 0.8rem;
+    color: var(--c-text-mute);
+}
+
+/* ── Layout principal ──────────────────────────────── */
 .host-layout {
     display: grid;
-    grid-template-columns: 380px 1fr;
-    gap: 24px;
-    padding: 24px 28px;
-    max-width: 1100px;
+    grid-template-columns: 420px 1fr;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    max-width: 1200px;
     margin: 0 auto;
+    width: 100%;
+    align-items: start;
 }
 
-@media (max-width: 800px) {
-    .host-layout { grid-template-columns: 1fr; }
+@media (max-width: 900px) {
+    .host-layout {
+        grid-template-columns: 1fr;
+    }
 }
 
+/* ── Panels ────────────────────────────────────────── */
 .host-panel {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 18px;
-    padding: 24px;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 1.2rem;
 }
 
-.host-panel h2 { margin: 0 0 8px; font-size: 1.1rem; }
-.host-panel h3 { margin: 0; font-size: 0.95rem; opacity: 0.8; }
-
-.host-panel label {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 0.88rem;
-    opacity: 0.8;
-}
-
-.h-btn-full { width: 100%; margin-top: 8px; }
-
-/* ── Équipes ── */
-.h-equipes-bloc { display: flex; flex-direction: column; gap: 10px; }
-.h-equipe-create { display: flex; gap: 8px; }
-.h-equipe-create input { flex: 1; }
-
-.h-equipe-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-    background: rgba(99,102,241,0.12);
-    border-radius: 10px;
-    font-size: 0.9rem;
-}
-.h-equipe-del {
-    background: none;
-    border: none;
-    color: #f87171;
-    cursor: pointer;
-    font-size: 0.9rem;
-    padding: 2px 6px;
-}
-
-/* ── Game panel ── */
-.h-game-info {
+.panel-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-.h-info-val { font-weight: 700; font-size: 1rem; }
-.h-info-badge {
-    background: #6366f1;
-    color: #fff;
-    font-size: 0.75rem;
-    padding: 2px 10px;
-    border-radius: 20px;
-}
-.h-info-statut { font-size: 0.85rem; opacity: 0.75; margin-left: auto; }
-
-.h-join-block {
-    background: rgba(0,212,255,0.06);
-    border: 1px solid rgba(0,212,255,0.2);
-    border-radius: 12px;
-    padding: 14px 16px;
-    font-size: 0.85rem;
-}
-.h-join-link {
-    display: block;
-    word-break: break-all;
-    color: #00d4ff;
-    font-size: 0.8rem;
-    margin-top: 4px;
+    gap: 0.6rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--c-border);
 }
 
-.h-section { display: flex; flex-direction: column; gap: 8px; }
-
-/* ── Joueurs liste ── */
-.h-joueurs-liste, .h-scores-liste { display: flex; flex-direction: column; gap: 6px; }
-
-.h-joueur-row, .h-score-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    background: rgba(255,255,255,0.04);
-    border-radius: 10px;
-    font-size: 0.88rem;
+.panel-icon {
+    font-size: 1.2rem;
 }
 
-.h-joueur-pseudo { font-weight: 600; flex: 1; }
-.h-joueur-equipe { font-size: 0.8rem; opacity: 0.7; }
-.h-joueur-kick {
-    background: none;
-    border: none;
-    color: #f87171;
-    cursor: pointer;
-    font-size: 0.85rem;
-    padding: 2px 6px;
-    margin-left: auto;
-}
-
-.h-score-nom { font-weight: 600; flex: 1; }
-.h-score-pts { color: #00d4ff; font-weight: 700; min-width: 60px; text-align: right; }
-.h-score-btns { display: flex; gap: 6px; margin-left: 8px; }
-.h-score-plus, .h-score-moins {
-    padding: 4px 10px;
-    border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.15);
-    background: rgba(255,255,255,0.06);
-    color: inherit;
-    cursor: pointer;
-    font-size: 0.85rem;
-    transition: background 0.15s;
-}
-.h-score-plus:hover  { background: rgba(34,197,94,0.25); }
-.h-score-moins:hover { background: rgba(239,68,68,0.25); }
-
-.h-controls { display: flex; gap: 10px; flex-wrap: wrap; }
-.h-controls button { flex: 1; }
-
-.btn-danger {
-    background: linear-gradient(135deg, #ef4444, #dc2626);
-    color: #fff;
-    border: none;
-    border-radius: 12px;
-    padding: 12px 20px;
+.panel-title {
+    font-family: var(--font-display);
+    font-size: 1rem;
     font-weight: 700;
-    cursor: pointer;
-    transition: opacity 0.2s;
+    color: var(--c-text);
+    flex: 1;
 }
-.btn-danger:hover { opacity: 0.85; }
 
-.h-empty { opacity: 0.45; font-style: italic; font-size: 0.85rem; text-align: center; padding: 10px; }
+/* ── Badge statut ──────────────────────────────────── */
+.statut-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+}
 
-/* ── QR placeholder ── */
-.h-qr { min-height: 20px; margin-top: 8px; font-size: 0.75rem; opacity: 0.5; }
+.statut-lobby    { background: rgba(124, 58, 237, 0.2); color: #a78bfa; }
+.statut-en-cours { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+.statut-terminee { background: rgba(120, 120, 168, 0.2); color: var(--c-text-mute); }
+
+/* ── Alerte partie active ──────────────────────────── */
+.alerte-partie-active {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: var(--radius-sm);
+    padding: 0.7rem 1rem;
+    font-size: 0.85rem;
+    color: var(--c-warning);
+}
+
+/* ── Formulaire ────────────────────────────────────── */
+.form-create {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.form-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--c-text-mute);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ── Mode toggle ────────────────────────────────────── */
+.mode-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.mode-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.8rem 0.5rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-sm);
+    color: var(--c-text-mute);
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all var(--transition);
+}
+
+.mode-btn:hover {
+    background: rgba(255,255,255,0.08);
+    color: var(--c-text);
+}
+
+.mode-btn.mode-btn-active {
+    background: rgba(0, 212, 255, 0.12);
+    border-color: rgba(0, 212, 255, 0.4);
+    color: var(--c-accent);
+}
+
+.mode-btn-icon {
+    font-size: 1.4rem;
+}
+
+/* ── Host role toggle ───────────────────────────────── */
+.host-role-toggle {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-sm);
+    padding: 0.6rem 0.9rem;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.toggle-checkbox {
+    display: none;
+}
+
+.toggle-track {
+    width: 42px;
+    height: 24px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    position: relative;
+    flex-shrink: 0;
+    transition: background var(--transition);
+}
+
+.toggle-checkbox:checked + .toggle-track {
+    background: var(--c-accent);
+}
+
+.toggle-thumb {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    top: 3px;
+    left: 3px;
+    transition: transform var(--transition);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+.toggle-checkbox:checked + .toggle-track .toggle-thumb {
+    transform: translateX(18px);
+}
+
+.toggle-text {
+    font-size: 0.88rem;
+    color: var(--c-text);
+}
+
+.host-pseudo-wrap {
+    margin-top: 0.5rem;
+}
+
+/* ── Ligne ajout (input + bouton) ──────────────────── */
+.add-row {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.add-row .input-primary {
+    flex: 1;
+}
+
+/* ── Tags joueurs ───────────────────────────────────── */
+.joueurs-tags-list,
+.equipes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.joueur-tag {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-sm);
+    padding: 0.4rem 0.7rem;
+    animation: slide-in 0.15s ease;
+}
+
+@keyframes slide-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.joueur-tag-avatar {
+    width: 26px;
+    height: 26px;
+    background: var(--c-accent2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.joueur-tag-nom {
+    flex: 1;
+    font-size: 0.88rem;
+}
+
+.btn-remove {
+    background: none;
+    border: none;
+    color: var(--c-text-mute);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0 0.2rem;
+    line-height: 1;
+    transition: color var(--transition);
+    flex-shrink: 0;
+}
+
+.btn-remove:hover {
+    color: var(--c-danger);
+}
+
+/* ── Équipes form ───────────────────────────────────── */
+.equipe-form-item {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 0.7rem;
+    animation: slide-in 0.15s ease;
+}
+
+.equipe-form-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.equipe-form-nom {
+    flex: 1;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* ── Bouton créer ───────────────────────────────────── */
+.btn-create {
+    margin-top: 0.5rem;
+    padding: 0.8rem;
+    font-size: 0.95rem;
+    font-family: var(--font-display);
+    letter-spacing: 0.04em;
+}
+
+/* ══════════════════════════════════════════════════════
+   PANEL GAME (droite)
+══════════════════════════════════════════════════════ */
+
+/* ── Game info bar ──────────────────────────────────── */
+.game-info-bar {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--c-border);
+}
+
+.game-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.game-info-label {
+    font-size: 0.72rem;
+    color: var(--c-text-mute);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.game-info-val {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--c-text);
+}
+
+.game-info-badge {
+    font-family: var(--font-display);
+    color: var(--c-accent);
+    font-size: 0.82rem;
+}
+
+/* ── Lien rejoindre ─────────────────────────────────── */
+.join-block {
+    background: rgba(0, 212, 255, 0.05);
+    border: 1px solid rgba(0, 212, 255, 0.15);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.join-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--c-text-mute);
+}
+
+.join-link-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.join-link {
+    flex: 1;
+    font-size: 0.8rem;
+    color: var(--c-accent);
+    word-break: break-all;
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(0,212,255,0.3);
+    padding-bottom: 2px;
+}
+
+.join-link:hover {
+    border-bottom-style: solid;
+}
+
+.btn-copy {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.9rem;
+}
+
+.qr-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.5rem;
+}
+
+.qr-img {
+    width: 120px;
+    height: 120px;
+    border-radius: var(--radius-sm);
+    display: block;
+}
+
+.qr-placeholder {
+    width: 120px;
+    height: 120px;
+    background: rgba(255,255,255,0.03);
+    border: 1px dashed var(--c-border);
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    color: var(--c-text-mute);
+    font-size: 0.75rem;
+}
+
+.qr-placeholder-icon {
+    font-size: 2rem;
+}
+
+/* ── Sections game panel ────────────────────────────── */
+.game-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.section-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--c-text-mute);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex: 1;
+}
+
+.count-badge {
+    background: rgba(255,255,255,0.08);
+    color: var(--c-text);
+    font-weight: 700;
+    font-size: 0.78rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 20px;
+    min-width: 24px;
+    text-align: center;
+}
+
+/* ── Joueurs connectés ──────────────────────────────── */
+.joueurs-connectes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.joueur-connecte-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-sm);
+    padding: 0.4rem 0.7rem;
+    animation: slide-in 0.15s ease;
+}
+
+.joueur-connecte-avatar {
+    width: 28px;
+    height: 28px;
+    background: var(--c-accent2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.joueur-connecte-pseudo {
+    flex: 1;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.btn-kick {
+    background: none;
+    border: none;
+    color: var(--c-text-mute);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.3rem;
+    transition: color var(--transition);
+    border-radius: 3px;
+}
+
+.btn-kick:hover {
+    color: var(--c-danger);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* ── Équipes connectées ─────────────────────────────── */
+.equipes-connectees-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.equipe-connectee-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-sm);
+    padding: 0.6rem 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    animation: slide-in 0.15s ease;
+}
+
+.equipe-connectee-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.equipe-connectee-icon { font-size: 0.9rem; }
+
+.equipe-connectee-nom {
+    flex: 1;
+    font-weight: 700;
+    font-size: 0.92rem;
+}
+
+.equipe-connectee-count {
+    font-size: 0.75rem;
+    color: var(--c-text-mute);
+    background: rgba(255,255,255,0.05);
+    padding: 0.1rem 0.4rem;
+    border-radius: 10px;
+}
+
+.equipe-connectee-membres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.membre-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: rgba(124, 58, 237, 0.15);
+    border: 1px solid rgba(124, 58, 237, 0.25);
+    border-radius: 20px;
+    padding: 0.1rem 0.5rem 0.1rem 0.25rem;
+    font-size: 0.78rem;
+}
+
+.membre-avatar {
+    width: 18px;
+    height: 18px;
+    background: var(--c-accent2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.membre-empty {
+    font-size: 0.78rem;
+    color: var(--c-text-mute);
+    font-style: italic;
+}
+
+/* ── Scores ─────────────────────────────────────────── */
+.scores-liste {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.score-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+}
+
+.score-medal {
+    font-size: 1.1rem;
+    width: 28px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.score-nom {
+    min-width: 80px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--c-text);
+}
+
+.score-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.score-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--c-accent2), var(--c-accent));
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+.score-pts {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--c-accent);
+    min-width: 52px;
+    text-align: right;
+}
+
+.score-pts small {
+    font-size: 0.65rem;
+    font-weight: 400;
+    opacity: 0.7;
+}
+
+.score-actions {
+    display: flex;
+    gap: 0.2rem;
+    flex-shrink: 0;
+}
+
+.btn-pts {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    color: var(--c-text);
+    cursor: pointer;
+    font-size: 0.85rem;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+    line-height: 1;
+    padding: 0;
+}
+
+.btn-plus:hover  { background: rgba(16,185,129,0.2); border-color: var(--c-success); color: var(--c-success); }
+.btn-minus:hover { background: rgba(239,68,68,0.2);  border-color: var(--c-danger);  color: var(--c-danger);  }
+
+/* ── Contrôles ──────────────────────────────────────── */
+.game-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--c-border);
+}
+
+.btn-start {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    padding: 0.85rem;
+    letter-spacing: 0.04em;
+}
+
+/* ── Résultats finaux ───────────────────────────────── */
+.resultats-finaux {
+    background: rgba(0, 212, 255, 0.05);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    margin-top: 0.5rem;
+    animation: slide-in 0.3s ease;
+}
+
+.resultats-titre {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    color: var(--c-accent);
+    margin-bottom: 0.7rem;
+    text-align: center;
+    letter-spacing: 0.06em;
+}
+
+.resultat-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.4rem 0;
+    font-size: 0.9rem;
+    border-bottom: 1px solid var(--c-border);
+}
+
+.resultat-row:last-child {
+    border-bottom: none;
+}
+
+.resultat-winner {
+    color: gold;
+    font-weight: 700;
+}
+
+.resultat-medal { font-size: 1.1rem; }
+.resultat-nom   { flex: 1; }
+.resultat-pts   {
+    font-family: var(--font-display);
+    font-size: 0.82rem;
+    color: var(--c-accent);
+}
+
+/* ── Scrollbars ─────────────────────────────────────── */
+.joueurs-connectes-list::-webkit-scrollbar,
+.joueurs-tags-list::-webkit-scrollbar,
+.equipes-list::-webkit-scrollbar {
+    width: 4px;
+}
+.joueurs-connectes-list::-webkit-scrollbar-track,
+.joueurs-tags-list::-webkit-scrollbar-track,
+.equipes-list::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.02);
+}
+.joueurs-connectes-list::-webkit-scrollbar-thumb,
+.joueurs-tags-list::-webkit-scrollbar-thumb,
+.equipes-list::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+}

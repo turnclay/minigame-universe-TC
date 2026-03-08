@@ -1,372 +1,315 @@
-// /js/main.js
+// /public/js/main.js
 // ======================================================
-// 🚀 MAIN.JS — Orchestrateur principal
+// 🚀 MAIN.JS — Point d'entrée & orchestrateur global
 // ======================================================
 
-import { $, show, hide } from "./core/dom.js";
+import { $, show, hide, fadeIn, fadeOut } from "./core/dom.js";
 import { GameState } from "./core/state.js";
-import { getPlayers, addPlayer, saveNewParty, loadGame } from "./core/storage.js";
-import { initNavigation, naviguerVers, naviguerVersAccueil } from "./navigation.js";
-import { afficherScoreboard, masquerScoreboard, resetScoreboard } from "./modules/scoreboard.js";
-import { creerNouvellePartie } from "./modules/parties.js";
+import { socket } from "./core/socket.js";
 
 // ======================================================
-// 🏠 ACCUEIL HUB
+// ⚙️ CONFIGURATION GLOBALE
 // ======================================================
 
-export function initHomeHub() {
-    const stats = _getQuickStats();
+export const APP_CONFIG = {
+    version: "2.0.0",
+    appName: "MiniGame Universe",
+    wsUrl: `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`,
+    routes: {
+        host:   "/host/",
+        join:   "/join/",
+        main:   "/main/",
+    },
+    // Jeux disponibles
+    jeux: [
+        { id: "quiz",       icon: "❓", nom: "Quiz",           desc: "Questions & réponses" },
+        { id: "justeprix",  icon: "💰", nom: "Juste Prix",     desc: "Devine les prix" },
+        { id: "undercover", icon: "🕵️", nom: "Undercover",     desc: "Déniche l'espion" },
+        { id: "lml",        icon: "📖", nom: "Maxi Lettres",   desc: "Mot le plus long" },
+        { id: "mimer",      icon: "🎭", nom: "Mimer/Dessiner", desc: "Fais deviner !" },
+        { id: "pendu",      icon: "🪢", nom: "Le Pendu",       desc: "Devine le mot" },
+        { id: "petitbac",   icon: "📝", nom: "Petit Bac",      desc: "Une lettre, tous les thèmes" },
+        { id: "memoire",    icon: "🧠", nom: "Mémoire Flash",  desc: "Mémorise vite !" },
+        { id: "morpion",    icon: "⭕", nom: "Morpion",        desc: "2-4 joueurs" },
+        { id: "puissance4", icon: "🔴", nom: "Puissance 4",    desc: "Aligne 4 jetons" },
+    ],
+    theme: {
+        default: "dark",
+        storageKey: "mgu_theme"
+    }
+};
 
-    const hub = $("home");
-    if (!hub) return;
+// ======================================================
+// 🌍 ÉTAT GLOBAL DE L'APPLICATION
+// ======================================================
 
-    hub.querySelector(".home-stat-parties")?.childNodes && null;
+export const AppState = {
+    initialized: false,
+    currentPage: null,       // "home" | "host" | "join"
+    currentScreen: null,     // Écran actif dans la page
+    isOnline: navigator.onLine,
+    theme: localStorage.getItem(APP_CONFIG.theme.storageKey) || APP_CONFIG.theme.default,
+    errors: [],
+    loadingAssets: false,
+    assetsLoaded: false,
+};
 
-    const statParties = hub.querySelector("[data-stat='parties']");
-    const statJoueurs = hub.querySelector("[data-stat='joueurs']");
-    const statPoints  = hub.querySelector("[data-stat='points']");
+// ======================================================
+// 🎨 GESTION DU THÈME
+// ======================================================
 
-    if (statParties) statParties.textContent = stats.parties;
-    if (statJoueurs) statJoueurs.textContent = stats.joueurs;
-    if (statPoints)  statPoints.textContent  = stats.points;
+export function setTheme(theme) {
+    AppState.theme = theme;
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem(APP_CONFIG.theme.storageKey, theme);
 }
 
-function _getQuickStats() {
-    try {
-        const parties = JSON.parse(localStorage.getItem("parties") || "[]");
-        const players = JSON.parse(localStorage.getItem("players") || "[]");
-        const scores  = JSON.parse(localStorage.getItem("scores_globaux") || "{}");
-        let totalPts = 0;
-        Object.values(scores).forEach(d => { totalPts += d.total || 0; });
-        return { parties: parties.length, joueurs: players.length, points: totalPts };
-    } catch { return { parties: 0, joueurs: 0, points: 0 }; }
-}
-
-// ======================================================
-// 🎮 SÉLECTION DU JEU
-// ======================================================
-
-export function initChoixJeu() {
-    document.querySelectorAll(".jeu-card[data-jeu]").forEach(card => {
-        card.addEventListener("click", () => {
-            GameState.jeu = card.dataset.jeu;
-            naviguerVers("choix-mode", "choix-jeu");
-        });
-    });
-}
-
-// ======================================================
-// 🔀 CHOIX DU MODE
-// ======================================================
-
-export function initChoixMode() {
-    $("btn-mode-solo")?.addEventListener("click", () => {
-        GameState.mode = "solo";
-        naviguerVers("form-solo", "choix-mode");
-        initFormSolo();
-    });
-
-    $("btn-mode-equipes")?.addEventListener("click", () => {
-        GameState.mode = "team";
-        naviguerVers("form-equipes", "choix-mode");
-        initFormEquipes();
-    });
+function initTheme() {
+    setTheme(AppState.theme);
 }
 
 // ======================================================
-// 📝 FORMULAIRE SOLO
+// 🧭 NAVIGATION GLOBALE (inter-pages)
 // ======================================================
 
-export function initFormSolo() {
-    _renderJoueursCheckboxes();
-
-    $("btn-add-joueur-solo")?.addEventListener("click", () => {
-        const input = $("input-new-joueur-solo");
-        const pseudo = input?.value.trim();
-        if (!pseudo) return;
-        addPlayer(pseudo);
-        input.value = "";
-        _renderJoueursCheckboxes();
-    });
-
-    $("input-new-joueur-solo")?.addEventListener("keydown", e => {
-        if (e.key === "Enter") $("btn-add-joueur-solo")?.click();
-    });
-
-    $("btn-start-solo")?.addEventListener("click", _lancerPartieSolo);
-}
-
-function _renderJoueursCheckboxes() {
-    const container = $("liste-joueurs-solo");
-    if (!container) return;
-
-    const joueurs = getPlayers();
-
-    if (joueurs.length === 0) {
-        container.innerHTML = `<p class="empty-list">Aucun joueur — ajoutez-en ci-dessus</p>`;
+/**
+ * Redirige vers une page de l'application
+ * @param {"host"|"join"|"main"} page
+ * @param {Object} params - Paramètres URL optionnels
+ */
+export function naviguerPage(page, params = {}) {
+    const base = APP_CONFIG.routes[page];
+    if (!base) {
+        console.error("[MAIN] Page inconnue:", page);
         return;
     }
 
-    container.innerHTML = joueurs.map(j => `
-        <label class="joueur-checkbox-label">
-            <input type="checkbox" name="joueur-solo" value="${_esc(j)}" checked>
-            <span class="joueur-check-avatar">${j.charAt(0).toUpperCase()}</span>
-            <span class="joueur-check-nom">${_esc(j)}</span>
-        </label>
-    `).join("");
+    const url = new URL(base, location.origin);
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+
+    console.log(`[MAIN] Navigation → ${url.pathname}`);
+    location.href = url.toString();
 }
 
-function _lancerPartieSolo() {
-    const checked = [...document.querySelectorAll('input[name="joueur-solo"]:checked')]
-        .map(cb => cb.value);
+/**
+ * Détecte sur quelle page on se trouve
+ */
+export function detecterPageActuelle() {
+    const path = location.pathname.replace(/\/+$/, "");
+    if (path === "" || path === "/main" || path.startsWith("/main")) return "main";
+    if (path.startsWith("/host")) return "host";
+    if (path.startsWith("/join")) return "join";
+    return "unknown";
+}
 
-    if (checked.length === 0) {
-        alert("Sélectionne au moins un joueur."); return;
-    }
-
-    GameState.joueurs = checked;
-    GameState.scores  = {};
-
-    const nomPartie = $("input-nom-partie-solo")?.value.trim() || `${GameState.jeu} — Solo`;
-
-    const partie = creerNouvellePartie({
-        jeu:       GameState.jeu,
-        mode:      "solo",
-        nomPartie,
-        joueurs:   checked,
-        equipes:   [],
-    });
-
-    resetScoreboard();
-    lancerJeu(GameState.jeu);
+/**
+ * Récupère les paramètres URL
+ */
+export function getUrlParams() {
+    const params = {};
+    new URLSearchParams(location.search).forEach((v, k) => { params[k] = v; });
+    return params;
 }
 
 // ======================================================
-// 📝 FORMULAIRE ÉQUIPES
+// 🌐 GESTION DE LA CONNEXION RÉSEAU
 // ======================================================
 
-export function initFormEquipes() {
-    GameState.equipes = [];
-    _renderEquipesForm();
+function initNetworkStatus() {
+    const updateStatus = (online) => {
+        AppState.isOnline = online;
+        document.body.classList.toggle("offline", !online);
 
-    $("btn-add-equipe")?.addEventListener("click", () => {
-        const input = $("input-nom-equipe");
-        const nom = input?.value.trim();
-        if (!nom) return;
-        if (GameState.equipes.some(e => e.nom.toLowerCase() === nom.toLowerCase())) {
-            alert("Ce nom existe déjà."); return;
+        const banner = document.getElementById("offline-banner");
+        if (banner) {
+            banner.hidden = online;
         }
-        GameState.equipes.push({ nom, joueurs: [] });
-        input.value = "";
-        _renderEquipesForm();
-    });
 
-    $("input-nom-equipe")?.addEventListener("keydown", e => {
-        if (e.key === "Enter") $("btn-add-equipe")?.click();
-    });
-
-    $("btn-start-equipes")?.addEventListener("click", _lancerPartieEquipes);
-}
-
-function _renderEquipesForm() {
-    const container = $("liste-equipes-form");
-    if (!container) return;
-
-    const joueurs = getPlayers();
-
-    if (GameState.equipes.length === 0) {
-        container.innerHTML = `<p class="empty-list">Créez au moins 2 équipes</p>`;
-        return;
-    }
-
-    container.innerHTML = GameState.equipes.map((eq, i) => `
-        <div class="equipe-form-item">
-            <div class="equipe-form-header">
-                <span class="equipe-form-nom">🛡️ ${_esc(eq.nom)}</span>
-                <button class="btn-del-equipe" data-i="${i}">✖</button>
-            </div>
-            <div class="equipe-form-membres">
-                ${(eq.joueurs || []).map(j => `
-                    <span class="equipe-membre-tag">
-                        ${_esc(j)}
-                        <button class="btn-del-membre" data-equipe="${i}" data-joueur="${_esc(j)}">×</button>
-                    </span>
-                `).join("")}
-            </div>
-            <div class="equipe-form-add">
-                <select class="select-primary equipe-select-joueur" data-i="${i}">
-                    <option value="">＋ Ajouter un membre</option>
-                    ${joueurs.filter(j => !eq.joueurs?.includes(j)).map(j =>
-                        `<option value="${_esc(j)}">${_esc(j)}</option>`
-                    ).join("")}
-                </select>
-            </div>
-        </div>
-    `).join("");
-
-    // Supprimer équipe
-    container.querySelectorAll(".btn-del-equipe").forEach(btn => {
-        btn.addEventListener("click", () => {
-            GameState.equipes.splice(parseInt(btn.dataset.i), 1);
-            _renderEquipesForm();
-        });
-    });
-
-    // Supprimer membre
-    container.querySelectorAll(".btn-del-membre").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const i = parseInt(btn.dataset.equipe);
-            GameState.equipes[i].joueurs = GameState.equipes[i].joueurs.filter(j => j !== btn.dataset.joueur);
-            _renderEquipesForm();
-        });
-    });
-
-    // Ajouter membre
-    container.querySelectorAll(".equipe-select-joueur").forEach(sel => {
-        sel.addEventListener("change", () => {
-            const i = parseInt(sel.dataset.i);
-            const joueur = sel.value;
-            if (!joueur) return;
-            if (!GameState.equipes[i].joueurs) GameState.equipes[i].joueurs = [];
-            if (!GameState.equipes[i].joueurs.includes(joueur)) {
-                GameState.equipes[i].joueurs.push(joueur);
-            }
-            _renderEquipesForm();
-        });
-    });
-}
-
-function _lancerPartieEquipes() {
-    if (GameState.equipes.length < 2) {
-        alert("Il faut au moins 2 équipes."); return;
-    }
-
-    const joueursSolo = GameState.equipes.flatMap(e => e.joueurs || []);
-    const nomPartie = $("input-nom-partie-equipes")?.value.trim() || `${GameState.jeu} — Équipes`;
-
-    GameState.joueurs = joueursSolo;
-    GameState.scores  = {};
-
-    creerNouvellePartie({
-        jeu:       GameState.jeu,
-        mode:      "team",
-        nomPartie,
-        joueurs:   joueursSolo,
-        equipes:   GameState.equipes,
-    });
-
-    resetScoreboard();
-    lancerJeu(GameState.jeu);
-}
-
-// ======================================================
-// 🎮 LANCEMENT DES JEUX
-// ======================================================
-
-export async function lancerJeu(jeu) {
-    GameState.jeuActuel = jeu;
-
-    // Cacher tous les écrans de formulaire
-    ["choix-jeu", "choix-mode", "form-solo", "form-equipes", "liste-parties"].forEach(id => hide(id));
-
-    // Afficher le conteneur principal
-    show("container");
-
-    // Cas spécial : Undercover a ses propres sous-écrans
-    if (jeu === "undercover") {
-        _lancerUndercover();
-        return;
-    }
-
-    // Afficher l'écran du jeu
-    const ecranJeu = jeu === "mimer" ? "mimer" : jeu;
-    show(ecranJeu);
-
-    // Afficher le scoreboard
-    const participants = GameState.mode === "team"
-        ? GameState.equipes.map(e => e.nom)
-        : GameState.joueurs;
-    participants.forEach(p => { if (!GameState.scores[p]) GameState.scores[p] = 0; });
-    afficherScoreboard();
-
-    // Initialiser le jeu
-    try {
-        switch (jeu) {
-            case "quiz":       await _importAndInit("./games/quiz.js",       "initialiserQuiz");       break;
-            case "justeprix":  await _importAndInit("./games/justeprix.js",  "initialiserJustePrix");  break;
-            case "lml":        await _importAndInit("./games/lml.js",        "initialiserLML");        break;
-            case "pendu":      await _importAndInit("./games/pendu.js",      "initialiserPendu");      break;
-            case "petitbac":   await _importAndInit("./games/petitbac.js",   "initialiserPetitBac");   break;
-            case "memoire":    await _importAndInit("./games/memoire.js",    "initialiserMemoire");    break;
-            case "morpion":    await _importAndInit("./games/morpion.js",    "initialiserMorpion");    break;
-            case "puissance4": await _importAndInit("./games/puissance4.js", "initialiserPuissance4"); break;
-            case "mimer":      await _importAndInit("./games/mimedessine.js","initialiserMimer");      break;
-            default:
-                console.warn("[MAIN] Jeu inconnu:", jeu);
+        if (!online) {
+            console.warn("[MAIN] Connexion perdue");
+        } else {
+            console.log("[MAIN] Connexion rétablie");
         }
-    } catch (err) {
-        console.error("[MAIN] Erreur lancement jeu:", err);
+    };
+
+    window.addEventListener("online",  () => updateStatus(true));
+    window.addEventListener("offline", () => updateStatus(false));
+    updateStatus(navigator.onLine);
+}
+
+// ======================================================
+// 🔠 GESTION DES ERREURS GLOBALES
+// ======================================================
+
+function initErrorHandling() {
+    window.addEventListener("error", (event) => {
+        console.error("[MAIN] Erreur globale:", event.error);
+        AppState.errors.push({
+            message: event.message,
+            filename: event.filename,
+            timestamp: Date.now()
+        });
+    });
+
+    window.addEventListener("unhandledrejection", (event) => {
+        console.error("[MAIN] Promise rejetée:", event.reason);
+        AppState.errors.push({
+            message: String(event.reason),
+            type: "unhandledRejection",
+            timestamp: Date.now()
+        });
+    });
+}
+
+// ======================================================
+// 🖼️ CHARGEMENT DES ASSETS
+// ======================================================
+
+export async function preloadAssets(assets = []) {
+    AppState.loadingAssets = true;
+
+    const promises = assets.map(src => new Promise(resolve => {
+        if (src.endsWith(".png") || src.endsWith(".jpg") || src.endsWith(".webp") || src.endsWith(".svg")) {
+            const img = new Image();
+            img.onload  = resolve;
+            img.onerror = resolve; // Ne pas bloquer sur erreur
+            img.src = src;
+        } else {
+            resolve(); // Type non géré → résoudre immédiatement
+        }
+    }));
+
+    await Promise.allSettled(promises);
+    AppState.loadingAssets = false;
+    AppState.assetsLoaded  = true;
+    console.log("[MAIN] Assets chargés.");
+}
+
+// ======================================================
+// 🔔 SYSTÈME DE NOTIFICATIONS TOAST
+// ======================================================
+
+let _toastContainer = null;
+
+function initToasts() {
+    _toastContainer = document.getElementById("toast-container");
+    if (!_toastContainer) {
+        _toastContainer = document.createElement("div");
+        _toastContainer.id = "toast-container";
+        _toastContainer.className = "toast-container";
+        document.body.appendChild(_toastContainer);
     }
 }
 
-async function _importAndInit(path, fnName) {
-    // Essayer window.* d'abord (jeux avec window export)
-    if (typeof window[fnName] === "function") {
-        await window[fnName]();
-        return;
-    }
-    // Sinon import dynamique
-    const mod = await import(path);
-    if (typeof mod[fnName] === "function") {
-        await mod[fnName]();
-    } else {
-        console.warn(`[MAIN] ${fnName} introuvable dans ${path}`);
-    }
+/**
+ * Affiche un toast de notification
+ * @param {string} message
+ * @param {"info"|"success"|"error"|"warning"} type
+ * @param {number} duration - ms
+ */
+export function showToast(message, type = "info", duration = 3000) {
+    if (!_toastContainer) initToasts();
+
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <span class="toast-icon">${{
+            info:    "ℹ️",
+            success: "✅",
+            error:   "❌",
+            warning: "⚠️"
+        }[type] || "ℹ️"}</span>
+        <span class="toast-msg">${_esc(message)}</span>
+    `;
+
+    _toastContainer.appendChild(toast);
+
+    // Animation entrée
+    requestAnimationFrame(() => toast.classList.add("toast-visible"));
+
+    setTimeout(() => {
+        toast.classList.remove("toast-visible");
+        toast.classList.add("toast-hiding");
+        setTimeout(() => toast.remove(), 400);
+    }, duration);
 }
 
-function _lancerUndercover() {
-    show("undercover-config");
-    const { initialiserUndercover } = window;
-    if (typeof initialiserUndercover === "function") {
-        // Déjà initialisé automatiquement dans le module
-    }
-}
+// ======================================================
+// 🎮 ACTIONS DE NAVIGATION DEPUIS L'ACCUEIL
+// ======================================================
 
-// Expose pour modules externes
-window._mainModule = { lancerJeu };
-window.lancerJeu   = lancerJeu;
-window.afficherAccueilJeux = naviguerVersAccueil;
+function initHomeActions() {
+    // Bouton "Host" → /host/
+    document.getElementById("btn-go-host")?.addEventListener("click", () => {
+        naviguerPage("host");
+    });
+
+    // Bouton "Rejoindre" → /join/
+    document.getElementById("btn-go-join")?.addEventListener("click", () => {
+        naviguerPage("join");
+    });
+}
 
 // ======================================================
 // 🔒 PRIVÉ
 // ======================================================
 
 function _esc(str) {
-    return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
 }
 
 // ======================================================
-// 🚀 INIT AU CHARGEMENT
+// 🚀 INITIALISATION PRINCIPALE
 // ======================================================
 
-document.addEventListener("DOMContentLoaded", () => {
-    initNavigation();
+async function init() {
+    if (AppState.initialized) return;
 
-    // Boutons accueil → Jouer
-    $("btn-jouer")?.addEventListener("click", () => naviguerVers("choix-jeu", "home"));
+    console.log(`[MAIN] 🚀 MiniGame Universe v${APP_CONFIG.version} — démarrage`);
 
-    // Boutons home
-    $("btn-home-stats")?.addEventListener("click", () => {
-        import("./navigation.js").then(m => m.afficherStatsDashboard());
-    });
+    // 1. Thème
+    initTheme();
 
-    initChoixJeu();
-    initChoixMode();
-    initHomeHub();
+    // 2. Gestion des erreurs
+    initErrorHandling();
 
-    // Restaurer partie en cours si disponible
-    const partieEnCours = loadGame();
-    if (partieEnCours) {
-        console.log("[MAIN] Partie en cours détectée:", partieEnCours.id);
+    // 3. Réseau
+    initNetworkStatus();
+
+    // 4. Toasts
+    initToasts();
+
+    // 5. Détecter la page
+    AppState.currentPage = detecterPageActuelle();
+    console.log(`[MAIN] Page actuelle : ${AppState.currentPage}`);
+
+    // 6. Précharger les assets de base
+    await preloadAssets([
+        "/images/LogoMiniGame.png"
+    ]);
+
+    // 7. Actions de la page d'accueil si applicable
+    if (AppState.currentPage === "main" || AppState.currentPage === "unknown") {
+        initHomeActions();
     }
-});
+
+    AppState.initialized = true;
+    document.body.classList.add("app-ready");
+    console.log("[MAIN] ✅ Application initialisée.");
+}
+
+// Lancement dès que le DOM est prêt
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+} else {
+    init();
+}
+
+// Exposer globalement pour les modules qui en ont besoin
+window.AppConfig = APP_CONFIG;
+window.AppState  = AppState;
+window.showToast = showToast;
+window.naviguerPage = naviguerPage;
