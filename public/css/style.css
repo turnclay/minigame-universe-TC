@@ -516,9 +516,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important;
     padding: 0; min-height: calc(100vh - var(--nav-h));
     justify-content: center; gap: 0; max-width: 100%;
 }
-/* Masqué par défaut — JS le révèle selon la navigation */
-#screen-home { display: none; }
-#screen-home.visible { display: flex; }
+/* Affiché par goHome() via el.hidden = false — aucune règle ID nécessaire ici */
 
 .home-hero {
     display: flex; flex-direction: column; align-items: center;

@@ -12,9 +12,19 @@
 //   • renderStatsBar() affiche aussi le nombre de joueurs créés
 // ======================================================
 
-import { afficherStatistiques }   from './menu/statistiques.js';
-import { afficherGestionJoueurs } from './menu/joueurs.js';
-import { afficherGestionEquipes } from './menu/equipes.js';
+// ── Imports optionnels — ne bloquent pas si les fichiers n'existent pas ──
+// Les imports statiques ES6 font planter TOUT le module si un fichier manque.
+// On utilise des imports dynamiques avec fallback pour éviter ce problème.
+let afficherStatistiques   = () => console.warn('[MAIN] menu/statistiques.js non trouvé');
+let afficherGestionJoueurs = () => console.warn('[MAIN] menu/joueurs.js non trouvé');
+let afficherGestionEquipes = () => console.warn('[MAIN] menu/equipes.js non trouvé');
+
+// Charge les modules menu en arrière-plan — ne bloque pas init()
+Promise.allSettled([
+    import('./menu/statistiques.js').then(m => { afficherStatistiques   = m.afficherStatistiques;   }).catch(() => {}),
+    import('./menu/joueurs.js').then(m      => { afficherGestionJoueurs = m.afficherGestionJoueurs; }).catch(() => {}),
+    import('./menu/equipes.js').then(m      => { afficherGestionEquipes = m.afficherGestionEquipes; }).catch(() => {}),
+]);
 
 // ── Méta-données des 10 jeux ─────────────────────────────
 const JEUX = [
