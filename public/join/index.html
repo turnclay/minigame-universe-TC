@@ -1,188 +1,510 @@
 <!DOCTYPE html>
-<html lang="fr" data-theme="dark">
+<html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rejoindre une partie — MiniGame Universe</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="/css/player.css">
-  <link rel="icon" type="image/png" href="/images/LogoMiniGame.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rejoindre - Mini Game Universe</title>
+    <link rel="stylesheet" href="../styles/main.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #333;
+        }
+
+        .join-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .join-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .join-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .join-header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        .join-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* SECTION PARTIES */
+        .join-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .join-section h2 {
+            font-size: 1.3rem;
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .parties-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1rem;
+            background: #f9f9f9;
+        }
+
+        .parties-list.empty {
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            text-align: center;
+            color: #999;
+        }
+
+        .parties-list.empty p {
+            font-size: 0.95rem;
+        }
+
+        .partie-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .partie-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102,126,234,0.2);
+            transform: translateX(4px);
+        }
+
+        .partie-item.selected {
+            background: linear-gradient(135deg, #667eea15, #764ba215);
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+        }
+
+        .partie-icon {
+            font-size: 1.8rem;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .partie-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .partie-nom {
+            font-weight: 600;
+            color: #333;
+            word-break: break-word;
+            font-size: 0.95rem;
+        }
+
+        .partie-meta {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 0.25rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .partie-badge {
+            display: inline-block;
+            background: #667eea20;
+            color: #667eea;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .partie-joueurs {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .partie-joueurs-avatars {
+            display: flex;
+            margin-left: auto;
+            gap: 0.3rem;
+        }
+
+        .avatar-mini {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* SECTION FORMULAIRE */
+        .join-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+        }
+
+        .form-group input {
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        }
+
+        .form-group input:disabled {
+            background: #f5f5f5;
+            color: #999;
+        }
+
+        .form-info {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .pseudo-counter {
+            font-size: 0.75rem;
+            color: #aaa;
+            margin-top: -0.4rem;
+        }
+
+        .error-message {
+            padding: 0.75rem;
+            background: #fee;
+            border: 1px solid #fcc;
+            border-radius: 6px;
+            color: #c33;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            padding: 0.75rem;
+            background: #efe;
+            border: 1px solid #cfc;
+            border-radius: 6px;
+            color: #3c3;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .selected-info {
+            padding: 1rem;
+            background: #f0f4ff;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            font-size: 0.9rem;
+            color: #667eea;
+            display: none;
+        }
+
+        .selected-info.show {
+            display: block;
+        }
+
+        .selected-info strong {
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            grid-column: 1 / -1;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102,126,234,0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            border: 2px solid #e0e0e0;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+            border-color: #667eea;
+        }
+
+        .btn-refresh {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 0.5rem 1rem;
+            align-self: flex-start;
+        }
+
+        .btn-refresh:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        /* TOAST */
+        .toast-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .toast {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 280px;
+            opacity: 0;
+            transform: translateX(400px);
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast-success { border-left: 4px solid #4caf50; }
+        .toast-error { border-left: 4px solid #f44336; }
+        .toast-info { border-left: 4px solid #2196f3; }
+        .toast-warning { border-left: 4px solid #ff9800; }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .join-content {
+                grid-template-columns: 1fr;
+            }
+
+            .join-header h1 {
+                font-size: 1.8rem;
+            }
+
+            .parties-list {
+                min-height: 250px;
+                max-height: 350px;
+            }
+
+            .partie-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .partie-joueurs-avatars {
+                margin-left: 0;
+            }
+
+            .button-group {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* LOADING STATE */
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            color: #667eea;
+            font-weight: 500;
+        }
+    </style>
 </head>
-<body class="player-body">
-
-<!-- ══ TOASTS ══════════════════════════════════════════ -->
-<div id="toast-container" class="toast-container"></div>
-
-<!-- ══════════════════════════════════════════════════════
-     ÉCRAN 1 : REJOINDRE UNE PARTIE
-     Visible par défaut — masqué après JOIN_OK
-════════════════════════════════════════════════════════ -->
-<div id="player-join" class="player-screen">
-  <div class="join-card">
-
-    <!-- Retour accueil -->
-    <a href="/" class="join-back">← MiniGame Universe</a>
-
-    <!-- Logo -->
-    <img src="/images/LogoMiniGame.png" alt="Logo" class="join-logo"
-         onerror="this.style.display='none'">
-
-    <!-- Titre -->
-    <h1 class="join-title">
-      Rejoindre<br>
-      <span class="join-title-accent">une partie</span>
-    </h1>
-
-    <!-- Formulaire -->
-    <div class="join-form">
-
-      <!-- Sélection de la partie -->
-      <div class="join-field">
-        <div class="join-field-header">
-          <label for="p-partie-select" class="join-label-text">Partie</label>
-          <!-- Bouton rafraîchir la liste -->
-          <button id="p-btn-refresh" class="btn-refresh" title="Actualiser la liste" aria-label="Actualiser">
-            🔄
-          </button>
+<body>
+    <div class="join-container">
+        <!-- HEADER -->
+        <div class="join-header">
+            <h1>🎮 Rejoindre une partie</h1>
+            <p>Sélectionnez une partie existante et commencez à jouer !</p>
         </div>
-        <!-- ✅ Select alimenté dynamiquement par player.js via socket GET_PARTIES -->
-        <select id="p-partie-select" class="select-primary">
-          <option value="">Chargement des parties…</option>
-        </select>
-        <!-- Message d'état (chargement / vide) -->
-        <span id="p-parties-loading" class="join-loading" hidden>Connexion au serveur…</span>
-      </div>
 
-      <!-- Pseudo -->
-      <div class="join-field">
-        <label for="p-pseudo" class="join-label-text">Votre pseudo</label>
-        <input
-          type="text"
-          id="p-pseudo"
-          class="input-primary"
-          placeholder="Ex : Alice"
-          maxlength="20"
-          autocomplete="off"
-          autocorrect="off"
-          autocapitalize="words"
-          spellcheck="false"
-        >
-      </div>
+        <!-- CONTENU PRINCIPAL -->
+        <div class="join-content">
+            <!-- COLONNE GAUCHE: PARTIES DISPONIBLES -->
+            <div class="join-section">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2>📋 Parties disponibles</h2>
+                    <button class="btn btn-refresh" id="join-btn-refresh" title="Actualiser la liste">🔄</button>
+                </div>
 
-      <!-- Message d'erreur -->
-      <div id="p-join-error" class="join-error" hidden></div>
+                <div id="join-parties-list" class="parties-list empty">
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <span>Chargement des parties…</span>
+                    </div>
+                </div>
+            </div>
 
-      <!-- Bouton rejoindre -->
-      <button id="p-btn-join" class="btn-primary btn-join-action">
-        🎮 Rejoindre
-      </button>
+            <!-- COLONNE DROITE: FORMULAIRE -->
+            <div class="join-section">
+                <h2>👤 Rejoindre</h2>
 
-      <!-- Lien si aucune partie (affiché par JS si la liste est vide) -->
-      <p id="p-no-game-hint" class="join-empty" hidden>
-        Aucune partie active pour l'instant.<br>
-        <a href="/" class="join-empty-link">Créer une partie depuis l'accueil →</a>
-      </p>
+                <form class="join-form" id="join-form">
+                    <!-- PSEUDO -->
+                    <div class="form-group">
+                        <label for="join-pseudo">Votre pseudo *</label>
+                        <input
+                            type="text"
+                            id="join-pseudo"
+                            placeholder="ex: MasterGamer123"
+                            maxlength="20"
+                            autocomplete="off"
+                        >
+                        <div class="pseudo-counter"><span id="join-pseudo-count">0</span>/20</div>
+                        <div class="form-info">2-20 caractères, lettres, chiffres, tirets et underscores</div>
+                    </div>
 
-    </div>
-  </div>
-</div>
+                    <!-- PARTIE SÉLECTIONNÉE -->
+                    <div class="selected-info" id="join-selected-info">
+                        <strong>Partie sélectionnée:</strong>
+                        <span id="join-selected-name">-</span>
+                        <span id="join-selected-game" style="font-size: 0.85rem; opacity: 0.8; margin-top: 0.2rem;"></span>
+                    </div>
 
-<!-- ══════════════════════════════════════════════════════
-     ÉCRAN 2 : LOBBY — En attente du lancement
-     Visible après JOIN_OK, masqué après GAME_STARTED
-════════════════════════════════════════════════════════ -->
-<div id="player-lobby" class="player-screen" hidden>
-  <div class="lobby-card">
+                    <!-- MESSAGES D'ERREUR/SUCCÈS -->
+                    <div class="error-message" id="join-error-msg"></div>
+                    <div class="success-message" id="join-success-msg"></div>
 
-    <!-- Identité du joueur -->
-    <div class="lobby-avatar-block">
-      <div class="lobby-avatar" id="lobby-avatar-letter">?</div>
-      <div class="lobby-pseudo-block">
-        <div class="lobby-pseudo" id="lobby-pseudo-text">—</div>
-        <div class="lobby-equipe" id="lobby-equipe-text"></div>
-      </div>
-    </div>
-
-    <!-- Badges jeu / mode -->
-    <div class="lobby-game-info">
-      <span class="badge-jeu"  id="lobby-badge-jeu">—</span>
-      <span class="badge-mode" id="lobby-badge-mode">—</span>
-    </div>
-
-    <!-- Indicateur d'attente -->
-    <div class="lobby-waiting">
-      <div class="lobby-spinner"></div>
-      <span>En attente du lancement par le host…</span>
-    </div>
-
-    <!-- Liste des joueurs connectés -->
-    <div class="lobby-joueurs-section">
-      <h3>Joueurs connectés</h3>
-      <div class="lobby-joueurs-liste" id="lobby-joueurs-liste">
-        <span class="lobby-joueur-empty">En attente…</span>
-      </div>
+                    <!-- BOUTONS -->
+                    <div class="button-group">
+                        <button
+                            type="button"
+                            class="btn btn-primary"
+                            id="join-btn-submit"
+                            disabled
+                        >
+                            🚀 Rejoindre la partie
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            id="join-btn-create"
+                        >
+                            ➕ Créer une partie
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════════════════
-     ÉCRAN 3 : JEU EN COURS
-     Visible après GAME_STARTED
-     player.js charge dynamiquement /games/{jeu}/game.js
-     et appelle initGame(session, socket)
-════════════════════════════════════════════════════════ -->
-<div id="player-game" class="player-screen" hidden>
-
-  <!-- En-tête avec infos de partie -->
-  <div class="player-game-header">
-    <div class="player-game-info">
-      <span id="player-game-jeu" class="badge-jeu">—</span>
-      <span id="player-game-mode" class="badge-mode">—</span>
-    </div>
-    <!-- Mini-scoreboard live (mis à jour par SCORES_UPDATE) -->
-    <div id="player-mini-scoreboard" class="player-mini-sb" hidden></div>
-  </div>
-
-  <!-- Zone de jeu — injectée par game.js -->
-  <div id="player-game-area" class="player-game-main">
-    <p style="text-align:center;padding:2rem;color:var(--c-text-mute)">
-      Chargement du jeu…
-    </p>
-  </div>
-
-</div>
-
-<!-- ══════════════════════════════════════════════════════
-     ÉCRAN 4 : RÉSULTATS FINAUX
-     Visible après GAME_ENDED
-════════════════════════════════════════════════════════ -->
-<div id="player-results" class="player-screen" hidden>
-  <div class="results-card">
-
-    <h1>🏆 Résultats</h1>
-    <p id="results-message" class="results-message"></p>
-
-    <!-- Classement final -->
-    <div id="results-liste" class="results-list"></div>
-
-    <!-- Actions post-partie -->
-    <div class="results-actions">
-      <button id="btn-rejoin" class="btn-secondary">
-        🔄 Rejoindre une autre partie
-      </button>
-      <a href="/" class="btn-ghost">
-        🏠 Retour à l'accueil
-      </a>
-    </div>
-
-  </div>
-</div>
-
-<!-- ══ MODULE PLAYER ═══════════════════════════════════ -->
-<script type="module" src="/js/player.js"></script>
-
+    <!-- SCRIPTS -->
+    <script type="module" src="join.js"></script>
 </body>
 </html>
