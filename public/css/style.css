@@ -692,3 +692,53 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important;
     .mfs-kpi-grid   { grid-template-columns: repeat(2, 1fr); }
     .mfs-jeux-grid  { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ══════════════════════════════════════════════════════
+   BADGES STATUT PARTIES
+   ══════════════════════════════════════════════════════ */
+.badge-statut {
+    display: inline-flex; align-items: center;
+    padding: 0.1rem 0.5rem; border-radius: 20px;
+    font-size: 0.68rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    vertical-align: middle; margin-left: 0.4rem;
+}
+.badge-en-cours {
+    background: rgba(0,212,255,0.12); color: var(--c-accent);
+    border: 1px solid rgba(0,212,255,0.25);
+}
+.badge-terminee {
+    background: rgba(120,120,168,0.12); color: var(--c-text-mute);
+    border: 1px solid rgba(120,120,168,0.2);
+}
+
+/* ══════════════════════════════════════════════════════
+   PLAYER — Mini scoreboard live (dans player-game-header)
+   ══════════════════════════════════════════════════════ */
+.player-mini-sb {
+    display: flex; flex-direction: column; gap: 4px;
+    min-width: 160px;
+}
+.sb-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3px 8px; border-radius: 6px;
+    font-size: 0.8rem; background: rgba(255,255,255,0.04);
+}
+.sb-row.sb-moi {
+    background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.2);
+}
+.sb-medal { font-size: 0.9rem; width: 20px; text-align: center; }
+.sb-nom   { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-pts   { font-weight: 700; color: var(--c-accent); font-family: var(--font-display); font-size: 0.78rem; }
+
+/* ══════════════════════════════════════════════════════
+   PLAYER — Résultats finaux
+   ══════════════════════════════════════════════════════ */
+.results-message {
+    text-align: center; font-size: 1rem;
+    color: var(--c-text-mute); margin: 0.5rem 0 1.2rem;
+}
+.results-actions {
+    display: flex; flex-direction: column; gap: 0.6rem;
+    margin-top: 1.5rem;
+}

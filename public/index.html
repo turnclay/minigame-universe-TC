@@ -11,39 +11,50 @@
 </head>
 <body>
 
-<!-- ══ OFFLINE BANNER ═══════════════════════════════════ -->
+<!-- ══ BANNER HORS-LIGNE ════════════════════════════════ -->
 <div id="offline-banner" class="offline-banner" hidden>
   ⚠️ Connexion perdue — vérifiez votre réseau
 </div>
 
 <!-- ══════════════════════════════════════════════════════
-     🏠 BARRE DE NAVIGATION PERMANENTE
-     Le menu ☰ est hidden par défaut dans le HTML
-═════════════════════════════════════════════════════════= -->
+     🔝 BARRE DE NAVIGATION PERMANENTE
+     • Bouton ⬅ : affiché sur tout écran sauf l'accueil
+     • Bouton 🏠 : retour accueil depuis n'importe où
+     • Bouton ☰ : seul déclencheur du menu latéral
+════════════════════════════════════════════════════════ -->
 <div class="top-nav-bar">
 
-  <button class="btn-retour-permanent" id="btn-retour-permanent" aria-label="Retour" hidden>⬅️</button>
+  <!-- Retour contextuel — caché sur l'accueil par JS -->
+  <button class="btn-retour-permanent" id="btn-retour-permanent" aria-label="Retour" hidden>
+    ⬅️
+  </button>
 
-  <a class="topbar-logo" href="#" aria-label="Accueil">
-    <img src="/images/LogoMiniGame.png" alt="Logo" class="topbar-logo-img" onerror="this.style.display='none'">
+  <!-- Logo → retour accueil -->
+  <a class="topbar-logo" href="#" aria-label="MiniGame Universe — Accueil">
+    <img src="/images/LogoMiniGame.png" alt="Logo MiniGame" class="topbar-logo-img"
+         onerror="this.style.display='none'">
     <span class="topbar-logo-text">MiniGame</span>
   </a>
 
+  <!-- Fil d'Ariane dynamique (géré par main.js) -->
   <div class="topbar-breadcrumb" id="topbar-breadcrumb"></div>
 
+  <!-- Retour accueil -->
   <button class="btn-home-permanent" id="btn-home-permanent" aria-label="Accueil">🏠</button>
 
+  <!-- Musique de fond -->
   <audio id="bg-music" src="/audio/ambiance.mp3" loop preload="none"></audio>
   <button class="btn-music" id="toggle-music" aria-label="Musique">🔇</button>
 
-  <button class="btn-menu-permanent" id="btn-menu-permanent" aria-label="Menu">☰</button>
+  <!-- Ouvrir le Centre de contrôle -->
+  <button class="btn-menu-permanent" id="btn-menu-permanent" aria-label="Ouvrir le menu">☰</button>
 
 </div>
 
 <!-- ══════════════════════════════════════════════════════
-     📋 CENTRE DE CONTRÔLE — hidden au chargement
+     📋 CENTRE DE CONTRÔLE — hidden par défaut
      S'ouvre UNIQUEMENT via le bouton ☰
-═════════════════════════════════════════════════════════= -->
+════════════════════════════════════════════════════════ -->
 <div class="menu-overlay" id="menu-overlay" hidden></div>
 
 <nav class="menu-panel" id="menu-panel" hidden aria-label="Centre de contrôle">
@@ -53,19 +64,24 @@
   </div>
   <div class="menu-nav">
     <button class="menu-item" id="menu-reglages">
-      <span class="menu-icon">⚙️</span><span class="menu-text">Réglages</span>
+      <span class="menu-icon">⚙️</span>
+      <span class="menu-text">Réglages</span>
     </button>
     <button class="menu-item" id="menu-home">
-      <span class="menu-icon">📊</span><span class="menu-text">Statistiques</span>
+      <span class="menu-icon">📊</span>
+      <span class="menu-text">Statistiques</span>
     </button>
     <button class="menu-item" id="menu-parties">
-      <span class="menu-icon">📜</span><span class="menu-text">Parties enregistrées</span>
+      <span class="menu-icon">📜</span>
+      <span class="menu-text">Parties enregistrées</span>
     </button>
     <button class="menu-item" id="menu-joueurs">
-      <span class="menu-icon">👤</span><span class="menu-text">Gestion des joueurs</span>
+      <span class="menu-icon">👤</span>
+      <span class="menu-text">Gestion des joueurs</span>
     </button>
     <button class="menu-item" id="menu-equipes">
-      <span class="menu-icon">⚔️</span><span class="menu-text">Gestion des équipes</span>
+      <span class="menu-icon">⚔️</span>
+      <span class="menu-text">Gestion des équipes</span>
     </button>
   </div>
 </nav>
@@ -74,21 +90,41 @@
 <div id="toast-container" class="toast-container"></div>
 
 <!-- ══════════════════════════════════════════════════════
-     🏠 ÉCRAN ACCUEIL — hidden par défaut, affiché par goHome()
-═════════════════════════════════════════════════════════= -->
+     🏠 ÉCRAN ACCUEIL
+     • hidden dans le HTML, affiché par goHome() au chargement
+     • Bouton « Nouvelle partie » → /host/ (navigation classique)
+     • Bouton « Continuer » → écran parties (SPA)
+     • Bouton « Voir les jeux » → écran grille (SPA)
+════════════════════════════════════════════════════════ -->
 <section id="screen-home" class="screen screen-home" hidden>
+
   <div class="home-hero">
     <div class="home-glow-ring"></div>
-    <img src="/images/LogoMiniGame.png" alt="MiniGame Universe" class="home-logo" onerror="this.style.display='none'">
-    <h1 class="home-title">MiniGame<br><span class="home-title-accent">Universe</span></h1>
+    <img src="/images/LogoMiniGame.png" alt="MiniGame Universe"
+         class="home-logo" onerror="this.style.display='none'">
+    <h1 class="home-title">
+      MiniGame<br>
+      <span class="home-title-accent">Universe</span>
+    </h1>
     <p class="home-subtitle">La plateforme de mini-jeux pour vos soirées entre amis</p>
+
     <div class="home-cta-group">
-      <a href="/host/" class="btn-primary btn-hero"><span>🚀</span> Nouvelle partie</a>
-      <button id="btn-continuer" class="btn-secondary btn-hero-ghost"><span>📋</span> Continuer une partie</button>
-      <button id="btn-voir-jeux" class="btn-ghost btn-hero-link">🃏 Voir tous les jeux &amp; règles</button>
+      <!-- Redirection vers /host/ — host.js gère la suite -->
+      <a href="/host/" class="btn-primary btn-hero">
+        <span>🚀</span> Nouvelle partie
+      </a>
+      <!-- Navigation SPA → écran "Mes parties" -->
+      <button id="btn-continuer" class="btn-secondary btn-hero-ghost">
+        <span>📋</span> Continuer une partie
+      </button>
+      <!-- Navigation SPA → grille des jeux -->
+      <button id="btn-voir-jeux" class="btn-ghost btn-hero-link">
+        🃏 Voir tous les jeux &amp; règles
+      </button>
     </div>
   </div>
 
+  <!-- Barre de stats (lue depuis localStorage par renderStatsBar) -->
   <div class="home-stats-bar">
     <div class="home-stat">
       <span class="home-stat-val" id="stat-parties">0</span>
@@ -104,53 +140,86 @@
     </div>
   </div>
 
+  <!-- Aperçu des jeux disponibles -->
   <div class="home-jeux-preview">
     <p class="home-jeux-label">10 jeux disponibles</p>
     <div class="home-jeux-icons">
-      <span title="Quiz">❓</span><span title="Juste Prix">💰</span>
-      <span title="Undercover">🕵️</span><span title="Maxi Lettres">📖</span>
-      <span title="Mimer/Dessiner">🎭</span><span title="Le Pendu">🪢</span>
-      <span title="Petit Bac">📝</span><span title="Mémoire Flash">🧠</span>
-      <span title="Morpion">⭕</span><span title="Puissance 4">🔴</span>
+      <span title="Quiz">❓</span>
+      <span title="Juste Prix">💰</span>
+      <span title="Undercover">🕵️</span>
+      <span title="Maxi Lettres">📖</span>
+      <span title="Mimer/Dessiner">🎭</span>
+      <span title="Le Pendu">🪢</span>
+      <span title="Petit Bac">📝</span>
+      <span title="Mémoire Flash">🧠</span>
+      <span title="Morpion">⭕</span>
+      <span title="Puissance 4">🔴</span>
     </div>
   </div>
+
 </section>
 
 <!-- ══════════════════════════════════════════════════════
      🃏 ÉCRAN GRILLE DES JEUX
-═════════════════════════════════════════════════════════= -->
-<section id="screen-jeux" class="screen" hidden>
+     Rempli dynamiquement par renderJeuxGrid()
+     Clic sur une carte → goDetail(jeuId)
+════════════════════════════════════════════════════════ -->
+<section id="screen-jeux" class="screen" hidden aria-label="Les jeux">
   <div class="screen-header">
     <h2 class="screen-title">🃏 Les Jeux</h2>
-    <p class="screen-sub">Choisissez un jeu pour voir ses règles et créer une partie.</p>
+    <p class="screen-sub">
+      Choisissez un jeu pour en voir les règles et créer une partie.
+    </p>
   </div>
+  <!-- Grille injectée par JS -->
   <div id="jeux-grid-container" class="jeux-grid"></div>
 </section>
 
 <!-- ══════════════════════════════════════════════════════
-     🔍 ÉCRAN DÉTAIL JEU
-═════════════════════════════════════════════════════════= -->
-<section id="screen-jeu-detail" class="screen" hidden>
+     🔍 ÉCRAN DÉTAIL D'UN JEU
+     Rempli dynamiquement par renderDetail(jeu)
+     Bouton « Lancer » → /host/?jeu=xxx (host.js prend le relais)
+     Bouton « Aperçu »→ /games/xxx/ (solo/démo)
+════════════════════════════════════════════════════════ -->
+<section id="screen-jeu-detail" class="screen" hidden aria-label="Détail du jeu">
+
+  <!-- Hero : icône, nom, desc, infos joueurs/durée -->
   <div class="detail-hero" id="detail-hero-content"></div>
+
+  <!-- Règles du jeu -->
   <div class="detail-regles">
     <h3>📖 Règles du jeu</h3>
     <p id="detail-regles-content"></p>
   </div>
+
+  <!-- Boutons d'action (injectés par renderDetail) -->
   <div class="detail-actions" id="detail-actions"></div>
+
 </section>
 
 <!-- ══════════════════════════════════════════════════════
-     📋 ÉCRAN PARTIES
-═════════════════════════════════════════════════════════= -->
-<section id="screen-parties" class="screen" hidden>
+     📋 ÉCRAN MES PARTIES
+     • Liste les parties sauvegardées en localStorage
+     • Bouton « Reprendre » → /host/?resume=partieId
+     • Bouton 🗑 → suppression locale
+════════════════════════════════════════════════════════ -->
+<section id="screen-parties" class="screen" hidden aria-label="Mes parties">
   <div class="screen-header">
     <h2 class="screen-title">📋 Mes parties</h2>
-    <p class="screen-sub">Reprenez une partie sauvegardée ou lancez-en une nouvelle.</p>
-    <a href="/host/" class="btn-primary btn-sm" style="margin-top:.6rem;display:inline-flex">+ Nouvelle partie</a>
+    <p class="screen-sub">
+      Reprenez une partie sauvegardée ou lancez-en une nouvelle.
+    </p>
+    <a href="/host/" class="btn-primary btn-sm"
+       style="margin-top:.6rem; display:inline-flex; align-items:center; gap:.35rem">
+      + Nouvelle partie
+    </a>
   </div>
+  <!-- Liste injectée par renderPartiesContinuer() -->
   <div id="parties-continuer-list" class="parties-continuer-list"></div>
 </section>
 
+<!-- ══ MODULE PRINCIPAL ════════════════════════════════ -->
 <script type="module" src="/js/main.js"></script>
+
 </body>
 </html>
