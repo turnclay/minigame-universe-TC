@@ -11,121 +11,84 @@
 </head>
 <body>
 
-<!-- ══ OFFLINE BANNER ════════════════════════════════ -->
+<!-- ══ OFFLINE BANNER ═══════════════════════════════════ -->
 <div id="offline-banner" class="offline-banner" hidden>
   ⚠️ Connexion perdue — vérifiez votre réseau
 </div>
 
-<!-- ══════════════════════════════════════════════════
+<!-- ══════════════════════════════════════════════════════
      🏠 BARRE DE NAVIGATION PERMANENTE
-════════════════════════════════════════════════════ -->
+     Le menu ☰ est hidden par défaut dans le HTML
+═════════════════════════════════════════════════════════= -->
 <div class="top-nav-bar">
 
-  <!-- Bouton Retour -->
-  <button class="btn-retour-permanent" id="btn-retour-permanent" aria-label="Retour" hidden>
-    ⬅️
-  </button>
+  <button class="btn-retour-permanent" id="btn-retour-permanent" aria-label="Retour" hidden>⬅️</button>
 
-  <!-- Logo / Accueil -->
   <a class="topbar-logo" href="#" aria-label="Accueil">
     <img src="/images/LogoMiniGame.png" alt="Logo" class="topbar-logo-img" onerror="this.style.display='none'">
     <span class="topbar-logo-text">MiniGame</span>
   </a>
 
-  <!-- Breadcrumb centre -->
   <div class="topbar-breadcrumb" id="topbar-breadcrumb"></div>
 
-  <!-- Bouton Accueil -->
-  <button class="btn-home-permanent" id="btn-home-permanent" aria-label="Retour à l'accueil">
-    🏠
-  </button>
+  <button class="btn-home-permanent" id="btn-home-permanent" aria-label="Accueil">🏠</button>
 
-  <!-- Musique -->
   <audio id="bg-music" src="/audio/ambiance.mp3" loop preload="none"></audio>
-  <button class="btn-music" id="toggle-music" aria-label="Activer/Désactiver la musique">
-    🔇
-  </button>
+  <button class="btn-music" id="toggle-music" aria-label="Musique">🔇</button>
 
-  <!-- Bouton Menu -->
-  <button class="btn-menu-permanent" id="btn-menu-permanent" aria-label="Ouvrir le menu">
-    ☰
-  </button>
+  <button class="btn-menu-permanent" id="btn-menu-permanent" aria-label="Menu">☰</button>
 
 </div>
 
-<!-- ══════════════════════════════════════════════════
-     📋 MENU LATÉRAL
-════════════════════════════════════════════════════ -->
-
-<!-- Overlay -->
+<!-- ══════════════════════════════════════════════════════
+     📋 CENTRE DE CONTRÔLE — hidden au chargement
+     S'ouvre UNIQUEMENT via le bouton ☰
+═════════════════════════════════════════════════════════= -->
 <div class="menu-overlay" id="menu-overlay" hidden></div>
 
-<!-- Panneau latéral -->
-<nav class="menu-panel" id="menu-panel" hidden aria-label="Menu principal">
-
+<nav class="menu-panel" id="menu-panel" hidden aria-label="Centre de contrôle">
   <div class="menu-header">
     <h2>Centre de contrôle</h2>
-    <button class="btn-close-menu" id="btn-close-menu" aria-label="Fermer le menu">✖</button>
+    <button class="btn-close-menu" id="btn-close-menu" aria-label="Fermer">✖</button>
   </div>
-
   <div class="menu-nav">
-
     <button class="menu-item" id="menu-reglages">
-      <span class="menu-icon">⚙️</span>
-      <span class="menu-text">Réglages</span>
+      <span class="menu-icon">⚙️</span><span class="menu-text">Réglages</span>
     </button>
-
     <button class="menu-item" id="menu-home">
-      <span class="menu-icon">📊</span>
-      <span class="menu-text">Statistiques</span>
+      <span class="menu-icon">📊</span><span class="menu-text">Statistiques</span>
     </button>
-
     <button class="menu-item" id="menu-parties">
-      <span class="menu-icon">📜</span>
-      <span class="menu-text">Parties enregistrées</span>
+      <span class="menu-icon">📜</span><span class="menu-text">Parties enregistrées</span>
     </button>
-
     <button class="menu-item" id="menu-joueurs">
-      <span class="menu-icon">👤</span>
-      <span class="menu-text">Gestion des joueurs</span>
+      <span class="menu-icon">👤</span><span class="menu-text">Gestion des joueurs</span>
     </button>
-
     <button class="menu-item" id="menu-equipes">
-      <span class="menu-icon">⚔️</span>
-      <span class="menu-text">Gestion des équipes</span>
+      <span class="menu-icon">⚔️</span><span class="menu-text">Gestion des équipes</span>
     </button>
-
   </div>
-
 </nav>
 
-<!-- ══ TOASTS ═════════════════════════════════════════ -->
+<!-- ══ TOASTS ══════════════════════════════════════════ -->
 <div id="toast-container" class="toast-container"></div>
 
-<!-- ══════════════════════════════════════════════════
-     🏠 ÉCRAN ACCUEIL
-════════════════════════════════════════════════════ -->
-<section id="screen-home" class="screen screen-home">
+<!-- ══════════════════════════════════════════════════════
+     🏠 ÉCRAN ACCUEIL — hidden par défaut, affiché par goHome()
+═════════════════════════════════════════════════════════= -->
+<section id="screen-home" class="screen screen-home" hidden>
   <div class="home-hero">
     <div class="home-glow-ring"></div>
     <img src="/images/LogoMiniGame.png" alt="MiniGame Universe" class="home-logo" onerror="this.style.display='none'">
     <h1 class="home-title">MiniGame<br><span class="home-title-accent">Universe</span></h1>
     <p class="home-subtitle">La plateforme de mini-jeux pour vos soirées entre amis</p>
-
     <div class="home-cta-group">
-      <button id="btn-go-host" class="btn-primary btn-hero">
-        <span>🚀</span> Nouvelle partie
-      </button>
-      <button id="btn-continuer" class="btn-secondary btn-hero-ghost">
-        <span>📋</span> Continuer une partie
-      </button>
-      <button id="btn-voir-jeux" class="btn-ghost btn-hero-link">
-        🃏 Voir tous les jeux &amp; règles
-      </button>
+      <a href="/host/" class="btn-primary btn-hero"><span>🚀</span> Nouvelle partie</a>
+      <button id="btn-continuer" class="btn-secondary btn-hero-ghost"><span>📋</span> Continuer une partie</button>
+      <button id="btn-voir-jeux" class="btn-ghost btn-hero-link">🃏 Voir tous les jeux &amp; règles</button>
     </div>
   </div>
 
-  <!-- Stats bar -->
   <div class="home-stats-bar">
     <div class="home-stat">
       <span class="home-stat-val" id="stat-parties">0</span>
@@ -141,52 +104,49 @@
     </div>
   </div>
 
-  <!-- Quick jeux preview -->
   <div class="home-jeux-preview">
     <p class="home-jeux-label">10 jeux disponibles</p>
     <div class="home-jeux-icons">
-      <span title="Quiz">❓</span>
-      <span title="Juste Prix">💰</span>
-      <span title="Undercover">🕵️</span>
-      <span title="Maxi Lettres">📖</span>
-      <span title="Mimer/Dessiner">🎭</span>
-      <span title="Le Pendu">🪢</span>
-      <span title="Petit Bac">📝</span>
-      <span title="Mémoire Flash">🧠</span>
-      <span title="Morpion">⭕</span>
-      <span title="Puissance 4">🔴</span>
+      <span title="Quiz">❓</span><span title="Juste Prix">💰</span>
+      <span title="Undercover">🕵️</span><span title="Maxi Lettres">📖</span>
+      <span title="Mimer/Dessiner">🎭</span><span title="Le Pendu">🪢</span>
+      <span title="Petit Bac">📝</span><span title="Mémoire Flash">🧠</span>
+      <span title="Morpion">⭕</span><span title="Puissance 4">🔴</span>
     </div>
   </div>
 </section>
 
-<!-- ══════════════════════════════════════════════════
-     🃏 ÉCRAN JEUX
-════════════════════════════════════════════════════ -->
-<section id="screen-jeux" class="screen" hidden aria-label="Les jeux">
+<!-- ══════════════════════════════════════════════════════
+     🃏 ÉCRAN GRILLE DES JEUX
+═════════════════════════════════════════════════════════= -->
+<section id="screen-jeux" class="screen" hidden>
   <div class="screen-header">
     <h2 class="screen-title">🃏 Les Jeux</h2>
-    <p class="screen-sub">Cliquez sur un jeu pour voir ses règles et créer une partie.</p>
+    <p class="screen-sub">Choisissez un jeu pour voir ses règles et créer une partie.</p>
   </div>
-  <div id="jeux-grid" class="jeux-grid"></div>
+  <div id="jeux-grid-container" class="jeux-grid"></div>
 </section>
 
-<!-- ══════════════════════════════════════════════════
+<!-- ══════════════════════════════════════════════════════
      🔍 ÉCRAN DÉTAIL JEU
-════════════════════════════════════════════════════ -->
-<section id="screen-jeu-detail" class="screen" hidden aria-label="Détail du jeu">
-  <div id="jeu-detail-content"></div>
+═════════════════════════════════════════════════════════= -->
+<section id="screen-jeu-detail" class="screen" hidden>
+  <div class="detail-hero" id="detail-hero-content"></div>
+  <div class="detail-regles">
+    <h3>📖 Règles du jeu</h3>
+    <p id="detail-regles-content"></p>
+  </div>
+  <div class="detail-actions" id="detail-actions"></div>
 </section>
 
-<!-- ══════════════════════════════════════════════════
-     📋 ÉCRAN CONTINUER UNE PARTIE
-════════════════════════════════════════════════════ -->
-<section id="screen-parties" class="screen" hidden aria-label="Continuer une partie">
+<!-- ══════════════════════════════════════════════════════
+     📋 ÉCRAN PARTIES
+═════════════════════════════════════════════════════════= -->
+<section id="screen-parties" class="screen" hidden>
   <div class="screen-header">
     <h2 class="screen-title">📋 Mes parties</h2>
-    <p class="screen-sub">Chargez une partie existante pour la reprendre ou la continuer.</p>
-    <button class="btn-primary btn-sm" id="btn-parties-nouvelle" style="margin-top:.5rem">
-      + Nouvelle partie
-    </button>
+    <p class="screen-sub">Reprenez une partie sauvegardée ou lancez-en une nouvelle.</p>
+    <a href="/host/" class="btn-primary btn-sm" style="margin-top:.6rem;display:inline-flex">+ Nouvelle partie</a>
   </div>
   <div id="parties-continuer-list" class="parties-continuer-list"></div>
 </section>
