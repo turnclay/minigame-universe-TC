@@ -7,7 +7,6 @@
 //   • Router entre les écrans (home / jeux / detail / parties)
 //   • Ouvrir/fermer le menu latéral UNIQUEMENT via ☰
 //   • Depuis la fiche jeu : « Lancer une partie » → /host/?jeu=xxx
-//     (host.js prend le relais pour créer la partie + gérer GAME_STARTED)
 //   • Musique de fond
 // ======================================================
 
@@ -113,30 +112,28 @@ let musicPlaying  = false;
 // SYSTÈME DE NAVIGATION
 // ══════════════════════════════════════════════════════
 
-/** Cache tous les écrans */
 function hideAllScreens() {
-    Object.values(SCREENS).forEach(el => { if (el) el.hidden = true; });
+    Object.values(SCREENS).forEach(el => {
+        if (el) el.hidden = true;
+    });
 }
 
-/** Affiche un écran avec animation d'entrée */
 function showScreen(name) {
     hideAllScreens();
     const el = SCREENS[name];
     if (!el) return;
     el.hidden = false;
-    // Reflow pour relancer l'animation CSS à chaque transition
+
     el.classList.remove('animate-in');
     void el.offsetWidth;
     el.classList.add('animate-in');
-    // Scroll haut de page
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-/** Met à jour le breadcrumb et l'état du bouton ⬅ */
 function updateNav(screen, label = null) {
     currentScreen = screen;
 
-    // Breadcrumb dynamique
     if (elBreadcrumb) {
         if (screen === 'home') {
             elBreadcrumb.innerHTML = '';
@@ -153,27 +150,23 @@ function updateNav(screen, label = null) {
         }
     }
 
-    // Bouton ⬅ : visible partout sauf sur l'accueil
     if (elBtnRetour) elBtnRetour.hidden = (screen === 'home');
 }
 
 // ── Destinations de navigation ───────────────────────────
 
-/** Accueil (affiché par défaut au chargement) */
 function goHome() {
     showScreen('home');
     updateNav('home');
     renderStatsBar();
 }
 
-/** Grille de tous les jeux */
 function goJeux() {
     showScreen('jeux');
     updateNav('jeux');
     renderJeuxGrid();
 }
 
-/** Fiche détail d'un jeu */
 function goDetail(jeuId) {
     const jeu = JEUX.find(j => j.id === jeuId);
     if (!jeu) return;
@@ -183,19 +176,15 @@ function goDetail(jeuId) {
     updateNav('detail', jeu.nom);
 }
 
-/** Liste des parties sauvegardées */
 function goParties() {
     showScreen('parties');
     updateNav('parties');
     renderPartiesContinuer();
 }
 
-// Exposé globalement pour le module menu/parties.js et host.js
 window.renderPartiesContinuer = renderPartiesContinuer;
-// Écouter l'événement custom du menu → ouvrir l'écran parties
 window.addEventListener('mgu:afficher-parties', () => goParties());
 
-/** Retour contextuel selon l'écran courant */
 function retourContextuel() {
     if (currentScreen === 'detail')  return goJeux();
     if (currentScreen === 'jeux')    return goHome();
@@ -210,25 +199,30 @@ function renderStatsBar() {
     try {
         const parties = JSON.parse(localStorage.getItem('mgu_parties') || '[]');
         const joueurs = JSON.parse(localStorage.getItem('mgu_joueurs') || '[]');
-        // Comptabiliser les points totaux distribués
+
         const totalPts = parties.reduce((sum, p) => {
             return sum + Object.values(p.scores || {}).reduce((s, v) => s + (v || 0), 0);
         }, 0);
-        const elP = $('stat-parties');
-        const elJ = $('stat-joueurs');
+
+        const elP   = $('stat-parties');
+        const elJ   = $('stat-joueurs');
         const elPts = $('stat-points');
+
         if (elP)   elP.textContent   = parties.length;
         if (elJ)   elJ.textContent   = joueurs.length;
         if (elPts) elPts.textContent = totalPts;
-    } catch {}
+    } catch {
+        // silencieux : pas bloquant pour l'UI
+    }
 }
 
 // ══════════════════════════════════════════════════════
-// RENDU — Grille des jeux
+/* RENDU — Grille des jeux */
 // ══════════════════════════════════════════════════════
 function renderJeuxGrid() {
     const container = $('jeux-grid-container');
     if (!container) return;
+
     container.innerHTML = JEUX.map(j => `
         <button class="jeu-card" data-id="${j.id}" aria-label="Voir ${j.nom}">
             <div class="jeu-icon">${j.icon}</div>
@@ -240,19 +234,21 @@ function renderJeuxGrid() {
             </div>
         </button>`).join('');
 
-    container.querySelectorAll('.jeu-card').forEach(btn =>
-        btn.addEventListener('click', () => goDetail(btn.dataset.id)));
+    container.querySelectorAll('.jeu-card').forEach(btn => {
+        btn.addEventListener('click', () => goDetail(btn.dataset.id));
+    });
 }
 
 // ══════════════════════════════════════════════════════
-// RENDU — Fiche détail d'un jeu
+/* RENDU — Fiche détail d'un jeu */
 // ══════════════════════════════════════════════════════
 function renderDetail(jeu) {
     const hero    = $('detail-hero-content');
     const regles  = $('detail-regles-content');
     const actions = $('detail-actions');
 
-    if (hero) hero.innerHTML = `
+    if (hero) {
+        hero.innerHTML = `
         <div class="detail-icon">${jeu.icon}</div>
         <div class="detail-nom">${jeu.nom}</div>
         <div class="detail-desc">${jeu.desc}</div>
@@ -266,32 +262,35 @@ function renderDetail(jeu) {
                 <span class="detail-info-val">⏱ ${jeu.duree}</span>
             </div>
         </div>`;
+    }
 
     if (regles) regles.textContent = jeu.regles;
 
-    // ⚠️ IMPORTANT : « Lancer une partie » → redirige vers /host/?jeu=xxx
-    // host.js prendra automatiquement la valeur depuis l'URL pour préremplir
-    // le select du jeu dans le lobby host, puis enverra HOST_CREATE_GAME via WS.
-    // Après GAME_STARTED, host.js affiche l'écran spectateur.
-    // Les joueurs rejoignent via /join/?partieId=xxx (géré par player.js).
-    if (actions) actions.innerHTML = `
+    if (actions) {
+        actions.innerHTML = `
         <a href="/host/?jeu=${jeu.id}" class="btn-primary btn-full btn-hero">
             🚀 Lancer une partie
         </a>
         <a href="/games/${jeu.id}/" class="btn-secondary btn-full">
             👁 Aperçu solo / démo
         </a>`;
+    }
 }
 
 // ══════════════════════════════════════════════════════
-// RENDU — Parties sauvegardées (écran "Mes parties")
+/* RENDU — Parties sauvegardées (écran "Mes parties") */
 // ══════════════════════════════════════════════════════
 function renderPartiesContinuer() {
     const container = $('parties-continuer-list');
     if (!container) return;
 
     let parties = [];
-    try { parties = JSON.parse(localStorage.getItem('mgu_parties') || '[]'); } catch {}
+    try {
+        parties = JSON.parse(localStorage.getItem('mgu_parties') || '[]');
+    } catch {
+        parties = [];
+    }
+
     parties.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
     if (parties.length === 0) {
@@ -306,12 +305,14 @@ function renderPartiesContinuer() {
     }
 
     container.innerHTML = parties.slice(0, 20).map((p, i) => {
-        const meta   = JEUX.find(j => j.id === p.jeu) || { icon: '🎮', nom: p.jeu || 'Partie' };
-        const date   = p.createdAt ? new Date(p.createdAt).toLocaleDateString('fr-FR') : '';
+        const meta    = JEUX.find(j => j.id === p.jeu) || { icon: '🎮', nom: p.jeu || 'Partie' };
+        const date    = p.createdAt ? new Date(p.createdAt).toLocaleDateString('fr-FR') : '';
         const joueurs = Object.keys(p.scores || {});
-        const chips  = joueurs.slice(0, 4).map(j => `<span class="pc-joueur-chip">${j}</span>`).join('');
-        const more   = joueurs.length > 4 ? `<span class="pc-joueur-chip pc-joueur-more">+${joueurs.length - 4}</span>` : '';
-        const statut = p.statut === 'terminee'
+        const chips   = joueurs.slice(0, 4).map(j => `<span class="pc-joueur-chip">${j}</span>`).join('');
+        const more    = joueurs.length > 4
+            ? `<span class="pc-joueur-chip pc-joueur-more">+${joueurs.length - 4}</span>`
+            : '';
+        const statut  = p.statut === 'terminee'
             ? `<span class="badge-statut badge-terminee">Terminée</span>`
             : `<span class="badge-statut badge-en-cours">En cours</span>`;
 
@@ -334,14 +335,19 @@ function renderPartiesContinuer() {
         </div>`;
     }).join('');
 
-    // Suppression locale
     container.querySelectorAll('.btn-del-partie').forEach(btn => {
         btn.addEventListener('click', () => {
             if (!confirm('Supprimer cette partie de l\'historique local ?')) return;
-            const idx = parseInt(btn.dataset.idx);
-            parties.splice(idx, 1);
-            try { localStorage.setItem('mgu_parties', JSON.stringify(parties)); } catch {}
-            renderPartiesContinuer();
+            const idx = parseInt(btn.dataset.idx, 10);
+            if (!Number.isNaN(idx)) {
+                parties.splice(idx, 1);
+                try {
+                    localStorage.setItem('mgu_parties', JSON.stringify(parties));
+                } catch {
+                    // silencieux
+                }
+                renderPartiesContinuer();
+            }
         });
     });
 }
@@ -367,10 +373,14 @@ function fermerMenu() {
 // ══════════════════════════════════════════════════════
 function toggleMusique() {
     if (!elBgMusic) return;
+
     musicPlaying = !musicPlaying;
+
     if (musicPlaying) {
         elBgMusic.volume = 0.35;
-        elBgMusic.play().catch(() => { musicPlaying = false; });
+        elBgMusic.play().catch(() => {
+            musicPlaying = false;
+        });
         if (elBtnMusic) elBtnMusic.textContent = '🔊';
     } else {
         elBgMusic.pause();
@@ -382,65 +392,65 @@ function toggleMusique() {
 // INIT — Branchement de tous les événements
 // ══════════════════════════════════════════════════════
 function init() {
-
-    // ── Top-nav-bar ──────────────────────────────────
+    // Top-nav-bar
     elBtnRetour?.addEventListener('click', retourContextuel);
     elBtnHome?.addEventListener('click', goHome);
     elBtnMenu?.addEventListener('click', ouvrirMenu);
     elBtnMusic?.addEventListener('click', toggleMusique);
-    // Clic sur le logo → accueil
+
     $$('.top-nav-bar .topbar-logo')?.addEventListener('click', (e) => {
         e.preventDefault();
         goHome();
     });
 
-    // ── Menu latéral ─────────────────────────────────
+    // Menu latéral
     elBtnCloseMenu?.addEventListener('click', fermerMenu);
     elMenuOverlay?.addEventListener('click', fermerMenu);
-    // Fermer avec Échap
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') fermerMenu(); });
 
-    // Items du menu
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') fermerMenu();
+    });
+
     $('menu-reglages')?.addEventListener('click', () => {
         fermerMenu();
-        // TODO : ouvrir un overlay réglages (thème, langue…)
+        // futur overlay réglages
     });
+
     $('menu-home')?.addEventListener('click', () => {
         fermerMenu();
         afficherStatistiques();
     });
+
     $('menu-parties')?.addEventListener('click', () => {
         fermerMenu();
         goParties();
     });
+
     $('menu-joueurs')?.addEventListener('click', () => {
         fermerMenu();
         afficherGestionJoueurs();
     });
+
     $('menu-equipes')?.addEventListener('click', () => {
         fermerMenu();
         afficherGestionEquipes();
     });
 
-    // ── CTA écran accueil ─────────────────────────────
-    // « Voir tous les jeux & règles » → grille jeux
+    // CTA accueil
     $('btn-voir-jeux')?.addEventListener('click', goJeux);
-    // « Continuer une partie » → mes parties
     $('btn-continuer')?.addEventListener('click', goParties);
 
-    // ── Boutons retour dans les écrans internes ───────
+    // Boutons retour internes
     $('btn-retour-jeux')?.addEventListener('click', goHome);
     $('btn-retour-detail')?.addEventListener('click', goJeux);
     $('btn-retour-parties')?.addEventListener('click', goHome);
 
-    // ── Si le host arrive sur /host/?jeu=xxx, host.js
-    //    lit l'URL et prérempli le select. Rien à faire ici.
-
-    // ── Affichage initial : écran ACCUEIL par défaut ──
+    // Affichage initial : ACCUEIL par défaut
     goHome();
 }
 
-// Lancement dès que le DOM est prêt
-document.readyState === 'loading'
-    ? document.addEventListener('DOMContentLoaded', init)
-    : init();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
