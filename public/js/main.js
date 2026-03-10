@@ -2,9 +2,10 @@
 // ======================================================
 // 🏠 MAIN — Navigation MiniGame Universe
 // ======================================================
-// Corrections v2 :
-//   • L'écran accueil est MASQUÉ dans le HTML (hidden=true)
-//     et affiché par goHome() au DOMContentLoaded
+// Corrections v3 :
+//   • L'écran accueil est VISIBLE dans le HTML (pas de hidden)
+//     Les autres écrans sont masqués par init() au chargement
+//   • Plus besoin d'appeler goHome() au démarrage
 //   • "Nouvelle partie" → masque l'écran puis redirige /host/
 //   • "Continuer" → goParties() (SPA)
 //   • "Voir tous les jeux" → goJeux() (SPA)
@@ -484,9 +485,15 @@ function init() {
     $('btn-retour-detail')?.addEventListener('click', goJeux);
     $('btn-retour-parties')?.addEventListener('click', goHome);
 
-    // ✅ Affichage initial : ACCUEIL par défaut
-    //    L'écran est hidden dans le HTML, goHome() l'affiche proprement
-    goHome();
+    // ✅ Initialisation de l'écran accueil visible par défaut
+    //    screen-home n'a PAS hidden dans le HTML — il est déjà visible.
+    //    On masque explicitement les autres écrans et on lit les stats.
+    [SCREENS.jeux, SCREENS.detail, SCREENS.parties].forEach(el => {
+        if (el) el.hidden = true;
+    });
+    currentScreen = 'home';
+    if (elBtnRetour) elBtnRetour.hidden = true;
+    renderStatsBar();
 }
 
 if (document.readyState === 'loading') {
