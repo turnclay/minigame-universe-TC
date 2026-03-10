@@ -2,12 +2,14 @@
 // ======================================================
 // 🏠 MAIN — Navigation MiniGame Universe
 // ======================================================
-// Responsabilités :
-//   • Afficher l'accueil par défaut au chargement
-//   • Router entre les écrans (home / jeux / detail / parties)
-//   • Ouvrir/fermer le menu latéral UNIQUEMENT via ☰
-//   • Depuis la fiche jeu : « Lancer une partie » → /host/?jeu=xxx
-//   • Musique de fond
+// Corrections v2 :
+//   • L'écran accueil est MASQUÉ dans le HTML (hidden=true)
+//     et affiché par goHome() au DOMContentLoaded
+//   • "Nouvelle partie" → masque l'écran puis redirige /host/
+//   • "Continuer" → goParties() (SPA)
+//   • "Voir tous les jeux" → goJeux() (SPA)
+//   • "Lancer une partie" depuis le détail → redirige /host/?jeu=xxx
+//   • renderStatsBar() affiche aussi le nombre de joueurs créés
 // ======================================================
 
 import { afficherStatistiques }   from './menu/statistiques.js';
@@ -150,6 +152,7 @@ function updateNav(screen, label = null) {
         }
     }
 
+    // Masquer le bouton retour sur l'accueil, l'afficher ailleurs
     if (elBtnRetour) elBtnRetour.hidden = (screen === 'home');
 }
 
@@ -182,6 +185,14 @@ function goParties() {
     renderPartiesContinuer();
 }
 
+// ── Redirection vers le host ─────────────────────────────
+// Masque tous les écrans proprement avant de partir
+function goHost(jeuId = null) {
+    hideAllScreens();
+    const url = jeuId ? `/host/?jeu=${jeuId}` : '/host/';
+    window.location.href = url;
+}
+
 window.renderPartiesContinuer = renderPartiesContinuer;
 window.addEventListener('mgu:afficher-parties', () => goParties());
 
@@ -198,7 +209,11 @@ function retourContextuel() {
 function renderStatsBar() {
     try {
         const parties = JSON.parse(localStorage.getItem('mgu_parties') || '[]');
-        const joueurs = JSON.parse(localStorage.getItem('mgu_joueurs') || '[]');
+        // ✅ FIX : lire les joueurs créés depuis localStorage
+        // La clé peut être 'mgu_joueurs' (tableau de noms ou d'objets)
+        const joueursRaw = localStorage.getItem('mgu_joueurs') ||
+                           localStorage.getItem('mgu_players') || '[]';
+        const joueurs = JSON.parse(joueursRaw);
 
         const totalPts = parties.reduce((sum, p) => {
             return sum + Object.values(p.scores || {}).reduce((s, v) => s + (v || 0), 0);
@@ -209,7 +224,8 @@ function renderStatsBar() {
         const elPts = $('stat-points');
 
         if (elP)   elP.textContent   = parties.length;
-        if (elJ)   elJ.textContent   = joueurs.length;
+        // ✅ Affiche le nombre de joueurs créés (tableau de noms ou d'objets)
+        if (elJ)   elJ.textContent   = Array.isArray(joueurs) ? joueurs.length : 0;
         if (elPts) elPts.textContent = totalPts;
     } catch {
         // silencieux : pas bloquant pour l'UI
@@ -217,7 +233,7 @@ function renderStatsBar() {
 }
 
 // ══════════════════════════════════════════════════════
-/* RENDU — Grille des jeux */
+// RENDU — Grille des jeux
 // ══════════════════════════════════════════════════════
 function renderJeuxGrid() {
     const container = $('jeux-grid-container');
@@ -240,7 +256,7 @@ function renderJeuxGrid() {
 }
 
 // ══════════════════════════════════════════════════════
-/* RENDU — Fiche détail d'un jeu */
+// RENDU — Fiche détail d'un jeu
 // ══════════════════════════════════════════════════════
 function renderDetail(jeu) {
     const hero    = $('detail-hero-content');
@@ -267,18 +283,22 @@ function renderDetail(jeu) {
     if (regles) regles.textContent = jeu.regles;
 
     if (actions) {
+        // ✅ CORRECTION : boutons JS au lieu de <a href> pour rester dans le flow SPA
+        // "Lancer une partie" → masque l'écran PUIS redirige /host/?jeu=xxx
         actions.innerHTML = `
-        <a href="/host/?jeu=${jeu.id}" class="btn-primary btn-full btn-hero">
+        <button class="btn-primary btn-full btn-hero" id="btn-detail-lancer">
             🚀 Lancer une partie
-        </a>
+        </button>
         <a href="/games/${jeu.id}/" class="btn-secondary btn-full">
             👁 Aperçu solo / démo
         </a>`;
+
+        $('btn-detail-lancer')?.addEventListener('click', () => goHost(jeu.id));
     }
 }
 
 // ══════════════════════════════════════════════════════
-/* RENDU — Parties sauvegardées (écran "Mes parties") */
+// RENDU — Parties sauvegardées
 // ══════════════════════════════════════════════════════
 function renderPartiesContinuer() {
     const container = $('parties-continuer-list');
@@ -353,7 +373,7 @@ function renderPartiesContinuer() {
 }
 
 // ══════════════════════════════════════════════════════
-// MENU LATÉRAL — s'ouvre UNIQUEMENT via ☰
+// MENU LATÉRAL
 // ══════════════════════════════════════════════════════
 
 function ouvrirMenu() {
@@ -436,16 +456,26 @@ function init() {
         afficherGestionEquipes();
     });
 
-    // CTA accueil
-    $('btn-voir-jeux')?.addEventListener('click', goJeux);
+    // ── CTA accueil ──────────────────────────────────────
+    // ✅ "Nouvelle partie" → masque l'écran puis redirige /host/
+    $('btn-nouvelle-partie')?.addEventListener('click', () => goHost());
+
+    // ✅ "Continuer une partie" → navigation SPA
     $('btn-continuer')?.addEventListener('click', goParties);
+
+    // ✅ "Voir tous les jeux & règles" → navigation SPA
+    $('btn-voir-jeux')?.addEventListener('click', goJeux);
+
+    // ✅ "Nouvelle partie" depuis l'écran parties → redirige /host/
+    $('btn-parties-nouvelle')?.addEventListener('click', () => goHost());
 
     // Boutons retour internes
     $('btn-retour-jeux')?.addEventListener('click', goHome);
     $('btn-retour-detail')?.addEventListener('click', goJeux);
     $('btn-retour-parties')?.addEventListener('click', goHome);
 
-    // Affichage initial : ACCUEIL par défaut
+    // ✅ Affichage initial : ACCUEIL par défaut
+    //    L'écran est hidden dans le HTML, goHome() l'affiche proprement
     goHome();
 }
 
