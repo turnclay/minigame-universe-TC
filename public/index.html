@@ -8,6 +8,33 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="icon" type="image/png" href="/images/LogoMiniGame.png">
+
+  <style>
+    /*
+     * ═══════════════════════════════════════════════════
+     *  COUCHE SPA — surcharge tout CSS externe
+     *  Garantit le masquage/affichage des écrans
+     *  indépendamment de .hidden, display:none, etc.
+     * ═══════════════════════════════════════════════════
+     */
+
+    /* Tous les .screen sont cachés par défaut */
+    .screen { display: none !important; }
+
+    /* Seul l'écran marqué .screen-active est visible */
+    .screen.screen-active {
+      display: block !important;
+      animation: mgu-fade-in 0.35s ease-out both;
+    }
+
+    @keyframes mgu-fade-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0);    }
+    }
+
+    /* Bouton retour masqué sur l'accueil */
+    #btn-retour-permanent.hidden-on-home { visibility: hidden; pointer-events: none; }
+  </style>
 </head>
 <body>
 
@@ -21,11 +48,11 @@
 ════════════════════════════════════════════════════════ -->
 <div class="top-nav-bar">
 
-  <button class="btn-retour-permanent" id="btn-retour-permanent" aria-label="Retour" hidden>
-    ⬅️
-  </button>
+  <button class="btn-retour-permanent hidden-on-home"
+          id="btn-retour-permanent" aria-label="Retour">⬅️</button>
 
-  <a class="topbar-logo" href="#" aria-label="MiniGame Universe — Accueil">
+  <a class="topbar-logo" href="#" id="topbar-logo-link"
+     aria-label="MiniGame Universe — Accueil">
     <img src="/images/LogoMiniGame.png" alt="Logo MiniGame" class="topbar-logo-img"
          onerror="this.style.display='none'">
     <span class="topbar-logo-text">MiniGame</span>
@@ -38,11 +65,11 @@
   <audio id="bg-music" src="/audio/ambiance.mp3" loop preload="none"></audio>
   <button class="btn-music" id="toggle-music" aria-label="Musique">🔇</button>
 
-  <button class="btn-menu-permanent" id="btn-menu-permanent" aria-label="Ouvrir le menu">☰</button>
-
+  <button class="btn-menu-permanent" id="btn-menu-permanent"
+          aria-label="Ouvrir le menu">☰</button>
 </div>
 
-<!-- ══ CENTRE DE CONTRÔLE ══════════════════════════════ -->
+<!-- ══ MENU LATÉRAL ════════════════════════════════════ -->
 <div class="menu-overlay" id="menu-overlay" hidden></div>
 
 <nav class="menu-panel" id="menu-panel" hidden aria-label="Centre de contrôle">
@@ -52,24 +79,19 @@
   </div>
   <div class="menu-nav">
     <button class="menu-item" id="menu-reglages">
-      <span class="menu-icon">⚙️</span>
-      <span class="menu-text">Réglages</span>
+      <span class="menu-icon">⚙️</span><span class="menu-text">Réglages</span>
     </button>
     <button class="menu-item" id="menu-home">
-      <span class="menu-icon">📊</span>
-      <span class="menu-text">Statistiques</span>
+      <span class="menu-icon">📊</span><span class="menu-text">Statistiques</span>
     </button>
     <button class="menu-item" id="menu-parties">
-      <span class="menu-icon">📜</span>
-      <span class="menu-text">Parties enregistrées</span>
+      <span class="menu-icon">📜</span><span class="menu-text">Parties enregistrées</span>
     </button>
     <button class="menu-item" id="menu-joueurs">
-      <span class="menu-icon">👤</span>
-      <span class="menu-text">Gestion des joueurs</span>
+      <span class="menu-icon">👤</span><span class="menu-text">Gestion des joueurs</span>
     </button>
     <button class="menu-item" id="menu-equipes">
-      <span class="menu-icon">⚔️</span>
-      <span class="menu-text">Gestion des équipes</span>
+      <span class="menu-icon">⚔️</span><span class="menu-text">Gestion des équipes</span>
     </button>
   </div>
 </nav>
@@ -78,13 +100,9 @@
 <div id="toast-container" class="toast-container"></div>
 
 <!-- ══════════════════════════════════════════════════════
-     🏠 ÉCRAN ACCUEIL
-     • hidden=true dans le HTML — affiché par goHome() au chargement
-     • "Nouvelle partie" → redirige vers /host/ (navigation classique)
-     • "Continuer" → écran parties (SPA)
-     • "Voir tous les jeux" → écran grille (SPA)
+     🏠 SCREEN : ACCUEIL
 ════════════════════════════════════════════════════════ -->
-<section id="screen-home" class="screen screen-home" hidden>
+<section id="screen-home" class="screen screen-home">
 
   <div class="home-hero">
     <div class="home-glow-ring"></div>
@@ -97,35 +115,27 @@
     <p class="home-subtitle">La plateforme de mini-jeux pour vos soirées entre amis</p>
 
     <div class="home-cta-group">
-      <!--
-        ✅ CORRECTION : Bouton JS — masque l'accueil PUIS redirige vers /host/
-        (évite que l'écran home reste visible si l'utilisateur revient avec ←)
-      -->
+      <!-- ✅ Bouton JS → redirige /host/ après masquage -->
       <button id="btn-nouvelle-partie" class="btn-primary btn-hero">
         <span>🚀</span> Nouvelle partie
       </button>
-
-      <!-- Navigation SPA → écran "Mes parties" -->
+      <!-- ✅ Navigation SPA → écran parties -->
       <button id="btn-continuer" class="btn-secondary btn-hero-ghost">
         <span>📋</span> Continuer une partie
       </button>
-
-      <!-- Navigation SPA → grille des jeux & règles -->
+      <!-- ✅ Navigation SPA → grille des jeux & règles -->
       <button id="btn-voir-jeux" class="btn-ghost btn-hero-link">
         🃏 Voir tous les jeux &amp; règles
       </button>
     </div>
   </div>
 
-  <!-- Barre de stats — lue depuis localStorage par renderStatsBar() -->
+  <!-- Stats lues depuis localStorage -->
   <div class="home-stats-bar">
     <div class="home-stat">
       <span class="home-stat-val" id="stat-parties">0</span>
       <span class="home-stat-label">Parties</span>
     </div>
-    <!--
-      ✅ AJOUT : Stat joueurs créés (lit mgu_joueurs depuis localStorage)
-    -->
     <div class="home-stat">
       <span class="home-stat-val" id="stat-joueurs">0</span>
       <span class="home-stat-label">Joueurs</span>
@@ -136,77 +146,443 @@
     </div>
   </div>
 
-  <!-- Aperçu des jeux disponibles -->
   <div class="home-jeux-preview">
     <p class="home-jeux-label">10 jeux disponibles</p>
     <div class="home-jeux-icons">
-      <span title="Quiz">❓</span>
-      <span title="Juste Prix">💰</span>
-      <span title="Undercover">🕵️</span>
-      <span title="Maxi Lettres">📖</span>
-      <span title="Mimer/Dessiner">🎭</span>
-      <span title="Le Pendu">🪢</span>
-      <span title="Petit Bac">📝</span>
-      <span title="Mémoire Flash">🧠</span>
-      <span title="Morpion">⭕</span>
-      <span title="Puissance 4">🔴</span>
+      <span title="Quiz">❓</span><span title="Juste Prix">💰</span>
+      <span title="Undercover">🕵️</span><span title="Maxi Lettres">📖</span>
+      <span title="Mimer/Dessiner">🎭</span><span title="Le Pendu">🪢</span>
+      <span title="Petit Bac">📝</span><span title="Mémoire Flash">🧠</span>
+      <span title="Morpion">⭕</span><span title="Puissance 4">🔴</span>
     </div>
   </div>
 
 </section>
 
 <!-- ══════════════════════════════════════════════════════
-     🃏 ÉCRAN GRILLE DES JEUX
+     🃏 SCREEN : GRILLE DES JEUX
 ════════════════════════════════════════════════════════ -->
-<section id="screen-jeux" class="screen" hidden aria-label="Les jeux">
+<section id="screen-jeux" class="screen" aria-label="Les jeux">
   <div class="screen-header">
     <h2 class="screen-title">🃏 Les Jeux</h2>
-    <p class="screen-sub">
-      Choisissez un jeu pour en voir les règles et créer une partie.
-    </p>
+    <p class="screen-sub">Choisissez un jeu pour en voir les règles et créer une partie.</p>
   </div>
   <div id="jeux-grid-container" class="jeux-grid"></div>
 </section>
 
 <!-- ══════════════════════════════════════════════════════
-     🔍 ÉCRAN DÉTAIL D'UN JEU
+     🔍 SCREEN : DÉTAIL D'UN JEU
 ════════════════════════════════════════════════════════ -->
-<section id="screen-jeu-detail" class="screen" hidden aria-label="Détail du jeu">
-
-  <div class="detail-hero" id="detail-hero-content"></div>
-
+<section id="screen-jeu-detail" class="screen" aria-label="Détail du jeu">
+  <div class="detail-hero"   id="detail-hero-content"></div>
   <div class="detail-regles">
     <h3>📖 Règles du jeu</h3>
     <p id="detail-regles-content"></p>
   </div>
-
   <div class="detail-actions" id="detail-actions"></div>
-
 </section>
 
 <!-- ══════════════════════════════════════════════════════
-     📋 ÉCRAN MES PARTIES
+     📋 SCREEN : MES PARTIES
 ════════════════════════════════════════════════════════ -->
-<section id="screen-parties" class="screen" hidden aria-label="Mes parties">
+<section id="screen-parties" class="screen" aria-label="Mes parties">
   <div class="screen-header">
     <h2 class="screen-title">📋 Mes parties</h2>
-    <p class="screen-sub">
-      Reprenez une partie sauvegardée ou lancez-en une nouvelle.
-    </p>
-    <!--
-      ✅ CORRECTION : bouton JS au lieu du lien <a href="/host/">
-      pour rester cohérent avec la navigation SPA
-    -->
+    <p class="screen-sub">Reprenez une partie sauvegardée ou lancez-en une nouvelle.</p>
     <button id="btn-parties-nouvelle" class="btn-primary btn-sm"
-            style="margin-top:.6rem; display:inline-flex; align-items:center; gap:.35rem">
+            style="margin-top:.6rem;display:inline-flex;align-items:center;gap:.35rem">
       + Nouvelle partie
     </button>
   </div>
   <div id="parties-continuer-list" class="parties-continuer-list"></div>
 </section>
 
-<!-- ══ MODULE PRINCIPAL ════════════════════════════════ -->
+<!-- ══ MODULE PRINCIPAL (gestion joueurs/équipes/stats) ══ -->
 <script type="module" src="/js/main.js"></script>
+
+<!-- ══════════════════════════════════════════════════════
+     🚀 NAVIGATION SPA — Moteur de navigation inline
+     Ce script est intentionnellement NON-module pour
+     s'exécuter avant / indépendamment de main.js.
+     Il expose window.MGU pour que main.js puisse s'y
+     connecter sans dupliquer la logique de routing.
+════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  'use strict';
+
+  // ─── Données des 10 jeux ──────────────────────────────
+  var JEUX = [
+    { id:'quiz',       nom:'Quiz',           icon:'❓', desc:'Questions & réponses en équipe ou en solo',          joueurs:'2-10', duree:'15-30 min', regles:"Le host pose des questions à thème. Les joueurs répondent à l'oral. Points attribués par le host en temps réel." },
+    { id:'justeprix',  nom:'Juste Prix',      icon:'💰', desc:'Devinez le prix exact sans dépasser',                joueurs:'2-8',  duree:'20-40 min', regles:"Un produit et son vrai prix sont affichés après les enchères. Le joueur le plus proche sans dépasser remporte les points." },
+    { id:'undercover', nom:'Undercover',      icon:'🕵️', desc:"Trouvez l'espion parmi vous",                        joueurs:'4-10', duree:'15-25 min', regles:"Chaque joueur reçoit un mot. Un imposteur reçoit un mot différent. Discutez pour débusquer l'intrus sans vous trahir." },
+    { id:'lml',        nom:'Maxi Lettres',    icon:'📖', desc:'Formez le mot le plus long possible',                joueurs:'2-8',  duree:'10-20 min', regles:"Des lettres aléatoires sont tirées. Chaque joueur forme le mot le plus long avec ces lettres. Le plus long non contesté gagne." },
+    { id:'mimer',      nom:'Mimer/Dessiner',  icon:'🎭', desc:'Faites deviner sans parler',                         joueurs:'4-12', duree:'20-40 min', regles:"Faites deviner un mot en le mimant ou en le dessinant, sans parler. Votre équipe marque un point si elle trouve avant le temps imparti." },
+    { id:'pendu',      nom:'Le Pendu',        icon:'🪢', desc:'Devinez le mot lettre par lettre',                   joueurs:'2-8',  duree:'10-20 min', regles:"Trouvez le mot caché en proposant des lettres. Chaque lettre fausse rapproche le pendu. Trouvez avant d'épuiser vos tentatives." },
+    { id:'petitbac',   nom:'Petit Bac',       icon:'📝', desc:'Une lettre, des catégories, le plus vite !',         joueurs:'2-8',  duree:'15-30 min', regles:"Une lettre est tirée. Trouvez le plus rapidement un mot par catégorie (prénom, ville, animal…) commençant par cette lettre." },
+    { id:'memoire',    nom:'Mémoire Flash',   icon:'🧠', desc:'Mémorisez des séquences de plus en plus longues',   joueurs:'1-6',  duree:'10-30 min', regles:"Une séquence de symboles est affichée brièvement. Reproduisez-la fidèlement. Chaque round la séquence s'allonge." },
+    { id:'morpion',    nom:'Morpion',         icon:'⭕', desc:'Alignez 3 symboles en ligne, colonne ou diagonale',  joueurs:'2',    duree:'5-10 min',  regles:"Placez vos symboles (X ou O) à tour de rôle sur la grille 3×3. Alignez 3 symboles identiques en premier pour gagner." },
+    { id:'puissance4', nom:'Puissance 4',     icon:'🔴', desc:'Alignez 4 jetons avant votre adversaire',            joueurs:'2',    duree:'10-15 min', regles:"Faites tomber vos jetons dans les colonnes. Alignez 4 jetons de votre couleur (ligne, colonne ou diagonale) pour gagner." },
+  ];
+
+  // ─── Helpers ──────────────────────────────────────────
+  var SCREENS = ['screen-home','screen-jeux','screen-jeu-detail','screen-parties'];
+  var currentScreen = null;
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // ─── Afficher un écran ────────────────────────────────
+  function showScreen(id) {
+    SCREENS.forEach(function(sid) {
+      var el = $(sid);
+      if (el) el.classList.remove('screen-active');
+    });
+    var target = $(id);
+    if (!target) return;
+    target.classList.add('screen-active');
+    currentScreen = id;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    updateBreadcrumb(id);
+  }
+
+  // ─── Breadcrumb & bouton retour ───────────────────────
+  function updateBreadcrumb(screenId) {
+    var bc  = $('topbar-breadcrumb');
+    var btn = $('btn-retour-permanent');
+
+    if (btn) {
+      if (screenId === 'screen-home') {
+        btn.classList.add('hidden-on-home');
+      } else {
+        btn.classList.remove('hidden-on-home');
+      }
+    }
+
+    if (!bc) return;
+
+    if (screenId === 'screen-home') {
+      bc.innerHTML = '';
+    } else if (screenId === 'screen-jeux') {
+      bc.innerHTML = '<span class="breadcrumb-label">🎮 Tous les jeux</span>';
+    } else if (screenId === 'screen-jeu-detail') {
+      bc.innerHTML =
+        '<button class="breadcrumb-back" id="bc-back-jeux">🎮 Jeux</button>' +
+        '<span class="breadcrumb-sep">›</span>' +
+        '<span class="breadcrumb-label" id="bc-jeu-label">—</span>';
+      var bcBtn = $('bc-back-jeux');
+      if (bcBtn) bcBtn.addEventListener('click', goJeux);
+    } else if (screenId === 'screen-parties') {
+      bc.innerHTML = '<span class="breadcrumb-label">📋 Mes parties</span>';
+    }
+  }
+
+  // ─── Stats accueil ────────────────────────────────────
+  function renderStats() {
+    try {
+      var parties = JSON.parse(localStorage.getItem('mgu_parties') || '[]');
+      var raw     = localStorage.getItem('mgu_joueurs') ||
+                    localStorage.getItem('mgu_players') || '[]';
+      var joueurs = JSON.parse(raw);
+      var totalPts = parties.reduce(function(sum, p) {
+        return sum + Object.values(p.scores || {}).reduce(function(s, v) {
+          return s + (Number(v) || 0);
+        }, 0);
+      }, 0);
+
+      var elP = $('stat-parties');
+      var elJ = $('stat-joueurs');
+      var elT = $('stat-points');
+      if (elP) elP.textContent = parties.length;
+      if (elJ) elJ.textContent = Array.isArray(joueurs) ? joueurs.length : 0;
+      if (elT) elT.textContent = totalPts;
+    } catch(e) { /* silencieux */ }
+  }
+
+  // ─── Routes ───────────────────────────────────────────
+  function goHome() {
+    showScreen('screen-home');
+    renderStats();
+  }
+
+  function goJeux() {
+    showScreen('screen-jeux');
+    renderJeuxGrid();
+  }
+
+  function goDetail(jeuId) {
+    var jeu = JEUX.find(function(j) { return j.id === jeuId; });
+    if (!jeu) return;
+    renderDetail(jeu);
+    showScreen('screen-jeu-detail');
+    var label = $('bc-jeu-label');
+    if (label) label.textContent = jeu.nom;
+  }
+
+  function goParties() {
+    showScreen('screen-parties');
+    renderPartiesContinuer();
+  }
+
+  function goHost(jeuId) {
+    // Masque tout proprement avant la redirection
+    SCREENS.forEach(function(sid) {
+      var el = $(sid);
+      if (el) el.classList.remove('screen-active');
+    });
+    window.location.href = jeuId ? '/host/?jeu=' + jeuId : '/host/';
+  }
+
+  function retourContextuel() {
+    if (currentScreen === 'screen-jeu-detail') return goJeux();
+    if (currentScreen === 'screen-jeux')       return goHome();
+    if (currentScreen === 'screen-parties')    return goHome();
+    goHome();
+  }
+
+  // ─── Rendu : grille des jeux ──────────────────────────
+  function renderJeuxGrid() {
+    var c = $('jeux-grid-container');
+    if (!c) return;
+    c.innerHTML = JEUX.map(function(j) {
+      return '<button class="jeu-card" data-id="' + esc(j.id) + '" aria-label="Voir ' + esc(j.nom) + '">' +
+        '<div class="jeu-icon">' + j.icon + '</div>' +
+        '<div class="jeu-name">' + esc(j.nom) + '</div>' +
+        '<div class="jeu-desc">' + esc(j.desc) + '</div>' +
+        '<div class="jeu-meta">' +
+          '<span class="jeu-meta-item">👥 ' + j.joueurs + '</span>' +
+          '<span class="jeu-meta-item">⏱ ' + j.duree + '</span>' +
+        '</div></button>';
+    }).join('');
+    c.querySelectorAll('.jeu-card').forEach(function(btn) {
+      btn.addEventListener('click', function() { goDetail(btn.dataset.id); });
+    });
+  }
+
+  // ─── Rendu : fiche détail ─────────────────────────────
+  function renderDetail(jeu) {
+    var hero  = $('detail-hero-content');
+    var regl  = $('detail-regles-content');
+    var acts  = $('detail-actions');
+
+    if (hero) {
+      hero.innerHTML =
+        '<div class="detail-icon">' + jeu.icon + '</div>' +
+        '<div class="detail-nom">'  + esc(jeu.nom)  + '</div>' +
+        '<div class="detail-desc">' + esc(jeu.desc) + '</div>' +
+        '<div class="detail-infos">' +
+          '<div class="detail-info-item">' +
+            '<span class="detail-info-label">Joueurs</span>' +
+            '<span class="detail-info-val">👥 ' + jeu.joueurs + '</span>' +
+          '</div>' +
+          '<div class="detail-info-item">' +
+            '<span class="detail-info-label">Durée</span>' +
+            '<span class="detail-info-val">⏱ ' + jeu.duree + '</span>' +
+          '</div>' +
+        '</div>';
+    }
+    if (regl) regl.textContent = jeu.regles;
+    if (acts) {
+      acts.innerHTML =
+        '<button class="btn-primary btn-full btn-hero" id="btn-detail-lancer">🚀 Lancer une partie</button>' +
+        '<a href="/games/' + esc(jeu.id) + '/" class="btn-secondary btn-full">👁 Aperçu solo / démo</a>';
+      var btnL = $('btn-detail-lancer');
+      if (btnL) {
+        btnL.addEventListener('click', function() { goHost(jeu.id); });
+      }
+    }
+  }
+
+  // ─── Rendu : parties sauvegardées ────────────────────
+  function renderPartiesContinuer() {
+    var c = $('parties-continuer-list');
+    if (!c) return;
+
+    var parties = [];
+    try { parties = JSON.parse(localStorage.getItem('mgu_parties') || '[]'); } catch(e) {}
+    parties.sort(function(a,b) { return new Date(b.createdAt||0) - new Date(a.createdAt||0); });
+
+    if (parties.length === 0) {
+      c.innerHTML =
+        '<div class="parties-vide">' +
+          '<div class="parties-vide-icon">📋</div>' +
+          '<p>Aucune partie sauvegardée pour l\'instant.</p>' +
+          '<button class="btn-secondary" id="btn-pv-jeux">Lancer une première partie</button>' +
+        '</div>';
+      var pvBtn = $('btn-pv-jeux');
+      if (pvBtn) pvBtn.addEventListener('click', goJeux);
+      return;
+    }
+
+    c.innerHTML = parties.slice(0, 20).map(function(p, i) {
+      var meta = JEUX.find(function(j) { return j.id === p.jeu; }) || { icon:'🎮', nom: p.jeu||'Partie' };
+      var date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('fr-FR') : '';
+      var joueurs = Object.keys(p.scores || {});
+      var chips = joueurs.slice(0,4).map(function(j) {
+        return '<span class="pc-joueur-chip">' + esc(j) + '</span>';
+      }).join('');
+      var more = joueurs.length > 4
+        ? '<span class="pc-joueur-chip pc-joueur-more">+' + (joueurs.length-4) + '</span>' : '';
+      var statut = p.statut === 'terminee'
+        ? '<span class="badge-statut badge-terminee">Terminée</span>'
+        : '<span class="badge-statut badge-en-cours">En cours</span>';
+
+      return '<div class="partie-continue-card animate-in" style="animation-delay:' + (i*0.05) + 's">' +
+        '<div class="partie-continue-icon">' + meta.icon + '</div>' +
+        '<div class="partie-continue-info">' +
+          '<div class="partie-continue-nom">' + esc(p.nom||meta.nom) + ' ' + statut + '</div>' +
+          '<div class="partie-continue-meta">' +
+            '<span>' + esc(meta.nom) + '</span>' +
+            (date ? '<span>·</span><span>' + date + '</span>' : '') +
+            (p.mode ? '<span>·</span><span>' + (p.mode==='team' ? '🛡️ Équipes' : '👤 Solo') + '</span>' : '') +
+          '</div>' +
+          '<div class="partie-continue-joueurs">' + chips + more + '</div>' +
+        '</div>' +
+        '<div class="partie-continue-actions">' +
+          '<a href="/host/?resume=' + encodeURIComponent(p.partieId||p.id) + '" class="btn-primary btn-sm">▶ Reprendre</a>' +
+          '<button class="btn-ghost btn-sm btn-del-partie" data-idx="' + i + '" title="Supprimer">🗑</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    c.querySelectorAll('.btn-del-partie').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (!confirm("Supprimer cette partie de l'historique local ?")) return;
+        var idx = parseInt(btn.dataset.idx, 10);
+        if (!isNaN(idx)) {
+          parties.splice(idx, 1);
+          try { localStorage.setItem('mgu_parties', JSON.stringify(parties)); } catch(e) {}
+          renderPartiesContinuer();
+        }
+      });
+    });
+  }
+
+  // ─── Menu latéral ────────────────────────────────────
+  function ouvrirMenu() {
+    var ov = $('menu-overlay'), mp = $('menu-panel');
+    if (ov) ov.hidden = false;
+    if (mp) mp.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  function fermerMenu() {
+    var ov = $('menu-overlay'), mp = $('menu-panel');
+    if (ov) ov.hidden = true;
+    if (mp) mp.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  // ─── Musique ──────────────────────────────────────────
+  var musicPlaying = false;
+  function toggleMusique() {
+    var audio = $('bg-music');
+    var btn   = $('toggle-music');
+    if (!audio) return;
+    musicPlaying = !musicPlaying;
+    if (musicPlaying) {
+      audio.volume = 0.35;
+      audio.play().catch(function() { musicPlaying = false; });
+      if (btn) btn.textContent = '🔊';
+    } else {
+      audio.pause();
+      if (btn) btn.textContent = '🔇';
+    }
+  }
+
+  // ─── Branchement des événements ──────────────────────
+  function bindEvents() {
+    var retour = $('btn-retour-permanent');
+    if (retour) retour.addEventListener('click', retourContextuel);
+
+    var homeBtn = $('btn-home-permanent');
+    if (homeBtn) homeBtn.addEventListener('click', goHome);
+
+    var menuBtn = $('btn-menu-permanent');
+    if (menuBtn) menuBtn.addEventListener('click', ouvrirMenu);
+
+    var musicBtn = $('toggle-music');
+    if (musicBtn) musicBtn.addEventListener('click', toggleMusique);
+
+    var logoLink = $('topbar-logo-link');
+    if (logoLink) logoLink.addEventListener('click', function(e) { e.preventDefault(); goHome(); });
+
+    // Menu latéral
+    var closeMenu = $('btn-close-menu');
+    if (closeMenu) closeMenu.addEventListener('click', fermerMenu);
+
+    var menuOv = $('menu-overlay');
+    if (menuOv) menuOv.addEventListener('click', fermerMenu);
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') fermerMenu();
+    });
+
+    var mParties = $('menu-parties');
+    if (mParties) mParties.addEventListener('click', function() { fermerMenu(); goParties(); });
+
+    var mJoueurs = $('menu-joueurs');
+    if (mJoueurs) mJoueurs.addEventListener('click', function() { fermerMenu(); });
+
+    var mEquipes = $('menu-equipes');
+    if (mEquipes) mEquipes.addEventListener('click', function() { fermerMenu(); });
+
+    var mHome = $('menu-home');
+    if (mHome) mHome.addEventListener('click', function() { fermerMenu(); });
+
+    var mRegl = $('menu-reglages');
+    if (mRegl) mRegl.addEventListener('click', function() { fermerMenu(); });
+
+    // ── CTA accueil ──────────────────────────────────────
+    var btnNP = $('btn-nouvelle-partie');
+    if (btnNP) btnNP.addEventListener('click', function() { goHost(); });
+
+    var btnCont = $('btn-continuer');
+    if (btnCont) btnCont.addEventListener('click', goParties);
+
+    var btnJeux = $('btn-voir-jeux');
+    if (btnJeux) btnJeux.addEventListener('click', goJeux);
+
+    // ── Depuis l'écran parties ────────────────────────────
+    var btnPN = $('btn-parties-nouvelle');
+    if (btnPN) btnPN.addEventListener('click', function() { goHost(); });
+
+    // Compatibilité boutons retour internes (main.js)
+    var bRJ = $('btn-retour-jeux');
+    if (bRJ) bRJ.addEventListener('click', goHome);
+    var bRD = $('btn-retour-detail');
+    if (bRD) bRD.addEventListener('click', goJeux);
+    var bRP = $('btn-retour-parties');
+    if (bRP) bRP.addEventListener('click', goHome);
+  }
+
+  // ─── Exposition globale pour main.js ─────────────────
+  window.MGU = {
+    goHome:                  goHome,
+    goJeux:                  goJeux,
+    goDetail:                goDetail,
+    goParties:               goParties,
+    goHost:                  goHost,
+    renderPartiesContinuer:  renderPartiesContinuer,
+    renderStats:             renderStats,
+  };
+
+  // Compatibilité event mgu:afficher-parties (host.js)
+  window.addEventListener('mgu:afficher-parties', goParties);
+
+  // ─── Démarrage ────────────────────────────────────────
+  function boot() {
+    bindEvents();
+    goHome();  // ← Affiche l'accueil dès le départ
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+
+}());
+</script>
 
 </body>
 </html>
