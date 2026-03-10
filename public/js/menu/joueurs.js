@@ -1,69 +1,119 @@
-// /js/modules/joueurs.js
+// /public/js/menu/joueurs.js
 // ======================================================
-// 👥 MODULE GESTION DES JOUEURS
+// 👤 MODULE GESTION DES JOUEURS — Menu
+// Overlay plein écran pour gérer la liste des joueurs
 // ======================================================
 
-import { show, hide } from "../core/dom.js";
-import { getPlayers, addPlayer, getScoresGlobaux } from "../core/storage.js";
-import { naviguerVers } from "../navigation.js";
-
-export function afficherGestionJoueurs() {
-    naviguerVers("gestion-joueurs-panel");
-    _renderGestionJoueurs();
+function esc(str) {
+    return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function _renderGestionJoueurs() {
-    const panel = document.getElementById("gestion-joueurs-panel");
-    if (!panel) return;
+function getJoueurs() {
+    try { return JSON.parse(localStorage.getItem("mgu_joueurs") || "[]"); } catch { return []; }
+}
 
-    const joueurs = getPlayers();
-    const scoresGlob = getScoresGlobaux();
+function saveJoueurs(liste) {
+    try { localStorage.setItem("mgu_joueurs", JSON.stringify(liste)); } catch {}
+}
 
-    panel.innerHTML = `
-        <div class="gj-header">
-            <h2 class="section-title">👥 Gestion des joueurs</h2>
+function getScoresGlobaux() {
+    try {
+        const parties = JSON.parse(localStorage.getItem("mgu_parties") || "[]");
+        const scores = {};
+        parties.forEach(p => {
+            Object.entries(p.scores || {}).forEach(([nom, pts]) => {
+                scores[nom] = (scores[nom] || 0) + pts;
+            });
+        });
+        return scores;
+    } catch { return {}; }
+}
+
+function renderJoueurs(overlay) {
+    const joueurs = getJoueurs();
+    const scores = getScoresGlobaux();
+    const liste = overlay.querySelector("#gj-list");
+    const counter = overlay.querySelector("#gj-count");
+
+    if (counter) counter.textContent = `${joueurs.length} joueur${joueurs.length !== 1 ? "s" : ""} enregistré${joueurs.length !== 1 ? "s" : ""}`;
+
+    if (!liste) return;
+    if (joueurs.length === 0) {
+        liste.innerHTML = `<p class="mfs-empty">Aucun joueur enregistré.</p>`;
+        return;
+    }
+
+    liste.innerHTML = joueurs.map((j, i) => `
+        <div class="mfs-joueur-item">
+            <div class="mfs-joueur-avatar">${j.charAt(0).toUpperCase()}</div>
+            <span class="mfs-joueur-nom">${esc(j)}</span>
+            <span class="mfs-joueur-pts">${scores[j] || 0} pts</span>
+            <button class="mfs-del-btn" data-i="${i}" title="Supprimer">✖</button>
+        </div>
+    `).join("");
+
+    liste.querySelectorAll(".mfs-del-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const i = parseInt(btn.dataset.i);
+            const updated = getJoueurs();
+            updated.splice(i, 1);
+            saveJoueurs(updated);
+            renderJoueurs(overlay);
+        });
+    });
+}
+
+export function afficherGestionJoueurs() {
+    let overlay = document.getElementById("joueurs-overlay");
+    if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "joueurs-overlay";
+        overlay.className = "menu-fullscreen-overlay";
+        document.body.appendChild(overlay);
+    }
+
+    overlay.innerHTML = `
+    <div class="mfs-container">
+        <div class="mfs-header">
+            <h1 class="mfs-title">👤 Gestion des joueurs</h1>
+            <button class="mfs-close" id="joueurs-close-btn">✕</button>
         </div>
 
-        <div class="gj-add-form">
-            <input type="text" id="gj-input-pseudo" class="input-primary"
+        <div class="mfs-add-form">
+            <input type="text" id="gj-input" class="input-primary mfs-input"
                    placeholder="Nouveau joueur…" maxlength="20"
                    autocomplete="off" autocorrect="off" autocapitalize="words">
             <button id="gj-btn-add" class="btn-primary">Ajouter</button>
         </div>
 
-        <div class="gj-list" id="gj-list">
-            ${joueurs.length === 0
-                ? `<p class="gj-empty">Aucun joueur enregistré</p>`
-                : joueurs.map(j => {
-                    const pts = scoresGlob[j]?.total || 0;
-                    return `
-                        <div class="gj-item">
-                            <div class="gj-avatar">${j.charAt(0).toUpperCase()}</div>
-                            <span class="gj-nom">${_esc(j)}</span>
-                            <span class="gj-pts">${pts} pts</span>
-                        </div>
-                    `;
-                }).join("")
-            }
-        </div>
+        <p id="gj-count" class="mfs-count"></p>
+        <div id="gj-list" class="mfs-list"></div>
+    </div>`;
 
-        <p class="gj-count">${joueurs.length} joueur${joueurs.length > 1 ? "s" : ""} enregistré${joueurs.length > 1 ? "s" : ""}</p>
-    `;
+    overlay.hidden = false;
+    requestAnimationFrame(() => overlay.classList.add("mfs-visible"));
 
-    document.getElementById("gj-btn-add")?.addEventListener("click", () => {
-        const input = document.getElementById("gj-input-pseudo");
+    renderJoueurs(overlay);
+
+    const input = overlay.querySelector("#gj-input");
+    const btnAdd = overlay.querySelector("#gj-btn-add");
+
+    const ajouter = () => {
         const pseudo = input?.value.trim();
         if (!pseudo) return;
-        addPlayer(pseudo);
+        const joueurs = getJoueurs();
+        if (joueurs.includes(pseudo)) { input.value = ""; return; }
+        joueurs.push(pseudo);
+        saveJoueurs(joueurs);
         input.value = "";
-        _renderGestionJoueurs();
-    });
+        renderJoueurs(overlay);
+    };
 
-    document.getElementById("gj-input-pseudo")?.addEventListener("keydown", e => {
-        if (e.key === "Enter") document.getElementById("gj-btn-add")?.click();
-    });
-}
+    btnAdd?.addEventListener("click", ajouter);
+    input?.addEventListener("keydown", e => { if (e.key === "Enter") ajouter(); });
 
-function _esc(str) {
-    return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    overlay.querySelector("#joueurs-close-btn")?.addEventListener("click", () => {
+        overlay.classList.remove("mfs-visible");
+        setTimeout(() => { overlay.hidden = true; }, 300);
+    });
 }

@@ -16,35 +16,88 @@
   ⚠️ Connexion perdue — vérifiez votre réseau
 </div>
 
-<!-- ══ TOPBAR ════════════════════════════════════════ -->
-<nav class="topbar" id="topbar">
-  <div class="topbar-left">
-    <a class="topbar-logo" href="#" aria-label="Accueil">
-      <img src="/images/LogoMiniGame.png" alt="Logo" class="topbar-logo-img" onerror="this.style.display='none'">
-      <span class="topbar-logo-text">MiniGame</span>
-    </a>
-  </div>
-  <div class="topbar-center" id="topbar-breadcrumb"></div>
-  <div class="topbar-right">
-    <button id="btn-menu-permanent" class="topbar-btn" aria-label="Menu">☰</button>
-  </div>
-</nav>
+<!-- ══════════════════════════════════════════════════
+     🏠 BARRE DE NAVIGATION PERMANENTE
+════════════════════════════════════════════════════ -->
+<div class="top-nav-bar">
 
-<!-- ══ MENU OVERLAY ══════════════════════════════════ -->
-<div id="menu-overlay" class="menu-overlay" hidden></div>
-<div id="menu-panel" class="menu-panel" hidden>
-  <div class="menu-panel-header">
-    <span class="menu-title">🎮 Menu</span>
-    <button id="btn-close-menu" class="menu-close">✕</button>
-  </div>
-  <nav class="menu-nav">
-    <button class="menu-item" id="menu-btn-host">🎙️ <span>Créer une partie</span></button>
-    <button class="menu-item" id="menu-btn-join">🎮 <span>Rejoindre une partie</span></button>
-    <div class="menu-divider"></div>
-    <button class="menu-item" id="menu-btn-jeux">🃏 <span>Les jeux</span></button>
-    <button class="menu-item" id="menu-btn-parties">📋 <span>Mes parties</span></button>
-  </nav>
+  <!-- Bouton Retour -->
+  <button class="btn-retour-permanent" id="btn-retour-permanent" aria-label="Retour" hidden>
+    ⬅️
+  </button>
+
+  <!-- Logo / Accueil -->
+  <a class="topbar-logo" href="#" aria-label="Accueil">
+    <img src="/images/LogoMiniGame.png" alt="Logo" class="topbar-logo-img" onerror="this.style.display='none'">
+    <span class="topbar-logo-text">MiniGame</span>
+  </a>
+
+  <!-- Breadcrumb centre -->
+  <div class="topbar-breadcrumb" id="topbar-breadcrumb"></div>
+
+  <!-- Bouton Accueil -->
+  <button class="btn-home-permanent" id="btn-home-permanent" aria-label="Retour à l'accueil">
+    🏠
+  </button>
+
+  <!-- Musique -->
+  <audio id="bg-music" src="/audio/ambiance.mp3" loop preload="none"></audio>
+  <button class="btn-music" id="toggle-music" aria-label="Activer/Désactiver la musique">
+    🔇
+  </button>
+
+  <!-- Bouton Menu -->
+  <button class="btn-menu-permanent" id="btn-menu-permanent" aria-label="Ouvrir le menu">
+    ☰
+  </button>
+
 </div>
+
+<!-- ══════════════════════════════════════════════════
+     📋 MENU LATÉRAL
+════════════════════════════════════════════════════ -->
+
+<!-- Overlay -->
+<div class="menu-overlay" id="menu-overlay" hidden></div>
+
+<!-- Panneau latéral -->
+<nav class="menu-panel" id="menu-panel" hidden aria-label="Menu principal">
+
+  <div class="menu-header">
+    <h2>Centre de contrôle</h2>
+    <button class="btn-close-menu" id="btn-close-menu" aria-label="Fermer le menu">✖</button>
+  </div>
+
+  <div class="menu-nav">
+
+    <button class="menu-item" id="menu-reglages">
+      <span class="menu-icon">⚙️</span>
+      <span class="menu-text">Réglages</span>
+    </button>
+
+    <button class="menu-item" id="menu-home">
+      <span class="menu-icon">📊</span>
+      <span class="menu-text">Statistiques</span>
+    </button>
+
+    <button class="menu-item" id="menu-parties">
+      <span class="menu-icon">📜</span>
+      <span class="menu-text">Parties enregistrées</span>
+    </button>
+
+    <button class="menu-item" id="menu-joueurs">
+      <span class="menu-icon">👤</span>
+      <span class="menu-text">Gestion des joueurs</span>
+    </button>
+
+    <button class="menu-item" id="menu-equipes">
+      <span class="menu-icon">⚔️</span>
+      <span class="menu-text">Gestion des équipes</span>
+    </button>
+
+  </div>
+
+</nav>
 
 <!-- ══ TOASTS ═════════════════════════════════════════ -->
 <div id="toast-container" class="toast-container"></div>
@@ -67,7 +120,7 @@
         <span>📋</span> Continuer une partie
       </button>
       <button id="btn-voir-jeux" class="btn-ghost btn-hero-link">
-        🃏 Voir tous les jeux & règles
+        🃏 Voir tous les jeux &amp; règles
       </button>
     </div>
   </div>
@@ -139,13 +192,5 @@
 </section>
 
 <script type="module" src="/js/main.js"></script>
-<script>
-  // Bouton "Nouvelle partie" dans l'écran parties
-  document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("btn-parties-nouvelle")?.addEventListener("click", () => {
-      location.href = "/host/";
-    });
-  });
-</script>
 </body>
 </html>

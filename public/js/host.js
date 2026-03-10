@@ -1,10 +1,10 @@
 // /public/js/host.js
 // ======================================================
-// 🟦 HOST.JS v4
-// - Création illimitée de parties (plus de blocage GAME_EXISTS)
-// - Après "Lancer" :
-//     • Si host joue → sauvegarde session + redirige vers le jeu
-//     • Sinon       → affiche l'écran spectateur (suivi en temps réel)
+// 🟦 HOST.JS v5
+// - Après "Lancer" → TOUJOURS afficher l'écran spectateur
+//   (que le host joue ou non)
+// - La session est sauvegardée pour que le host puisse
+//   ouvrir le jeu dans un autre onglet si besoin
 // ======================================================
 
 import { socket } from "./core/socket.js";
@@ -51,18 +51,17 @@ function toast(msg, type="info", ms=3000) {
 // 🗂️ STATE
 // ======================================================
 const HostState = {
-    partieId:    null,
-    partieNom:   null,
-    jeu:         null,
-    mode:        "solo",
-    equipes:     [],
-    joueursSolo: [],
-    joueurs:     [],
-    scores:      {},
-    statut:      null,
-    hostJoue:    false,
-    hostPseudo:  null,
-    // ✅ partieActive lié à CE host-WS uniquement (pas global)
+    partieId:      null,
+    partieNom:     null,
+    jeu:           null,
+    mode:          "solo",
+    equipes:       [],
+    joueursSolo:   [],
+    joueurs:       [],
+    scores:        {},
+    statut:        null,
+    hostJoue:      false,
+    hostPseudo:    null,
     partieEnCours: false,
 };
 
@@ -207,20 +206,17 @@ function renderEquipesForm() {
 }
 
 // ======================================================
-// 🚀 CRÉER PARTIE — plus de vérif partieActive globale
+// 🚀 CRÉER PARTIE
 // ======================================================
 function initCreerPartie() {
     $("h-btn-creer")?.addEventListener("click", () => {
-        // Bloquer seulement si CE host a déjà une partie non terminée
         if(HostState.partieEnCours){
             toast("Terminez ou quittez votre partie en cours d'abord.","warning");
             return;
         }
-
         const nom  = $("h-nom-partie")?.value.trim();
         const jeu  = $("h-jeu")?.value;
         const mode = HostState.mode;
-
         if(!nom){ toast("Donnez un nom à la partie.","warning"); return; }
         if(mode==="team" && HostState.equipes.length<2){ toast("Il faut au moins 2 équipes.","warning"); return; }
 
@@ -243,7 +239,8 @@ function initCreerPartie() {
 
 // ======================================================
 // 🎮 LANCER LA PARTIE
-// Redirection vers le jeu si host joue, sinon écran spectateur
+// ✅ TOUJOURS → écran spectateur (peu importe hostJoue)
+// Si host joue → session sauvegardée + lien "rejoindre" dans spectateur
 // ======================================================
 function lancerPartie() {
     socket.send("HOST_START_GAME", {});
@@ -253,8 +250,8 @@ function apresLancement(snapshot) {
     HostState.statut = "en_cours";
     mettreAJourStatutLocal(HostState.partieId, "en_cours", null);
 
+    // ── Toujours sauvegarder la session (au cas où le host veut jouer dans un autre onglet) ──
     if(HostState.hostJoue && HostState.hostPseudo) {
-        // ── Host joue : sauvegarder la session et aller au jeu ──
         const session = {
             partieId:  HostState.partieId,
             pseudo:    HostState.hostPseudo,
@@ -266,39 +263,56 @@ function apresLancement(snapshot) {
             scores:    snapshot.scores  || {},
         };
         sessionStorage.setItem("mgu_game_session", JSON.stringify(session));
-        toast("C'est parti ! Vous rejoignez le jeu…","success", 1500);
-        setTimeout(()=>{ location.href = JEU_PATHS[HostState.jeu] || "/games/"; }, 1200);
-    } else {
-        // ── Host spectateur : afficher l'écran de suivi ──
-        afficherEcranSpectateur(snapshot);
     }
+
+    // ── TOUJOURS afficher l'écran spectateur ──
+    afficherEcranSpectateur(snapshot);
 }
 
 // ======================================================
-// 🖥️ ÉCRAN SPECTATEUR (host qui ne joue pas)
+// 🖥️ ÉCRAN SPECTATEUR
 // ======================================================
 function afficherEcranSpectateur(snapshot) {
     hide("host-lobby");
     show("host-spectateur");
-    // QR dans l'écran spectateur
+
     const joinUrl = `${location.origin}/join/?partieId=${HostState.partieId}`;
+
+    // QR Code
     const spQr = document.getElementById("sp-qr");
     if(spQr){
         const qrUrl=`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(joinUrl)}&bgcolor=0d0d1a&color=00d4ff&margin=2`;
         spQr.innerHTML=`<img src="${qrUrl}" alt="QR Code" class="qr-img" onerror="this.closest('.qr-container').innerHTML='<p>QR indisponible</p>'">`;
     }
+
+    // ✅ Si le host joue, afficher un bouton "Rejoindre le jeu" dans le panneau spectateur
+    if(HostState.hostJoue && HostState.hostPseudo) {
+        const spActions = document.querySelector(".sp-actions");
+        if(spActions && !document.getElementById("sp-btn-join-game")) {
+            const gameUrl = JEU_PATHS[HostState.jeu] || "/games/";
+            const btnJoin = document.createElement("a");
+            btnJoin.id = "sp-btn-join-game";
+            btnJoin.href = gameUrl;
+            btnJoin.className = "btn-primary btn-full";
+            btnJoin.style.display = "flex";
+            btnJoin.style.alignItems = "center";
+            btnJoin.style.justifyContent = "center";
+            btnJoin.style.gap = "8px";
+            btnJoin.style.marginBottom = "8px";
+            btnJoin.innerHTML = `<span>🎮</span> Rejoindre le jeu (${esc(HostState.hostPseudo)})`;
+            spActions.insertBefore(btnJoin, spActions.firstChild);
+        }
+    }
+
     renderSpectateur(snapshot);
 }
 
 function renderSpectateur(snapshot) {
     const snap = snapshot || {};
-
-    // Infos partie
     const el = n=>document.getElementById(n);
     if(el("sp-nom"))  el("sp-nom").textContent  = HostState.partieNom || "—";
     if(el("sp-jeu"))  el("sp-jeu").textContent  = (HostState.jeu||"—").toUpperCase();
     if(el("sp-mode")) el("sp-mode").textContent = HostState.mode==="team"?"🛡️ Équipes":"👤 Solo";
-
     _setStatutBadgeSp("en_cours");
     renderScoresSp();
     renderJoueursSp();
@@ -371,9 +385,7 @@ function renderResultatsSp() {
 // ======================================================
 function initSocketEvents() {
 
-    socket.on("AUTH_OK", ()=>{
-        toast("Connecté en tant que host","success",2000);
-    });
+    socket.on("AUTH_OK", ()=>{ toast("Connecté en tant que host","success",2000); });
 
     socket.on("GAME_CREATED", ({ partieId, snapshot }) => {
         HostState.partieId      = partieId;
@@ -381,7 +393,6 @@ function initSocketEvents() {
         applySnapshot(snapshot);
         sauvegarderPartieLocale(snapshot);
 
-        // Pré-remplir le join URL dans le panel game (lobby)
         const joinUrl = `${location.origin}/join/?partieId=${partieId}`;
         const link=$("h-join-link");
         if(link){ link.href=joinUrl; link.textContent=joinUrl; }
@@ -430,8 +441,6 @@ function initSocketEvents() {
         renderScoresSp();
         renderResultatsSp();
         toast("Partie terminée !","info");
-
-        // Aussi dans le panel lobby si pas encore redirigé
         _setStatutBadge("terminee");
         hide("h-btn-end"); show("h-btn-nouvelle");
     });
@@ -448,12 +457,11 @@ function initSocketEvents() {
             HOST_ALREADY_HAS_GAME: "Vous avez déjà une partie en cours. Terminez-la d'abord.",
         };
         toast(messages[code]||`Erreur (${code})`,"error");
-        // Pas de blocage visuel permanent — juste un toast
     });
 }
 
 // ======================================================
-// 🎮 CONTRÔLES LOBBY (panel-game)
+// 🎮 CONTRÔLES LOBBY
 // ======================================================
 function initControles() {
     $("h-btn-start")?.addEventListener("click", () => {
@@ -502,6 +510,8 @@ function resetPourNouvellePartie() {
     hide("panel-game");
     hide("h-btn-nouvelle");
     show("h-btn-start");
+    // Supprimer le bouton "rejoindre le jeu" s'il existe
+    document.getElementById("sp-btn-join-game")?.remove();
     const nom=$("h-nom-partie"); if(nom) nom.value="";
     const cb=$("h-host-joue"); if(cb) cb.checked=false;
     HostState.hostJoue=false;
@@ -517,19 +527,15 @@ function resetPourNouvellePartie() {
 function renderGamePanel() {
     const joinUrl=`${location.origin}/join/?partieId=${HostState.partieId}`;
     const el=n=>$(n);
-
     if(el("h-info-nom"))  el("h-info-nom").textContent  = HostState.partieNom||"—";
     if(el("h-info-jeu"))  el("h-info-jeu").textContent  = (HostState.jeu||"—").toUpperCase();
     if(el("h-info-mode")) el("h-info-mode").textContent = HostState.mode==="team"?"🛡️ Équipes":"👤 Solo";
     _setStatutBadge(HostState.statut||"lobby");
-
     const link=$("h-join-link");
     if(link){ link.href=joinUrl; link.textContent=joinUrl; }
     _renderQR(joinUrl);
-
     if(HostState.mode==="team"){ hide("bloc-joueurs-connectes"); show("bloc-equipes-connectees"); }
     else                       { show("bloc-joueurs-connectes"); hide("bloc-equipes-connectees"); }
-
     renderJoueursConnectes();
     renderScores();
 }
@@ -538,7 +544,6 @@ function renderJoueursConnectes() {
     const c=$("h-joueurs-connectes"), counter=$("h-nb-joueurs");
     if(!c) return;
     if(counter) counter.textContent=HostState.joueurs.length;
-
     if(HostState.mode==="team"){
         const ec=$("h-equipes-connectees"), nb=$("h-nb-equipes");
         const map={};
@@ -553,7 +558,6 @@ function renderJoueursConnectes() {
             </div>`).join("") || `<p class="list-empty">En attente…</p>`;
         return;
     }
-
     if(HostState.joueurs.length===0){ c.innerHTML=`<p class="list-empty">En attente de joueurs…</p>`; return; }
     c.innerHTML=HostState.joueurs.map(j=>`
         <div class="joueur-connecte-item">
@@ -641,7 +645,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initControles();
     initFromUrl();
     socket.connect(WS_URL);
-    console.log("[HOST] 🎮 v4 initialisé");
+    console.log("[HOST] 🎮 v5 initialisé");
 });
 
 window.HostState = HostState;

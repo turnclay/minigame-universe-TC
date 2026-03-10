@@ -1,562 +1,183 @@
-// /js/modules/statistiques.js
+// /public/js/menu/statistiques.js
+// ======================================================
+// 📊 MODULE STATISTIQUES — Menu
+// Affiche le dashboard stats dans un overlay plein écran
+// ======================================================
 
-import { $, show, hide } from "../core/dom.js";
-import { getAllParties, getPlayers } from "../core/storage.js";
+const JEUX_META = {
+    quiz:       { label: "Quiz",           icon: "❓", color: "#00d4ff" },
+    justeprix:  { label: "Juste Prix",     icon: "💰", color: "#ffd700" },
+    undercover: { label: "Undercover",     icon: "🕵️", color: "#a855f7" },
+    lml:        { label: "Maxi Lettres",   icon: "📖", color: "#22c55e" },
+    mimer:      { label: "Mimer/Dessiner", icon: "🎭", color: "#f97316" },
+    pendu:      { label: "Le Pendu",       icon: "🪢", color: "#ef4444" },
+    petitbac:   { label: "Petit Bac",      icon: "📝", color: "#06b6d4" },
+    memoire:    { label: "Mémoire Flash",  icon: "🧠", color: "#8b5cf6" },
+    morpion:    { label: "Morpion",        icon: "⭕", color: "#84cc16" },
+    puissance4: { label: "Puissance 4",    icon: "🔴", color: "#fb923c" },
+};
 
-// ============================================
-// 📊 SYSTÈME DE STATISTIQUES
-// ============================================
-
-/**
- * Calcule les statistiques globales de toutes les parties
- */
-export function calculerStatistiquesGlobales() {
-    const parties = getAllParties();
-
-    const stats = {
-        totalParties: parties.length,
-        partiesParJeu: {},
-        partiesParMode: { solo: 0, team: 0 },
-        joueursActifs: new Set(),
-        equipesActives: new Set(),
-        scoreTotal: 0,
-        meilleurScore: { joueur: null, score: 0, jeu: null },
-        tempsMoyenParJeu: {},
-        performancesParJoueur: {}
-    };
-
-    parties.forEach(partie => {
-        // Parties par jeu
-        const jeu = partie.jeu || "inconnu";
-        stats.partiesParJeu[jeu] = (stats.partiesParJeu[jeu] || 0) + 1;
-
-        // Parties par mode
-        if (partie.mode === "solo" || partie.mode === "team") {
-            stats.partiesParMode[partie.mode]++;
-        }
-
-        // Scores
-        if (partie.scores && typeof partie.scores === 'object') {
-            Object.entries(partie.scores).forEach(([joueur, score]) => {
-                // Tracking des joueurs actifs
-                stats.joueursActifs.add(joueur);
-
-                // Score total
-                stats.scoreTotal += score;
-
-                // Meilleur score
-                if (score > stats.meilleurScore.score) {
-                    stats.meilleurScore = {
-                        joueur,
-                        score,
-                        jeu: partie.jeu,
-                        date: partie.date
-                    };
-                }
-
-                // Performances par joueur
-                if (!stats.performancesParJoueur[joueur]) {
-                    stats.performancesParJoueur[joueur] = {
-                        totalScore: 0,
-                        totalParties: 0,
-                        jeuxJoues: new Set(),
-                        meilleurScore: 0,
-                        victories: 0
-                    };
-                }
-
-                stats.performancesParJoueur[joueur].totalScore += score;
-                stats.performancesParJoueur[joueur].totalParties++;
-                stats.performancesParJoueur[joueur].jeuxJoues.add(partie.jeu);
-
-                if (score > stats.performancesParJoueur[joueur].meilleurScore) {
-                    stats.performancesParJoueur[joueur].meilleurScore = score;
-                }
-            });
-
-            // Détecter le gagnant de la partie
-            const gagnant = Object.entries(partie.scores).reduce((a, b) =>
-                a[1] > b[1] ? a : b
-            );
-            if (gagnant && stats.performancesParJoueur[gagnant[0]]) {
-                stats.performancesParJoueur[gagnant[0]].victories++;
-            }
-        }
-    });
-
-    return stats;
+function esc(str) {
+    return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-/**
- * Calcule les statistiques pour un joueur spécifique
- */
-export function calculerStatistiquesJoueur(nomJoueur) {
-    const parties = getAllParties();
+function getParties() {
+    try { return JSON.parse(localStorage.getItem("mgu_parties") || "[]"); } catch { return []; }
+}
 
-    const stats = {
-        nom: nomJoueur,
-        totalParties: 0,
-        totalScore: 0,
-        scoreMoyen: 0,
-        meilleurScore: 0,
-        victories: 0,
-        defaites: 0,
-        jeuxJoues: {},
-        performancesParJeu: {},
-        historique: []
-    };
+function calculerStats() {
+    const parties = getParties();
+    let totalPoints = 0;
+    const scoresParJoueur = {};
+    const compteurJeux = {};
 
-    parties.forEach(partie => {
-        if (!partie.scores || !partie.scores[nomJoueur]) return;
-
-        stats.totalParties++;
-        const score = partie.scores[nomJoueur];
-        stats.totalScore += score;
-
-        if (score > stats.meilleurScore) {
-            stats.meilleurScore = score;
-        }
-
-        // Jeux joués
-        const jeu = partie.jeu || "inconnu";
-        stats.jeuxJoues[jeu] = (stats.jeuxJoues[jeu] || 0) + 1;
-
-        // Performances par jeu
-        if (!stats.performancesParJeu[jeu]) {
-            stats.performancesParJeu[jeu] = {
-                parties: 0,
-                scoreTotal: 0,
-                scoreMoyen: 0,
-                meilleurScore: 0
-            };
-        }
-
-        stats.performancesParJeu[jeu].parties++;
-        stats.performancesParJeu[jeu].scoreTotal += score;
-        stats.performancesParJeu[jeu].scoreMoyen =
-            stats.performancesParJeu[jeu].scoreTotal / stats.performancesParJeu[jeu].parties;
-
-        if (score > stats.performancesParJeu[jeu].meilleurScore) {
-            stats.performancesParJeu[jeu].meilleurScore = score;
-        }
-
-        // Victoire ou défaite
-        const scores = Object.values(partie.scores);
-        const maxScore = Math.max(...scores);
-        if (score === maxScore) {
-            stats.victories++;
-        } else {
-            stats.defaites++;
-        }
-
-        // Historique
-        stats.historique.push({
-            jeu: partie.jeu,
-            score,
-            date: partie.date,
-            mode: partie.mode
+    parties.forEach(p => {
+        const jeu = p.jeu || "inconnu";
+        compteurJeux[jeu] = (compteurJeux[jeu] || 0) + 1;
+        Object.entries(p.scores || {}).forEach(([nom, pts]) => {
+            totalPoints += pts || 0;
+            if (!scoresParJoueur[nom]) scoresParJoueur[nom] = { total: 0, parJeu: {} };
+            scoresParJoueur[nom].total += pts || 0;
+            scoresParJoueur[nom].parJeu[jeu] = (scoresParJoueur[nom].parJeu[jeu] || 0) + (pts || 0);
         });
     });
 
-    stats.scoreMoyen = stats.totalParties > 0 ?
-        Math.round(stats.totalScore / stats.totalParties) : 0;
-
-    return stats;
-}
-
-/**
- * Calcule les statistiques pour un jeu spécifique
- */
-export function calculerStatistiquesJeu(nomJeu) {
-    const parties = getAllParties().filter(p => p.jeu === nomJeu);
-
-    const stats = {
-        jeu: nomJeu,
-        totalParties: parties.length,
-        joueursUniques: new Set(),
-        scoreTotal: 0,
-        scoreMoyen: 0,
-        meilleurScore: { joueur: null, score: 0, date: null },
-        performancesParJoueur: {}
-    };
-
-    parties.forEach(partie => {
-        if (!partie.scores) return;
-
-        Object.entries(partie.scores).forEach(([joueur, score]) => {
-            stats.joueursUniques.add(joueur);
-            stats.scoreTotal += score;
-
-            if (score > stats.meilleurScore.score) {
-                stats.meilleurScore = {
-                    joueur,
-                    score,
-                    date: partie.date
-                };
-            }
-
-            if (!stats.performancesParJoueur[joueur]) {
-                stats.performancesParJoueur[joueur] = {
-                    parties: 0,
-                    scoreTotal: 0,
-                    scoreMoyen: 0
-                };
-            }
-
-            stats.performancesParJoueur[joueur].parties++;
-            stats.performancesParJoueur[joueur].scoreTotal += score;
-            stats.performancesParJoueur[joueur].scoreMoyen =
-                stats.performancesParJoueur[joueur].scoreTotal /
-                stats.performancesParJoueur[joueur].parties;
-        });
-    });
-
-    const totalScores = parties.reduce((sum, p) => {
-        return sum + Object.values(p.scores || {}).reduce((a, b) => a + b, 0);
-    }, 0);
-
-    stats.scoreMoyen = parties.length > 0 ?
-        Math.round(totalScores / parties.length) : 0;
-
-    return stats;
-}
-
-/**
- * Affiche l'écran des statistiques
- */
-export function afficherStatistiques() {
-    const stats = calculerStatistiquesGlobales();
-    const container = $("statistiques-container");
-
-    if (!container) {
-        console.error("Container statistiques-container introuvable");
-        return;
-    }
-
-    // Conversion des Sets en Arrays pour l'affichage
-    const joueursActifs = Array.from(stats.joueursActifs);
-    const topJoueurs = Object.entries(stats.performancesParJoueur)
-        .map(([nom, perf]) => ({
-            nom,
-            scoreTotal: perf.totalScore,
-            scoreMoyen: Math.round(perf.totalScore / perf.totalParties),
-            victories: perf.victories
-        }))
-        .sort((a, b) => b.scoreTotal - a.scoreTotal)
-        .slice(0, 5);
-
-    container.innerHTML = `
-        <header class="stats-header">
-            <h1>📊 Statistiques</h1>
-        </header>
-
-        <div class="stats-grid">
-            <!-- Vue d'ensemble -->
-            <div class="stats-card">
-                <h2>🎮 Vue d'ensemble</h2>
-                <div class="stats-content">
-                    <p><strong>Total parties :</strong> ${stats.totalParties}</p>
-                    <p><strong>Joueurs actifs :</strong> ${joueursActifs.length}</p>
-                    <p><strong>Score total cumulé :</strong> ${stats.scoreTotal}</p>
-                </div>
-            </div>
-
-            <!-- Meilleur score -->
-            <div class="stats-card highlight">
-                <h2>🏆 Meilleur score</h2>
-                <div class="stats-content">
-                    ${stats.meilleurScore.joueur ? `
-                        <p><strong>${stats.meilleurScore.joueur}</strong></p>
-                        <p class="big-number">${stats.meilleurScore.score}</p>
-                        <p class="small-text">${stats.meilleurScore.jeu?.toUpperCase()}</p>
-                        <p class="small-text">${new Date(stats.meilleurScore.date).toLocaleDateString()}</p>
-                    ` : '<p>Aucune partie jouée</p>'}
-                </div>
-            </div>
-
-            <!-- Parties par jeu -->
-            <div class="stats-card">
-                <h2>🎲 Parties par jeu</h2>
-                <div class="stats-content">
-                    ${Object.entries(stats.partiesParJeu)
-                        .sort((a, b) => b[1] - a[1])
-                        .map(([jeu, count]) => `
-                            <div class="stat-bar">
-                                <span>${jeu.toUpperCase()}</span>
-                                <span><strong>${count}</strong></span>
-                            </div>
-                        `).join('')}
-                </div>
-            </div>
-
-            <!-- Top joueurs -->
-            <div class="stats-card">
-                <h2>🌟 Top Joueurs</h2>
-                <div class="stats-content">
-                    ${topJoueurs.map((joueur, index) => `
-                        <div class="stat-bar">
-                            <span>${index + 1}. ${joueur.nom}</span>
-                            <span>
-                                <strong>${joueur.scoreTotal}</strong> pts
-                                (moy: ${joueur.scoreMoyen})
-                                🏆 ${joueur.victories}
-                            </span>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-
-            <!-- Modes de jeu -->
-            <div class="stats-card">
-                <h2>👥 Modes de jeu</h2>
-                <div class="stats-content">
-                    <div class="stat-bar">
-                        <span>Solo</span>
-                        <span><strong>${stats.partiesParMode.solo}</strong></span>
-                    </div>
-                    <div class="stat-bar">
-                        <span>Équipe</span>
-                        <span><strong>${stats.partiesParMode.team}</strong></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Boutons d'action -->
-        <div class="stats-actions">
-            <button id="btn-stats-par-joueur" class="btn-primary">
-                👤 Stats par joueur
-            </button>
-            <button id="btn-stats-par-jeu" class="btn-secondary">
-                🎮 Stats par jeu
-            </button>
-            <button id="btn-retour-stats" class="btn-retour">
-                ⬅️ Retour
-            </button>
-        </div>
-    `;
-
-    // Attacher les événements
-    $("btn-stats-par-joueur").onclick = () => afficherSelectionJoueur();
-    $("btn-stats-par-jeu").onclick = () => afficherSelectionJeu();
-    $("btn-retour-stats").onclick = () => {
-        hide("statistiques-container");
-        show("home");
-    };
-
-    hide("home");
-    show("statistiques-container");
-}
-
-/**
- * Affiche la sélection de joueur pour les stats détaillées
- */
-function afficherSelectionJoueur() {
-    const joueurs = getPlayers();
-    const container = $("statistiques-container");
-
-    container.innerHTML = `
-        <header class="stats-header">
-            <h1>👤 Choisir un joueur</h1>
-        </header>
-
-        <div class="joueurs-selection">
-            ${joueurs.map(joueur => `
-                <button class="joueur-btn" data-joueur="${joueur}">
-                    ${joueur}
-                </button>
-            `).join('')}
-        </div>
-
-        <button id="btn-retour-selection" class="btn-retour">
-            ⬅️ Retour
-        </button>
-    `;
-
-    document.querySelectorAll(".joueur-btn").forEach(btn => {
-        btn.onclick = () => {
-            const joueur = btn.dataset.joueur;
-            afficherStatistiquesJoueur(joueur);
-        };
-    });
-
-    $("btn-retour-selection").onclick = () => afficherStatistiques();
-}
-
-/**
- * Affiche les statistiques détaillées d'un joueur
- */
-function afficherStatistiquesJoueur(nomJoueur) {
-    const stats = calculerStatistiquesJoueur(nomJoueur);
-    const container = $("statistiques-container");
-
-    const tauxVictoire = stats.totalParties > 0 ?
-        Math.round((stats.victories / stats.totalParties) * 100) : 0;
-
-    container.innerHTML = `
-        <header class="stats-header">
-            <h1>👤 ${stats.nom}</h1>
-        </header>
-
-        <div class="stats-grid">
-            <!-- Résumé -->
-            <div class="stats-card highlight">
-                <h2>📈 Résumé</h2>
-                <div class="stats-content">
-                    <p><strong>Parties jouées :</strong> ${stats.totalParties}</p>
-                    <p><strong>Score total :</strong> ${stats.totalScore}</p>
-                    <p><strong>Score moyen :</strong> ${stats.scoreMoyen}</p>
-                    <p><strong>Meilleur score :</strong> ${stats.meilleurScore}</p>
-                    <p><strong>Victoires :</strong> ${stats.victories} (${tauxVictoire}%)</p>
-                </div>
-            </div>
-
-            <!-- Performances par jeu -->
-            <div class="stats-card">
-                <h2>🎮 Performances par jeu</h2>
-                <div class="stats-content">
-                    ${Object.entries(stats.performancesParJeu)
-                        .sort((a, b) => b[1].scoreTotal - a[1].scoreTotal)
-                        .map(([jeu, perf]) => `
-                            <div class="stat-bar">
-                                <span>${jeu.toUpperCase()}</span>
-                                <span>
-                                    ${perf.parties} parties
-                                    | Moy: ${Math.round(perf.scoreMoyen)}
-                                    | Max: ${perf.meilleurScore}
-                                </span>
-                            </div>
-                        `).join('')}
-                </div>
-            </div>
-
-            <!-- Historique récent -->
-            <div class="stats-card">
-                <h2>📅 Historique récent</h2>
-                <div class="stats-content">
-                    ${stats.historique
-                        .slice(-10)
-                        .reverse()
-                        .map(partie => `
-                            <div class="stat-bar">
-                                <span>${partie.jeu.toUpperCase()}</span>
-                                <span>
-                                    <strong>${partie.score}</strong> pts
-                                    <small>${new Date(partie.date).toLocaleDateString()}</small>
-                                </span>
-                            </div>
-                        `).join('')}
-                </div>
-            </div>
-        </div>
-
-        <button id="btn-retour-joueur" class="btn-retour">
-            ⬅️ Retour
-        </button>
-    `;
-
-    $("btn-retour-joueur").onclick = () => afficherSelectionJoueur();
-}
-
-/**
- * Affiche la sélection de jeu pour les stats détaillées
- */
-function afficherSelectionJeu() {
-    const stats = calculerStatistiquesGlobales();
-    const container = $("statistiques-container");
-
-    const jeux = Object.keys(stats.partiesParJeu);
-
-    container.innerHTML = `
-        <header class="stats-header">
-            <h1>🎮 Choisir un jeu</h1>
-        </header>
-
-        <div class="jeux-selection">
-            ${jeux.map(jeu => `
-                <button class="jeu-btn" data-jeu="${jeu}">
-                    ${jeu.toUpperCase()}
-                    <small>${stats.partiesParJeu[jeu]} parties</small>
-                </button>
-            `).join('')}
-        </div>
-
-        <button id="btn-retour-selection" class="btn-retour">
-            ⬅️ Retour
-        </button>
-    `;
-
-    document.querySelectorAll(".jeu-btn").forEach(btn => {
-        btn.onclick = () => {
-            const jeu = btn.dataset.jeu;
-            afficherStatistiquesJeu(jeu);
-        };
-    });
-
-    $("btn-retour-selection").onclick = () => afficherStatistiques();
-}
-
-/**
- * Affiche les statistiques détaillées d'un jeu
- */
-function afficherStatistiquesJeu(nomJeu) {
-    const stats = calculerStatistiquesJeu(nomJeu);
-    const container = $("statistiques-container");
-
-    const topJoueurs = Object.entries(stats.performancesParJoueur)
-        .map(([nom, perf]) => ({ nom, ...perf }))
-        .sort((a, b) => b.scoreTotal - a.scoreTotal)
+    const classement = Object.entries(scoresParJoueur)
+        .map(([nom, d]) => ({ nom, total: d.total }))
+        .sort((a, b) => b.total - a.total)
         .slice(0, 10);
 
-    container.innerHTML = `
-        <header class="stats-header">
-            <h1>🎮 ${stats.jeu.toUpperCase()}</h1>
-        </header>
+    const jeuPlusJoue = Object.entries(compteurJeux).sort((a, b) => b[1] - a[1])[0] || null;
 
-        <div class="stats-grid">
-            <!-- Vue d'ensemble -->
-            <div class="stats-card highlight">
-                <h2>📊 Vue d'ensemble</h2>
-                <div class="stats-content">
-                    <p><strong>Parties jouées :</strong> ${stats.totalParties}</p>
-                    <p><strong>Joueurs uniques :</strong> ${stats.joueursUniques.size}</p>
-                    <p><strong>Score moyen :</strong> ${stats.scoreMoyen}</p>
-                </div>
-            </div>
+    const statsParJeu = {};
+    Object.keys(JEUX_META).forEach(jeu => {
+        const partiesJeu = parties.filter(p => p.jeu === jeu);
+        let meilleurScore = 0, meilleursJoueur = "-";
+        partiesJeu.forEach(p => {
+            Object.entries(p.scores || {}).forEach(([nom, s]) => {
+                if (s > meilleurScore) { meilleurScore = s; meilleursJoueur = nom; }
+            });
+        });
+        statsParJeu[jeu] = { nbParties: partiesJeu.length, meilleurScore, meilleursJoueur };
+    });
 
-            <!-- Meilleur score -->
-            <div class="stats-card">
-                <h2>🏆 Record</h2>
-                <div class="stats-content">
-                    ${stats.meilleurScore.joueur ? `
-                        <p><strong>${stats.meilleurScore.joueur}</strong></p>
-                        <p class="big-number">${stats.meilleurScore.score}</p>
-                        <p class="small-text">${new Date(stats.meilleurScore.date).toLocaleDateString()}</p>
-                    ` : '<p>Aucun score enregistré</p>'}
-                </div>
-            </div>
+    const maintenant = Date.now();
+    const activiteRecente = parties.filter(p => {
+        const d = p.createdAt ? new Date(p.createdAt).getTime() : 0;
+        return (maintenant - d) < 7 * 24 * 3600 * 1000;
+    }).length;
 
-            <!-- Classement -->
-            <div class="stats-card">
-                <h2>🌟 Classement</h2>
-                <div class="stats-content">
-                    ${topJoueurs.map((joueur, index) => `
-                        <div class="stat-bar">
-                            <span>${index + 1}. ${joueur.nom}</span>
-                            <span>
-                                <strong>${joueur.scoreTotal}</strong> pts
-                                (moy: ${Math.round(joueur.scoreMoyen)})
-                            </span>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
+    const actParJour = Array(7).fill(0);
+    parties.forEach(p => {
+        if (p.createdAt) actParJour[new Date(p.createdAt).getDay()]++;
+    });
+    const joursSemaine = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+    const jourPlusActif = actParJour.indexOf(Math.max(...actParJour));
+
+    return {
+        totalParties: parties.length,
+        totalPoints,
+        jeuPlusJoue,
+        classement,
+        statsParJeu,
+        activiteRecente,
+        actParJour,
+        joursSemaine,
+        jourPlusActif,
+        meilleurJoueur: classement[0]?.nom || "-",
+        meilleurTotal: classement[0]?.total || 0,
+    };
+}
+
+export function afficherStatistiques() {
+    let overlay = document.getElementById("stats-overlay");
+    if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "stats-overlay";
+        overlay.className = "menu-fullscreen-overlay";
+        document.body.appendChild(overlay);
+    }
+
+    const stats = calculerStats();
+    const medals = ["🥇", "🥈", "🥉"];
+    const maxActJour = Math.max(...stats.actParJour, 1);
+
+    const classementRows = stats.classement.length === 0
+        ? `<p class="mfs-empty">Aucun score enregistré.</p>`
+        : stats.classement.map((c, i) => {
+            const pct = stats.classement[0].total > 0 ? Math.round((c.total / stats.classement[0].total) * 100) : 0;
+            return `<div class="mfs-rank-row">
+                <span class="mfs-rank-pos">${medals[i] || `#${i + 1}`}</span>
+                <span class="mfs-rank-nom">${esc(c.nom)}</span>
+                <div class="mfs-rank-bar-wrap"><div class="mfs-rank-bar" style="width:${pct}%"></div></div>
+                <span class="mfs-rank-pts">${c.total} pts</span>
+            </div>`;
+        }).join("");
+
+    const jeuxCards = Object.entries(JEUX_META).map(([jeu, meta]) => {
+        const s = stats.statsParJeu[jeu];
+        const pct = stats.totalParties > 0 ? Math.round((s.nbParties / stats.totalParties) * 100) : 0;
+        return `<div class="mfs-jeu-card" style="--jeu-color:${meta.color}">
+            <div class="mfs-jeu-icon">${meta.icon}</div>
+            <div class="mfs-jeu-name">${meta.label}</div>
+            <div class="mfs-jeu-count">${s.nbParties} partie${s.nbParties !== 1 ? "s" : ""}</div>
+            ${s.meilleurScore > 0 ? `<div class="mfs-jeu-record">🏆 ${s.meilleurScore} pts — ${esc(s.meilleursJoueur)}</div>` : ""}
+            <div class="mfs-jeu-bar-wrap"><div class="mfs-jeu-bar" style="width:${pct}%;background:${meta.color}"></div></div>
+        </div>`;
+    }).join("");
+
+    const barChart = stats.joursSemaine.map((jour, i) => {
+        const h = Math.round((stats.actParJour[i] / maxActJour) * 100);
+        const isToday = i === new Date().getDay();
+        const isBest = i === stats.jourPlusActif && stats.actParJour[i] > 0;
+        return `<div class="mfs-bar-col">
+            <div class="mfs-bar-val">${stats.actParJour[i] || ""}</div>
+            <div class="mfs-bar${isToday ? " today" : ""}${isBest ? " best" : ""}" style="height:${h}%"></div>
+            <div class="mfs-bar-label${isToday ? " today" : ""}">${jour}</div>
+        </div>`;
+    }).join("");
+
+    overlay.innerHTML = `
+    <div class="mfs-container">
+        <div class="mfs-header">
+            <h1 class="mfs-title">📊 Statistiques</h1>
+            <button class="mfs-close" id="stats-close-btn">✕</button>
         </div>
 
-        <button id="btn-retour-jeu" class="btn-retour">
-            ⬅️ Retour
-        </button>
-    `;
+        <div class="mfs-kpi-grid">
+            <div class="mfs-kpi" style="--c:#00d4ff"><div class="mfs-kpi-icon">🎮</div><div class="mfs-kpi-val">${stats.totalParties}</div><div class="mfs-kpi-label">Parties jouées</div></div>
+            <div class="mfs-kpi" style="--c:#ffd700"><div class="mfs-kpi-icon">⭐</div><div class="mfs-kpi-val">${stats.totalPoints}</div><div class="mfs-kpi-label">Points distribués</div></div>
+            <div class="mfs-kpi" style="--c:#f97316"><div class="mfs-kpi-icon">🔥</div><div class="mfs-kpi-val">${stats.activiteRecente}</div><div class="mfs-kpi-label">Cette semaine</div></div>
+            <div class="mfs-kpi" style="--c:#a855f7"><div class="mfs-kpi-icon">🏆</div><div class="mfs-kpi-val">${esc(stats.meilleurJoueur)}</div><div class="mfs-kpi-label">Meilleur joueur</div></div>
+        </div>
 
-    $("btn-retour-jeu").onclick = () => afficherSelectionJeu();
+        ${stats.jeuPlusJoue ? `
+        <div class="mfs-highlight">
+            <span class="mfs-highlight-icon">${JEUX_META[stats.jeuPlusJoue[0]]?.icon || "🎮"}</span>
+            <span>Jeu favori : <strong style="color:${JEUX_META[stats.jeuPlusJoue[0]]?.color || "#fff"}">${JEUX_META[stats.jeuPlusJoue[0]]?.label || stats.jeuPlusJoue[0]}</strong> — <strong>${stats.jeuPlusJoue[1]} partie${stats.jeuPlusJoue[1] > 1 ? "s" : ""}</strong></span>
+        </div>` : ""}
+
+        <div class="mfs-section">
+            <div class="mfs-section-title">🏆 Classement général</div>
+            <div class="mfs-rank-list">${classementRows}</div>
+        </div>
+
+        <div class="mfs-section">
+            <div class="mfs-section-title">📅 Activité par jour</div>
+            <div class="mfs-barchart">${barChart}</div>
+        </div>
+
+        <div class="mfs-section">
+            <div class="mfs-section-title">🎮 Par jeu</div>
+            <div class="mfs-jeux-grid">${jeuxCards}</div>
+        </div>
+    </div>`;
+
+    overlay.hidden = false;
+    requestAnimationFrame(() => overlay.classList.add("mfs-visible"));
+
+    document.getElementById("stats-close-btn")?.addEventListener("click", () => {
+        overlay.classList.remove("mfs-visible");
+        setTimeout(() => { overlay.hidden = true; }, 300);
+    });
 }

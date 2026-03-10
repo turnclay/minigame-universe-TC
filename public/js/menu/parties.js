@@ -1,31 +1,67 @@
-// /public/js/modules/parties.js
-// Stub de compatibilité pour les modules de jeu
-
-import { GameState } from "../core/state.js";
+// /public/js/menu/parties.js
+// ======================================================
+// 📜 MODULE PARTIES — Menu
+// Affiche l'écran "Continuer une partie" (screen-parties)
+// ======================================================
 
 /**
- * Crée une nouvelle partie (côté client — persisté en sessionStorage).
- * Dans la nouvelle architecture, la partie est créée via le host/WS.
- * Ce module maintient la compatibilité avec les jeux qui l'importent.
+ * Navigue vers l'écran screen-parties depuis le menu.
+ * Appelle renderPartiesContinuer() si disponible dans main.js
  */
-export function creerNouvellePartie(config = {}) {
-    const partie = {
-        id:       config.id || Date.now(),
-        jeu:      config.jeu       || GameState.jeu,
-        mode:     config.mode      || GameState.mode,
-        joueurs:  config.joueurs   || GameState.joueurs,
-        equipes:  config.equipes   || GameState.equipes,
-        scores:   config.scores    || {},
-        nomPartie: config.nomPartie || "",
-        date:     new Date().toISOString(),
-    };
+export function afficherParties() {
+    // Masquer tous les écrans
+    const ecrans = [
+        "screen-home", "screen-jeux", "screen-jeu-detail", "screen-parties"
+    ];
+    ecrans.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.hidden = true;
+    });
 
-    try {
-        sessionStorage.setItem("mgu_game_session", JSON.stringify({
-            ...JSON.parse(sessionStorage.getItem("mgu_game_session") || "{}"),
-            ...partie
-        }));
-    } catch {}
+    // Afficher l'écran parties
+    const target = document.getElementById("screen-parties");
+    if (target) {
+        target.hidden = false;
+        target.classList.remove("animate-in");
+        void target.offsetWidth;
+        target.classList.add("animate-in");
+    }
 
-    return partie;
+    // Mettre à jour le breadcrumb si disponible
+    const bc = document.getElementById("topbar-breadcrumb");
+    if (bc) {
+        bc.innerHTML = `
+            <button class="breadcrumb-back" id="breadcrumb-back-btn">← Retour</button>
+            <span class="breadcrumb-sep">/</span>
+            <span class="breadcrumb-label">📋 Mes parties</span>`;
+        document.getElementById("breadcrumb-back-btn")?.addEventListener("click", () => {
+            afficherAccueil();
+        });
+    }
+
+    // Déclencher le rendu de la liste si la fonction existe dans le scope global
+    if (typeof window.renderPartiesContinuer === "function") {
+        window.renderPartiesContinuer();
+    } else {
+        // Fallback : chercher et appeler via import dynamique
+        import("../main.js").then(m => {
+            if (typeof m.renderPartiesContinuer === "function") {
+                m.renderPartiesContinuer();
+            }
+        }).catch(() => {
+            // renderPartiesContinuer est une fonction interne de main.js
+            // Elle sera appelée via l'événement custom
+        });
+        // Émettre un événement pour que main.js puisse réagir
+        window.dispatchEvent(new CustomEvent("mgu:afficher-parties"));
+    }
+}
+
+function afficherAccueil() {
+    ["screen-jeux", "screen-jeu-detail", "screen-parties"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.hidden = true;
+    });
+    const home = document.getElementById("screen-home");
+    if (home) home.hidden = false;
 }

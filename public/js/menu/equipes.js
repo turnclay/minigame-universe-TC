@@ -1,92 +1,156 @@
-// /js/modules/equipes.js
+// /public/js/menu/equipes.js
 // ======================================================
-// 🛡️ MODULE GESTION DES ÉQUIPES
+// ⚔️ MODULE GESTION DES ÉQUIPES — Menu
+// Overlay plein écran pour gérer les équipes
 // ======================================================
 
-import { getPlayers } from "../core/storage.js";
-import { naviguerVers } from "../navigation.js";
-import { GameState } from "../core/state.js";
-
-export function afficherGestionEquipes() {
-    naviguerVers("gestion-equipes-panel");
-    _renderGestionEquipes();
+function esc(str) {
+    return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function _renderGestionEquipes() {
-    const panel = document.getElementById("gestion-equipes-panel");
-    if (!panel) return;
+function getEquipes() {
+    try { return JSON.parse(localStorage.getItem("mgu_equipes") || "[]"); } catch { return []; }
+}
 
-    const equipes = GameState.equipes || [];
-    const joueurs = getPlayers();
+function saveEquipes(liste) {
+    try { localStorage.setItem("mgu_equipes", JSON.stringify(liste)); } catch {}
+}
 
-    panel.innerHTML = `
-        <div class="ge-header">
-            <h2 class="section-title">🛡️ Gestion des équipes</h2>
+function getJoueurs() {
+    try { return JSON.parse(localStorage.getItem("mgu_joueurs") || "[]"); } catch { return []; }
+}
+
+function renderEquipes(overlay) {
+    const equipes = getEquipes();
+    const joueurs = getJoueurs();
+    const liste = overlay.querySelector("#ge-list");
+    const counter = overlay.querySelector("#ge-count");
+
+    if (counter) counter.textContent = `${equipes.length} équipe${equipes.length !== 1 ? "s" : ""} enregistrée${equipes.length !== 1 ? "s" : ""}`;
+    if (!liste) return;
+
+    if (equipes.length === 0) {
+        liste.innerHTML = `<p class="mfs-empty">Aucune équipe créée.</p>`;
+        return;
+    }
+
+    liste.innerHTML = equipes.map((eq, i) => {
+        const membres = eq.membres || [];
+        const disponibles = joueurs.filter(j => !membres.includes(j));
+        return `
+        <div class="mfs-equipe-item">
+            <div class="mfs-equipe-header">
+                <span class="mfs-equipe-icon">🛡️</span>
+                <span class="mfs-equipe-nom">${esc(eq.nom)}</span>
+                <span class="mfs-equipe-nb">${membres.length} membre${membres.length !== 1 ? "s" : ""}</span>
+                <button class="mfs-del-btn" data-i="${i}" title="Supprimer l'équipe">✖</button>
+            </div>
+            <div class="mfs-equipe-membres">
+                ${membres.length === 0
+                    ? `<em class="mfs-empty-small">Aucun membre</em>`
+                    : membres.map((m, mi) => `
+                        <span class="mfs-membre-chip">
+                            ${esc(m)}
+                            <button class="mfs-remove-membre" data-ei="${i}" data-mi="${mi}">×</button>
+                        </span>`).join("")}
+            </div>
+            ${disponibles.length > 0 ? `
+            <div class="mfs-add-membre-row">
+                <select class="select-primary mfs-select-membre" data-i="${i}">
+                    <option value="">Ajouter un joueur…</option>
+                    ${disponibles.map(j => `<option value="${esc(j)}">${esc(j)}</option>`).join("")}
+                </select>
+            </div>` : ""}
+        </div>`;
+    }).join("");
+
+    // Supprimer équipe
+    liste.querySelectorAll(".mfs-del-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const updated = getEquipes();
+            updated.splice(parseInt(btn.dataset.i), 1);
+            saveEquipes(updated);
+            renderEquipes(overlay);
+        });
+    });
+
+    // Retirer membre
+    liste.querySelectorAll(".mfs-remove-membre").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const updated = getEquipes();
+            const ei = parseInt(btn.dataset.ei);
+            const mi = parseInt(btn.dataset.mi);
+            updated[ei].membres.splice(mi, 1);
+            saveEquipes(updated);
+            renderEquipes(overlay);
+        });
+    });
+
+    // Ajouter membre via select
+    liste.querySelectorAll(".mfs-select-membre").forEach(sel => {
+        sel.addEventListener("change", () => {
+            const joueur = sel.value;
+            if (!joueur) return;
+            const updated = getEquipes();
+            const i = parseInt(sel.dataset.i);
+            if (!updated[i].membres) updated[i].membres = [];
+            updated[i].membres.push(joueur);
+            saveEquipes(updated);
+            renderEquipes(overlay);
+        });
+    });
+}
+
+export function afficherGestionEquipes() {
+    let overlay = document.getElementById("equipes-overlay");
+    if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "equipes-overlay";
+        overlay.className = "menu-fullscreen-overlay";
+        document.body.appendChild(overlay);
+    }
+
+    overlay.innerHTML = `
+    <div class="mfs-container">
+        <div class="mfs-header">
+            <h1 class="mfs-title">⚔️ Gestion des équipes</h1>
+            <button class="mfs-close" id="equipes-close-btn">✕</button>
         </div>
 
-        <div class="ge-add-form">
-            <input type="text" id="ge-input-nom" class="input-primary"
-                   placeholder="Nom de l'équipe…" maxlength="20">
+        <div class="mfs-add-form">
+            <input type="text" id="ge-input" class="input-primary mfs-input"
+                   placeholder="Nom de l'équipe…" maxlength="20" autocomplete="off">
             <button id="ge-btn-add" class="btn-primary">Créer</button>
         </div>
 
-        <div class="ge-list" id="ge-list">
-            ${equipes.length === 0
-                ? `<p class="ge-empty">Aucune équipe créée</p>`
-                : equipes.map((eq, i) => `
-                    <div class="ge-item">
-                        <div class="ge-item-header">
-                            <span class="ge-nom">🛡️ ${_esc(eq.nom)}</span>
-                            <button class="ge-del-btn" data-i="${i}">✖</button>
-                        </div>
-                        <div class="ge-membres">
-                            ${(eq.joueurs || []).map(j => `<span class="ge-membre-tag">${_esc(j)}</span>`).join("") || "<em>Aucun membre</em>"}
-                        </div>
-                        <div class="ge-add-membre">
-                            <select class="select-primary ge-select-joueur" data-i="${i}">
-                                <option value="">Ajouter un membre…</option>
-                                ${joueurs.filter(j => !eq.joueurs?.includes(j)).map(j =>
-                                    `<option value="${_esc(j)}">${_esc(j)}</option>`
-                                ).join("")}
-                            </select>
-                        </div>
-                    </div>
-                `).join("")
-            }
-        </div>
-    `;
+        <p id="ge-count" class="mfs-count"></p>
+        <div id="ge-list" class="mfs-list"></div>
+    </div>`;
 
-    document.getElementById("ge-btn-add")?.addEventListener("click", () => {
-        const input = document.getElementById("ge-input-nom");
+    overlay.hidden = false;
+    requestAnimationFrame(() => overlay.classList.add("mfs-visible"));
+
+    renderEquipes(overlay);
+
+    const input = overlay.querySelector("#ge-input");
+    const btnAdd = overlay.querySelector("#ge-btn-add");
+
+    const ajouter = () => {
         const nom = input?.value.trim();
         if (!nom) return;
-        if (GameState.equipes.some(e => e.nom.toLowerCase() === nom.toLowerCase())) {
-            alert("Ce nom d'équipe existe déjà."); return;
-        }
-        GameState.equipes.push({ nom, joueurs: [] });
+        const equipes = getEquipes();
+        if (equipes.some(e => e.nom.toLowerCase() === nom.toLowerCase())) { input.value = ""; return; }
+        equipes.push({ nom, membres: [] });
+        saveEquipes(equipes);
         input.value = "";
-        _renderGestionEquipes();
-    });
+        renderEquipes(overlay);
+    };
 
-    document.querySelectorAll(".ge-del-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            GameState.equipes.splice(parseInt(btn.dataset.i), 1);
-            _renderGestionEquipes();
-        });
-    });
+    btnAdd?.addEventListener("click", ajouter);
+    input?.addEventListener("keydown", e => { if (e.key === "Enter") ajouter(); });
 
-    document.querySelectorAll(".ge-select-joueur").forEach(sel => {
-        sel.addEventListener("change", () => {
-            const i = parseInt(sel.dataset.i);
-            const joueur = sel.value;
-            if (!joueur) return;
-            if (!GameState.equipes[i].joueurs) GameState.equipes[i].joueurs = [];
-            GameState.equipes[i].joueurs.push(joueur);
-            _renderGestionEquipes();
-        });
+    overlay.querySelector("#equipes-close-btn")?.addEventListener("click", () => {
+        overlay.classList.remove("mfs-visible");
+        setTimeout(() => { overlay.hidden = true; }, 300);
     });
-}
-
-function _esc(str) {
-    return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
