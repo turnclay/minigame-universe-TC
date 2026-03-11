@@ -1,71 +1,272 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quiz — MiniGame Universe</title>
-  <link rel="stylesheet" href="../../css/style.css" />
-  <link rel="stylesheet" href="../../css/games.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz — MiniGame Universe</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #0d0d1a; --surface: #13132b; --border: rgba(255,255,255,.08);
+            --accent: #00d4ff; --text: #e2e8f0; --muted: #64748b;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .topbar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: .75rem 1.5rem;
+            background: rgba(13,13,26,.95);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .topbar-logo {
+            font-size: 1.1rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+        .game-badge {
+            font-size: .8rem;
+            padding: .2rem .6rem;
+            background: rgba(0,212,255,.1);
+            border: 1px solid rgba(0,212,255,.2);
+            border-radius: 20px;
+            color: var(--accent);
+        }
+        .ws-status {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            font-size: .8rem;
+            opacity: .7;
+        }
+        #ws-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #ef4444;
+            transition: background .3s;
+        }
+
+        /* Wrapper central */
+        #game-root {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+
+        /* ── Lobby container ── */
+        #game-lobby {
+            width: 100%;
+        }
+        .lobby-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+        }
+
+        /* ── Écran de jeu (caché jusqu'au démarrage) ── */
+        #game-screen {
+            display: none;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        #game-screen.visible { display: block; }
+
+        .game-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .game-info-bar {
+            display: flex;
+            gap: .75rem;
+            align-items: center;
+            padding: .6rem 1rem;
+            background: rgba(255,255,255,.03);
+            border-radius: 8px;
+            font-size: .85rem;
+            color: var(--muted);
+            margin-bottom: 1rem;
+        }
+        .game-info-bar strong { color: var(--text); }
+
+        /* ── Scores ── */
+        #quiz-scores {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem;
+            margin-top: .75rem;
+        }
+        .score-chip {
+            display: flex;
+            align-items: center;
+            gap: .3rem;
+            padding: .3rem .7rem;
+            background: rgba(255,255,255,.05);
+            border-radius: 20px;
+            font-size: .82rem;
+        }
+        .score-chip.me { border: 1px solid rgba(0,212,255,.3); }
+    </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════
-     TOPBAR
-════════════════════════════════════════════ -->
-<header class="game-topbar">
-  <a href="../../" class="btn-icon" title="Accueil">🏠</a>
-  <h1 class="game-title">🧠 Quiz</h1>
-  <div class="topbar-right">
-    <span id="quiz-timer" class="game-timer">01:00</span>
-  </div>
-</header>
+    <nav class="topbar">
+        <a class="topbar-logo" href="/">🎮 MGU</a>
+        <span class="game-badge">❓ Quiz</span>
+        <div class="ws-status">
+            <span id="ws-dot"></span>
+            <span id="ws-label">Connexion…</span>
+        </div>
+    </nav>
 
-<!-- ═══════════════════════════════════════════
-     SCOREBOARD FLOTTANT
-════════════════════════════════════════════ -->
-<div id="scoreboard-float" class="scoreboard-float"></div>
+    <main id="game-root">
+        <!-- Lobby d'attente (avant démarrage) -->
+        <div id="game-lobby"></div>
 
-<!-- ═══════════════════════════════════════════
-     CONTENU PRINCIPAL (géré par quiz.js)
-════════════════════════════════════════════ -->
-<main class="game-main">
-  <section id="quiz" class="game-section">
-    <!-- quiz.js injecte ici :
-         - #quiz-question
-         - #quiz-answers
-         - #quiz-indice1, #quiz-indice2
-         - #quiz-feedback
-         - #quiz-score-local
-    -->
-  </section>
-</main>
+        <!-- Écran de jeu (après GAME_STARTED) -->
+        <div id="game-screen">
+            <div class="game-card">
+                <div class="game-info-bar">
+                    <span>❓ Quiz</span>
+                    <span>·</span>
+                    <span>Joueur : <strong id="my-pseudo">—</strong></span>
+                    <span id="my-equipe-wrap" style="display:none;">· Équipe : <strong id="my-equipe">—</strong></span>
+                </div>
 
-<!-- ═══════════════════════════════════════════
-     FOOTER ACTIONS
-════════════════════════════════════════════ -->
-<footer class="game-footer">
-  <button id="quiz-btn-next" class="btn-primary">➡️ Question suivante</button>
-  <button id="quiz-btn-indice1" class="btn-secondary">💡 Indice 1</button>
-  <button id="quiz-btn-indice2" class="btn-secondary">💡 Indice 2</button>
-</footer>
+                <div id="quiz-content" style="text-align:center;padding:2rem 1rem;">
+                    <p style="opacity:.5;">En attente d'une question du host…</p>
+                    <p style="font-size:.85rem;color:#64748b;margin-top:.5rem;">Le host contrôle la progression du jeu.</p>
+                </div>
+            </div>
 
-<!-- ═══════════════════════════════════════════
-     SCRIPTS
-════════════════════════════════════════════ -->
-<script type="module">
-  import { GameState } from "../../js/core/state.js";
-  import { initialiserQuiz } from "../../js/games/quiz.js";
+            <div class="game-card">
+                <div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);margin-bottom:.75rem;">Scores</div>
+                <div id="quiz-scores"></div>
+            </div>
+        </div>
+    </main>
 
-  // Restaurer la session de jeu
-  const session = sessionStorage.getItem("mgu_game_session");
-  if (session) {
-    try { Object.assign(GameState, JSON.parse(session)); } catch(e) {}
-  }
+    <script type="module">
+        import { GameLobby } from '/js/core/game-lobby.js';
 
-  document.addEventListener("DOMContentLoaded", () => {
-    initialiserQuiz();
-  });
-</script>
+        let lobby;
 
+        // ── Démarrer le lobby d'attente ──
+        lobby = new GameLobby({
+            containerId: 'game-lobby',
+
+            onStart: (snapshot, session, socket) => {
+                // Cacher le lobby, afficher le jeu
+                document.getElementById('game-lobby').style.display = 'none';
+                const screen = document.getElementById('game-screen');
+                screen.classList.add('visible');
+
+                // Remplir les infos joueur
+                document.getElementById('my-pseudo').textContent = session.pseudo;
+                if (session.equipe) {
+                    document.getElementById('my-equipe').textContent = session.equipe;
+                    document.getElementById('my-equipe-wrap').style.display = '';
+                }
+
+                // Afficher les scores initiaux
+                renderScores(snapshot.scores || {}, session.pseudo);
+
+                // ── Écouter les événements du host ──
+                socket.on('HOST_ACTION', ({ action, data }) => {
+                    handleHostAction(action, data, session);
+                });
+
+                socket.on('SCORES_UPDATE', ({ scores }) => {
+                    renderScores(scores, session.pseudo);
+                });
+
+                socket.on('GAME_ENDED', ({ snapshot }) => {
+                    // Remettre le lobby pour afficher les résultats
+                    screen.classList.remove('visible');
+                    document.getElementById('game-lobby').style.display = '';
+                    // Le GameLobby gère déjà GAME_ENDED — pas besoin de ré-appeler
+                });
+
+                socket.on('__disconnected__', () => {
+                    updateWsStatus(false);
+                });
+                socket.on('__connected__', () => {
+                    updateWsStatus(true);
+                });
+
+                updateWsStatus(true);
+            },
+
+            onError: (msg) => {
+                console.error('[QUIZ]', msg);
+            }
+        });
+
+        lobby.init();
+
+        // ── Actions du host ──
+        function handleHostAction(action, data, session) {
+            const content = document.getElementById('quiz-content');
+            if (!content) return;
+
+            if (action === 'NEW_QUESTION') {
+                content.innerHTML = `
+                    <div style="font-size:1.1rem;font-weight:600;margin-bottom:1.5rem;line-height:1.4;">${esc(data.question || '')}</div>
+                    <p style="font-size:.85rem;color:#64748b;">Répondez à l'oral ou attendez les choix du host.</p>`;
+            }
+            else if (action === 'SHOW_ANSWER') {
+                content.innerHTML = `
+                    <div style="font-size:1rem;opacity:.6;margin-bottom:.5rem;">Réponse :</div>
+                    <div style="font-size:1.5rem;font-weight:800;color:#4ade80;">${esc(data.answer || '')}</div>`;
+            }
+            else if (action === 'WAITING') {
+                content.innerHTML = `<p style="opacity:.5;">En attente de la prochaine question…</p>`;
+            }
+        }
+
+        // ── Rendu scores ──
+        function renderScores(scores, myPseudo) {
+            const c = document.getElementById('quiz-scores');
+            if (!c) return;
+            const entries = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+            const medals  = ['🥇', '🥈', '🥉'];
+            c.innerHTML = entries.map(([nom, pts], i) => `
+                <div class="score-chip ${nom === myPseudo ? 'me' : ''}">
+                    ${medals[i] ? `<span>${medals[i]}</span>` : `<span style="opacity:.5;">${i+1}.</span>`}
+                    <span>${esc(nom)}</span>
+                    <strong style="color:#00d4ff;">${pts}</strong>
+                </div>`).join('');
+        }
+
+        function updateWsStatus(ok) {
+            const dot   = document.getElementById('ws-dot');
+            const label = document.getElementById('ws-label');
+            if (dot)   dot.style.background  = ok ? '#22c55e' : '#ef4444';
+            if (label) label.textContent = ok ? 'Connecté' : 'Déconnecté';
+        }
+
+        function esc(s) {
+            return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+    </script>
 </body>
 </html>
