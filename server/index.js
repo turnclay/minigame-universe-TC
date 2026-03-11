@@ -1,85 +1,198 @@
-// ── Dans le gestionnaire PLAYER_JOIN ──────────────────────
+// ======================================================
+// 🟢 SERVEUR — MiniGame Universe v4 (WebSocket partout)
+// ======================================================
+// Architecture :
+//   - Pas de PLAYER_JOIN REST (seulement WebSocket)
+//   - GET /api/parties pour lister les parties disponibles
+//   - Tous les messages via /ws
+// ======================================================
 
-socket.on('PLAYER_JOIN', ({ pseudo, partieId }) => {
-    try {
-        // Validation 1: Pseudo valide
-        const pseudoRegex = /^[a-zA-Z0-9_-]{2,20}$/;
-        if (!pseudo || !pseudoRegex.test(pseudo)) {
-            socket.emit('JOIN_ERROR', { code: 'PSEUDO_INVALID' });
-            return;
-        }
+require('dotenv').config();
 
-        // Validation 2: Partie existe
-        const partie = store.getPartie(partieId);
-        if (!partie) {
-            socket.emit('JOIN_ERROR', { code: 'GAME_NOT_FOUND' });
-            return;
-        }
+const express = require('express');
+const http = require('http');
+const path = require('path');
+const helmet = require('helmet');
+const cors = require('cors');
+const { RateLimiterMemory } = require('rate-limiter-flexible');
 
-        // Validation 3: Partie pas terminée
-        if (partie.statut === 'ended' || partie.statut === 'terminee') {
-            socket.emit('JOIN_ERROR', { code: 'GAME_NOT_FOUND' });
-            return;
-        }
+const store = require('./store.js');
+const { setupWebSocket } = require('./ws-handler.js');
 
-        // Validation 4: Partie pas déjà en cours (sauf si dans lobby)
-        if (partie.statut === 'started' || partie.statut === 'en_cours') {
-            socket.emit('JOIN_ERROR', { code: 'GAME_STARTED' });
-            return;
-        }
+const app = express();
+const server = http.createServer(app);
 
-        // Validation 5: Pseudo pas déjà utilisé
-        const pseudoExists = partie.joueurs?.some(j => j.pseudo === pseudo);
-        if (pseudoExists) {
-            socket.emit('JOIN_ERROR', { code: 'PSEUDO_TAKEN' });
-            return;
-        }
+const PORT = process.env.PORT || 3000;
+const ORIGIN = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+const IS_DEV = process.env.NODE_ENV !== 'production';
 
-        // Validation 6: Max joueurs pas atteint
-        if (partie.joueurs.length >= (partie.maxJoueurs || 8)) {
-            socket.emit('JOIN_ERROR', { code: 'MAX_PLAYERS' });
-            return;
-        }
+// ─────────────────────────────────────────────────────
+// RESET STORE
+// ─────────────────────────────────────────────────────
+store.resetStore();
+console.log('[SERVER] 🔄 Store réinitialisé — aucune partie en cours');
 
-        // ✅ Valider le joueur
-        const equipe = partie.mode === 'team' ? assignerEquipe(partie) : null;
-        const joueur = {
-            id: socket.id,
-            pseudo,
-            equipe,
-            score: 0,
-            statut: 'connected',
-        };
-
-        partie.joueurs.push(joueur);
-        socket.join(partieId);
-        socket.data.partieId = partieId;
-        socket.data.pseudo = pseudo;
-        socket.data.role = 'player';
-
-        // Notifier tous les joueurs
-        io.to(partieId).emit('PLAYER_JOINED', {
-            pseudo,
-            joueurs: partie.joueurs,
-        });
-
-        // Confirmer au client
-        socket.emit('JOIN_OK', {
-            pseudo,
-            equipe,
-            snapshot: {
-                jeu: partie.jeu,
-                mode: partie.mode,
-                joueurs: partie.joueurs,
-                equipes: partie.equipes,
-                statut: partie.statut,
+// ─────────────────────────────────────────────────────
+// Sécurité HTTP
+// ─────────────────────────────────────────────────────
+app.use(
+    helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+                styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+                fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+                imgSrc: ["'self'", 'data:', 'blob:', 'https://api.qrserver.com'],
+                connectSrc: [
+                    "'self'",
+                    ORIGIN.replace('https://', 'wss://').replace('http://', 'ws://'),
+                    'ws://localhost:3000',
+                    'wss://localhost:3000',
+                ],
+                mediaSrc: ["'self'"],
             },
-        });
+        },
+    })
+);
 
-        console.log(`✅ ${pseudo} a rejoint ${partieId}`);
+app.use(
+    cors({
+        origin: IS_DEV ? '*' : ORIGIN,
+        methods: ['GET', 'POST'],
+    })
+);
 
-    } catch (err) {
-        console.error('PLAYER_JOIN error:', err);
-        socket.emit('JOIN_ERROR', { code: 'MISSING_FIELDS' });
+app.use(express.json({ limit: '10kb' }));
+
+// ─────────────────────────────────────────────────────
+// Rate limiting
+// ─────────────────────────────────────────────────────
+const rateLimiter = new RateLimiterMemory({ points: 120, duration: 60 });
+app.use('/api', async (req, res, next) => {
+    try {
+        await rateLimiter.consume(req.ip);
+        next();
+    } catch {
+        res.status(429).json({ error: 'Trop de requêtes.' });
     }
+});
+
+// ─────────────────────────────────────────────────────
+// Fichiers statiques
+// ─────────────────────────────────────────────────────
+const ROOT = path.join(__dirname, '..');
+
+app.use(
+    express.static(path.join(ROOT, 'public'), {
+        maxAge: IS_DEV ? 0 : '1h',
+    })
+);
+
+// ─────────────────────────────────────────────────────
+// ROUTES HTML
+// ─────────────────────────────────────────────────────
+
+app.get(['/'], (req, res) => {
+    res.sendFile(path.join(ROOT, 'public', 'index.html'));
+});
+
+app.get(['/host', '/host/'], (req, res) => {
+    res.sendFile(path.join(ROOT, 'public', 'host', 'index.html'));
+});
+
+app.get(['/join', '/join/'], (req, res) => {
+    res.sendFile(path.join(ROOT, 'public', 'join', 'index.html'));
+});
+
+// ── Routes jeux ──
+app.get(['/games/quiz', '/games/quiz/'], (req, res) => {
+    res.sendFile(path.join(ROOT, 'public', 'games', 'quiz', 'index.html'));
+});
+
+app.get(['/games/undercover', '/games/undercover/'], (req, res) => {
+    res.sendFile(path.join(ROOT, 'public', 'games', 'undercover', 'index.html'));
+});
+
+// Ajouter d'autres jeux au besoin...
+
+// ─────────────────────────────────────────────────────
+// API REST — PARTIES
+// ─────────────────────────────────────────────────────
+
+/**
+ * GET /api/parties — Lister les parties disponibles
+ */
+app.get('/api/parties', (req, res) => {
+    try {
+        const parties = store
+            .getAllParties()
+            .filter(p => p.statut !== 'terminee' && p.statut !== 'ended')
+            .map(p => ({
+                id: p.id,
+                nom: p.nom,
+                jeu: p.jeu,
+                mode: p.mode,
+                statut: p.statut,
+                joueurs: (p.joueurs || []).map(j => ({
+                    pseudo: j.pseudo,
+                })),
+                equipes: (p.equipes || []).map(e => ({ nom: e.nom })),
+            }));
+
+        res.json({ parties });
+    } catch (err) {
+        console.error('[API] Erreur GET /api/parties:', err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+/**
+ * GET /api/parties/:id — Récupérer une partie
+ */
+app.get('/api/parties/:id', (req, res) => {
+    try {
+        const partie = store.getPartie(req.params.id);
+        if (!partie) return res.status(404).json({ error: 'Partie introuvable' });
+
+        res.json({
+            id: partie.id,
+            nom: partie.nom,
+            jeu: partie.jeu,
+            mode: partie.mode,
+            statut: partie.statut,
+            joueurs: (partie.joueurs || []).map(j => ({ pseudo: j.pseudo })),
+            equipes: (partie.equipes || []).map(e => ({ nom: e.nom })),
+        });
+    } catch (err) {
+        console.error('[API] Erreur GET /api/parties/:id:', err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// ─────────────────────────────────────────────────────
+// WEBSOCKET SERVER
+// ─────────────────────────────────────────────────────
+
+const wss = require('ws').WebSocketServer;
+const wsServer = new wss({ server, path: '/ws' });
+
+setupWebSocket(wsServer);
+
+console.log('[SERVER] 🔌 WebSocket configuré sur /ws');
+
+// ─────────────────────────────────────────────────────
+// DÉMARRAGE
+// ─────────────────────────────────────────────────────
+
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`
+╔═══════════════════���══════════════════════╗
+║  🎮 MiniGame Universe v4                 ║
+║  App     : http://localhost:${PORT}      ║
+║  Host    : http://localhost:${PORT}/host ║
+║  Players : http://localhost:${PORT}/join ║
+║  WebSocket : ws://localhost:${PORT}/ws   ║
+╚══════════════════════════════════════════╝
+    `);
 });

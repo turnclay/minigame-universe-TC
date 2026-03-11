@@ -2,28 +2,37 @@
 // 🎮 JOIN.JS — Interface de connexion aux parties
 // ======================================================
 // Responsabilités :
-//   1. Afficher la liste des parties disponibles
-//   2. Permettre au joueur de saisir son pseudo
-//   3. Valider et rejoindre une partie
-//   4. Rediriger vers le lobby ou le jeu
+//   1. Charger la liste des parties via GET /api/parties
+//   2. Permettre au joueur de saisir son pseudo et le nom de la partie
+//   3. Valider les champs (pseudo, nom de partie)
+//   4. Appeler POST /api/parties/join pour rejoindre
+//   5. Gérer les erreurs et rediriger vers l'URL renvoyée
 // ======================================================
-
-import { socket } from '../js/core/socket.js';
 
 // ── Constants ────────────────────────────────────────
 const GAME_ICONS = {
-    quiz: '❓', justeprix: '💰', undercover: '🕵️', lml: '📖',
-    mimer: '🎭', pendu: '🪢', petitbac: '📝', memoire: '🧠',
-    morpion: '⭕', puissance4: '🔴',
+    quiz: '❓',
+    justeprix: '💰',
+    undercover: '🕵️',
+    lml: '📖',
+    mimer: '��',
+    pendu: '🪢',
+    petitbac: '📝',
+    memoire: '🧠',
+    morpion: '⭕',
+    puissance4: '🔴',
 };
 
 const PSEUDO_REGEX = /^[a-zA-Z0-9_-]{2,20}$/;
+const PARTIE_NAME_REGEX = /^[a-zA-Z0-9_\s-]{2,30}$/;
 
 // ── DOM Elements ─────────────────────────────────────
 const $$ = {
     partiesList: () => document.getElementById('join-parties-list'),
     pseudo: () => document.getElementById('join-pseudo'),
     pseudoCount: () => document.getElementById('join-pseudo-count'),
+    partieName: () => document.getElementById('join-partie-name'),
+    partieNameCount: () => document.getElementById('join-partie-name-count'),
     selectedInfo: () => document.getElementById('join-selected-info'),
     selectedName: () => document.getElementById('join-selected-name'),
     selectedGame: () => document.getElementById('join-selected-game'),
@@ -44,12 +53,19 @@ const state = {
 };
 
 // ── Utility Functions ────────────────────────────────
+
+/**
+ * Échappe les caractères HTML pour éviter les XSS
+ */
 const esc = (str) => String(str || '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 
+/**
+ * Affiche une notification toast
+ */
 function toast(msg, type = 'info', duration = 3000) {
     const icons = {
         success: '✅',
@@ -79,6 +95,9 @@ function toast(msg, type = 'info', duration = 3000) {
     }, duration);
 }
 
+/**
+ * Affiche un message d'erreur
+ */
 function showError(msg) {
     const el = $$().errorMsg();
     if (el) {
@@ -87,6 +106,9 @@ function showError(msg) {
     }
 }
 
+/**
+ * Masque le message d'erreur
+ */
 function hideError() {
     const el = $$().errorMsg();
     if (el) {
@@ -95,6 +117,9 @@ function hideError() {
     }
 }
 
+/**
+ * Affiche un message de succès
+ */
 function showSuccess(msg) {
     const el = $$().successMsg();
     if (el) {
@@ -103,6 +128,9 @@ function showSuccess(msg) {
     }
 }
 
+/**
+ * Masque le message de succès
+ */
 function hideSuccess() {
     const el = $$().successMsg();
     if (el) {
@@ -111,7 +139,11 @@ function hideSuccess() {
     }
 }
 
-// ── Pseudo Validation ────────────────────────────────
+// ── Validation Functions ─────────────────��───────────
+
+/**
+ * Valide le pseudo
+ */
 function validatePseudo(pseudo) {
     const trimmed = pseudo.trim();
 
@@ -128,7 +160,30 @@ function validatePseudo(pseudo) {
     return { valid: true };
 }
 
+/**
+ * Valide le nom de la partie
+ */
+function validatePartieName(name) {
+    const trimmed = name.trim();
+
+    if (trimmed.length < 2) {
+        return { valid: false, error: 'Le nom de la partie doit faire au moins 2 caractères.' };
+    }
+    if (trimmed.length > 30) {
+        return { valid: false, error: 'Le nom de la partie ne peut pas dépasser 30 caractères.' };
+    }
+    if (!PARTIE_NAME_REGEX.test(trimmed)) {
+        return { valid: false, error: 'Le nom de la partie peut contenir des lettres, chiffres, espaces, tirets et underscores.' };
+    }
+
+    return { valid: true };
+}
+
 // ── Partie Selection ─────────────────────────────────
+
+/**
+ * Sélectionne une partie
+ */
 function selectPartie(partieId) {
     state.selectedPartieId = partieId;
     state.selectedPartie = state.parties.find(p => p.id === partieId);
@@ -141,7 +196,17 @@ function selectPartie(partieId) {
     if (state.selectedPartie) {
         $$().selectedInfo().classList.add('show');
         $$().selectedName().textContent = `${GAME_ICONS[state.selectedPartie.jeu] || '🎮'} ${esc(state.selectedPartie.nom)}`;
-        $$().selectedGame().textContent = `${esc(state.selectedPartie.jeu.toUpperCase())} · ${state.selectedPartie.joueurs?.length || 0} joueur${(state.selectedPartie.joueurs?.length || 0) !== 1 ? 's' : ''}`;
+        const joueurs = state.selectedPartie.joueurs?.length || 0;
+        $$().selectedGame().textContent = `${esc((state.selectedPartie.jeu || '').toUpperCase())} · ${joueurs} joueur${joueurs !== 1 ? 's' : ''}`;
+
+        // Pré-remplir le nom de la partie
+        const partieNameInput = $$().partieName();
+        if (partieNameInput) {
+            partieNameInput.value = state.selectedPartie.nom;
+            if ($$().partieNameCount()) {
+                $$().partieNameCount().textContent = state.selectedPartie.nom.length;
+            }
+        }
     } else {
         $$().selectedInfo().classList.remove('show');
     }
@@ -150,17 +215,32 @@ function selectPartie(partieId) {
 }
 
 // ── Join Validation ─────────────────────────────────
+
+/**
+ * Vérifie si le formulaire est valide pour rejoindre
+ */
 function checkCanJoin() {
     const pseudo = $$().pseudo().value.trim();
-    const hasPartie = state.selectedPartieId !== null;
-    const isValid = validatePseudo(pseudo).valid && hasPartie;
+    const partieName = $$().partieName().value.trim();
+
+    const pseudoValid = validatePseudo(pseudo).valid;
+    const partieNameValid = validatePartieName(partieName).valid;
+    const hasSelectedPartie = state.selectedPartieId !== null;
+    const isValid = pseudoValid && partieNameValid && hasSelectedPartie;
 
     $$().btnSubmit().disabled = !isValid || state.isConnecting;
 }
 
 // ── Render Parties ──────────────────────────────────
+
+/**
+ * Affiche la liste des parties disponibles
+ */
 function renderParties(parties) {
-    const filtered = (parties || []).filter(p => p.statut === 'waiting' || p.statut === 'lobby');
+    // Filtrer les parties en attente
+    const filtered = (parties || []).filter(p =>
+        p.statut === 'waiting' || p.statut === 'lobby' || p.statut === 'en_attente'
+    );
     state.parties = filtered;
 
     const container = $$().partiesList();
@@ -183,6 +263,7 @@ function renderParties(parties) {
         const joueurs = partie.joueurs || [];
         const isSelected = partie.id === state.selectedPartieId;
         const icon = GAME_ICONS[partie.jeu] || '🎮';
+        const maxPlayers = partie.maxJoueurs || 8;
 
         return `
             <div
@@ -196,12 +277,12 @@ function renderParties(parties) {
                 <div class="partie-info">
                     <div class="partie-nom">${esc(partie.nom)}</div>
                     <div class="partie-meta">
-                        <span class="partie-badge">${esc(partie.jeu.toUpperCase())}</span>
+                        <span class="partie-badge">${esc((partie.jeu || 'UNKNOWN').toUpperCase())}</span>
                         ${partie.mode === 'team' ? '<span class="partie-badge">🛡️ Équipes</span>' : '<span class="partie-badge">👤 Solo</span>'}
                     </div>
                 </div>
                 <div class="partie-joueurs">
-                    <span>${joueurs.length}/${partie.maxJoueurs || 8}</span>
+                    <span>${joueurs.length}/${maxPlayers}</span>
                 </div>
                 <div class="partie-joueurs-avatars">
                     ${joueurs.slice(0, 3).map(j =>
@@ -213,7 +294,7 @@ function renderParties(parties) {
         `;
     }).join('');
 
-    // Attach click handlers
+    // Attacher les gestionnaires d'événements
     container.querySelectorAll('.partie-item').forEach(el => {
         el.addEventListener('click', () => selectPartie(el.dataset.partieId));
         el.addEventListener('keydown', (e) => {
@@ -226,7 +307,11 @@ function renderParties(parties) {
 }
 
 // ── Load Parties ─────────────────────────────────────
-function loadParties() {
+
+/**
+ * Charge la liste des parties via GET /api/parties
+ */
+async function loadParties() {
     const container = $$().partiesList();
     if (container) {
         container.className = 'parties-list';
@@ -237,124 +322,162 @@ function loadParties() {
             </div>
         `;
     }
-    socket.send('GET_PARTIES', {});
+
+    try {
+        const response = await fetch('/api/parties');
+        if (!response.ok) {
+            throw new Error(`Erreur HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        renderParties(data.parties || data);
+    } catch (err) {
+        console.error('Erreur lors du chargement des parties:', err);
+        if (container) {
+            container.className = 'parties-list empty';
+            container.innerHTML = `
+                <div style="text-align: center;">
+                    <p style="font-size: 1.2rem; margin-bottom: 0.5rem;">⚠️</p>
+                    <p>Impossible de charger les parties.</p>
+                    <p style="font-size: 0.85rem; opacity: 0.7; margin-top: 0.5rem;">Vérifiez votre connexion.</p>
+                </div>
+            `;
+        }
+        toast('Erreur lors du chargement des parties', 'error');
+    }
 }
 
 // ── Join Handler ─────────────────────────────────────
+
+/**
+ * Gère la soumission du formulaire pour rejoindre une partie
+ */
 async function handleJoin() {
     hideError();
     hideSuccess();
 
     const pseudo = $$().pseudo().value.trim();
-    const validation = validatePseudo(pseudo);
+    const partieName = $$().partieName().value.trim();
 
-    if (!validation.valid) {
-        showError(validation.error);
+    // Validation pseudo
+    const pseudoValidation = validatePseudo(pseudo);
+    if (!pseudoValidation.valid) {
+        showError(pseudoValidation.error);
         return;
     }
 
+    // Validation nom de partie
+    const partieNameValidation = validatePartieName(partieName);
+    if (!partieNameValidation.valid) {
+        showError(partieNameValidation.error);
+        return;
+    }
+
+    // Vérification que la partie est sélectionnée
     if (!state.selectedPartieId) {
         showError('Sélectionnez une partie dans la liste.');
         return;
     }
 
-    // Save pseudo to localStorage
+    // Vérification que le nom de la partie saisie correspond à la sélectionnée
+    if (state.selectedPartie && state.selectedPartie.nom !== partieName) {
+        showError('Le nom de la partie ne correspond pas à celle sélectionnée.');
+        return;
+    }
+
+    // Sauvegarde du pseudo en localStorage
     try {
         localStorage.setItem('mgu_last_pseudo', pseudo);
-    } catch {}
+    } catch (err) {
+        console.warn('Impossible de sauvegarder le pseudo:', err);
+    }
 
     state.isConnecting = true;
-    $$().btnSubmit().disabled = true;
-    $$().btnSubmit().innerHTML = '<span class="loading-spinner" style="display:inline-block;"></span> Connexion…';
+    const btnSubmit = $$().btnSubmit();
+    btnSubmit.disabled = true;
+    const originalText = btnSubmit.textContent;
+    btnSubmit.innerHTML = '<span class="loading-spinner" style="display:inline-block;"></span> Connexion…';
 
-    // Send join request
-    socket.send('PLAYER_JOIN', {
-        pseudo,
-        partieId: state.selectedPartieId,
-    });
+    try {
+        // Appel POST /api/parties/join
+        const response = await fetch('/api/parties/join', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                pseudo,
+                partieName,
+                partieId: state.selectedPartieId,
+            }),
+        });
 
-    // Timeout protection
-    setTimeout(() => {
-        if (state.isConnecting) {
+        const data = await response.json();
+
+        if (!response.ok) {
+            // Erreur du serveur
+            const errorMessage = data.error || data.message || 'Erreur inconnue';
+            showError(errorMessage);
+            toast(errorMessage, 'error');
             state.isConnecting = false;
-            showError('Délai d\'attente dépassé. Vérifiez la connexion.');
-            $$().btnSubmit().disabled = false;
-            $$().btnSubmit().textContent = '🚀 Rejoindre la partie';
+            btnSubmit.disabled = false;
+            btnSubmit.textContent = originalText;
+            return;
         }
-    }, 10000);
-}
 
-// ── Socket Events ────────────────────────────────────
-function initSocketEvents() {
-    socket.on('__connected__', () => {
-        loadParties();
-        hideError();
-    });
+        // Succès
+        showSuccess(`✅ Bienvenue ${pseudo}!`);
+        toast(`Bienvenue ${pseudo}!`, 'success');
 
-    socket.on('__disconnected__', () => {
-        toast('Connexion perdue…', 'warning');
-    });
-
-    socket.on('PARTIES_LIST', ({ parties }) => {
-        renderParties(parties);
-    });
-
-    socket.on('JOIN_OK', ({ pseudo, equipe, snapshot }) => {
-        state.isConnecting = false;
-
-        // Save session
-        const session = {
-            partieId: state.selectedPartieId,
-            pseudo,
-            equipe,
-            jeu: snapshot.jeu,
-            mode: snapshot.mode,
-            role: 'player',
-        };
-
+        // Sauvegarde de la session
         try {
-            sessionStorage.setItem('mgu_game_session', JSON.stringify(session));
-        } catch {}
+            sessionStorage.setItem('mgu_game_session', JSON.stringify({
+                partieId: state.selectedPartieId,
+                pseudo,
+                partieName,
+                role: 'player',
+            }));
+        } catch (err) {
+            console.warn('Impossible de sauvegarder la session:', err);
+        }
 
-        toast(`✅ Bienvenue ${pseudo}!`, 'success');
+        // Redirection vers l'URL renvoyée par le serveur
+        if (data.redirectUrl) {
+            setTimeout(() => {
+                window.location.href = data.redirectUrl;
+            }, 1000);
+        } else {
+            console.warn('Pas de redirectUrl fournie par le serveur');
+            // Redirection par défaut
+            setTimeout(() => {
+                window.location.href = '/games/';
+            }, 1000);
+        }
 
-        // Redirect to game
-        setTimeout(() => {
-            const gameRoute = `/games/${snapshot.jeu}/`;
-            window.location.href = gameRoute;
-        }, 800);
-    });
-
-    socket.on('JOIN_ERROR', ({ code }) => {
+    } catch (err) {
+        console.error('Erreur lors de la connexion:', err);
+        const errorMsg = err.message || 'Erreur de connexion';
+        showError(errorMsg);
+        toast(errorMsg, 'error');
         state.isConnecting = false;
-        $$().btnSubmit().disabled = false;
-        $$().btnSubmit().textContent = '🚀 Rejoindre la partie';
-
-        const messages = {
-            GAME_NOT_FOUND: 'Partie introuvable ou terminée.',
-            ALREADY_JOINED: 'Vous avez déjà rejoint cette partie.',
-            GAME_STARTED: 'La partie est déjà en cours.',
-            PSEUDO_TAKEN: 'Ce pseudo est déjà utilisé dans cette partie.',
-            PSEUDO_INVALID: 'Le pseudo n\'est pas valide.',
-            MISSING_FIELDS: 'Données incomplètes.',
-            MAX_PLAYERS: 'Cette partie est complète.',
-        };
-
-        showError(messages[code] || `Erreur: ${code}`);
-        toast(messages[code] || `Erreur: ${code}`, 'error');
-    });
-
-    socket.on('ERROR', ({ message }) => {
-        toast(message || 'Erreur serveur', 'error');
-    });
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = originalText;
+    }
 }
 
 // ── Event Listeners ──────────────────────────────────
+
+/**
+ * Attache les écouteurs d'événements au formulaire
+ */
 function attachEventListeners() {
+    // Pseudo input
     const pseudo = $$().pseudo();
     if (pseudo) {
         pseudo.addEventListener('input', (e) => {
-            $$().pseudoCount().textContent = e.target.value.length;
+            if ($$().pseudoCount()) {
+                $$().pseudoCount().textContent = e.target.value.length;
+            }
             checkCanJoin();
         });
         pseudo.addEventListener('keydown', (e) => {
@@ -363,20 +486,53 @@ function attachEventListeners() {
             }
         });
 
-        // Load last pseudo
+        // Charger le dernier pseudo
         const lastPseudo = localStorage.getItem('mgu_last_pseudo');
         if (lastPseudo) {
             pseudo.value = lastPseudo;
-            $$().pseudoCount().textContent = lastPseudo.length;
+            if ($$().pseudoCount()) {
+                $$().pseudoCount().textContent = lastPseudo.length;
+            }
         }
     }
 
-    $$().btnSubmit().addEventListener('click', handleJoin);
-    $$().btnCreate().addEventListener('click', () => {
-        window.location.href = '/host/';
-    });
-    $$().btnRefresh().addEventListener('click', loadParties);
+    // Partie name input
+    const partieName = $$().partieName();
+    if (partieName) {
+        partieName.addEventListener('input', (e) => {
+            if ($$().partieNameCount()) {
+                $$().partieNameCount().textContent = e.target.value.length;
+            }
+            checkCanJoin();
+        });
+        partieName.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !$$().btnSubmit().disabled) {
+                handleJoin();
+            }
+        });
+    }
 
+    // Submit button
+    const btnSubmit = $$().btnSubmit();
+    if (btnSubmit) {
+        btnSubmit.addEventListener('click', handleJoin);
+    }
+
+    // Create button
+    const btnCreate = $$().btnCreate();
+    if (btnCreate) {
+        btnCreate.addEventListener('click', () => {
+            window.location.href = '/host/';
+        });
+    }
+
+    // Refresh button
+    const btnRefresh = $$().btnRefresh();
+    if (btnRefresh) {
+        btnRefresh.addEventListener('click', loadParties);
+    }
+
+    // Form submission
     const form = $$().form();
     if (form) {
         form.addEventListener('submit', (e) => {
@@ -386,16 +542,21 @@ function attachEventListeners() {
 }
 
 // ── Init ─────────────────────────────────────────────
+
+/**
+ * Initialise le module
+ */
 function init() {
     attachEventListeners();
-    initSocketEvents();
 
-    // Load parties once connected
-    if (socket.isConnected?.()) {
-        loadParties();
-    }
+    // Charger les parties au démarrage
+    loadParties();
+
+    // Charger les parties toutes les 5 secondes (actualisation auto)
+    setInterval(loadParties, 5000);
 }
 
+// Lancer l'initialisation au chargement du DOM
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else {
