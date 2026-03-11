@@ -1,5 +1,5 @@
 // ======================================================
-// 🟦 HOST.JS v3
+// 🟦 HOST.JS v3.1
 // ======================================================
 // Fix :
 //  - HOST_REJOIN après refresh page (socket reconnu côté serveur)
@@ -7,6 +7,9 @@
 //  - Si hostJoue → bouton "Rejoindre comme joueur" → écran joueur du jeu
 //  - Fin de partie → reset complet → formulaire création
 //  - Nouvelle partie possible sans refresh
+//  - ✅ Statut 'lobby' défini à la création
+//  - ✅ UI mise à jour au premier joueur
+//  - ✅ Bouton START avec feedback visuel
 // ======================================================
 
 import { GameSocket } from './core/socket.js';
@@ -91,6 +94,7 @@ function initSocket() {
         HostState.partieId = partieId;
         HostState.partieEnCours = true;
         HostState.isConnecting = false;
+        HostState.statut = 'lobby';
         applySnapshot(snapshot);
         sauvegarderPartieLocale(snapshot);
 
@@ -103,13 +107,17 @@ function initSocket() {
         toast(`Partie "${HostState.partieNom}" créée ! Partagez le lien.`, 'success', 4000);
     });
 
-    // ── Joueur rejoint — CLEF DU BUG ──
+    // ── Joueur rejoint — CLEF DU BUG FIXÉ ──
     socket.on('PLAYER_JOINED', ({ pseudo, equipe, joueurs }) => {
         console.log('[HOST] PLAYER_JOINED reçu:', pseudo, joueurs);
         HostState.joueurs = joueurs;
+
+        // Force re-render complet du panel
+        renderGamePanel();
         renderJoueursConnectes();
         renderScores();
-        toast(`🎉 ${pseudo} a rejoint la partie !`, 'success', 2500);
+
+        toast(`🎉 ${pseudo} a rejoint la partie ! (${joueurs.length})`, 'success', 2500);
     });
 
     socket.on('PLAYER_LEFT', ({ pseudo, joueurs }) => {
@@ -354,6 +362,24 @@ function initControles() {
         resetPourNouvellePartie();
     });
     $('sp-btn-home')?.addEventListener('click', () => { window.location.href = '/'; });
+}
+
+function initButtonStates() {
+    setInterval(() => {
+        const btn = $('h-btn-start');
+        if (!btn) return;
+
+        const canStart = HostState.partieId &&
+                        HostState.joueurs.length > 0 &&
+                        HostState.statut === 'lobby';
+
+        btn.disabled = !canStart;
+        btn.style.opacity = canStart ? '1' : '0.5';
+        btn.style.cursor = canStart ? 'pointer' : 'not-allowed';
+        btn.title = !canStart ?
+            (HostState.joueurs.length === 0 ? 'Attendez au moins un joueur' : 'Traitement en cours...')
+            : 'Cliquez pour lancer la partie';
+    }, 500);
 }
 
 function resetPourNouvellePartie() {
@@ -684,6 +710,7 @@ function init() {
     initEquipes();
     initCreerPartie();
     initControles();
+    initButtonStates();
 
     // Pré-sélectionner le jeu via URL ?jeu=
     const params = new URLSearchParams(location.search);
