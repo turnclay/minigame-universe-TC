@@ -1,32 +1,12 @@
 // ======================================================
-// 🎮 JOIN.JS — Interface de connexion aux parties
-// ======================================================
-// Responsabilités :
-//   1. Charger la liste des parties via GET /api/parties
-//   2. Permettre au joueur de saisir son pseudo et le nom de la partie
-//   3. Valider les champs (pseudo, nom de partie)
-//   4. Appeler POST /api/parties/join pour rejoindre
-//   5. Gérer les erreurs et rediriger vers l'URL renvoyée
+// 🎮 JOIN.JS — Rejoindre une partie
 // ======================================================
 
-// ── Constants ────────────────────────────────────────
-const GAME_ICONS = {
-    quiz: '❓',
-    justeprix: '💰',
-    undercover: '🕵️',
-    lml: '📖',
-    mimer: '��',
-    pendu: '🪢',
-    petitbac: '📝',
-    memoire: '🧠',
-    morpion: '⭕',
-    puissance4: '🔴',
-};
+import { socket } from './core/socket.js';
 
 const PSEUDO_REGEX = /^[a-zA-Z0-9_-]{2,20}$/;
 const PARTIE_NAME_REGEX = /^[a-zA-Z0-9_\s-]{2,30}$/;
 
-// ── DOM Elements ─────────────────────────────────────
 const $$ = {
     partiesList: () => document.getElementById('join-parties-list'),
     pseudo: () => document.getElementById('join-pseudo'),
@@ -37,14 +17,10 @@ const $$ = {
     selectedName: () => document.getElementById('join-selected-name'),
     selectedGame: () => document.getElementById('join-selected-game'),
     errorMsg: () => document.getElementById('join-error-msg'),
-    successMsg: () => document.getElementById('join-success-msg'),
     btnSubmit: () => document.getElementById('join-btn-submit'),
-    btnCreate: () => document.getElementById('join-btn-create'),
     btnRefresh: () => document.getElementById('join-btn-refresh'),
-    form: () => document.getElementById('join-form'),
 };
 
-// ── State ────────────────────────────────────────────
 const state = {
     parties: [],
     selectedPartieId: null,
@@ -52,28 +28,23 @@ const state = {
     isConnecting: false,
 };
 
-// ── Utility Functions ────────────────────────────────
-
-/**
- * Échappe les caractères HTML pour éviter les XSS
- */
 const esc = (str) => String(str || '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 
+const GAME_ICONS = {
+    quiz: '❓', justeprix: '💰', undercover: '🕵️', lml: '📖',
+    mimer: '🎭', pendu: '🪢', petitbac: '📝', memoire: '🧠',
+    morpion: '⭕', puissance4: '🔴',
+};
+
 /**
- * Affiche une notification toast
+ * Toast notification
  */
 function toast(msg, type = 'info', duration = 3000) {
-    const icons = {
-        success: '✅',
-        error: '❌',
-        info: 'ℹ️',
-        warning: '⚠️',
-    };
-
+    const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
     const container = document.getElementById('toast-container') || (() => {
         const div = document.createElement('div');
         div.id = 'toast-container';
@@ -88,7 +59,6 @@ function toast(msg, type = 'info', duration = 3000) {
     container.appendChild(toastEl);
 
     requestAnimationFrame(() => toastEl.classList.add('show'));
-
     setTimeout(() => {
         toastEl.classList.remove('show');
         setTimeout(() => toastEl.remove(), 300);
@@ -96,220 +66,7 @@ function toast(msg, type = 'info', duration = 3000) {
 }
 
 /**
- * Affiche un message d'erreur
- */
-function showError(msg) {
-    const el = $$().errorMsg();
-    if (el) {
-        el.textContent = msg;
-        el.classList.add('show');
-    }
-}
-
-/**
- * Masque le message d'erreur
- */
-function hideError() {
-    const el = $$().errorMsg();
-    if (el) {
-        el.classList.remove('show');
-        el.textContent = '';
-    }
-}
-
-/**
- * Affiche un message de succès
- */
-function showSuccess(msg) {
-    const el = $$().successMsg();
-    if (el) {
-        el.textContent = msg;
-        el.classList.add('show');
-    }
-}
-
-/**
- * Masque le message de succès
- */
-function hideSuccess() {
-    const el = $$().successMsg();
-    if (el) {
-        el.classList.remove('show');
-        el.textContent = '';
-    }
-}
-
-// ── Validation Functions ─────────────────��───────────
-
-/**
- * Valide le pseudo
- */
-function validatePseudo(pseudo) {
-    const trimmed = pseudo.trim();
-
-    if (trimmed.length < 2) {
-        return { valid: false, error: 'Le pseudo doit faire au moins 2 caractères.' };
-    }
-    if (trimmed.length > 20) {
-        return { valid: false, error: 'Le pseudo ne peut pas dépasser 20 caractères.' };
-    }
-    if (!PSEUDO_REGEX.test(trimmed)) {
-        return { valid: false, error: 'Le pseudo peut contenir des lettres, chiffres, tirets et underscores.' };
-    }
-
-    return { valid: true };
-}
-
-/**
- * Valide le nom de la partie
- */
-function validatePartieName(name) {
-    const trimmed = name.trim();
-
-    if (trimmed.length < 2) {
-        return { valid: false, error: 'Le nom de la partie doit faire au moins 2 caractères.' };
-    }
-    if (trimmed.length > 30) {
-        return { valid: false, error: 'Le nom de la partie ne peut pas dépasser 30 caractères.' };
-    }
-    if (!PARTIE_NAME_REGEX.test(trimmed)) {
-        return { valid: false, error: 'Le nom de la partie peut contenir des lettres, chiffres, espaces, tirets et underscores.' };
-    }
-
-    return { valid: true };
-}
-
-// ── Partie Selection ─────────────────────────────────
-
-/**
- * Sélectionne une partie
- */
-function selectPartie(partieId) {
-    state.selectedPartieId = partieId;
-    state.selectedPartie = state.parties.find(p => p.id === partieId);
-
-    // Update UI
-    document.querySelectorAll('.partie-item').forEach(el => {
-        el.classList.toggle('selected', el.dataset.partieId === partieId);
-    });
-
-    if (state.selectedPartie) {
-        $$().selectedInfo().classList.add('show');
-        $$().selectedName().textContent = `${GAME_ICONS[state.selectedPartie.jeu] || '🎮'} ${esc(state.selectedPartie.nom)}`;
-        const joueurs = state.selectedPartie.joueurs?.length || 0;
-        $$().selectedGame().textContent = `${esc((state.selectedPartie.jeu || '').toUpperCase())} · ${joueurs} joueur${joueurs !== 1 ? 's' : ''}`;
-
-        // Pré-remplir le nom de la partie
-        const partieNameInput = $$().partieName();
-        if (partieNameInput) {
-            partieNameInput.value = state.selectedPartie.nom;
-            if ($$().partieNameCount()) {
-                $$().partieNameCount().textContent = state.selectedPartie.nom.length;
-            }
-        }
-    } else {
-        $$().selectedInfo().classList.remove('show');
-    }
-
-    checkCanJoin();
-}
-
-// ── Join Validation ─────────────────────────────────
-
-/**
- * Vérifie si le formulaire est valide pour rejoindre
- */
-function checkCanJoin() {
-    const pseudo = $$().pseudo().value.trim();
-    const partieName = $$().partieName().value.trim();
-
-    const pseudoValid = validatePseudo(pseudo).valid;
-    const partieNameValid = validatePartieName(partieName).valid;
-    const hasSelectedPartie = state.selectedPartieId !== null;
-    const isValid = pseudoValid && partieNameValid && hasSelectedPartie;
-
-    $$().btnSubmit().disabled = !isValid || state.isConnecting;
-}
-
-// ── Render Parties ──────────────────────────────────
-
-/**
- * Affiche la liste des parties disponibles
- */
-function renderParties(parties) {
-    // Filtrer les parties en attente
-    const filtered = (parties || []).filter(p =>
-        p.statut === 'waiting' || p.statut === 'lobby' || p.statut === 'en_attente'
-    );
-    state.parties = filtered;
-
-    const container = $$().partiesList();
-    if (!container) return;
-
-    if (filtered.length === 0) {
-        container.className = 'parties-list empty';
-        container.innerHTML = `
-            <div style="text-align: center;">
-                <p style="font-size: 1.2rem; margin-bottom: 0.5rem;">🎲</p>
-                <p>Aucune partie disponible pour le moment.</p>
-                <p style="font-size: 0.85rem; opacity: 0.7; margin-top: 0.5rem;">Créez-en une ou attendez qu'un hôte en crée.</p>
-            </div>
-        `;
-        return;
-    }
-
-    container.className = 'parties-list';
-    container.innerHTML = filtered.map(partie => {
-        const joueurs = partie.joueurs || [];
-        const isSelected = partie.id === state.selectedPartieId;
-        const icon = GAME_ICONS[partie.jeu] || '🎮';
-        const maxPlayers = partie.maxJoueurs || 8;
-
-        return `
-            <div
-                class="partie-item ${isSelected ? 'selected' : ''}"
-                data-partie-id="${esc(partie.id)}"
-                role="button"
-                tabindex="0"
-                aria-label="Sélectionner ${esc(partie.nom)}"
-            >
-                <div class="partie-icon">${icon}</div>
-                <div class="partie-info">
-                    <div class="partie-nom">${esc(partie.nom)}</div>
-                    <div class="partie-meta">
-                        <span class="partie-badge">${esc((partie.jeu || 'UNKNOWN').toUpperCase())}</span>
-                        ${partie.mode === 'team' ? '<span class="partie-badge">🛡️ Équipes</span>' : '<span class="partie-badge">👤 Solo</span>'}
-                    </div>
-                </div>
-                <div class="partie-joueurs">
-                    <span>${joueurs.length}/${maxPlayers}</span>
-                </div>
-                <div class="partie-joueurs-avatars">
-                    ${joueurs.slice(0, 3).map(j =>
-                        `<div class="avatar-mini" title="${esc(j.pseudo)}">${j.pseudo.charAt(0).toUpperCase()}</div>`
-                    ).join('')}
-                    ${joueurs.length > 3 ? `<div class="avatar-mini">+${joueurs.length - 3}</div>` : ''}
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    // Attacher les gestionnaires d'événements
-    container.querySelectorAll('.partie-item').forEach(el => {
-        el.addEventListener('click', () => selectPartie(el.dataset.partieId));
-        el.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                selectPartie(el.dataset.partieId);
-            }
-        });
-    });
-}
-
-// ── Load Parties ─────────────────────────────────────
-
-/**
- * Charge la liste des parties via GET /api/parties
+ * Charge la liste des parties
  */
 async function loadParties() {
     const container = $$().partiesList();
@@ -318,245 +75,213 @@ async function loadParties() {
         container.innerHTML = `
             <div class="loading-state">
                 <div class="loading-spinner"></div>
-                <span>Chargement des parties…</span>
+                <span>Chargement…</span>
             </div>
         `;
     }
 
     try {
         const response = await fetch('/api/parties');
-        if (!response.ok) {
-            throw new Error(`Erreur HTTP ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const data = await response.json();
-        renderParties(data.parties || data);
+        state.parties = data.parties || data || [];
+
+        renderParties(state.parties);
     } catch (err) {
-        console.error('Erreur lors du chargement des parties:', err);
+        console.error('Erreur chargement parties:', err);
         if (container) {
             container.className = 'parties-list empty';
             container.innerHTML = `
-                <div style="text-align: center;">
-                    <p style="font-size: 1.2rem; margin-bottom: 0.5rem;">⚠️</p>
-                    <p>Impossible de charger les parties.</p>
-                    <p style="font-size: 0.85rem; opacity: 0.7; margin-top: 0.5rem;">Vérifiez votre connexion.</p>
+                <div style="text-align:center;">
+                    <p>❌ Impossible de charger les parties</p>
                 </div>
             `;
         }
-        toast('Erreur lors du chargement des parties', 'error');
+        toast('Erreur serveur', 'error');
     }
 }
 
-// ── Join Handler ─────────────────────────────────────
+/**
+ * Affiche la liste des parties
+ */
+function renderParties(parties) {
+    const filtered = parties.filter(p => p.statut === 'lobby' || p.statut === 'waiting');
+    const container = $$().partiesList();
+    if (!container) return;
+
+    if (filtered.length === 0) {
+        container.className = 'parties-list empty';
+        container.innerHTML = `
+            <div style="text-align:center;">
+                <p>🎲 Aucune partie disponible</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.className = 'parties-list';
+    container.innerHTML = filtered.map(p => {
+        const isSelected = p.id === state.selectedPartieId;
+        return `
+            <div class="partie-item ${isSelected ? 'selected' : ''}" data-partie-id="${esc(p.id)}">
+                <span>${GAME_ICONS[p.jeu] || '🎮'}</span>
+                <span>${esc(p.nom)}</span>
+                <span>${(p.joueurs || []).length} joueurs</span>
+            </div>
+        `;
+    }).join('');
+
+    container.querySelectorAll('.partie-item').forEach(el => {
+        el.addEventListener('click', () => selectPartie(el.dataset.partieId));
+    });
+}
 
 /**
- * Gère la soumission du formulaire pour rejoindre une partie
+ * Sélectionne une partie
  */
-async function handleJoin() {
-    hideError();
-    hideSuccess();
+function selectPartie(partieId) {
+    state.selectedPartieId = partieId;
+    state.selectedPartie = state.parties.find(p => p.id === partieId);
 
+    document.querySelectorAll('.partie-item').forEach(el => {
+        el.classList.toggle('selected', el.dataset.partieId === partieId);
+    });
+
+    if (state.selectedPartie) {
+        $$().selectedInfo().classList.add('show');
+        $$().selectedName().textContent = `${GAME_ICONS[state.selectedPartie.jeu] || '🎮'} ${esc(state.selectedPartie.nom)}`;
+        const partieName = $$().partieName();
+        if (partieName) partieName.value = state.selectedPartie.nom;
+    }
+
+    checkCanJoin();
+}
+
+/**
+ * Valide le pseudo
+ */
+function validatePseudo(pseudo) {
+    const trimmed = pseudo.trim();
+    if (trimmed.length < 2) return { valid: false, error: 'Minimum 2 caractères' };
+    if (trimmed.length > 20) return { valid: false, error: 'Maximum 20 caractères' };
+    if (!PSEUDO_REGEX.test(trimmed)) return { valid: false, error: 'Caractères invalides' };
+    return { valid: true };
+}
+
+/**
+ * Vérifie si on peut rejoindre
+ */
+function checkCanJoin() {
     const pseudo = $$().pseudo().value.trim();
-    const partieName = $$().partieName().value.trim();
+    const hasPartie = state.selectedPartieId !== null;
+    const isValid = validatePseudo(pseudo).valid && hasPartie;
+    const btn = $$().btnSubmit();
+    if (btn) btn.disabled = !isValid || state.isConnecting;
+}
 
-    // Validation pseudo
-    const pseudoValidation = validatePseudo(pseudo);
-    if (!pseudoValidation.valid) {
-        showError(pseudoValidation.error);
-        return;
-    }
+/**
+ * Initialise WebSocket
+ */
+function initWebSocket() {
+    socket.on('__connected__', () => {
+        console.log('✅ WebSocket connecté');
+    });
 
-    // Validation nom de partie
-    const partieNameValidation = validatePartieName(partieName);
-    if (!partieNameValidation.valid) {
-        showError(partieNameValidation.error);
-        return;
-    }
+    socket.on('JOIN_OK', ({ pseudo, snapshot }) => {
+        console.log('✅ Rejoint:', pseudo);
 
-    // Vérification que la partie est sélectionnée
-    if (!state.selectedPartieId) {
-        showError('Sélectionnez une partie dans la liste.');
-        return;
-    }
-
-    // Vérification que le nom de la partie saisie correspond à la sélectionnée
-    if (state.selectedPartie && state.selectedPartie.nom !== partieName) {
-        showError('Le nom de la partie ne correspond pas à celle sélectionnée.');
-        return;
-    }
-
-    // Sauvegarde du pseudo en localStorage
-    try {
-        localStorage.setItem('mgu_last_pseudo', pseudo);
-    } catch (err) {
-        console.warn('Impossible de sauvegarder le pseudo:', err);
-    }
-
-    state.isConnecting = true;
-    const btnSubmit = $$().btnSubmit();
-    btnSubmit.disabled = true;
-    const originalText = btnSubmit.textContent;
-    btnSubmit.innerHTML = '<span class="loading-spinner" style="display:inline-block;"></span> Connexion…';
-
-    try {
-        // Appel POST /api/parties/join
-        const response = await fetch('/api/parties/join', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                pseudo,
-                partieName,
-                partieId: state.selectedPartieId,
-            }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            // Erreur du serveur
-            const errorMessage = data.error || data.message || 'Erreur inconnue';
-            showError(errorMessage);
-            toast(errorMessage, 'error');
-            state.isConnecting = false;
-            btnSubmit.disabled = false;
-            btnSubmit.textContent = originalText;
-            return;
-        }
-
-        // Succès
-        showSuccess(`✅ Bienvenue ${pseudo}!`);
-        toast(`Bienvenue ${pseudo}!`, 'success');
-
-        // Sauvegarde de la session
         try {
             sessionStorage.setItem('mgu_game_session', JSON.stringify({
                 partieId: state.selectedPartieId,
                 pseudo,
-                partieName,
+                jeu: snapshot.jeu,
+                mode: snapshot.mode,
                 role: 'player',
             }));
-        } catch (err) {
-            console.warn('Impossible de sauvegarder la session:', err);
-        }
+        } catch {}
 
-        // Redirection vers l'URL renvoyée par le serveur
-        if (data.redirectUrl) {
-            setTimeout(() => {
-                window.location.href = data.redirectUrl;
-            }, 1000);
-        } else {
-            console.warn('Pas de redirectUrl fournie par le serveur');
-            // Redirection par défaut
-            setTimeout(() => {
-                window.location.href = '/games/';
-            }, 1000);
-        }
+        setTimeout(() => {
+            window.location.href = `/games/${snapshot.jeu}/?partieId=${state.selectedPartieId}&pseudo=${encodeURIComponent(pseudo)}`;
+        }, 500);
+    });
 
-    } catch (err) {
-        console.error('Erreur lors de la connexion:', err);
-        const errorMsg = err.message || 'Erreur de connexion';
-        showError(errorMsg);
-        toast(errorMsg, 'error');
+    socket.on('JOIN_ERROR', ({ code }) => {
         state.isConnecting = false;
-        btnSubmit.disabled = false;
-        btnSubmit.textContent = originalText;
-    }
+        const btn = $$().btnSubmit();
+        if (btn) btn.disabled = false;
+
+        const messages = {
+            GAME_NOT_FOUND: 'Partie introuvable',
+            PSEUDO_TAKEN: 'Pseudo déjà utilisé',
+            GAME_STARTED: 'Partie déjà en cours',
+            MAX_PLAYERS: 'Partie pleine',
+        };
+        toast(messages[code] || `Erreur: ${code}`, 'error');
+    });
 }
 
-// ── Event Listeners ──────────────────────────────────
-
 /**
- * Attache les écouteurs d'événements au formulaire
+ * Rejoint une partie
  */
-function attachEventListeners() {
-    // Pseudo input
-    const pseudo = $$().pseudo();
-    if (pseudo) {
-        pseudo.addEventListener('input', (e) => {
-            if ($$().pseudoCount()) {
-                $$().pseudoCount().textContent = e.target.value.length;
-            }
-            checkCanJoin();
-        });
-        pseudo.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !$$().btnSubmit().disabled) {
-                handleJoin();
-            }
-        });
+function handleJoin() {
+    const pseudo = $$().pseudo().value.trim();
+    const validation = validatePseudo(pseudo);
 
-        // Charger le dernier pseudo
-        const lastPseudo = localStorage.getItem('mgu_last_pseudo');
-        if (lastPseudo) {
-            pseudo.value = lastPseudo;
-            if ($$().pseudoCount()) {
-                $$().pseudoCount().textContent = lastPseudo.length;
-            }
+    if (!validation.valid) {
+        toast(validation.error, 'error');
+        return;
+    }
+
+    if (!state.selectedPartieId) {
+        toast('Sélectionnez une partie', 'error');
+        return;
+    }
+
+    try {
+        localStorage.setItem('mgu_last_pseudo', pseudo);
+    } catch {}
+
+    state.isConnecting = true;
+    const btn = $$().btnSubmit();
+    if (btn) btn.disabled = true;
+
+    socket.send('PLAYER_JOIN', {
+        pseudo,
+        partieId: state.selectedPartieId,
+    });
+
+    setTimeout(() => {
+        if (state.isConnecting) {
+            state.isConnecting = false;
+            if (btn) btn.disabled = false;
+            toast('Timeout', 'error');
         }
-    }
-
-    // Partie name input
-    const partieName = $$().partieName();
-    if (partieName) {
-        partieName.addEventListener('input', (e) => {
-            if ($$().partieNameCount()) {
-                $$().partieNameCount().textContent = e.target.value.length;
-            }
-            checkCanJoin();
-        });
-        partieName.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !$$().btnSubmit().disabled) {
-                handleJoin();
-            }
-        });
-    }
-
-    // Submit button
-    const btnSubmit = $$().btnSubmit();
-    if (btnSubmit) {
-        btnSubmit.addEventListener('click', handleJoin);
-    }
-
-    // Create button
-    const btnCreate = $$().btnCreate();
-    if (btnCreate) {
-        btnCreate.addEventListener('click', () => {
-            window.location.href = '/host/';
-        });
-    }
-
-    // Refresh button
-    const btnRefresh = $$().btnRefresh();
-    if (btnRefresh) {
-        btnRefresh.addEventListener('click', loadParties);
-    }
-
-    // Form submission
-    const form = $$().form();
-    if (form) {
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-        });
-    }
+    }, 10000);
 }
 
-// ── Init ─────────────────────────────────────────────
-
 /**
- * Initialise le module
+ * Init
  */
 function init() {
-    attachEventListeners();
+    const pseudo = $$().pseudo();
+    if (pseudo) {
+        const last = localStorage.getItem('mgu_last_pseudo');
+        if (last) pseudo.value = last;
+        pseudo.addEventListener('input', checkCanJoin);
+        pseudo.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !$$().btnSubmit().disabled) handleJoin();
+        });
+    }
 
-    // Charger les parties au démarrage
+    $$().btnSubmit()?.addEventListener('click', handleJoin);
+    $$().btnRefresh()?.addEventListener('click', loadParties);
+
+    initWebSocket();
     loadParties();
-
-    // Charger les parties toutes les 5 secondes (actualisation auto)
     setInterval(loadParties, 5000);
 }
 
-// Lancer l'initialisation au chargement du DOM
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else {
