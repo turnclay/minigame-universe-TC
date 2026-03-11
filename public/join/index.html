@@ -2,509 +2,311 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Rejoindre - Mini Game Universe</title>
-    <link rel="stylesheet" href="../styles/main.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rejoindre une partie — MiniGame Universe</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0d0d1a;
+            --surface: #13132b;
+            --border: rgba(255,255,255,.08);
+            --accent: #00d4ff;
+            --accent2: #7c3aed;
+            --text: #e2e8f0;
+            --text-muted: #64748b;
+            --error: #f87171;
+            --success: #4ade80;
+        }
 
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
             min-height: 100vh;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            color: #333;
-        }
-
-        .join-container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 2rem;
-            height: 100vh;
             display: flex;
             flex-direction: column;
-            gap: 2rem;
         }
 
-        .join-header {
-            text-align: center;
-            color: white;
+        /* ── TOPBAR ── */
+        .topbar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: .75rem 1.5rem;
+            background: rgba(13,13,26,.95);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(8px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .topbar-logo {
+            font-size: 1.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+        .ws-status {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            font-size: .8rem;
+            opacity: .7;
+        }
+        #ws-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ef4444;
+            transition: background .3s;
+        }
+
+        /* ── LAYOUT ── */
+        .page {
+            max-width: 700px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 2rem 1rem 4rem;
+        }
+
+        .page-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: .25rem;
+        }
+        .page-subtitle {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            font-size: .9rem;
+        }
+
+        /* ── CARDS ── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.25rem;
+        }
+        .card-title {
+            font-size: .85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--accent);
             margin-bottom: 1rem;
         }
 
-        .join-header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        /* ── FORM ── */
+        .field {
+            margin-bottom: 1rem;
         }
-
-        .join-header p {
-            font-size: 1.1rem;
-            opacity: 0.95;
-        }
-
-        .join-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            flex: 1;
-            min-height: 0;
-        }
-
-        /* SECTION PARTIES */
-        .join-section {
-            background: white;
-            border-radius: 12px;
-            padding: 2rem;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .join-section h2 {
-            font-size: 1.3rem;
-            color: #667eea;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .parties-list {
-            flex: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 0.8rem;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 1rem;
-            background: #f9f9f9;
-        }
-
-        .parties-list.empty {
-            align-items: center;
-            justify-content: center;
-            min-height: 300px;
-            text-align: center;
-            color: #999;
-        }
-
-        .parties-list.empty p {
-            font-size: 0.95rem;
-        }
-
-        .partie-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .partie-item:hover {
-            border-color: #667eea;
-            box-shadow: 0 4px 12px rgba(102,126,234,0.2);
-            transform: translateX(4px);
-        }
-
-        .partie-item.selected {
-            background: linear-gradient(135deg, #667eea15, #764ba215);
-            border-color: #667eea;
-            box-shadow: 0 4px 12px rgba(102,126,234,0.3);
-        }
-
-        .partie-icon {
-            font-size: 1.8rem;
-            min-width: 40px;
-            text-align: center;
-        }
-
-        .partie-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .partie-nom {
+        .field label {
+            display: block;
+            font-size: .85rem;
             font-weight: 600;
-            color: #333;
-            word-break: break-word;
-            font-size: 0.95rem;
+            margin-bottom: .4rem;
+            color: var(--text-muted);
         }
-
-        .partie-meta {
-            font-size: 0.8rem;
-            color: #888;
-            margin-top: 0.25rem;
+        .input-row {
             display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
+            gap: .5rem;
         }
-
-        .partie-badge {
-            display: inline-block;
-            background: #667eea20;
-            color: #667eea;
-            padding: 0.2rem 0.6rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-
-        .partie-joueurs {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-            font-size: 0.85rem;
-            color: #666;
-        }
-
-        .partie-joueurs-avatars {
-            display: flex;
-            margin-left: auto;
-            gap: 0.3rem;
-        }
-
-        .avatar-mini {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: #667eea;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        /* SECTION FORMULAIRE */
-        .join-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .form-group label {
-            font-weight: 600;
-            color: #333;
-            font-size: 0.95rem;
-        }
-
-        .form-group input {
-            padding: 0.75rem;
-            border: 2px solid #e0e0e0;
+        input[type="text"] {
+            width: 100%;
+            background: rgba(255,255,255,.05);
+            border: 1px solid var(--border);
             border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.2s ease;
-        }
-
-        .form-group input:focus {
+            padding: .65rem .9rem;
+            color: var(--text);
+            font-size: .95rem;
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+            transition: border .15s;
+        }
+        input[type="text"]:focus {
+            border-color: var(--accent);
         }
 
-        .form-group input:disabled {
-            background: #f5f5f5;
-            color: #999;
-        }
-
-        .form-info {
-            font-size: 0.8rem;
-            color: #888;
-        }
-
-        .pseudo-counter {
-            font-size: 0.75rem;
-            color: #aaa;
-            margin-top: -0.4rem;
-        }
-
-        .error-message {
-            padding: 0.75rem;
-            background: #fee;
-            border: 1px solid #fcc;
-            border-radius: 6px;
-            color: #c33;
-            font-size: 0.9rem;
-            display: none;
-        }
-
-        .error-message.show {
-            display: block;
-        }
-
-        .success-message {
-            padding: 0.75rem;
-            background: #efe;
-            border: 1px solid #cfc;
-            border-radius: 6px;
-            color: #3c3;
-            font-size: 0.9rem;
-            display: none;
-        }
-
-        .success-message.show {
-            display: block;
-        }
-
-        .selected-info {
-            padding: 1rem;
-            background: #f0f4ff;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-            font-size: 0.9rem;
-            color: #667eea;
-            display: none;
-        }
-
-        .selected-info.show {
-            display: block;
-        }
-
-        .selected-info strong {
-            display: block;
-            margin-bottom: 0.3rem;
-        }
-
-        .button-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-
+        /* ── BOUTONS ── */
         .btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
+            padding: .65rem 1.2rem;
             border-radius: 8px;
-            font-size: 1rem;
+            border: none;
+            font-size: .9rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            transition: all .15s;
+            white-space: nowrap;
         }
-
         .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            grid-column: 1 / -1;
+            background: linear-gradient(135deg, var(--accent), #0090c0);
+            color: #000;
         }
-
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102,126,234,0.4);
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
+        .btn-primary:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: .4; cursor: not-allowed; transform: none; }
         .btn-secondary {
-            background: #f0f0f0;
-            color: #333;
-            border: 2px solid #e0e0e0;
+            background: rgba(255,255,255,.07);
+            color: var(--text);
+            border: 1px solid var(--border);
         }
-
-        .btn-secondary:hover {
-            background: #e0e0e0;
-            border-color: #667eea;
+        .btn-secondary:hover { background: rgba(255,255,255,.12); }
+        .btn-ghost {
+            background: none;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
         }
+        .btn-ghost:hover { color: var(--text); }
+        .btn-full { width: 100%; display: block; text-align: center; }
+        .btn-lg { padding: .85rem 1.5rem; font-size: 1rem; border-radius: 10px; }
 
-        .btn-refresh {
-            background: white;
-            color: #667eea;
-            border: 2px solid #667eea;
-            padding: 0.5rem 1rem;
-            align-self: flex-start;
+        /* ── LISTE PARTIES ── */
+        #join-parties-list {
+            max-height: 320px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #333 transparent;
         }
+        #join-parties-list::-webkit-scrollbar { width: 4px; }
+        #join-parties-list::-webkit-scrollbar-track { background: transparent; }
+        #join-parties-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
 
-        .btn-refresh:hover {
-            background: #667eea;
-            color: white;
-        }
+        /* ── SELECTED INFO ── */
+        #join-selected-info { margin-top: .75rem; }
 
-        /* TOAST */
-        .toast-container {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            z-index: 9999;
+        /* ── STEP indicator ── */
+        .steps {
             display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
+            gap: .5rem;
+            align-items: center;
+            margin-bottom: 1.5rem;
         }
-
-        .toast {
-            background: white;
-            padding: 1rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        .step {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            min-width: 280px;
-            opacity: 0;
-            transform: translateX(400px);
-            transition: all 0.3s ease;
+            gap: .4rem;
+            font-size: .82rem;
+            color: var(--text-muted);
         }
-
-        .toast.show {
-            opacity: 1;
-            transform: translateX(0);
-        }
-
-        .toast-success { border-left: 4px solid #4caf50; }
-        .toast-error { border-left: 4px solid #f44336; }
-        .toast-info { border-left: 4px solid #2196f3; }
-        .toast-warning { border-left: 4px solid #ff9800; }
-
-        /* RESPONSIVE */
-        @media (max-width: 768px) {
-            .join-content {
-                grid-template-columns: 1fr;
-            }
-
-            .join-header h1 {
-                font-size: 1.8rem;
-            }
-
-            .parties-list {
-                min-height: 250px;
-                max-height: 350px;
-            }
-
-            .partie-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.5rem;
-            }
-
-            .partie-joueurs-avatars {
-                margin-left: 0;
-            }
-
-            .button-group {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* LOADING STATE */
-        .loading-spinner {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid #667eea;
+        .step-num {
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-state {
+            background: rgba(255,255,255,.07);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.75rem;
-            color: #667eea;
-            font-weight: 500;
+            font-size: .75rem;
+            font-weight: 700;
         }
+        .step-sep { color: var(--border); }
+
+        /* ── Refresh button ── */
+        .list-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: .75rem;
+        }
+
+        /* ── SPIN ── */
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── TOAST ── */
+        #toast-container { pointer-events: none; }
     </style>
 </head>
 <body>
-    <div class="join-container">
-        <!-- HEADER -->
-        <div class="join-header">
-            <h1>🎮 Rejoindre une partie</h1>
-            <p>Sélectionnez une partie existante et commencez à jouer !</p>
+
+    <!-- TOPBAR -->
+    <nav class="topbar">
+        <a class="topbar-logo" href="/">🎮 MiniGame Universe</a>
+        <div class="ws-status">
+            <span id="ws-dot"></span>
+            <span id="ws-label">Connexion…</span>
         </div>
+    </nav>
 
-        <!-- CONTENU PRINCIPAL -->
-        <div class="join-content">
-            <!-- COLONNE GAUCHE: PARTIES DISPONIBLES -->
-            <div class="join-section">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h2>📋 Parties disponibles</h2>
-                    <button class="btn btn-refresh" id="join-btn-refresh" title="Actualiser la liste">🔄</button>
-                </div>
+    <!-- PAGE -->
+    <main class="page">
+        <h1 class="page-title">🎮 Rejoindre une partie</h1>
+        <p class="page-subtitle">Choisissez une partie dans la liste ou entrez son nom exact pour la trouver.</p>
 
-                <div id="join-parties-list" class="parties-list empty">
-                    <div class="loading-state">
-                        <div class="loading-spinner"></div>
-                        <span>Chargement des parties…</span>
-                    </div>
+        <!-- ÉTAPE 1 : Trouver une partie -->
+        <div class="card">
+            <div class="list-header">
+                <div class="card-title" style="margin-bottom:0;">① Choisissez une partie</div>
+                <button id="join-btn-refresh" class="btn btn-ghost" style="padding:.3rem .7rem;font-size:.8rem;">🔄 Actualiser</button>
+            </div>
+
+            <!-- Recherche par nom exact -->
+            <div class="field">
+                <label for="join-partie-name">Entrer le nom exact de la partie</label>
+                <div class="input-row">
+                    <input
+                        type="text"
+                        id="join-partie-name"
+                        placeholder="ex: Soirée Quiz du vendredi"
+                        autocomplete="off"
+                        maxlength="30"
+                    >
+                    <button id="join-btn-search" class="btn btn-secondary">🔍 Chercher</button>
                 </div>
             </div>
 
-            <!-- COLONNE DROITE: FORMULAIRE -->
-            <div class="join-section">
-                <h2>👤 Rejoindre</h2>
+            <!-- Séparateur -->
+            <div style="display:flex;align-items:center;gap:.75rem;margin:.75rem 0;color:var(--text-muted);font-size:.8rem;">
+                <div style="flex:1;height:1px;background:var(--border);"></div>
+                <span>ou dans la liste</span>
+                <div style="flex:1;height:1px;background:var(--border);"></div>
+            </div>
 
-                <form class="join-form" id="join-form">
-                    <!-- PSEUDO -->
-                    <div class="form-group">
-                        <label for="join-pseudo">Votre pseudo *</label>
-                        <input
-                            type="text"
-                            id="join-pseudo"
-                            placeholder="ex: MasterGamer123"
-                            maxlength="20"
-                            autocomplete="off"
-                        >
-                        <div class="pseudo-counter"><span id="join-pseudo-count">0</span>/20</div>
-                        <div class="form-info">2-20 caractères, lettres, chiffres, tirets et underscores</div>
-                    </div>
+            <!-- Liste des parties -->
+            <div id="join-parties-list">
+                <div style="text-align:center;padding:2rem;opacity:.5;">
+                    <div style="width:24px;height:24px;border:3px solid #444;border-top-color:#00d4ff;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto .5rem;"></div>
+                    Chargement…
+                </div>
+            </div>
 
-                    <!-- PARTIE SÉLECTIONNÉE -->
-                    <div class="selected-info" id="join-selected-info">
-                        <strong>Partie sélectionnée:</strong>
-                        <span id="join-selected-name">-</span>
-                        <span id="join-selected-game" style="font-size: 0.85rem; opacity: 0.8; margin-top: 0.2rem;"></span>
-                    </div>
+            <!-- Info partie sélectionnée -->
+            <div id="join-selected-info" hidden></div>
+        </div>
 
-                    <!-- MESSAGES D'ERREUR/SUCCÈS -->
-                    <div class="error-message" id="join-error-msg"></div>
-                    <div class="success-message" id="join-success-msg"></div>
-
-                    <!-- BOUTONS -->
-                    <div class="button-group">
-                        <button
-                            type="button"
-                            class="btn btn-primary"
-                            id="join-btn-submit"
-                            disabled
-                        >
-                            🚀 Rejoindre la partie
-                        </button>
-                        <button
-                            type="button"
-                            class="btn btn-secondary"
-                            id="join-btn-create"
-                        >
-                            ➕ Créer une partie
-                        </button>
-                    </div>
-                </form>
+        <!-- ÉTAPE 2 : Entrer son pseudo -->
+        <div class="card">
+            <div class="card-title">② Votre pseudo</div>
+            <div class="field">
+                <label for="join-pseudo">Pseudo (2–20 caractères)</label>
+                <input
+                    type="text"
+                    id="join-pseudo"
+                    placeholder="ex: SuperJoueur42"
+                    autocomplete="nickname"
+                    maxlength="20"
+                    spellcheck="false"
+                >
+                <div style="font-size:.75rem;color:var(--text-muted);margin-top:.3rem;">
+                    Lettres, chiffres, tiret et underscore uniquement.
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- SCRIPTS -->
-    <script type="module" src="join.js"></script>
+        <!-- BOUTON REJOINDRE -->
+        <button id="join-btn-submit" class="btn btn-primary btn-full btn-lg" disabled>
+            🎮 Rejoindre la partie
+        </button>
+
+        <div style="margin-top:1rem;text-align:center;">
+            <a href="/" style="color:var(--text-muted);font-size:.85rem;text-decoration:none;">← Retour à l'accueil</a>
+        </div>
+    </main>
+
+    <div id="toast-container" style="position:fixed;top:1rem;right:1rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem;"></div>
+
+    <script type="module" src="/js/join.js"></script>
 </body>
 </html>

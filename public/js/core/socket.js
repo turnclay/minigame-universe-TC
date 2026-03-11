@@ -1,65 +1,90 @@
-// /js/core/socket.js
+// /public/js/core/socket.js
 // =============================================
-// 🔌 CLIENT WEBSOCKET PARTAGÉ
+// 🔌 CLIENT WEBSOCKET PARTAGÉ v2
+// =============================================
+// Export : GameSocket (class) + socket (singleton réutilisable)
+// Usage host : import { GameSocket } from './core/socket.js'; const socket = new GameSocket();
+// Usage game : import { socket } from './core/socket.js'; socket.connect(url);
 // =============================================
 
 export class GameSocket {
     constructor() {
-        this._ws         = null;
-        this._handlers   = {};
-        this._queue      = [];
-        this._connected  = false;
+        this._ws             = null;
+        this._handlers       = {};
+        this._queue          = [];
+        this._connected      = false;
         this._reconnectDelay = 1500;
-        this._maxReconnect   = 5;
+        this._maxReconnect   = 6;
         this._reconnectCount = 0;
-        this._url        = null;
+        this._url            = null;
+        this._closing        = false;
     }
 
     connect(url) {
         this._url = url;
+        this._closing = false;
         this._open();
     }
 
     _open() {
         if (this._ws) {
             this._ws.onopen = this._ws.onmessage = this._ws.onclose = this._ws.onerror = null;
+            try { this._ws.close(); } catch {}
         }
-        this._ws = new WebSocket(this._url);
+        try {
+            this._ws = new WebSocket(this._url);
+        } catch (e) {
+            console.error('[Socket] Impossible d\'ouvrir WebSocket:', e);
+            this._tryReconnect();
+            return;
+        }
 
         this._ws.onopen = () => {
             this._connected = true;
             this._reconnectCount = 0;
-            while (this._queue.length > 0) this._ws.send(this._queue.shift());
-            this._emit("__connected__", {});
+            console.log('[Socket] Connecté à', this._url);
+            // Vider la file d'attente
+            while (this._queue.length > 0 && this._ws.readyState === WebSocket.OPEN) {
+                this._ws.send(this._queue.shift());
+            }
+            this._emit('__connected__', {});
         };
 
         this._ws.onmessage = (event) => {
             let msg;
             try { msg = JSON.parse(event.data); } catch { return; }
             const { type, payload = {} } = msg;
-            this._emit(type, payload);
+            if (type) this._emit(type, payload);
         };
 
-        this._ws.onclose = () => {
+        this._ws.onclose = (ev) => {
             this._connected = false;
-            this._emit("__disconnected__", {});
-            this._tryReconnect();
+            this._emit('__disconnected__', { code: ev.code, reason: ev.reason });
+            if (!this._closing) this._tryReconnect();
         };
 
-        this._ws.onerror = (err) => { console.error("[Socket] Erreur WebSocket", err); };
+        this._ws.onerror = (err) => {
+            console.error('[Socket] Erreur WebSocket', err);
+        };
     }
 
     _tryReconnect() {
-        if (this._reconnectCount >= this._maxReconnect) {
-            this._emit("__reconnect_failed__", {}); return;
+        if (this._closing || this._reconnectCount >= this._maxReconnect) {
+            this._emit('__reconnect_failed__', {});
+            return;
         }
         this._reconnectCount++;
-        setTimeout(() => this._open(), this._reconnectDelay * this._reconnectCount);
+        const delay = this._reconnectDelay * this._reconnectCount;
+        console.log(`[Socket] Reconnexion dans ${delay}ms (tentative ${this._reconnectCount})`);
+        setTimeout(() => {
+            if (!this._closing) this._open();
+        }, delay);
     }
 
     disconnect() {
+        this._closing = true;
         this._maxReconnect = 0;
-        this._ws?.close();
+        try { this._ws?.close(); } catch {}
     }
 
     send(type, payload = {}) {
@@ -67,7 +92,7 @@ export class GameSocket {
         if (this._connected && this._ws?.readyState === WebSocket.OPEN) {
             this._ws.send(msg);
         } else {
-            if (this._queue.length < 20) this._queue.push(msg);
+            if (this._queue.length < 30) this._queue.push(msg);
         }
     }
 
@@ -84,11 +109,14 @@ export class GameSocket {
 
     _emit(type, payload) {
         (this._handlers[type] || []).forEach(cb => {
-            try { cb(payload); } catch (e) { console.error(`[Socket] Erreur handler "${type}":`, e); }
+            try { cb(payload); } catch (e) {
+                console.error(`[Socket] Erreur handler "${type}":`, e);
+            }
         });
     }
 
     get connected() { return this._connected; }
 }
 
+// Singleton partagé pour les pages jeu (non-host)
 export const socket = new GameSocket();
