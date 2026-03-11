@@ -1,5 +1,5 @@
 // ======================================================
-// 🟦 HOST.JS v3.2 - SYNCHRONISATION CORRIGÉE
+// 🟦 HOST.JS v3.3 - FINAL FIX - DOUBLONS ÉLIMINÉS
 // ======================================================
 // Fix :
 //  - HOST_REJOIN après refresh page (socket reconnu côté serveur)
@@ -11,6 +11,7 @@
 //  - ✅ UI mise à jour au premier joueur
 //  - ✅ Bouton START avec feedback visuel
 //  - ✅ SYNCHRONISATION LOBBY FIXÉE
+//  - ✅ ANTI-DOUBLONS PLAYER_JOINED
 // ======================================================
 
 import { GameSocket } from './core/socket.js';
@@ -42,6 +43,7 @@ const HostState = {
     equipes: [], joueurs: [], scores: {}, statut: null,
     hostJoue: false, hostPseudo: null,
     partieEnCours: false, isConnecting: false,
+    joueursTraites: new Set(), // 🔥 ANTI-DOUBLONS
 };
 
 // ══════════════════════════════════════════════════════
@@ -72,6 +74,7 @@ function initSocket() {
         HostState.partieId = partieId;
         HostState.partieEnCours = true;
         HostState.statut = snapshot.statut || 'lobby';
+        HostState.joueursTraites.clear();
         applySnapshot(snapshot);
 
         if (snapshot.statut === 'en_cours') {
@@ -87,11 +90,12 @@ function initSocket() {
     });
 
     socket.on('GAME_CREATED', ({ partieId, snapshot }) => {
-        console.log('[HOST] GAME_CREATED:', partieId, snapshot);
+        console.log('[HOST] GAME_CREATED:', partieId);
         HostState.partieId = partieId;
         HostState.partieEnCours = true;
         HostState.isConnecting = false;
         HostState.statut = 'lobby';
+        HostState.joueursTraites.clear(); // 🔥 Reset anti-doublons
         applySnapshot(snapshot);
         sauvegarderPartieLocale(snapshot);
 
@@ -108,41 +112,53 @@ function initSocket() {
         toast(`Partie "${HostState.partieNom}" créée ! Partagez le lien.`, 'success', 4000);
     });
 
-    // ── JOUEUR REJOINT - SECTION CRITIQUE AVEC DEBUG COMPLET ──
+    // ── JOUEUR REJOINT - AVEC ANTI-DOUBLONS CÔTÉ CLIENT ──
     socket.on('PLAYER_JOINED', ({ pseudo, equipe, joueurs }) => {
-        console.log('[HOST] PLAYER_JOINED reçu:', { pseudo, equipe, joueurs });
+        console.log('[HOST] 🔹 PLAYER_JOINED reçu:', { pseudo, equipe, joueurs });
+
+        // 🔥 VÉRIFIER LES DOUBLONS CÔTÉ CLIENT
+        if (HostState.joueursTraites.has(pseudo)) {
+            console.warn('[HOST] ⚠️ DOUBLON IGNORÉ (déjà traité):', pseudo);
+            return; // Ignorer les doublons
+        }
+
+        // Marquer comme traité
+        HostState.joueursTraites.add(pseudo);
+        console.log('[HOST] ✅ Joueur marqué comme traité:', pseudo);
+
         console.log('[HOST] Avant update - HostState.joueurs:', HostState.joueurs.length);
 
-        // 1️⃣ Mise à jour STRICTE de l'état
+        // Mise à jour STRICTE de l'état avec la liste complète du serveur
         HostState.joueurs = Array.isArray(joueurs) ? [...joueurs] : [];
 
         console.log('[HOST] Après update - HostState.joueurs:', HostState.joueurs.length);
-        console.log('[HOST] Données complètes:', HostState.joueurs);
+        console.log('[HOST] Liste complète:', HostState.joueurs.map(j => j.pseudo).join(', '));
 
-        // 2️⃣ Vérifier que le panel-game est visible
+        // Vérifier que le panel-game est visible
         const panelGame = $('panel-game');
         if (panelGame && panelGame.hidden) {
             console.warn('[HOST] panel-game est caché, affichage...');
             show('panel-game');
         }
 
-        // 3️⃣ Re-render COMPLET et FORCÉ avec timing précis
+        // Re-render COMPLET et FORCÉ
         requestAnimationFrame(() => {
-            console.log('[HOST] RAF - Rendu lancé');
-            console.log('[HOST] Joueurs à afficher:', HostState.joueurs.length);
-
+            console.log('[HOST] 🎨 Rendu lancé');
             renderGamePanel();
             renderJoueursConnectes();
             renderScores();
-
-            console.log('[HOST] Rendu complété');
+            console.log('[HOST] 🎨 Rendu complété');
         });
 
         toast(`🎉 ${pseudo} a rejoint ! (${joueurs.length})`, 'success', 2500);
     });
 
     socket.on('PLAYER_LEFT', ({ pseudo, joueurs }) => {
-        console.log('[HOST] PLAYER_LEFT:', pseudo, joueurs);
+        console.log('[HOST] PLAYER_LEFT:', pseudo);
+
+        // 🔥 Retirer du tracker quand le joueur part
+        HostState.joueursTraites.delete(pseudo);
+
         HostState.joueurs = Array.isArray(joueurs) ? [...joueurs] : [];
 
         requestAnimationFrame(() => {
@@ -177,6 +193,7 @@ function initSocket() {
         applySnapshot(snapshot);
         HostState.statut = 'terminee';
         HostState.partieEnCours = false;
+        HostState.joueursTraites.clear();
         _setStatutBadgeSp('terminee');
         hide('sp-btn-end');
         show('sp-btn-nouvelle');
@@ -419,6 +436,7 @@ function resetPourNouvellePartie() {
         equipes: [], joueurs: [], scores: {}, statut: null,
         partieEnCours: false, hostJoue: false, hostPseudo: null, isConnecting: false,
     });
+    HostState.joueursTraites.clear();
 
     const url = new URL(location.href);
     url.searchParams.delete('resume');
@@ -448,32 +466,22 @@ function resetPourNouvellePartie() {
 }
 
 // ══════════════════════════════════════════════════════
-// PANEL LOBBY - SECTION CRITIQUE
+// PANEL LOBBY
 // ══════════════════════════════════════════════════════
 
 function renderGamePanel() {
-    console.log('[RENDER] renderGamePanel appelée');
-    console.log('[RENDER] HostState.joueurs:', HostState.joueurs.length);
-    console.log('[RENDER] HostState.mode:', HostState.mode);
-    console.log('[RENDER] HostState.partieNom:', HostState.partieNom);
+    console.log('[RENDER] renderGamePanel - Joueurs:', HostState.joueurs.length);
 
     const joinUrl = `${location.origin}/join/?partieId=${HostState.partieId}`;
 
     const nomEl = $('h-info-nom');
-    if (nomEl) {
-        nomEl.textContent = HostState.partieNom || '—';
-        console.log('[RENDER] h-info-nom updated:', nomEl.textContent);
-    }
+    if (nomEl) nomEl.textContent = HostState.partieNom || '—';
 
     const jeuEl = $('h-info-jeu');
-    if (jeuEl) {
-        jeuEl.textContent = (HostState.jeu || '—').toUpperCase();
-    }
+    if (jeuEl) jeuEl.textContent = (HostState.jeu || '—').toUpperCase();
 
     const modeEl = $('h-info-mode');
-    if (modeEl) {
-        modeEl.textContent = HostState.mode === 'team' ? '🛡️ Équipes' : '👤 Solo';
-    }
+    if (modeEl) modeEl.textContent = HostState.mode === 'team' ? '🛡️ Équipes' : '👤 Solo';
 
     _setStatutBadge('lobby');
 
@@ -485,47 +493,26 @@ function renderGamePanel() {
 
     _renderQR(joinUrl, 'h-qr');
 
-    // Show/hide based on mode
     if (HostState.mode === 'team') {
         hide('bloc-joueurs-connectes');
         show('bloc-equipes-connectees');
-        console.log('[RENDER] Mode TEAM');
     } else {
         show('bloc-joueurs-connectes');
         hide('bloc-equipes-connectees');
-        console.log('[RENDER] Mode SOLO - bloc-joueurs-connectes SHOWN');
     }
 
-    // Rendu des joueurs
-    console.log('[RENDER] Appel renderJoueursConnectes()');
     renderJoueursConnectes();
-
-    console.log('[RENDER] Appel renderScores()');
     renderScores();
 }
 
 function renderJoueursConnectes() {
-    console.log('[renderJoueursConnectes] Début');
-    console.log('[renderJoueursConnectes] HostState.joueurs:', HostState.joueurs);
-
     const container = $('h-joueurs-connectes');
     const counter   = $('h-nb-joueurs');
 
-    console.log('[renderJoueursConnectes] Container existe?', !!container);
-    console.log('[renderJoueursConnectes] Counter existe?', !!counter);
+    if (counter) counter.textContent = HostState.joueurs.length;
+    if (!container) return;
 
-    if (counter) {
-        counter.textContent = HostState.joueurs.length;
-        console.log('[renderJoueursConnectes] Counter updated:', counter.textContent);
-    }
-
-    if (!container) {
-        console.error('[renderJoueursConnectes] ❌ CRITIQUE: container h-joueurs-connectes NOT FOUND');
-        return;
-    }
-
-    if (!Array.isArray(HostState.joueurs) || HostState.joueurs.length === 0) {
-        console.log('[renderJoueursConnectes] Affichage du message vide');
+    if (HostState.joueurs.length === 0) {
         container.innerHTML = `<div style="text-align:center;padding:1.5rem;opacity:.5;">
             <div style="font-size:1.5rem;margin-bottom:.3rem;">👀</div>
             <p>En attente de joueurs…</p>
@@ -534,11 +521,8 @@ function renderJoueursConnectes() {
         return;
     }
 
-    console.log('[renderJoueursConnectes] Rendu de', HostState.joueurs.length, 'joueurs');
-
-    const html = HostState.joueurs.map((j, idx) => {
+    container.innerHTML = HostState.joueurs.map(j => {
         const initiale = (j.pseudo || '?').charAt(0).toUpperCase();
-        console.log(`[renderJoueursConnectes] Joueur ${idx}:`, j.pseudo, j);
         return `
         <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem .75rem;background:rgba(255,255,255,.04);border-radius:8px;margin-bottom:.4rem;animation:fadein .3s;">
             <span style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#00d4ff22,#7c3aed22);display:flex;align-items:center;justify-content:center;font-weight:700;color:#00d4ff;">${initiale}</span>
@@ -548,10 +532,6 @@ function renderJoueursConnectes() {
         </div>`;
     }).join('');
 
-    console.log('[renderJoueursConnectes] HTML généré, length:', html.length);
-    container.innerHTML = html;
-    console.log('[renderJoueursConnectes] HTML injecté dans le DOM');
-
     container.querySelectorAll('.btn-kick').forEach(btn => {
         btn.addEventListener('click', () => {
             if (confirm(`Expulser ${btn.dataset.pseudo} ?`)) {
@@ -559,8 +539,6 @@ function renderJoueursConnectes() {
             }
         });
     });
-
-    console.log('[renderJoueursConnectes] Fin - Rendu terminé avec', HostState.joueurs.length, 'joueurs');
 }
 
 function renderScores() {
