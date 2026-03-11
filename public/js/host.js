@@ -1,50 +1,5 @@
-// ======================================================
-// 🟦 HOST.JS v3.1
-// ======================================================
-// Fix :
-//  - HOST_REJOIN après refresh page (socket reconnu côté serveur)
-//  - PLAYER_JOINED reçu correctement → affichage live des joueurs
-//  - Si hostJoue → bouton "Rejoindre comme joueur" → écran joueur du jeu
-//  - Fin de partie → reset complet → formulaire création
-//  - Nouvelle partie possible sans refresh
-//  - ✅ Statut 'lobby' défini à la création
-//  - ✅ UI mise à jour au premier joueur
-//  - ✅ Bouton START avec feedback visuel
-// ======================================================
-
-import { GameSocket } from './core/socket.js';
-
-const socket = new GameSocket();
-
-const GAME_ICONS = {
-    quiz: '❓', justeprix: '💰', undercover: '🕵️', lml: '📖',
-    mimer: '🎭', pendu: '🪢', petitbac: '📝', memoire: '🧠',
-    morpion: '⭕', puissance4: '🔴',
-};
-const JEU_PATHS = {
-    quiz: '/games/quiz/', justeprix: '/games/justeprix/',
-    undercover: '/games/undercover/', lml: '/games/lml/',
-    mimer: '/games/mimer/', pendu: '/games/pendu/',
-    petitbac: '/games/petitbac/', memoire: '/games/memoire/',
-    morpion: '/games/morpion/', puissance4: '/games/puissance4/',
-};
-const PSEUDO_REGEX = /^[a-zA-Z0-9_-]{2,20}$/;
-const PARTIE_NAME_REGEX = /^[a-zA-Z0-9_\s-]{2,30}$/;
-
-const $ = id => document.getElementById(id);
-const show = id => { const e = $(id); if (e) e.hidden = false; };
-const hide = id => { const e = $(id); if (e) e.hidden = true; };
-const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-
-const HostState = {
-    partieId: null, partieNom: null, jeu: null, mode: 'solo',
-    equipes: [], joueurs: [], scores: {}, statut: null,
-    hostJoue: false, hostPseudo: null,
-    partieEnCours: false, isConnecting: false,
-};
-
 // ══════════════════════════════════════════════════════
-// SOCKET
+// SOCKET - SECTION CORRIGÉE
 // ══════════════════════════════════════════════════════
 
 function initSocket() {
@@ -53,7 +8,6 @@ function initSocket() {
 
     socket.on('__connected__', () => {
         updateWsStatus(true);
-        // Toujours s'authentifier en host
         socket.send('HOST_AUTH', {});
     });
 
@@ -64,24 +18,21 @@ function initSocket() {
 
     socket.on('AUTH_OK', () => {
         toast('Host connecté ✅', 'success', 2000);
-        // Après auth, tenter un rejoin si une partie était active
         tryRejoin();
     });
 
-    // ── Rejoin après refresh ──
     socket.on('HOST_REJOINED', ({ partieId, snapshot }) => {
         console.log('[HOST] Rejoint la partie existante:', partieId);
         HostState.partieId = partieId;
         HostState.partieEnCours = true;
+        HostState.statut = snapshot.statut || 'lobby';
         applySnapshot(snapshot);
 
         if (snapshot.statut === 'en_cours') {
-            // Partie déjà démarrée → écran spectateur
             hide('form-creation');
             hide('panel-game');
             afficherEcranSpectateur(snapshot);
         } else {
-            // Lobby
             hide('form-creation');
             show('panel-game');
             renderGamePanel();
@@ -89,8 +40,8 @@ function initSocket() {
         toast(`Partie "${HostState.partieNom}" récupérée`, 'info', 2500);
     });
 
-    // ── Création OK ──
     socket.on('GAME_CREATED', ({ partieId, snapshot }) => {
+        console.log('[HOST] GAME_CREATED:', partieId, snapshot);
         HostState.partieId = partieId;
         HostState.partieEnCours = true;
         HostState.isConnecting = false;
@@ -103,37 +54,63 @@ function initSocket() {
 
         hide('form-creation');
         show('panel-game');
-        renderGamePanel();
+
+        // 🔥 Force complète du rendu après un tick
+        requestAnimationFrame(() => {
+            renderGamePanel();
+        });
+
         toast(`Partie "${HostState.partieNom}" créée ! Partagez le lien.`, 'success', 4000);
     });
 
-    // ── Joueur rejoint — CLEF DU BUG FIXÉ ──
+    // ── JOUEUR REJOINT - SECTION CRITIQUE ──
     socket.on('PLAYER_JOINED', ({ pseudo, equipe, joueurs }) => {
-        console.log('[HOST] PLAYER_JOINED reçu:', pseudo, joueurs);
-        HostState.joueurs = joueurs;
+        console.log('[HOST] PLAYER_JOINED:', { pseudo, equipe, joueurs });
 
-        // Force re-render complet du panel
-        renderGamePanel();
-        renderJoueursConnectes();
-        renderScores();
+        // 1️⃣ Mise à jour STRICTE de l'état
+        HostState.joueurs = JSON.parse(JSON.stringify(joueurs)); // Force deep copy
 
-        toast(`🎉 ${pseudo} a rejoint la partie ! (${joueurs.length})`, 'success', 2500);
+        // 2️⃣ Vérifier que le panel-game est visible
+        const panelGame = $('panel-game');
+        if (panelGame && panelGame.hidden) {
+            console.warn('[HOST] panel-game est caché, affichage...');
+            show('panel-game');
+        }
+
+        // 3️⃣ Re-render COMPLET et FORCÉ
+        setTimeout(() => {
+            renderGamePanel();
+            renderJoueursConnectes();
+            renderScores();
+        }, 0);
+
+        toast(`🎉 ${pseudo} a rejoint ! (${joueurs.length}/${joueurs.length})`, 'success', 2500);
     });
 
     socket.on('PLAYER_LEFT', ({ pseudo, joueurs }) => {
-        HostState.joueurs = joueurs;
-        renderJoueursConnectes();
-        renderScores();
+        console.log('[HOST] PLAYER_LEFT:', pseudo, joueurs);
+        HostState.joueurs = JSON.parse(JSON.stringify(joueurs));
+
+        setTimeout(() => {
+            renderJoueursConnectes();
+            renderScores();
+        }, 0);
+
         toast(`${pseudo} a quitté`, 'warning', 2000);
     });
 
     socket.on('SCORES_UPDATE', ({ scores }) => {
+        console.log('[HOST] SCORES_UPDATE:', scores);
         HostState.scores = scores;
-        renderScores();
-        renderScoresSp();
+
+        setTimeout(() => {
+            renderScores();
+            renderScoresSp();
+        }, 0);
     });
 
     socket.on('GAME_STARTED', ({ snapshot }) => {
+        console.log('[HOST] GAME_STARTED');
         applySnapshot(snapshot);
         HostState.statut = 'en_cours';
         sauvegarderSessionHost(snapshot);
@@ -142,6 +119,7 @@ function initSocket() {
     });
 
     socket.on('GAME_ENDED', ({ snapshot }) => {
+        console.log('[HOST] GAME_ENDED');
         applySnapshot(snapshot);
         HostState.statut = 'terminee';
         HostState.partieEnCours = false;
@@ -150,7 +128,6 @@ function initSocket() {
         show('sp-btn-nouvelle');
         renderScoresSp();
         renderResultatsSp();
-        // Nettoyer sessionStorage
         try { sessionStorage.removeItem('mgu_host_session'); } catch {}
         toast('Partie terminée 🏁 Vous pouvez en créer une nouvelle.', 'info', 5000);
     });
@@ -175,7 +152,6 @@ function initSocket() {
 // ══════════════════════════════════════════════════════
 
 function tryRejoin() {
-    // D'abord vérifier l'URL (?resume=partieId)
     const params = new URLSearchParams(location.search);
     const resumeId = params.get('resume');
 
@@ -184,7 +160,6 @@ function tryRejoin() {
         return;
     }
 
-    // Puis la session stockée
     try {
         const session = JSON.parse(sessionStorage.getItem('mgu_host_session') || 'null');
         if (session?.partieId && session?.role === 'host') {
@@ -352,7 +327,6 @@ function initControles() {
 
     $('btn-go-home')?.addEventListener('click', () => { window.location.href = '/'; });
 
-    // Spectateur
     $('sp-btn-end')?.addEventListener('click', () => {
         if (confirm('Terminer la partie ?')) socket.send('HOST_END_GAME', {});
     });
@@ -365,9 +339,12 @@ function initControles() {
 }
 
 function initButtonStates() {
-    setInterval(() => {
+    const checkInterval = setInterval(() => {
         const btn = $('h-btn-start');
-        if (!btn) return;
+        if (!btn) {
+            clearInterval(checkInterval);
+            return;
+        }
 
         const canStart = HostState.partieId &&
                         HostState.joueurs.length > 0 &&
@@ -377,9 +354,9 @@ function initButtonStates() {
         btn.style.opacity = canStart ? '1' : '0.5';
         btn.style.cursor = canStart ? 'pointer' : 'not-allowed';
         btn.title = !canStart ?
-            (HostState.joueurs.length === 0 ? 'Attendez au moins un joueur' : 'Traitement en cours...')
-            : 'Cliquez pour lancer la partie';
-    }, 500);
+            (HostState.joueurs.length === 0 ? '⏳ En attente d\'un joueur...' : '⏳ Traitement...')
+            : '✅ Cliquez pour lancer !';
+    }, 300);
 }
 
 function resetPourNouvellePartie() {
@@ -389,12 +366,10 @@ function resetPourNouvellePartie() {
         partieEnCours: false, hostJoue: false, hostPseudo: null, isConnecting: false,
     });
 
-    // Nettoyer l'URL
     const url = new URL(location.href);
     url.searchParams.delete('resume');
     window.history.replaceState({}, '', url.toString());
 
-    // Réinitialiser le formulaire
     const nomInput = $('h-nom-partie');
     if (nomInput) nomInput.value = '';
     const cb = $('h-host-joue');
@@ -404,12 +379,10 @@ function resetPourNouvellePartie() {
     const pseudoWrap = $('h-host-pseudo-wrap');
     if (pseudoWrap) pseudoWrap.hidden = true;
 
-    // Enlever le bouton "rejoindre comme joueur" s'il existe
     $('sp-btn-join-game')?.remove();
 
     renderEquipesForm();
 
-    // Afficher le formulaire
     hide('host-spectateur');
     hide('panel-game');
     show('host-lobby');
@@ -421,19 +394,31 @@ function resetPourNouvellePartie() {
 }
 
 // ══════════════════════════════════════════════════════
-// PANEL LOBBY
+// PANEL LOBBY - SECTION CRITIQUE
 // ══════════════════════════════════════════════════════
 
 function renderGamePanel() {
+    console.log('[RENDER] renderGamePanel - Joueurs:', HostState.joueurs.length);
+
     const joinUrl = `${location.origin}/join/?partieId=${HostState.partieId}`;
 
-    if ($('h-info-nom'))  $('h-info-nom').textContent  = HostState.partieNom || '—';
-    if ($('h-info-jeu'))  $('h-info-jeu').textContent  = (HostState.jeu || '—').toUpperCase();
-    if ($('h-info-mode')) $('h-info-mode').textContent = HostState.mode === 'team' ? '🛡️ Équipes' : '👤 Solo';
+    const nomEl = $('h-info-nom');
+    if (nomEl) nomEl.textContent = HostState.partieNom || '—';
+
+    const jeuEl = $('h-info-jeu');
+    if (jeuEl) jeuEl.textContent = (HostState.jeu || '—').toUpperCase();
+
+    const modeEl = $('h-info-mode');
+    if (modeEl) modeEl.textContent = HostState.mode === 'team' ? '🛡️ Équipes' : '👤 Solo';
+
     _setStatutBadge('lobby');
 
     const linkEl = $('h-join-link');
-    if (linkEl) { linkEl.href = joinUrl; linkEl.textContent = joinUrl; }
+    if (linkEl) {
+        linkEl.href = joinUrl;
+        linkEl.textContent = joinUrl;
+    }
+
     _renderQR(joinUrl, 'h-qr');
 
     if (HostState.mode === 'team') {
@@ -449,8 +434,11 @@ function renderGamePanel() {
 }
 
 function renderJoueursConnectes() {
+    console.log('[RENDER] renderJoueursConnectes - Liste:', HostState.joueurs);
+
     const container = $('h-joueurs-connectes');
     const counter   = $('h-nb-joueurs');
+
     if (counter) counter.textContent = HostState.joueurs.length;
     if (!container) return;
 
@@ -463,13 +451,16 @@ function renderJoueursConnectes() {
         return;
     }
 
-    container.innerHTML = HostState.joueurs.map(j => `
+    container.innerHTML = HostState.joueurs.map(j => {
+        const initiale = (j.pseudo || '?').charAt(0).toUpperCase();
+        return `
         <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem .75rem;background:rgba(255,255,255,.04);border-radius:8px;margin-bottom:.4rem;animation:fadein .3s;">
-            <span style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#00d4ff22,#7c3aed22);display:flex;align-items:center;justify-content:center;font-weight:700;color:#00d4ff;">${j.pseudo.charAt(0).toUpperCase()}</span>
+            <span style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#00d4ff22,#7c3aed22);display:flex;align-items:center;justify-content:center;font-weight:700;color:#00d4ff;">${initiale}</span>
             <span style="flex:1;font-weight:500;">${esc(j.pseudo)}</span>
             ${j.equipe ? `<span style="font-size:.75rem;opacity:.6;background:rgba(255,255,255,.06);padding:.2rem .5rem;border-radius:4px;">🛡️ ${esc(j.equipe)}</span>` : ''}
             <button class="btn-kick" data-pseudo="${esc(j.pseudo)}" style="background:none;border:1px solid #f8717140;color:#f87171;padding:.2rem .5rem;border-radius:5px;cursor:pointer;font-size:.8rem;" title="Expulser">✖</button>
-        </div>`).join('');
+        </div>`;
+    }).join('');
 
     container.querySelectorAll('.btn-kick').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -519,7 +510,7 @@ function _renderScoresIn(id, scores) {
 }
 
 // ══════════════════════════════════════════════════════
-// ÉCRAN SPECTATEUR (+ bouton rejoindre si hostJoue)
+// ÉCRAN SPECTATEUR
 // ══════════════════════════════════════════════════════
 
 function afficherEcranSpectateur(snapshot) {
@@ -537,7 +528,6 @@ function afficherEcranSpectateur(snapshot) {
     const spLink = $('sp-join-link');
     if (spLink) { spLink.href = joinUrl; spLink.textContent = joinUrl; }
 
-    // ✅ Si le host joue → bouton pour rejoindre comme joueur
     if (HostState.hostJoue && HostState.hostPseudo) {
         const spActions = document.querySelector('.sp-actions');
         if (spActions && !$('sp-btn-join-game')) {
@@ -712,7 +702,6 @@ function init() {
     initControles();
     initButtonStates();
 
-    // Pré-sélectionner le jeu via URL ?jeu=
     const params = new URLSearchParams(location.search);
     const jeuId  = params.get('jeu');
     if (jeuId) {
@@ -720,7 +709,6 @@ function init() {
         if (sel?.querySelector(`option[value="${jeuId}"]`)) sel.value = jeuId;
     }
 
-    // Ajouter animation CSS
     if (!document.getElementById('host-animations')) {
         const style = document.createElement('style');
         style.id = 'host-animations';
