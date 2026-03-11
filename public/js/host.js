@@ -1,24 +1,23 @@
 // ======================================================
-// 🟦 HOST.JS — Interface hôte v2 (corrigé)
+// 🟦 HOST.JS v3
 // ======================================================
 // Fix :
-//  - socket.connect() appelé à l'init
-//  - Lien de join généré dès GAME_CREATED
-//  - Redirection vers game.js correct selon le jeu
-//  - Écran spectateur après GAME_STARTED avec lien de jeu pour host
+//  - HOST_REJOIN après refresh page (socket reconnu côté serveur)
+//  - PLAYER_JOINED reçu correctement → affichage live des joueurs
+//  - Si hostJoue → bouton "Rejoindre comme joueur" → écran joueur du jeu
+//  - Fin de partie → reset complet → formulaire création
+//  - Nouvelle partie possible sans refresh
 // ======================================================
 
 import { GameSocket } from './core/socket.js';
 
 const socket = new GameSocket();
 
-// ── Constants ─────────────────────────────────────────
 const GAME_ICONS = {
     quiz: '❓', justeprix: '💰', undercover: '🕵️', lml: '📖',
     mimer: '🎭', pendu: '🪢', petitbac: '📝', memoire: '🧠',
     morpion: '⭕', puissance4: '🔴',
 };
-
 const JEU_PATHS = {
     quiz: '/games/quiz/', justeprix: '/games/justeprix/',
     undercover: '/games/undercover/', lml: '/games/lml/',
@@ -26,19 +25,14 @@ const JEU_PATHS = {
     petitbac: '/games/petitbac/', memoire: '/games/memoire/',
     morpion: '/games/morpion/', puissance4: '/games/puissance4/',
 };
-
 const PSEUDO_REGEX = /^[a-zA-Z0-9_-]{2,20}$/;
 const PARTIE_NAME_REGEX = /^[a-zA-Z0-9_\s-]{2,30}$/;
 
-// ── DOM ───────────────────────────────────────────────
-const $ = (id) => document.getElementById(id);
-const show = (id) => { const el = $(id); if (el) el.hidden = false; };
-const hide = (id) => { const el = $(id); if (el) el.hidden = true; };
-const esc = (str) => String(str || '')
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const $ = id => document.getElementById(id);
+const show = id => { const e = $(id); if (e) e.hidden = false; };
+const hide = id => { const e = $(id); if (e) e.hidden = true; };
+const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
-// ── State ─────────────────────────────────────────────
 const HostState = {
     partieId: null, partieNom: null, jeu: null, mode: 'solo',
     equipes: [], joueurs: [], scores: {}, statut: null,
@@ -47,7 +41,7 @@ const HostState = {
 };
 
 // ══════════════════════════════════════════════════════
-// WEBSOCKET
+// SOCKET
 // ══════════════════════════════════════════════════════
 
 function initSocket() {
@@ -55,8 +49,8 @@ function initSocket() {
     socket.connect(`${wsProto}//${location.host}/ws`);
 
     socket.on('__connected__', () => {
-        console.log('[HOST] ✅ WebSocket connecté');
         updateWsStatus(true);
+        // Toujours s'authentifier en host
         socket.send('HOST_AUTH', {});
     });
 
@@ -67,12 +61,33 @@ function initSocket() {
 
     socket.on('AUTH_OK', () => {
         toast('Host connecté ✅', 'success', 2000);
-        // Reprendre une partie si ?resume= dans l'URL
-        checkResume();
+        // Après auth, tenter un rejoin si une partie était active
+        tryRejoin();
     });
 
+    // ── Rejoin après refresh ──
+    socket.on('HOST_REJOINED', ({ partieId, snapshot }) => {
+        console.log('[HOST] Rejoint la partie existante:', partieId);
+        HostState.partieId = partieId;
+        HostState.partieEnCours = true;
+        applySnapshot(snapshot);
+
+        if (snapshot.statut === 'en_cours') {
+            // Partie déjà démarrée → écran spectateur
+            hide('form-creation');
+            hide('panel-game');
+            afficherEcranSpectateur(snapshot);
+        } else {
+            // Lobby
+            hide('form-creation');
+            show('panel-game');
+            renderGamePanel();
+        }
+        toast(`Partie "${HostState.partieNom}" récupérée`, 'info', 2500);
+    });
+
+    // ── Création OK ──
     socket.on('GAME_CREATED', ({ partieId, snapshot }) => {
-        console.log('[HOST] ✅ Partie créée:', partieId);
         HostState.partieId = partieId;
         HostState.partieEnCours = true;
         HostState.isConnecting = false;
@@ -82,17 +97,19 @@ function initSocket() {
         const btn = $('h-btn-creer');
         if (btn) { btn.disabled = false; btn.textContent = '🎮 Créer la partie'; }
 
-        show('panel-game');
         hide('form-creation');
+        show('panel-game');
         renderGamePanel();
         toast(`Partie "${HostState.partieNom}" créée ! Partagez le lien.`, 'success', 4000);
     });
 
+    // ── Joueur rejoint — CLEF DU BUG ──
     socket.on('PLAYER_JOINED', ({ pseudo, equipe, joueurs }) => {
+        console.log('[HOST] PLAYER_JOINED reçu:', pseudo, joueurs);
         HostState.joueurs = joueurs;
         renderJoueursConnectes();
         renderScores();
-        toast(`${pseudo} a rejoint 🎉`, 'info', 2000);
+        toast(`🎉 ${pseudo} a rejoint la partie !`, 'success', 2500);
     });
 
     socket.on('PLAYER_LEFT', ({ pseudo, joueurs }) => {
@@ -105,6 +122,7 @@ function initSocket() {
     socket.on('SCORES_UPDATE', ({ scores }) => {
         HostState.scores = scores;
         renderScores();
+        renderScoresSp();
     });
 
     socket.on('GAME_STARTED', ({ snapshot }) => {
@@ -124,14 +142,18 @@ function initSocket() {
         show('sp-btn-nouvelle');
         renderScoresSp();
         renderResultatsSp();
-        toast('Partie terminée 🏁', 'info');
+        // Nettoyer sessionStorage
+        try { sessionStorage.removeItem('mgu_host_session'); } catch {}
+        toast('Partie terminée 🏁 Vous pouvez en créer une nouvelle.', 'info', 5000);
     });
 
     socket.on('ERROR', ({ code, message }) => {
         const msgs = {
-            NOT_HOST: 'Vous n\'êtes pas reconnu comme host.',
-            HOST_ALREADY_HAS_GAME: 'Une partie est déjà active.',
+            NOT_HOST: 'Non reconnu comme host.',
+            HOST_ALREADY_HAS_GAME: 'Vous avez déjà une partie active.',
             NO_ACTIVE_GAME: 'Aucune partie active.',
+            NAME_TAKEN: 'Ce nom de partie est déjà utilisé.',
+            GAME_NOT_FOUND: 'Partie introuvable.',
         };
         toast(msgs[code] || message || `Erreur: ${code}`, 'error');
         const btn = $('h-btn-creer');
@@ -141,19 +163,25 @@ function initSocket() {
 }
 
 // ══════════════════════════════════════════════════════
-// REPRISE DE PARTIE (URL ?resume=)
+// REJOIN APRÈS REFRESH
 // ══════════════════════════════════════════════════════
 
-function checkResume() {
+function tryRejoin() {
+    // D'abord vérifier l'URL (?resume=partieId)
     const params = new URLSearchParams(location.search);
     const resumeId = params.get('resume');
-    if (!resumeId) return;
 
+    if (resumeId) {
+        socket.send('HOST_REJOIN', { partieId: resumeId });
+        return;
+    }
+
+    // Puis la session stockée
     try {
-        const parties = JSON.parse(localStorage.getItem('mgu_parties') || '[]');
-        const saved = parties.find(p => p.partieId === resumeId);
-        if (saved) {
-            toast(`Reprise de "${saved.nom}"…`, 'info');
+        const session = JSON.parse(sessionStorage.getItem('mgu_host_session') || 'null');
+        if (session?.partieId && session?.role === 'host') {
+            console.log('[HOST] Tentative rejoin:', session.partieId);
+            socket.send('HOST_REJOIN', { partieId: session.partieId });
         }
     } catch {}
 }
@@ -177,24 +205,18 @@ function initCreerPartie() {
         const mode = HostState.mode;
 
         if (!nom || !PARTIE_NAME_REGEX.test(nom)) {
-            toast('Nom de partie invalide (2-30 caractères).', 'warning');
-            return;
+            toast('Nom de partie invalide (2-30 caractères, lettres/chiffres/espaces).', 'warning'); return;
         }
-        if (!jeu) {
-            toast('Sélectionnez un jeu.', 'warning');
-            return;
-        }
+        if (!jeu) { toast('Sélectionnez un jeu.', 'warning'); return; }
         if (mode === 'team' && HostState.equipes.length < 2) {
-            toast('Il faut au moins 2 équipes.', 'warning');
-            return;
+            toast('Il faut au moins 2 équipes.', 'warning'); return;
         }
 
         let hostPseudo = null;
         if (HostState.hostJoue) {
             hostPseudo = $('h-host-pseudo')?.value.trim();
             if (!hostPseudo || !PSEUDO_REGEX.test(hostPseudo)) {
-                toast('Pseudo host invalide.', 'warning');
-                return;
+                toast('Pseudo host invalide.', 'warning'); return;
             }
             HostState.hostPseudo = hostPseudo;
         }
@@ -230,25 +252,18 @@ function initCreerPartie() {
 function initModeToggle() {
     const btnSolo = $('btn-mode-solo');
     const btnTeam = $('btn-mode-equipes');
-
     const setMode = (mode) => {
         HostState.mode = mode;
         btnSolo?.classList.toggle('active', mode === 'solo');
         btnTeam?.classList.toggle('active', mode === 'team');
-        const blocSolo = $('bloc-solo');
-        const blocTeam = $('bloc-equipes');
-        if (blocSolo) blocSolo.hidden = (mode === 'team');
-        if (blocTeam) blocTeam.hidden = (mode === 'solo');
+        const bs = $('bloc-solo'), bt = $('bloc-equipes');
+        if (bs) bs.hidden = (mode === 'team');
+        if (bt) bt.hidden = (mode === 'solo');
     };
-
     btnSolo?.addEventListener('click', () => setMode('solo'));
     btnTeam?.addEventListener('click', () => setMode('team'));
     setMode('solo');
 }
-
-// ══════════════════════════════════════════════════════
-// HOST JOUE TOGGLE
-// ══════════════════════════════════════════════════════
 
 function initHostRoleToggle() {
     const cb = $('h-host-joue');
@@ -266,9 +281,8 @@ function initHostRoleToggle() {
 
 function initEquipes() {
     const input = $('h-equipe-input');
-    const btn = $('h-equipe-ajouter');
-
-    const ajouter = () => {
+    const btn   = $('h-equipe-ajouter');
+    const add   = () => {
         const nom = input?.value.trim();
         if (!nom) return;
         if (HostState.equipes.some(e => e.nom.toLowerCase() === nom.toLowerCase())) {
@@ -278,44 +292,38 @@ function initEquipes() {
         if (input) input.value = '';
         renderEquipesForm();
     };
-
-    btn?.addEventListener('click', ajouter);
-    input?.addEventListener('keydown', e => { if (e.key === 'Enter') ajouter(); });
+    btn?.addEventListener('click', add);
+    input?.addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
     renderEquipesForm();
 }
 
 function renderEquipesForm() {
-    const container = $('h-equipes-list');
-    if (!container) return;
+    const c = $('h-equipes-list');
+    if (!c) return;
     if (HostState.equipes.length === 0) {
-        container.innerHTML = '<p class="list-empty" style="opacity:.5;font-size:.9rem;">Créez au moins 2 équipes.</p>';
+        c.innerHTML = '<p style="opacity:.5;font-size:.9rem;padding:.5rem 0;">Créez au moins 2 équipes.</p>';
         return;
     }
-    container.innerHTML = HostState.equipes.map((eq, i) => `
-        <div style="display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;background:rgba(255,255,255,.05);border-radius:6px;margin-bottom:.4rem;">
+    c.innerHTML = HostState.equipes.map((eq, i) => `
+        <div style="display:flex;align-items:center;gap:.5rem;padding:.45rem .75rem;background:rgba(255,255,255,.05);border-radius:6px;margin-bottom:.4rem;">
             <span>🛡️</span>
             <span style="flex:1;">${esc(eq.nom)}</span>
-            <button class="btn-del-equipe" data-i="${i}" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:1.1rem;">×</button>
+            <button class="btn-del-eq" data-i="${i}" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:1.1rem;line-height:1;">×</button>
         </div>`).join('');
-
-    container.querySelectorAll('.btn-del-equipe').forEach(btn => {
-        btn.addEventListener('click', () => {
-            HostState.equipes.splice(parseInt(btn.dataset.i), 1);
-            renderEquipesForm();
-        });
+    c.querySelectorAll('.btn-del-eq').forEach(b => {
+        b.addEventListener('click', () => { HostState.equipes.splice(+b.dataset.i, 1); renderEquipesForm(); });
     });
 }
 
 // ══════════════════════════════════════════════════════
-// CONTRÔLES DU JEU
+// CONTRÔLES
 // ══════════════════════════════════════════════════════
 
 function initControles() {
     $('h-btn-start')?.addEventListener('click', () => {
         if (!HostState.partieId) return;
         if (HostState.joueurs.length === 0) {
-            toast('Attendez qu\'au moins un joueur rejoigne.', 'warning');
-            return;
+            toast('Attendez qu\'au moins un joueur rejoigne.', 'warning'); return;
         }
         socket.send('HOST_START_GAME', {});
     });
@@ -346,58 +354,62 @@ function initControles() {
         resetPourNouvellePartie();
     });
     $('sp-btn-home')?.addEventListener('click', () => { window.location.href = '/'; });
-
-    $('sp-btn-copy')?.addEventListener('click', () => {
-        const url = `${location.origin}/join/?partieId=${HostState.partieId}`;
-        navigator.clipboard.writeText(url)
-            .then(() => toast('Lien copié !', 'success', 1500))
-            .catch(() => {});
-    });
 }
 
 function resetPourNouvellePartie() {
     Object.assign(HostState, {
         partieId: null, partieNom: null, jeu: null,
         equipes: [], joueurs: [], scores: {}, statut: null,
-        partieEnCours: false, hostJoue: false, hostPseudo: null,
+        partieEnCours: false, hostJoue: false, hostPseudo: null, isConnecting: false,
     });
-    hide('panel-game');
-    hide('h-btn-nouvelle');
-    show('form-creation');
-    show('h-btn-start');
-    const nom = $('h-nom-partie');
-    if (nom) nom.value = '';
+
+    // Nettoyer l'URL
+    const url = new URL(location.href);
+    url.searchParams.delete('resume');
+    window.history.replaceState({}, '', url.toString());
+
+    // Réinitialiser le formulaire
+    const nomInput = $('h-nom-partie');
+    if (nomInput) nomInput.value = '';
     const cb = $('h-host-joue');
     if (cb) cb.checked = false;
-    const wrap = $('h-host-pseudo-wrap');
-    if (wrap) wrap.hidden = true;
+    const pseudoInput = $('h-host-pseudo');
+    if (pseudoInput) pseudoInput.value = '';
+    const pseudoWrap = $('h-host-pseudo-wrap');
+    if (pseudoWrap) pseudoWrap.hidden = true;
+
+    // Enlever le bouton "rejoindre comme joueur" s'il existe
+    $('sp-btn-join-game')?.remove();
+
     renderEquipesForm();
-    toast('Prêt pour une nouvelle partie !', 'info');
+
+    // Afficher le formulaire
+    hide('host-spectateur');
+    hide('panel-game');
+    show('host-lobby');
+    show('form-creation');
+    hide('h-btn-nouvelle');
+    show('h-btn-start');
+
+    toast('Prêt pour une nouvelle partie !', 'info', 2500);
 }
 
 // ══════════════════════════════════════════════════════
-// PANEL LOBBY (après création)
+// PANEL LOBBY
 // ══════════════════════════════════════════════════════
 
 function renderGamePanel() {
-    // ✅ FIX PRINCIPAL : Génère le lien de join
     const joinUrl = `${location.origin}/join/?partieId=${HostState.partieId}`;
 
-    if ($('h-info-nom')) $('h-info-nom').textContent = HostState.partieNom || '—';
-    if ($('h-info-jeu')) $('h-info-jeu').textContent = (HostState.jeu || '—').toUpperCase();
+    if ($('h-info-nom'))  $('h-info-nom').textContent  = HostState.partieNom || '—';
+    if ($('h-info-jeu'))  $('h-info-jeu').textContent  = (HostState.jeu || '—').toUpperCase();
     if ($('h-info-mode')) $('h-info-mode').textContent = HostState.mode === 'team' ? '🛡️ Équipes' : '👤 Solo';
-
     _setStatutBadge('lobby');
 
-    // Lien et QR
     const linkEl = $('h-join-link');
-    if (linkEl) {
-        linkEl.href = joinUrl;
-        linkEl.textContent = joinUrl;
-    }
+    if (linkEl) { linkEl.href = joinUrl; linkEl.textContent = joinUrl; }
     _renderQR(joinUrl, 'h-qr');
 
-    // Affichage bloc joueurs/équipes
     if (HostState.mode === 'team') {
         hide('bloc-joueurs-connectes');
         show('bloc-equipes-connectees');
@@ -412,22 +424,25 @@ function renderGamePanel() {
 
 function renderJoueursConnectes() {
     const container = $('h-joueurs-connectes');
-    const counter = $('h-nb-joueurs');
+    const counter   = $('h-nb-joueurs');
     if (counter) counter.textContent = HostState.joueurs.length;
-
     if (!container) return;
 
     if (HostState.joueurs.length === 0) {
-        container.innerHTML = '<p style="opacity:.5;text-align:center;padding:1rem;">En attente de joueurs…</p>';
+        container.innerHTML = `<div style="text-align:center;padding:1.5rem;opacity:.5;">
+            <div style="font-size:1.5rem;margin-bottom:.3rem;">👀</div>
+            <p>En attente de joueurs…</p>
+            <p style="font-size:.8rem;margin-top:.25rem;">Partagez le lien ou le QR code</p>
+        </div>`;
         return;
     }
 
     container.innerHTML = HostState.joueurs.map(j => `
-        <div style="display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;background:rgba(255,255,255,.05);border-radius:6px;margin-bottom:.4rem;">
-            <span style="width:28px;height:28px;border-radius:50%;background:#00d4ff22;display:flex;align-items:center;justify-content:center;font-weight:700;color:#00d4ff;">${(j.pseudo || '?').charAt(0).toUpperCase()}</span>
-            <span style="flex:1;">${esc(j.pseudo)}</span>
-            ${j.equipe ? `<span style="font-size:.75rem;opacity:.6;">🛡️ ${esc(j.equipe)}</span>` : ''}
-            <button class="btn-kick" data-pseudo="${esc(j.pseudo)}" style="background:none;border:none;color:#f87171;cursor:pointer;" title="Expulser">✖</button>
+        <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem .75rem;background:rgba(255,255,255,.04);border-radius:8px;margin-bottom:.4rem;animation:fadein .3s;">
+            <span style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#00d4ff22,#7c3aed22);display:flex;align-items:center;justify-content:center;font-weight:700;color:#00d4ff;">${j.pseudo.charAt(0).toUpperCase()}</span>
+            <span style="flex:1;font-weight:500;">${esc(j.pseudo)}</span>
+            ${j.equipe ? `<span style="font-size:.75rem;opacity:.6;background:rgba(255,255,255,.06);padding:.2rem .5rem;border-radius:4px;">🛡️ ${esc(j.equipe)}</span>` : ''}
+            <button class="btn-kick" data-pseudo="${esc(j.pseudo)}" style="background:none;border:1px solid #f8717140;color:#f87171;padding:.2rem .5rem;border-radius:5px;cursor:pointer;font-size:.8rem;" title="Expulser">✖</button>
         </div>`).join('');
 
     container.querySelectorAll('.btn-kick').forEach(btn => {
@@ -442,48 +457,43 @@ function renderJoueursConnectes() {
 function renderScores() {
     _renderScoresIn('h-scores-liste', HostState.scores);
 }
-
 function renderScoresSp() {
     _renderScoresIn('sp-scores', HostState.scores);
 }
 
-function _renderScoresIn(containerId, scores) {
-    const container = $(containerId);
-    if (!container) return;
+function _renderScoresIn(id, scores) {
+    const c = $(id);
+    if (!c) return;
     const entries = Object.entries(scores).sort((a, b) => b[1] - a[1]);
     if (entries.length === 0) {
-        container.innerHTML = '<p style="opacity:.5;font-size:.9rem;">Aucun score encore.</p>';
+        c.innerHTML = '<p style="opacity:.5;font-size:.9rem;">Aucun score encore.</p>';
         return;
     }
     const medals = ['🥇', '🥈', '🥉'];
     const max = entries[0]?.[1] || 1;
-    container.innerHTML = entries.map(([nom, pts], i) => {
+    c.innerHTML = entries.map(([nom, pts], i) => {
         const pct = max > 0 ? Math.round((pts / max) * 100) : 0;
         return `<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem;">
             <span style="width:1.5rem;">${medals[i] || `${i + 1}.`}</span>
             <span style="flex:1;font-weight:500;">${esc(nom)}</span>
-            <div style="width:80px;height:6px;background:#ffffff20;border-radius:3px;overflow:hidden;">
-                <div style="width:${pct}%;height:100%;background:#00d4ff;border-radius:3px;"></div>
+            <div style="width:70px;height:5px;background:#ffffff15;border-radius:3px;overflow:hidden;">
+                <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#00d4ff,#7c3aed);border-radius:3px;"></div>
             </div>
-            <span style="font-size:.9rem;min-width:40px;text-align:right;">${pts} pts</span>
-            <div>
-                <button class="btn-pts" data-cible="${esc(nom)}" data-delta="1" style="background:#00d4ff22;border:none;color:#00d4ff;padding:.2rem .4rem;border-radius:4px;cursor:pointer;">＋</button>
-                <button class="btn-pts" data-cible="${esc(nom)}" data-delta="-1" style="background:#f8717120;border:none;color:#f87171;padding:.2rem .4rem;border-radius:4px;cursor:pointer;">－</button>
-            </div>
+            <span style="font-size:.85rem;min-width:44px;text-align:right;opacity:.9;">${pts}pts</span>
+            <button class="bpt" data-c="${esc(nom)}" data-d="1" style="background:#00d4ff15;border:none;color:#00d4ff;padding:.15rem .4rem;border-radius:4px;cursor:pointer;font-size:.9rem;">＋</button>
+            <button class="bpt" data-c="${esc(nom)}" data-d="-1" style="background:#f8717115;border:none;color:#f87171;padding:.15rem .4rem;border-radius:4px;cursor:pointer;font-size:.9rem;">－</button>
         </div>`;
     }).join('');
-
-    container.querySelectorAll('.btn-pts').forEach(btn => {
+    c.querySelectorAll('.bpt').forEach(btn => {
         btn.addEventListener('click', () => {
-            const delta = parseInt(btn.dataset.delta);
-            const type = delta > 0 ? 'HOST_ADD_POINTS' : 'HOST_REMOVE_POINTS';
-            socket.send(type, { cible: btn.dataset.cible, points: 1 });
+            const d = parseInt(btn.dataset.d);
+            socket.send(d > 0 ? 'HOST_ADD_POINTS' : 'HOST_REMOVE_POINTS', { cible: btn.dataset.c, points: 1 });
         });
     });
 }
 
 // ══════════════════════════════════════════════════════
-// ÉCRAN SPECTATEUR (après démarrage)
+// ÉCRAN SPECTATEUR (+ bouton rejoindre si hostJoue)
 // ══════════════════════════════════════════════════════
 
 function afficherEcranSpectateur(snapshot) {
@@ -493,26 +503,26 @@ function afficherEcranSpectateur(snapshot) {
     const joinUrl = `${location.origin}/join/?partieId=${HostState.partieId}`;
     _renderQR(joinUrl, 'sp-qr');
 
-    if ($('sp-nom')) $('sp-nom').textContent = HostState.partieNom || '—';
-    if ($('sp-jeu')) $('sp-jeu').textContent = (HostState.jeu || '—').toUpperCase();
+    if ($('sp-nom'))  $('sp-nom').textContent  = HostState.partieNom || '—';
+    if ($('sp-jeu'))  $('sp-jeu').textContent  = (HostState.jeu || '—').toUpperCase();
     if ($('sp-mode')) $('sp-mode').textContent = HostState.mode === 'team' ? '🛡️ Équipes' : '👤 Solo';
     _setStatutBadgeSp('en_cours');
 
-    // Lien copie spectateur
     const spLink = $('sp-join-link');
     if (spLink) { spLink.href = joinUrl; spLink.textContent = joinUrl; }
 
-    // ✅ Si le host joue → bouton pour rejoindre le jeu
+    // ✅ Si le host joue → bouton pour rejoindre comme joueur
     if (HostState.hostJoue && HostState.hostPseudo) {
         const spActions = document.querySelector('.sp-actions');
         if (spActions && !$('sp-btn-join-game')) {
-            const gameUrl = JEU_PATHS[HostState.jeu] || '/games/';
+            const gameUrl = JEU_PATHS[HostState.jeu] || `/games/${HostState.jeu}/`;
+            const fullUrl = `${gameUrl}?partieId=${HostState.partieId}&pseudo=${encodeURIComponent(HostState.hostPseudo)}&role=host-player`;
+
             const btn = document.createElement('a');
             btn.id = 'sp-btn-join-game';
-            btn.href = `${gameUrl}?partieId=${HostState.partieId}&pseudo=${encodeURIComponent(HostState.hostPseudo)}`;
-            btn.className = 'btn btn-primary';
-            btn.style.cssText = 'display:block;margin-bottom:1rem;text-align:center;';
-            btn.innerHTML = `🎮 Rejoindre comme ${esc(HostState.hostPseudo)}`;
+            btn.href = fullUrl;
+            btn.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.85rem 1.5rem;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#000;font-weight:700;border-radius:10px;text-decoration:none;margin-bottom:1rem;font-size:1rem;';
+            btn.innerHTML = `🎮 Rejoindre comme joueur (${esc(HostState.hostPseudo)})`;
             spActions.insertBefore(btn, spActions.firstChild);
         }
     }
@@ -522,21 +532,20 @@ function afficherEcranSpectateur(snapshot) {
 }
 
 function renderJoueursSp() {
-    const container = $('sp-joueurs');
-    if (!container) return;
+    const c = $('sp-joueurs');
+    if (!c) return;
     if (HostState.joueurs.length === 0) {
-        container.innerHTML = '<p style="opacity:.5;">En attente de joueurs…</p>';
+        c.innerHTML = '<p style="opacity:.5;">En attente de joueurs…</p>';
         return;
     }
-    container.innerHTML = HostState.joueurs.map(j => `
-        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem;">
-            <span style="width:26px;height:26px;border-radius:50%;background:#00d4ff22;display:flex;align-items:center;justify-content:center;font-weight:700;color:#00d4ff;font-size:.8rem;">${j.pseudo.charAt(0).toUpperCase()}</span>
-            <span>${esc(j.pseudo)}</span>
+    c.innerHTML = HostState.joueurs.map(j => `
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem;padding:.4rem .6rem;background:rgba(255,255,255,.04);border-radius:6px;">
+            <span style="width:24px;height:24px;border-radius:50%;background:#00d4ff22;display:flex;align-items:center;justify-content:center;font-weight:700;color:#00d4ff;font-size:.8rem;">${j.pseudo.charAt(0).toUpperCase()}</span>
+            <span style="flex:1;">${esc(j.pseudo)}</span>
             ${j.equipe ? `<span style="font-size:.75rem;opacity:.5;">· ${esc(j.equipe)}</span>` : ''}
-            <button class="btn-kick" data-pseudo="${esc(j.pseudo)}" style="margin-left:auto;background:none;border:none;color:#f87171;cursor:pointer;font-size:.85rem;" title="Expulser">✖</button>
+            <button class="btn-kick-sp" data-pseudo="${esc(j.pseudo)}" style="background:none;border:none;color:#f8717180;cursor:pointer;font-size:.85rem;" title="Expulser">✖</button>
         </div>`).join('');
-
-    container.querySelectorAll('.btn-kick').forEach(btn => {
+    c.querySelectorAll('.btn-kick-sp').forEach(btn => {
         btn.addEventListener('click', () => {
             if (confirm(`Expulser ${btn.dataset.pseudo} ?`)) {
                 socket.send('HOST_KICK_PLAYER', { pseudo: btn.dataset.pseudo });
@@ -547,65 +556,70 @@ function renderJoueursSp() {
 
 function renderResultatsSp() {
     const entries = Object.entries(HostState.scores).sort((a, b) => b[1] - a[1]);
-    const medals = ['🥇', '🥈', '🥉'];
-    const el = $('sp-scores');
-    if (!el) return;
-    el.insertAdjacentHTML('afterend', `
-        <div style="margin-top:1.5rem;padding:1rem;background:rgba(255,255,255,.05);border-radius:10px;">
-            <h3 style="margin:0 0 .75rem;font-size:1rem;">🏁 Résultats finaux</h3>
-            ${entries.map(([nom, pts], i) => `
-                <div style="display:flex;align-items:center;gap:.5rem;padding:.4rem;${i===0?'font-weight:700;color:#ffd700;':''}">
-                    <span>${medals[i] || `${i + 1}.`}</span>
-                    <span style="flex:1;">${esc(nom)}</span>
-                    <span>${pts} pts</span>
-                </div>`).join('')}
-        </div>`);
+    const medals  = ['🥇', '🥈', '🥉'];
+    const existing = $('resultats-finaux');
+    if (existing) existing.remove();
+
+    const spScores = $('sp-scores');
+    if (!spScores) return;
+
+    const div = document.createElement('div');
+    div.id = 'resultats-finaux';
+    div.style.cssText = 'margin-top:1.5rem;padding:1.25rem;background:rgba(255,255,255,.05);border-radius:12px;border:1px solid rgba(255,255,255,.08);';
+    div.innerHTML = `
+        <h3 style="margin:0 0 .75rem;font-size:1rem;">🏁 Résultats finaux</h3>
+        ${entries.map(([nom, pts], i) => `
+            <div style="display:flex;align-items:center;gap:.5rem;padding:.4rem 0;${i===0?'font-weight:700;':''}">
+                <span style="font-size:1.1rem;">${medals[i] || `${i+1}.`}</span>
+                <span style="flex:1;">${esc(nom)}</span>
+                <span style="color:${i===0?'#ffd700':'inherit'};">${pts} pts</span>
+            </div>`).join('')}`;
+    spScores.after(div);
 }
 
 // ══════════════════════════════════════════════════════
-// HELPERS UI
+// HELPERS
 // ══════════════════════════════════════════════════════
 
-function _renderQR(url, containerId) {
-    const container = $(containerId);
-    if (!container) return;
+function _renderQR(url, id) {
+    const c = $(id);
+    if (!c) return;
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(url)}&bgcolor=0d0d1a&color=00d4ff&margin=2`;
-    container.innerHTML = `<img src="${qrUrl}" alt="QR Code" style="border-radius:8px;" onerror="this.closest('[id]').innerHTML='<p style=opacity:.5>QR indisponible</p>'">`;
+    c.innerHTML = `<img src="${qrUrl}" alt="QR Code" style="border-radius:8px;display:block;" onerror="this.parentElement.innerHTML='<p style=opacity:.4;font-size:.8rem>QR indisponible</p>'">`;
 }
 
-function _setStatutBadge(statut) {
-    const badge = $('h-statut-badge');
-    if (!badge) return;
-    const map = { lobby: '● Lobby', en_cours: '● En cours', terminee: '● Terminée' };
-    badge.textContent = map[statut] || statut;
-    badge.className = `statut-badge statut-${statut}`;
+function _setStatutBadge(s) {
+    const b = $('h-statut-badge');
+    if (!b) return;
+    const m = { lobby: '● Lobby', en_cours: '● En cours', terminee: '● Terminée' };
+    b.textContent = m[s] || s;
+    b.className = `statut-badge statut-${s}`;
 }
-
-function _setStatutBadgeSp(statut) {
-    const badge = $('sp-statut-badge');
-    if (!badge) return;
-    const map = { lobby: '● Lobby', en_cours: '● En cours', terminee: '● Terminée' };
-    badge.textContent = map[statut] || statut;
-    badge.className = `statut-badge statut-${statut}`;
+function _setStatutBadgeSp(s) {
+    const b = $('sp-statut-badge');
+    if (!b) return;
+    const m = { lobby: '● Lobby', en_cours: '● En cours', terminee: '● Terminée' };
+    b.textContent = m[s] || s;
+    b.className = `statut-badge statut-${s}`;
 }
 
 function updateWsStatus(connected) {
-    const dot = $('ws-dot');
+    const dot   = $('ws-dot');
     const label = $('ws-label');
-    if (dot) dot.style.background = connected ? '#22c55e' : '#ef4444';
+    if (dot)   dot.style.background  = connected ? '#22c55e' : '#ef4444';
     if (label) label.textContent = connected ? 'Connecté' : 'Déconnecté';
 }
 
 function applySnapshot(snap) {
     if (!snap) return;
-    if (snap.id !== undefined) HostState.partieId = snap.id;
-    if (snap.nom !== undefined) HostState.partieNom = snap.nom;
-    if (snap.jeu !== undefined) HostState.jeu = snap.jeu;
-    if (snap.mode !== undefined) HostState.mode = snap.mode;
-    if (snap.equipes !== undefined) HostState.equipes = snap.equipes;
-    if (snap.scores !== undefined) HostState.scores = snap.scores;
-    if (snap.statut !== undefined) HostState.statut = snap.statut;
-    if (snap.joueurs !== undefined) HostState.joueurs = snap.joueurs;
+    if (snap.id      !== undefined) HostState.partieId  = snap.id;
+    if (snap.nom     !== undefined) HostState.partieNom = snap.nom;
+    if (snap.jeu     !== undefined) HostState.jeu       = snap.jeu;
+    if (snap.mode    !== undefined) HostState.mode      = snap.mode;
+    if (snap.equipes !== undefined) HostState.equipes   = snap.equipes;
+    if (snap.scores  !== undefined) HostState.scores    = snap.scores;
+    if (snap.statut  !== undefined) HostState.statut    = snap.statut;
+    if (snap.joueurs !== undefined) HostState.joueurs   = snap.joueurs;
 }
 
 function sauvegarderSessionHost(snapshot) {
@@ -640,20 +654,23 @@ function sauvegarderPartieLocale(snapshot) {
 
 function toast(msg, type = 'info', duration = 3000) {
     const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
-    let container = $('toast-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'toast-container';
-        container.style.cssText = 'position:fixed;top:1rem;right:1rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem;';
-        document.body.appendChild(container);
+    let c = $('toast-container');
+    if (!c) {
+        c = document.createElement('div');
+        c.id = 'toast-container';
+        c.style.cssText = 'position:fixed;top:1rem;right:1rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem;max-width:320px;';
+        document.body.appendChild(c);
     }
     const el = document.createElement('div');
-    el.className = `toast toast-${type}`;
-    el.style.cssText = 'display:flex;gap:.5rem;align-items:center;padding:.75rem 1rem;border-radius:8px;background:#1e1e2e;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.4);opacity:0;transition:opacity .25s;';
-    el.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><span>${esc(msg)}</span>`;
-    container.appendChild(el);
-    requestAnimationFrame(() => { el.style.opacity = '1'; });
-    setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, duration);
+    el.style.cssText = `display:flex;gap:.5rem;align-items:flex-start;padding:.75rem 1rem;border-radius:9px;background:#1e1e2e;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.5);opacity:0;transition:opacity .2s,transform .2s;transform:translateX(16px);border-left:3px solid ${type==='success'?'#22c55e':type==='error'?'#f87171':type==='warning'?'#f59e0b':'#00d4ff'};`;
+    el.innerHTML = `<span style="flex-shrink:0;">${icons[type] || 'ℹ️'}</span><span style="font-size:.9rem;">${esc(msg)}</span>`;
+    c.appendChild(el);
+    requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateX(0)'; });
+    setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(8px)';
+        setTimeout(() => el.remove(), 250);
+    }, duration);
 }
 
 // ══════════════════════════════════════════════════════
@@ -661,7 +678,6 @@ function toast(msg, type = 'info', duration = 3000) {
 // ══════════════════════════════════════════════════════
 
 function init() {
-    console.log('[HOST] Initialisation');
     initSocket();
     initModeToggle();
     initHostRoleToggle();
@@ -669,12 +685,20 @@ function init() {
     initCreerPartie();
     initControles();
 
-    // Pré-sélectionner le jeu si ?jeu= dans l'URL
+    // Pré-sélectionner le jeu via URL ?jeu=
     const params = new URLSearchParams(location.search);
-    const jeuId = params.get('jeu');
+    const jeuId  = params.get('jeu');
     if (jeuId) {
         const sel = $('h-jeu');
         if (sel?.querySelector(`option[value="${jeuId}"]`)) sel.value = jeuId;
+    }
+
+    // Ajouter animation CSS
+    if (!document.getElementById('host-animations')) {
+        const style = document.createElement('style');
+        style.id = 'host-animations';
+        style.textContent = `@keyframes fadein { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }`;
+        document.head.appendChild(style);
     }
 }
 
