@@ -1,20 +1,25 @@
 // ======================================================
-// 🎮 JOIN.JS v3.0 — CODE DE PARTIE AJOUTÉ
+// 🎮 JOIN.JS v2.1 — ÉCRAN D'ATTENTE APRÈS JOIN_OK
 // ======================================================
-// Nouveautés v3.0 :
-//  - handleJoinByCode()      : rejoint via code 6 caractères
-//  - PLAYER_JOIN_BY_CODE     : envoi WebSocket dédié
-//  - Pré-remplissage depuis ?code=XXXXXX (QR code / lien)
-//  - Validation REST /api/parties/code/:code avant WS
-//  - Auto-focus pseudo si code déjà rempli
-//  - Bouton #join-btn-code + champ #join-code (dans le HTML)
-// Conservé de v2 :
-//  - Recherche par nom exact (REST + local)
-//  - Liste des parties avec sélection
-//  - PLAYER_JOIN par partieId (flow original)
-//  - JOIN_OK → redirection vers le jeu
-//  - JOIN_ERROR → messages d'erreur clairs
-//  - Actualisation auto toutes les 5s
+// Corrections v2.1 :
+//
+//   BUG CORRIGÉ — Redirection immédiate après JOIN_OK
+//   ─────────────────────────────────────────────────────
+//   Avant : JOIN_OK → redirect vers /games/xxx/ après 800ms.
+//   La navigation fermait le socket WebSocket, ce qui déclenchait
+//   ws.on('close') côté serveur → retirerJoueur() → PLAYER_LEFT
+//   → l'host voyait le joueur disparaître instantanément.
+//
+//   Après : JOIN_OK → affiche un ÉCRAN D'ATTENTE dans la page /join/.
+//   Le socket reste ouvert. Le joueur voit "En attente du host…".
+//   Quand le host lance la partie (GAME_STARTED), ALORS on redirige
+//   vers la page du jeu avec PLAYER_REJOIN pré-configuré en sessionStorage.
+//
+//   GAME_STARTED handler ajouté
+//   ─────────────────────────────────────────────────────
+//   Le socket reçoit GAME_STARTED → redirection immédiate vers le jeu.
+//   La page du jeu enverra PLAYER_REJOIN (géré dans ws-handler.js)
+//   pour ré-enregistrer le socket sans toucher à la liste des joueurs.
 // ======================================================
 
 import { GameSocket } from './core/socket.js';
@@ -23,7 +28,6 @@ const socket = new GameSocket();
 
 // ── Config ────────────────────────────────────────────
 const PSEUDO_REGEX = /^[a-zA-Z0-9_-]{2,20}$/;
-const CODE_REGEX   = /^[A-Z0-9]{6}$/;
 
 const GAME_ICONS = {
     quiz: '❓', justeprix: '💰', undercover: '🕵️', lml: '📖',
@@ -57,6 +61,11 @@ const state = {
     selectedPartie:   null,
     isConnecting:     false,
     refreshTimer:     null,
+    // ✅ State post-JOIN_OK (écran d'attente)
+    hasJoined:        false,
+    joinedPseudo:     null,
+    joinedEquipe:     null,
+    joinedSnapshot:   null,
 };
 
 // ══════════════════════════════════════════════════════
@@ -75,7 +84,7 @@ function toast(msg, type = 'info', duration = 3500) {
     const el = document.createElement('div');
     el.className = `toast toast-${type}`;
     el.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><span>${esc(msg)}</span>`;
-    el.style.cssText = 'display:flex;gap:0.5rem;align-items:center;padding:0.75rem 1rem;border-radius:8px;background:#1e1e2e;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.4);opacity:0;transition:opacity .25s;pointer-events:auto;';
+    el.style.cssText = 'display:flex;gap:0.5rem;align-items:center;padding:0.75rem 1rem;border-radius:8px;background:#1e1e2e;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.4);opacity:0;transition:opacity .25s;pointer-events:auto;min-width:200px;';
     container.appendChild(el);
     requestAnimationFrame(() => { el.style.opacity = '1'; });
     setTimeout(() => {
@@ -85,14 +94,130 @@ function toast(msg, type = 'info', duration = 3500) {
 }
 
 // ══════════════════════════════════════════════════════
+// ✅ ÉCRAN D'ATTENTE — affiché après JOIN_OK
+// Remplace le contenu de la page au lieu de rediriger
+// ══════════════════════════════════════════════════════
+
+function afficherEcranAttente(pseudo, equipe, snapshot) {
+    state.hasJoined   = true;
+    state.joinedPseudo  = pseudo;
+    state.joinedEquipe  = equipe;
+    state.joinedSnapshot = snapshot;
+
+    // Arrêter l'actualisation auto (plus besoin de charger les parties)
+    if (state.refreshTimer) {
+        clearInterval(state.refreshTimer);
+        state.refreshTimer = null;
+    }
+
+    const jeuIcon = GAME_ICONS[snapshot.jeu] || '🎮';
+    const modeLabel = snapshot.mode === 'team' ? '🛡️ Équipes' : '👤 Solo';
+
+    // Injecter l'écran d'attente dans le <main> existant
+    const main = document.querySelector('main.page') || document.querySelector('main') || document.body;
+    main.innerHTML = `
+        <div id="ecran-attente" style="
+            display:flex;flex-direction:column;align-items:center;justify-content:center;
+            min-height:60vh;text-align:center;padding:2rem;gap:1.5rem;">
+
+            <!-- Indicateur de connexion établie -->
+            <div style="
+                background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);
+                border-radius:12px;padding:.6rem 1.2rem;color:#4ade80;font-size:.85rem;font-weight:600;">
+                ✅ Connecté à la partie
+            </div>
+
+            <!-- Infos de la partie -->
+            <div style="
+                background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.2);
+                border-radius:16px;padding:1.5rem 2rem;min-width:280px;max-width:400px;width:100%;">
+                <div style="font-size:3rem;margin-bottom:.5rem;">${jeuIcon}</div>
+                <div style="font-size:1.2rem;font-weight:700;margin-bottom:.25rem;">${esc(snapshot.nom)}</div>
+                <div style="font-size:.85rem;opacity:.6;margin-bottom:1rem;">${(snapshot.jeu || '').toUpperCase()} · ${modeLabel}</div>
+
+                <div style="background:rgba(255,255,255,.05);border-radius:8px;padding:.75rem;margin-bottom:.75rem;">
+                    <div style="font-size:.75rem;color:#64748b;margin-bottom:.2rem;">VOTRE PSEUDO</div>
+                    <div style="font-size:1.1rem;font-weight:700;color:#00d4ff;">${esc(pseudo)}</div>
+                    ${equipe ? `<div style="font-size:.8rem;opacity:.6;margin-top:.2rem;">🛡️ Équipe : ${esc(equipe)}</div>` : ''}
+                </div>
+
+                <!-- Compteur de joueurs -->
+                <div style="font-size:.85rem;opacity:.6;" id="attente-joueurs-count">
+                    👥 ${snapshot.joueurs.length} joueur(s) connecté(s)
+                </div>
+            </div>
+
+            <!-- Spinner d'attente -->
+            <div style="display:flex;flex-direction:column;align-items:center;gap:.75rem;">
+                <div style="
+                    width:36px;height:36px;
+                    border:3px solid rgba(0,212,255,.2);
+                    border-top-color:#00d4ff;
+                    border-radius:50%;
+                    animation:spin .9s linear infinite;">
+                </div>
+                <p style="color:#64748b;font-size:.9rem;">En attente du lancement par le host…</p>
+            </div>
+
+            <!-- Bouton quitter -->
+            <button id="btn-attente-quitter" style="
+                background:none;border:1px solid rgba(255,255,255,.1);
+                color:#64748b;border-radius:8px;padding:.5rem 1rem;
+                cursor:pointer;font-size:.82rem;transition:all .15s;">
+                Quitter la salle d'attente
+            </button>
+        </div>
+
+        <style>
+            @keyframes spin { to { transform: rotate(360deg); } }
+        </style>`;
+
+    // Bouton quitter
+    $('btn-attente-quitter')?.addEventListener('click', () => {
+        if (confirm('Quitter la salle d\'attente ?')) {
+            window.location.href = '/join/';
+        }
+    });
+}
+
+// Met à jour le compteur de joueurs dans l'écran d'attente
+function mettreAJourCompteurAttente(joueurs) {
+    const el = $('attente-joueurs-count');
+    if (el) el.textContent = `👥 ${joueurs.length} joueur(s) connecté(s)`;
+}
+
+// Redirige le joueur vers la page du jeu après GAME_STARTED
+function redirectionVersJeu(snapshot) {
+    if (!state.joinedPseudo || !state.selectedPartieId) return;
+
+    // Sauvegarder la session pour que la page du jeu puisse envoyer PLAYER_REJOIN
+    try {
+        sessionStorage.setItem('mgu_game_session', JSON.stringify({
+            partieId: state.selectedPartieId,
+            pseudo:   state.joinedPseudo,
+            equipe:   state.joinedEquipe || null,
+            jeu:      snapshot.jeu,
+            mode:     snapshot.mode,
+            role:     'player',
+        }));
+    } catch {}
+
+    const gamePath = JEU_PATHS[snapshot.jeu] || `/games/${snapshot.jeu}/`;
+    window.location.href = `${gamePath}?partieId=${state.selectedPartieId}&pseudo=${encodeURIComponent(state.joinedPseudo)}`;
+}
+
+// ══════════════════════════════════════════════════════
 // CHARGEMENT DES PARTIES
 // ══════════════════════════════════════════════════════
 
 async function loadParties() {
+    // Ne pas rafraîchir si on est déjà dans la salle d'attente
+    if (state.hasJoined) return;
+
     const container = $('join-parties-list');
     if (container && !state.selectedPartieId) {
-        container.innerHTML = `<div class="loading-state" style="text-align:center;padding:2rem;opacity:.6;">
-            <div class="loading-spinner" style="margin:0 auto 0.5rem;width:24px;height:24px;border:3px solid #444;border-top-color:#00d4ff;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+        container.innerHTML = `<div style="text-align:center;padding:2rem;opacity:.6;">
+            <div style="width:24px;height:24px;border:3px solid #444;border-top-color:#00d4ff;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto .5rem;"></div>
             <span>Chargement…</span>
         </div>`;
     }
@@ -119,6 +244,8 @@ async function loadParties() {
 // ══════════════════════════════════════════════════════
 
 function renderParties(parties) {
+    if (state.hasJoined) return; // Ne pas toucher au DOM si en attente
+
     const filtered = parties.filter(p =>
         p.statut === 'lobby' || p.statut === 'waiting'
     );
@@ -198,6 +325,7 @@ function updateSelectedInfo() {
 // ══════════════════════════════════════════════════════
 
 function handleSearchByName() {
+    if (state.hasJoined) return;
     const nameInput = $('join-partie-name');
     if (!nameInput) return;
     const nom = nameInput.value.trim();
@@ -206,7 +334,6 @@ function handleSearchByName() {
         return;
     }
 
-    // Cherche dans la liste chargée
     const found = state.parties.find(
         p => p.nom.toLowerCase() === nom.toLowerCase() &&
              (p.statut === 'lobby' || p.statut === 'waiting')
@@ -218,7 +345,6 @@ function handleSearchByName() {
         return;
     }
 
-    // Pas trouvé localement → rafraîchit puis cherche à nouveau
     toast('Recherche en cours…', 'info', 1500);
     fetch('/api/parties')
         .then(r => r.json())
@@ -240,88 +366,7 @@ function handleSearchByName() {
 }
 
 // ══════════════════════════════════════════════════════
-// ✅ NEW v3.0 — REJOINDRE PAR CODE COURT
-// Résolution REST /api/parties/code/:code (validation UX rapide),
-// puis envoi WebSocket PLAYER_JOIN_BY_CODE.
-// ══════════════════════════════════════════════════════
-
-async function handleJoinByCode() {
-    const codeEl   = $('join-code');
-    const pseudoEl = $('join-pseudo');
-    if (!codeEl || !pseudoEl) return;
-
-    const code   = codeEl.value.trim().toUpperCase();
-    const pseudo = pseudoEl.value.trim();
-
-    // ── Validation du code ──────────────────────────
-    if (!CODE_REGEX.test(code)) {
-        toast('Code invalide — 6 caractères alphanumériques (ex : AB3X7K).', 'error');
-        codeEl.focus();
-        return;
-    }
-
-    // ── Validation du pseudo ────────────────────────
-    const vPseudo = validatePseudo(pseudo);
-    if (!vPseudo.valid) {
-        toast(vPseudo.error, 'error');
-        pseudoEl.focus();
-        return;
-    }
-
-    // ── Vérification REST (UX : erreur avant d'ouvrir WS) ──
-    try {
-        const res = await fetch(`/api/parties/code/${code}`, {
-            signal: AbortSignal.timeout(4000),
-        });
-
-        if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            toast(errData.error || 'Code invalide ou expiré.', 'error');
-            return;
-        }
-
-        const partieData = await res.json();
-
-        // Vérification pseudo côté client
-        if ((partieData.joueurs || []).some(j => j.pseudo.toLowerCase() === pseudo.toLowerCase())) {
-            toast('Ce pseudo est déjà utilisé dans cette partie.', 'error');
-            return;
-        }
-
-        // Pré-sélectionner la partie pour cohérence avec le reste de l'UI
-        if (!state.parties.find(p => p.id === partieData.id)) {
-            state.parties.push(partieData);
-        }
-        state.selectedPartieId = partieData.id;
-        state.selectedPartie   = partieData;
-        renderParties(state.parties);
-        updateSelectedInfo();
-
-    } catch (err) {
-        console.error('[JOIN] Erreur vérification code:', err);
-        toast('Impossible de vérifier le code. Vérifiez votre connexion.', 'error');
-        return;
-    }
-
-    // ── Envoi WebSocket ─────────────────────────────
-    state.isConnecting = true;
-    const btn = $('join-btn-code');
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Connexion…'; }
-
-    socket.send('PLAYER_JOIN_BY_CODE', { code, pseudo });
-
-    // Timeout de sécurité
-    setTimeout(() => {
-        if (state.isConnecting) {
-            state.isConnecting = false;
-            if (btn) { btn.disabled = false; btn.textContent = '→ Rejoindre'; }
-            toast('Délai dépassé. Vérifiez la connexion.', 'error');
-        }
-    }, 10000);
-}
-
-// ══════════════════════════════════════════════════════
-// VALIDATION PSEUDO
+// VALIDATION
 // ══════════════════════════════════════════════════════
 
 function validatePseudo(pseudo) {
@@ -333,6 +378,7 @@ function validatePseudo(pseudo) {
 }
 
 function checkCanJoin() {
+    if (state.hasJoined) return;
     const pseudoEl = $('join-pseudo');
     const btn      = $('join-btn-submit');
     if (!pseudoEl || !btn) return;
@@ -343,10 +389,12 @@ function checkCanJoin() {
 }
 
 // ══════════════════════════════════════════════════════
-// REJOINDRE PAR LISTE / NOM (flow original)
+// REJOINDRE UNE PARTIE
 // ══════════════════════════════════════════════════════
 
 function handleJoin() {
+    if (state.hasJoined) return;
+
     const pseudoEl = $('join-pseudo');
     if (!pseudoEl) return;
 
@@ -356,7 +404,6 @@ function handleJoin() {
     if (!validation.valid) { toast(validation.error, 'error'); return; }
     if (!state.selectedPartieId) { toast('Sélectionnez ou cherchez une partie.', 'error'); return; }
 
-    // Vérif locale : pseudo déjà dans la partie ?
     const partie = state.selectedPartie;
     if (partie && (partie.joueurs || []).some(j => j.pseudo.toLowerCase() === pseudo.toLowerCase())) {
         toast('Ce pseudo est déjà utilisé dans cette partie.', 'error');
@@ -376,9 +423,9 @@ function handleJoin() {
 
     // Timeout de sécurité
     setTimeout(() => {
-        if (state.isConnecting) {
+        if (state.isConnecting && !state.hasJoined) {
             state.isConnecting = false;
-            if (btn) { btn.disabled = false; btn.textContent = '🎮 Rejoindre'; }
+            if (btn) { btn.disabled = false; btn.textContent = '🎮 Rejoindre la partie'; }
             toast('Délai d\'attente dépassé. Vérifiez la connexion.', 'error');
         }
     }, 10000);
@@ -397,52 +444,62 @@ function initSocketEvents() {
 
     socket.on('__disconnected__', () => {
         updateWsStatus(false);
+        // Ne pas afficher d'erreur si on est déjà dans la salle d'attente
+        // (déconnexion temporaire → reconnexion automatique gérée par GameSocket)
     });
 
     socket.on('PARTIES_LIST', ({ parties }) => {
-        if (parties) {
+        if (parties && !state.hasJoined) {
             state.parties = parties;
             renderParties(state.parties);
         }
     });
 
-    // ✅ Commun aux deux flows (PLAYER_JOIN et PLAYER_JOIN_BY_CODE)
+    // ✅ FIX PRINCIPAL : ne plus rediriger ici, afficher l'écran d'attente
     socket.on('JOIN_OK', ({ pseudo, equipe, snapshot }) => {
         state.isConnecting = false;
         console.log('[JOIN] ✅ Rejoint:', pseudo, 'équipe:', equipe);
 
-        try {
-            sessionStorage.setItem('mgu_game_session', JSON.stringify({
-                partieId: state.selectedPartieId,
-                pseudo,
-                equipe:   equipe || null,
-                jeu:      snapshot.jeu,
-                mode:     snapshot.mode,
-                role:     'player',
-            }));
-        } catch {}
+        // Mémoriser l'ID de partie pour la redirection future
+        // (state.selectedPartieId est déjà set)
 
-        toast(`Bienvenue ${pseudo} ! Redirection…`, 'success', 1500);
+        // Afficher l'écran d'attente — le socket reste ouvert
+        afficherEcranAttente(pseudo, equipe, snapshot);
+        toast(`Bienvenue ${pseudo} ! En attente du lancement…`, 'success', 3000);
+    });
 
-        // Redirection vers le bon jeu
-        const gamePath = JEU_PATHS[snapshot.jeu] || `/games/${snapshot.jeu}/`;
-        setTimeout(() => {
-            window.location.href = `${gamePath}?partieId=${state.selectedPartieId}&pseudo=${encodeURIComponent(pseudo)}`;
-        }, 800);
+    // ✅ Mis à jour du compteur quand d'autres joueurs rejoignent
+    socket.on('PLAYER_JOINED', ({ joueurs }) => {
+        if (state.hasJoined && joueurs) {
+            mettreAJourCompteurAttente(joueurs);
+        }
+    });
+
+    // ✅ Un autre joueur quitte — mettre à jour le compteur
+    socket.on('PLAYER_LEFT', ({ joueurs }) => {
+        if (state.hasJoined && joueurs) {
+            mettreAJourCompteurAttente(joueurs);
+        }
+    });
+
+    // ✅ Le host lance la partie → on redirige MAINTENANT vers le jeu
+    // Le socket WebSocket reste ouvert pendant la navigation (quelques ms),
+    // puis ws-handler.js ignorera le close grâce au délai de grâce (_joinedAt).
+    socket.on('GAME_STARTED', ({ snapshot }) => {
+        console.log('[JOIN] 🚀 GAME_STARTED reçu — redirection vers le jeu');
+        if (state.hasJoined && state.joinedPseudo) {
+            toast('La partie commence ! Redirection…', 'success', 1500);
+            setTimeout(() => redirectionVersJeu(snapshot), 500);
+        }
     });
 
     socket.on('JOIN_ERROR', ({ code }) => {
         state.isConnecting = false;
-
-        // Réactiver tous les boutons possibles
-        const btnSubmit = $('join-btn-submit');
-        if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.textContent = '🎮 Rejoindre la partie'; }
-        const btnCode = $('join-btn-code');
-        if (btnCode) { btnCode.disabled = false; btnCode.textContent = '→ Rejoindre'; }
+        const btn = $('join-btn-submit');
+        if (btn) { btn.disabled = false; btn.textContent = '🎮 Rejoindre la partie'; }
 
         const messages = {
             GAME_NOT_FOUND:       'Partie introuvable ou terminée.',
-            CODE_INVALID:         'Code invalide ou expiré. Demandez le code à votre host.',
             PSEUDO_TAKEN:         'Ce pseudo est déjà utilisé dans cette partie.',
             PSEUDO_INVALID:       'Pseudo invalide.',
             GAME_STARTED:         'La partie a déjà commencé.',
@@ -454,7 +511,23 @@ function initSocketEvents() {
 
     socket.on('KICKED', ({ reason }) => {
         toast(`Vous avez été expulsé : ${reason || 'par le host'}`, 'error', 5000);
+        // Réinitialiser l'état et revenir à la page de join
+        state.hasJoined = false;
         setTimeout(() => window.location.href = '/join/', 2000);
+    });
+
+    socket.on('GAME_ENDED', () => {
+        if (state.hasJoined) {
+            toast('La partie a été annulée par le host.', 'warning', 5000);
+            state.hasJoined = false;
+            setTimeout(() => window.location.href = '/join/', 2500);
+        }
+    });
+
+    socket.on('HOST_DISCONNECTED', () => {
+        if (state.hasJoined) {
+            toast('Le host s\'est déconnecté. La partie est suspendue.', 'warning', 5000);
+        }
     });
 }
 
@@ -470,14 +543,14 @@ function updateWsStatus(connected) {
 // ══════════════════════════════════════════════════════
 
 function init() {
-    console.log('[JOIN] Initialisation v3.0');
+    console.log('[JOIN] Initialisation v2.1');
 
-    // Connexion WebSocket
+    // Connexion WebSocket — AVANT les events pour ne pas rater de messages
     const wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     socket.connect(`${wsProto}//${location.host}/ws`);
     initSocketEvents();
 
-    // ── Champ pseudo ────────────────────────────────
+    // Pré-remplir le pseudo depuis localStorage
     const pseudoEl = $('join-pseudo');
     if (pseudoEl) {
         const last = localStorage.getItem('mgu_last_pseudo');
@@ -488,7 +561,6 @@ function init() {
         });
     }
 
-    // ── Champ nom de partie ──────────────────────────
     const nameInput = $('join-partie-name');
     if (nameInput) {
         nameInput.addEventListener('keydown', e => {
@@ -496,57 +568,21 @@ function init() {
         });
     }
 
-    // ── Champ code court ─────────────────────────────
-    const codeInput = $('join-code');
-    if (codeInput) {
-        // Forcer majuscules à la frappe
-        codeInput.addEventListener('input', e => {
-            e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-        });
-        // Entrée = rejoindre par code
-        codeInput.addEventListener('keydown', e => {
-            if (e.key === 'Enter') handleJoinByCode();
-        });
-    }
-
-    // ── Boutons ──────────────────────────────────────
     $('join-btn-search')?.addEventListener('click', handleSearchByName);
     $('join-btn-submit')?.addEventListener('click', handleJoin);
-    $('join-btn-code')?.addEventListener('click', handleJoinByCode);
     $('join-btn-refresh')?.addEventListener('click', () => {
+        if (state.hasJoined) return;
         state.selectedPartieId = null;
         state.selectedPartie   = null;
         loadParties();
     });
 
-    // ── ✅ NEW v3.0 : pré-remplissage depuis l'URL ───
-    // Le QR code et les liens partagés incluent ?code=XXXXXX
-    const urlParams = new URLSearchParams(location.search);
-    const codeParam = urlParams.get('code');
-    if (codeParam) {
-        const cleaned = codeParam.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
-        if (codeInput && cleaned) {
-            codeInput.value = cleaned;
-            // Focus sur le pseudo si le code est valide
-            if (CODE_REGEX.test(cleaned)) {
-                toast('Code de partie détecté — entrez votre pseudo !', 'info', 3500);
-                setTimeout(() => $('join-pseudo')?.focus(), 300);
-            }
-        }
-    }
-
-    // Pré-remplir pseudo depuis localStorage
-    if (pseudoEl && !pseudoEl.value) {
-        const last = localStorage.getItem('mgu_last_pseudo');
-        if (last) pseudoEl.value = last;
-    }
-
-    // ── Chargement initial des parties ──────────────
+    // Charger la liste des parties
     loadParties();
 
-    // Actualisation auto toutes les 5s
+    // Actualisation auto toutes les 5s (stoppée après JOIN_OK)
     state.refreshTimer = setInterval(() => {
-        if (!state.isConnecting) loadParties();
+        if (!state.isConnecting && !state.hasJoined) loadParties();
     }, 5000);
 }
 

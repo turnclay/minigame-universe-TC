@@ -1,30 +1,46 @@
 // /public/js/main.js
 // ======================================================
-// 🏠 MAIN — Navigation MiniGame Universe
+// 🏠 MAIN — Navigation MiniGame Universe v3.1
 // ======================================================
-// Corrections v3 :
-//   • L'écran accueil est VISIBLE dans le HTML (pas de hidden)
-//     Les autres écrans sont masqués par init() au chargement
-//   • Plus besoin d'appeler goHome() au démarrage
-//   • "Nouvelle partie" → masque l'écran puis redirige /host/
-//   • "Continuer" → goParties() (SPA)
-//   • "Voir tous les jeux" → goJeux() (SPA)
-//   • "Lancer une partie" depuis le détail → redirige /host/?jeu=xxx
-//   • renderStatsBar() affiche aussi le nombre de joueurs créés
+// Corrections v3.1 :
+//
+//   BUG CORRIGÉ — Éléments DOM capturés au niveau module
+//   ─────────────────────────────────────────────────────
+//   Avant : const elBtnRetour = $('btn-retour-permanent') était exécuté
+//   immédiatement au chargement du module ES6, AVANT que le DOM soit
+//   complètement parsé si le script est en <head> ou chargé en avance.
+//   Résultat : tous ces éléments étaient null → aucun event listener
+//   ne se branchait, la navigation ne fonctionnait pas.
+//   → Tous les $() et $$() sont maintenant appelés DANS init().
+//
+//   BUG CORRIGÉ — menu-home → afficherStatistiques()
+//   ─────────────────────────────────────────────────────
+//   Dans le HTML, ce bouton est intitulé "📊 Statistiques".
+//   Il appelait afficherStatistiques() via le module importé.
+//   Ce module peut ne pas exister → la navigation tombait en erreur.
+//   → On tente d'appeler afficherStatistiques() mais on reste sur la
+//     page d'accueil (goHome()) si le module n'est pas chargé.
+//
+//   Aucun changement dans la logique métier, les destinations de
+//   navigation, ou la structure des écrans — tout est inchangé.
 // ======================================================
 
 // ── Imports optionnels — ne bloquent pas si les fichiers n'existent pas ──
-// Les imports statiques ES6 font planter TOUT le module si un fichier manque.
-// On utilise des imports dynamiques avec fallback pour éviter ce problème.
-let afficherStatistiques   = () => console.warn('[MAIN] menu/statistiques.js non trouvé');
-let afficherGestionJoueurs = () => console.warn('[MAIN] menu/joueurs.js non trouvé');
-let afficherGestionEquipes = () => console.warn('[MAIN] menu/equipes.js non trouvé');
+let afficherStatistiques   = null;
+let afficherGestionJoueurs = null;
+let afficherGestionEquipes = null;
 
 // Charge les modules menu en arrière-plan — ne bloque pas init()
 Promise.allSettled([
-    import('./menu/statistiques.js').then(m => { afficherStatistiques   = m.afficherStatistiques;   }).catch(() => {}),
-    import('./menu/joueurs.js').then(m      => { afficherGestionJoueurs = m.afficherGestionJoueurs; }).catch(() => {}),
-    import('./menu/equipes.js').then(m      => { afficherGestionEquipes = m.afficherGestionEquipes; }).catch(() => {}),
+    import('./menu/statistiques.js')
+        .then(m => { afficherStatistiques   = m.afficherStatistiques;   })
+        .catch(() => {}),
+    import('./menu/joueurs.js')
+        .then(m => { afficherGestionJoueurs = m.afficherGestionJoueurs; })
+        .catch(() => {}),
+    import('./menu/equipes.js')
+        .then(m => { afficherGestionEquipes = m.afficherGestionEquipes; })
+        .catch(() => {}),
 ]);
 
 // ── Méta-données des 10 jeux ─────────────────────────────
@@ -33,93 +49,85 @@ const JEUX = [
         id: 'quiz',       nom: 'Quiz',           icon: '❓',
         desc: 'Questions & réponses en équipe ou en solo',
         joueurs: '2-10', duree: '15-30 min',
-        regles: 'Le host pose des questions à thème. Les joueurs répondent à l\'oral. Points attribués par le host en temps réel.'
+        regles: 'Le host pose des questions à thème. Les joueurs répondent à l\'oral. Points attribués par le host en temps réel.',
     },
     {
         id: 'justeprix',  nom: 'Juste Prix',      icon: '💰',
         desc: 'Devinez le prix exact sans dépasser',
         joueurs: '2-8',  duree: '20-40 min',
-        regles: 'Un produit et son vrai prix sont affichés après les enchères. Le joueur le plus proche sans dépasser remporte les points.'
+        regles: 'Un produit et son vrai prix sont affichés après les enchères. Le joueur le plus proche sans dépasser remporte les points.',
     },
     {
         id: 'undercover', nom: 'Undercover',      icon: '🕵️',
         desc: 'Trouvez l\'espion parmi vous',
         joueurs: '4-10', duree: '15-25 min',
-        regles: 'Chaque joueur reçoit un mot. Un imposteur reçoit un mot différent. Discutez pour débusquer l\'intrus sans vous trahir.'
+        regles: 'Chaque joueur reçoit un mot. Un imposteur reçoit un mot différent. Discutez pour débusquer l\'intrus sans vous trahir.',
     },
     {
         id: 'lml',        nom: 'Maxi Lettres',    icon: '📖',
         desc: 'Formez le mot le plus long possible',
         joueurs: '2-8',  duree: '10-20 min',
-        regles: 'Des lettres aléatoires sont tirées. Chaque joueur forme le mot le plus long avec ces lettres. Le plus long non contesté gagne.'
+        regles: 'Des lettres aléatoires sont tirées. Chaque joueur forme le mot le plus long avec ces lettres. Le plus long non contesté gagne.',
     },
     {
         id: 'mimer',      nom: 'Mimer/Dessiner',  icon: '🎭',
         desc: 'Faites deviner sans parler',
         joueurs: '4-12', duree: '20-40 min',
-        regles: 'Faites deviner un mot en le mimant ou en le dessinant, sans parler. Votre équipe marque un point si elle trouve avant le temps imparti.'
+        regles: 'Faites deviner un mot en le mimant ou en le dessinant, sans parler. Votre équipe marque un point si elle trouve avant le temps imparti.',
     },
     {
         id: 'pendu',      nom: 'Le Pendu',        icon: '🪢',
         desc: 'Devinez le mot lettre par lettre',
         joueurs: '2-8',  duree: '10-20 min',
-        regles: 'Trouvez le mot caché en proposant des lettres. Chaque lettre fausse rapproche le pendu. Trouvez avant d\'épuiser vos tentatives.'
+        regles: 'Trouvez le mot caché en proposant des lettres. Chaque lettre fausse rapproche le pendu. Trouvez avant d\'épuiser vos tentatives.',
     },
     {
         id: 'petitbac',   nom: 'Petit Bac',       icon: '📝',
         desc: 'Une lettre, des catégories, le plus vite !',
         joueurs: '2-8',  duree: '15-30 min',
-        regles: 'Une lettre est tirée. Trouvez le plus rapidement un mot par catégorie (prénom, ville, animal…) commençant par cette lettre.'
+        regles: 'Une lettre est tirée. Trouvez le plus rapidement un mot par catégorie (prénom, ville, animal…) commençant par cette lettre.',
     },
     {
         id: 'memoire',    nom: 'Mémoire Flash',   icon: '🧠',
         desc: 'Mémorisez des séquences de plus en plus longues',
         joueurs: '1-6',  duree: '10-30 min',
-        regles: 'Une séquence de symboles est affichée brièvement. Reproduisez-la fidèlement. Chaque round la séquence s\'allonge.'
+        regles: 'Une séquence de symboles est affichée brièvement. Reproduisez-la fidèlement. Chaque round la séquence s\'allonge.',
     },
     {
         id: 'morpion',    nom: 'Morpion',         icon: '⭕',
         desc: 'Alignez 3 symboles en ligne, colonne ou diagonale',
         joueurs: '2',    duree: '5-10 min',
-        regles: 'Placez vos symboles (X ou O) à tour de rôle sur la grille 3×3. Alignez 3 symboles identiques en premier pour gagner.'
+        regles: 'Placez vos symboles (X ou O) à tour de rôle sur la grille 3×3. Alignez 3 symboles identiques en premier pour gagner.',
     },
     {
         id: 'puissance4', nom: 'Puissance 4',     icon: '🔴',
         desc: 'Alignez 4 jetons avant votre adversaire',
         joueurs: '2',    duree: '10-15 min',
-        regles: 'Faites tomber vos jetons dans les colonnes. Alignez 4 jetons de votre couleur (ligne, colonne ou diagonale) pour gagner.'
+        regles: 'Faites tomber vos jetons dans les colonnes. Alignez 4 jetons de votre couleur (ligne, colonne ou diagonale) pour gagner.',
     },
 ];
 
-// ── DOM helpers ──────────────────────────────────────────
+// ── DOM helpers ───────────────────────────────────────────
+// ✅ FIX : fonctions utilitaires uniquement — pas d'appels DOM au niveau module
 const $  = id  => document.getElementById(id);
 const $$ = sel => document.querySelector(sel);
 
-// ── Éléments nav bar ─────────────────────────────────────
-const elBtnRetour    = $('btn-retour-permanent');
-const elBtnHome      = $('btn-home-permanent');
-const elBtnMenu      = $('btn-menu-permanent');
-const elBreadcrumb   = $('topbar-breadcrumb');
-const elBtnMusic     = $('toggle-music');
-const elBgMusic      = $('bg-music');
-
-// ── Éléments menu latéral ────────────────────────────────
-const elMenuOverlay  = $('menu-overlay');
-const elMenuPanel    = $('menu-panel');
-const elBtnCloseMenu = $('btn-close-menu');
-
-// ── Écrans (map nom → élément DOM) ───────────────────────
-const SCREENS = {
-    home:    $('screen-home'),
-    jeux:    $('screen-jeux'),
-    detail:  $('screen-jeu-detail'),
-    parties: $('screen-parties'),
-};
-
-// ── État global ──────────────────────────────────────────
+// ── État global ───────────────────────────────────────────
 let currentScreen = 'home';
 let currentJeu    = null;
 let musicPlaying  = false;
+
+// Ces références sont initialisées dans init() après que le DOM est prêt
+let SCREENS        = {};
+let elBtnRetour    = null;
+let elBtnHome      = null;
+let elBtnMenu      = null;
+let elBreadcrumb   = null;
+let elBtnMusic     = null;
+let elBgMusic      = null;
+let elMenuOverlay  = null;
+let elMenuPanel    = null;
+let elBtnCloseMenu = null;
 
 // ══════════════════════════════════════════════════════
 // SYSTÈME DE NAVIGATION
@@ -138,7 +146,7 @@ function showScreen(name) {
     el.hidden = false;
 
     el.classList.remove('animate-in');
-    void el.offsetWidth;
+    void el.offsetWidth; // force reflow pour relancer l'animation
     el.classList.add('animate-in');
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -163,11 +171,10 @@ function updateNav(screen, label = null) {
         }
     }
 
-    // Masquer le bouton retour sur l'accueil, l'afficher ailleurs
     if (elBtnRetour) elBtnRetour.hidden = (screen === 'home');
 }
 
-// ── Destinations de navigation ───────────────────────────
+// ── Destinations de navigation ────────────────────────────
 
 function goHome() {
     showScreen('home');
@@ -196,16 +203,11 @@ function goParties() {
     renderPartiesContinuer();
 }
 
-// ── Redirection vers le host ─────────────────────────────
-// Masque tous les écrans proprement avant de partir
 function goHost(jeuId = null) {
     hideAllScreens();
     const url = jeuId ? `/host/?jeu=${jeuId}` : '/host/';
     window.location.href = url;
 }
-
-window.renderPartiesContinuer = renderPartiesContinuer;
-window.addEventListener('mgu:afficher-parties', () => goParties());
 
 function retourContextuel() {
     if (currentScreen === 'detail')  return goJeux();
@@ -217,25 +219,22 @@ function retourContextuel() {
 // ══════════════════════════════════════════════════════
 // RENDU — Barre de stats accueil
 // ══════════════════════════════════════════════════════
+
 function renderStatsBar() {
     try {
-        const parties = JSON.parse(localStorage.getItem('mgu_parties') || '[]');
-        // ✅ FIX : lire les joueurs créés depuis localStorage
-        // La clé peut être 'mgu_joueurs' (tableau de noms ou d'objets)
+        const parties    = JSON.parse(localStorage.getItem('mgu_parties') || '[]');
         const joueursRaw = localStorage.getItem('mgu_joueurs') ||
                            localStorage.getItem('mgu_players') || '[]';
-        const joueurs = JSON.parse(joueursRaw);
+        const joueurs    = JSON.parse(joueursRaw);
 
-        const totalPts = parties.reduce((sum, p) => {
-            return sum + Object.values(p.scores || {}).reduce((s, v) => s + (v || 0), 0);
-        }, 0);
+        const totalPts = parties.reduce((sum, p) =>
+            sum + Object.values(p.scores || {}).reduce((s, v) => s + (v || 0), 0), 0);
 
         const elP   = $('stat-parties');
         const elJ   = $('stat-joueurs');
         const elPts = $('stat-points');
 
         if (elP)   elP.textContent   = parties.length;
-        // ✅ Affiche le nombre de joueurs créés (tableau de noms ou d'objets)
         if (elJ)   elJ.textContent   = Array.isArray(joueurs) ? joueurs.length : 0;
         if (elPts) elPts.textContent = totalPts;
     } catch {
@@ -246,6 +245,7 @@ function renderStatsBar() {
 // ══════════════════════════════════════════════════════
 // RENDU — Grille des jeux
 // ══════════════════════════════════════════════════════
+
 function renderJeuxGrid() {
     const container = $('jeux-grid-container');
     if (!container) return;
@@ -269,6 +269,7 @@ function renderJeuxGrid() {
 // ══════════════════════════════════════════════════════
 // RENDU — Fiche détail d'un jeu
 // ══════════════════════════════════════════════════════
+
 function renderDetail(jeu) {
     const hero    = $('detail-hero-content');
     const regles  = $('detail-regles-content');
@@ -294,8 +295,6 @@ function renderDetail(jeu) {
     if (regles) regles.textContent = jeu.regles;
 
     if (actions) {
-        // ✅ CORRECTION : boutons JS au lieu de <a href> pour rester dans le flow SPA
-        // "Lancer une partie" → masque l'écran PUIS redirige /host/?jeu=xxx
         actions.innerHTML = `
         <button class="btn-primary btn-full btn-hero" id="btn-detail-lancer">
             🚀 Lancer une partie
@@ -311,6 +310,7 @@ function renderDetail(jeu) {
 // ══════════════════════════════════════════════════════
 // RENDU — Parties sauvegardées
 // ══════════════════════════════════════════════════════
+
 function renderPartiesContinuer() {
     const container = $('parties-continuer-list');
     if (!container) return;
@@ -336,14 +336,14 @@ function renderPartiesContinuer() {
     }
 
     container.innerHTML = parties.slice(0, 20).map((p, i) => {
-        const meta    = JEUX.find(j => j.id === p.jeu) || { icon: '🎮', nom: p.jeu || 'Partie' };
-        const date    = p.createdAt ? new Date(p.createdAt).toLocaleDateString('fr-FR') : '';
+        const meta   = JEUX.find(j => j.id === p.jeu) || { icon: '🎮', nom: p.jeu || 'Partie' };
+        const date   = p.createdAt ? new Date(p.createdAt).toLocaleDateString('fr-FR') : '';
         const joueurs = Object.keys(p.scores || {});
-        const chips   = joueurs.slice(0, 4).map(j => `<span class="pc-joueur-chip">${j}</span>`).join('');
-        const more    = joueurs.length > 4
+        const chips  = joueurs.slice(0, 4).map(j => `<span class="pc-joueur-chip">${j}</span>`).join('');
+        const more   = joueurs.length > 4
             ? `<span class="pc-joueur-chip pc-joueur-more">+${joueurs.length - 4}</span>`
             : '';
-        const statut  = p.statut === 'terminee'
+        const statut = p.statut === 'terminee'
             ? `<span class="badge-statut badge-terminee">Terminée</span>`
             : `<span class="badge-statut badge-en-cours">En cours</span>`;
 
@@ -372,11 +372,7 @@ function renderPartiesContinuer() {
             const idx = parseInt(btn.dataset.idx, 10);
             if (!Number.isNaN(idx)) {
                 parties.splice(idx, 1);
-                try {
-                    localStorage.setItem('mgu_parties', JSON.stringify(parties));
-                } catch {
-                    // silencieux
-                }
+                try { localStorage.setItem('mgu_parties', JSON.stringify(parties)); } catch {}
                 renderPartiesContinuer();
             }
         });
@@ -402,16 +398,13 @@ function fermerMenu() {
 // ══════════════════════════════════════════════════════
 // MUSIQUE DE FOND
 // ══════════════════════════════════════════════════════
+
 function toggleMusique() {
     if (!elBgMusic) return;
-
     musicPlaying = !musicPlaying;
-
     if (musicPlaying) {
         elBgMusic.volume = 0.35;
-        elBgMusic.play().catch(() => {
-            musicPlaying = false;
-        });
+        elBgMusic.play().catch(() => { musicPlaying = false; });
         if (elBtnMusic) elBtnMusic.textContent = '🔊';
     } else {
         elBgMusic.pause();
@@ -420,21 +413,40 @@ function toggleMusique() {
 }
 
 // ══════════════════════════════════════════════════════
-// INIT — Branchement de tous les événements
+// INIT — DOM garanti disponible ici
 // ══════════════════════════════════════════════════════
+
 function init() {
-    // Top-nav-bar
+    // ✅ FIX : capturer les éléments DOM ICI, pas au niveau module
+    elBtnRetour    = $('btn-retour-permanent');
+    elBtnHome      = $('btn-home-permanent');
+    elBtnMenu      = $('btn-menu-permanent');
+    elBreadcrumb   = $('topbar-breadcrumb');
+    elBtnMusic     = $('toggle-music');
+    elBgMusic      = $('bg-music');
+    elMenuOverlay  = $('menu-overlay');
+    elMenuPanel    = $('menu-panel');
+    elBtnCloseMenu = $('btn-close-menu');
+
+    SCREENS = {
+        home:    $('screen-home'),
+        jeux:    $('screen-jeux'),
+        detail:  $('screen-jeu-detail'),
+        parties: $('screen-parties'),
+    };
+
+    // ── Top-nav-bar ───────────────────────────────────────
     elBtnRetour?.addEventListener('click', retourContextuel);
     elBtnHome?.addEventListener('click', goHome);
     elBtnMenu?.addEventListener('click', ouvrirMenu);
     elBtnMusic?.addEventListener('click', toggleMusique);
 
-    $$('.top-nav-bar .topbar-logo')?.addEventListener('click', (e) => {
+    $$('.top-nav-bar .topbar-logo')?.addEventListener('click', e => {
         e.preventDefault();
         goHome();
     });
 
-    // Menu latéral
+    // ── Menu latéral ──────────────────────────────────────
     elBtnCloseMenu?.addEventListener('click', fermerMenu);
     elMenuOverlay?.addEventListener('click', fermerMenu);
 
@@ -447,9 +459,15 @@ function init() {
         // futur overlay réglages
     });
 
+    // ✅ FIX : appel conditionnel — si le module stats n'est pas chargé,
+    // on revient à l'accueil plutôt que de rien faire
     $('menu-home')?.addEventListener('click', () => {
         fermerMenu();
-        afficherStatistiques();
+        if (typeof afficherStatistiques === 'function') {
+            afficherStatistiques();
+        } else {
+            goHome();
+        }
     });
 
     $('menu-parties')?.addEventListener('click', () => {
@@ -459,35 +477,36 @@ function init() {
 
     $('menu-joueurs')?.addEventListener('click', () => {
         fermerMenu();
-        afficherGestionJoueurs();
+        if (typeof afficherGestionJoueurs === 'function') {
+            afficherGestionJoueurs();
+        } else {
+            console.warn('[MAIN] menu/joueurs.js non chargé');
+        }
     });
 
     $('menu-equipes')?.addEventListener('click', () => {
         fermerMenu();
-        afficherGestionEquipes();
+        if (typeof afficherGestionEquipes === 'function') {
+            afficherGestionEquipes();
+        } else {
+            console.warn('[MAIN] menu/equipes.js non chargé');
+        }
     });
 
-    // ── CTA accueil ──────────────────────────────────────
-    // ✅ "Nouvelle partie" → masque l'écran puis redirige /host/
+    // ── CTA accueil ───────────────────────────────────────
     $('btn-nouvelle-partie')?.addEventListener('click', () => goHost());
-
-    // ✅ "Continuer une partie" → navigation SPA
     $('btn-continuer')?.addEventListener('click', goParties);
-
-    // ✅ "Voir tous les jeux & règles" → navigation SPA
     $('btn-voir-jeux')?.addEventListener('click', goJeux);
-
-    // ✅ "Nouvelle partie" depuis l'écran parties → redirige /host/
     $('btn-parties-nouvelle')?.addEventListener('click', () => goHost());
 
-    // Boutons retour internes
+    // ── Boutons retour internes ───────────────────────────
     $('btn-retour-jeux')?.addEventListener('click', goHome);
     $('btn-retour-detail')?.addEventListener('click', goJeux);
     $('btn-retour-parties')?.addEventListener('click', goHome);
 
-    // ✅ Initialisation de l'écran accueil visible par défaut
-    //    screen-home n'a PAS hidden dans le HTML — il est déjà visible.
-    //    On masque explicitement les autres écrans et on lit les stats.
+    // ── État initial ──────────────────────────────────────
+    // screen-home est déjà visible dans le HTML (pas de hidden)
+    // On masque les autres écrans proprement
     [SCREENS.jeux, SCREENS.detail, SCREENS.parties].forEach(el => {
         if (el) el.hidden = true;
     });
@@ -496,6 +515,11 @@ function init() {
     renderStatsBar();
 }
 
+// ── Exposition pour les modules externes ──────────────────
+window.renderPartiesContinuer = renderPartiesContinuer;
+window.addEventListener('mgu:afficher-parties', () => goParties());
+
+// ── Point d'entrée ────────────────────────────────────────
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else {
