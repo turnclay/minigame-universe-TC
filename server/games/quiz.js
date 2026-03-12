@@ -1,16 +1,14 @@
 // ======================================================
-// 🧠 QUIZ.JS — Module serveur pour le jeu de quiz
-// ======================================================
-// - Gère les sessions de quiz par partieId
-// - Charge les questions depuis /data/questions.json
-// - Réagit aux HOST_ACTION et PLAYER_ACTION routés par ws-handler
-// - Ne contient AUCUN code client / DOM / document / window
+// 🧠 QUIZ.JS — Module serveur (ESM) pour le jeu de quiz
 // ======================================================
 
-'use strict';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const fs   = require('fs');
-const path = require('path');
+// Pour reconstruire __dirname en ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ─────────────────────────────────────────────────────
 // Chargement des questions
@@ -32,12 +30,12 @@ function chargerQuestions() {
         } else if (Array.isArray(data.questions)) {
             QUESTIONS = data.questions;
         } else {
-            console.error('[QUIZ] ❌ Format questions.json invalide (attendu: tableau ou {questions:[]})');
+            console.error('[QUIZ] ❌ Format questions.json invalide');
             QUESTIONS = [];
         }
 
         QUESTIONS_TOTAL = QUESTIONS.length;
-        console.log(`[QUIZ] ✅ ${QUESTIONS_TOTAL} questions chargées depuis questions.json`);
+        console.log(`[QUIZ] ✅ ${QUESTIONS_TOTAL} questions chargées`);
     } catch (err) {
         console.error('[QUIZ] ❌ Erreur chargement questions.json:', err);
         QUESTIONS = [];
@@ -47,16 +45,6 @@ function chargerQuestions() {
 
 // ─────────────────────────────────────────────────────
 // Sessions en mémoire
-// ─────────────────────────────────────────────────────
-//
-// sessions.set(partieId, {
-//   questions: [...],
-//   idx: -1,
-//   etat: 'idle' | 'question' | 'correction' | 'ended',
-//   reponses: Map<pseudo, { texte, correct }>
-//   scores: { [pseudo]: number },
-// });
-//
 // ─────────────────────────────────────────────────────
 
 const sessions = new Map();
@@ -78,38 +66,29 @@ function createSession(partieId) {
     return sess;
 }
 
-function detruireSession(partieId) {
-    if (sessions.has(partieId)) {
-        sessions.delete(partieId);
-        console.log(`[QUIZ] 🧹 Session détruite pour partie ${partieId}`);
-    }
+export function detruireSession(partieId) {
+    sessions.delete(partieId);
+    console.log(`[QUIZ] 🧹 Session détruite pour partie ${partieId}`);
 }
 
 // ─────────────────────────────────────────────────────
 // Helpers internes
 // ─────────────────────────────────────────────────────
 
-function envoyerErreur(helpers, ws, code, message) {
-    helpers.send(ws, 'ERROR', {
-        code: code || 'QUIZ_BAD_STATE',
-        message: message || 'Action impossible dans cet état.',
-    });
-}
-
 function construirePayloadQuestion(sess) {
     const q = sess.questions[sess.idx];
     if (!q) return null;
 
     return {
-        idx:      sess.idx,
-        total:    sess.questions.length,
-        theme:    q.theme || q.categorie || null,
+        idx: sess.idx,
+        total: sess.questions.length,
+        theme: q.theme || q.categorie || null,
         question: q.question || q.texte || '',
-        type:     q.type === 'qcm' ? 'qcm' : 'texte',
-        choix:    Array.isArray(q.choix) ? q.choix : null,
-        indice1:  q.indice1 || null,
-        indice2:  q.indice2 || null,
-        points:   typeof q.points === 'number' ? q.points : 1,
+        type: q.type === 'qcm' ? 'qcm' : 'texte',
+        choix: Array.isArray(q.choix) ? q.choix : null,
+        indice1: q.indice1 || null,
+        indice2: q.indice2 || null,
+        points: typeof q.points === 'number' ? q.points : 1,
     };
 }
 
@@ -117,22 +96,22 @@ function construirePayloadCorrection(sess) {
     const q = sess.questions[sess.idx];
     if (!q) return null;
 
-    const reponseBonne = q.reponse || q.bonneReponse || '';
-    const points       = typeof q.points === 'number' ? q.points : 1;
+    const bonne = q.reponse || q.bonneReponse || '';
+    const points = typeof q.points === 'number' ? q.points : 1;
 
     const reponses = Array.from(sess.reponses.entries()).map(([pseudo, r]) => ({
         pseudo,
-        texte:   r.texte,
+        texte: r.texte,
         correct: r.correct,
     }));
 
     return {
-        idx:      sess.idx,
-        total:    sess.questions.length,
-        theme:    q.theme || q.categorie || null,
+        idx: sess.idx,
+        total: sess.questions.length,
+        theme: q.theme || q.categorie || null,
         question: q.question || q.texte || '',
-        reponse:  reponseBonne,
-        type:     q.type === 'qcm' ? 'qcm' : 'texte',
+        reponse: bonne,
+        type: q.type === 'qcm' ? 'qcm' : 'texte',
         points,
         reponses,
     };
@@ -140,8 +119,6 @@ function construirePayloadCorrection(sess) {
 
 function corrigerReponses(sess) {
     const q = sess.questions[sess.idx];
-    if (!q) return;
-
     const bonne = String(q.reponse || q.bonneReponse || '').trim().toLowerCase();
     const points = typeof q.points === 'number' ? q.points : 1;
 
@@ -151,8 +128,7 @@ function corrigerReponses(sess) {
         r.correct = correct;
 
         if (correct) {
-            if (!sess.scores[pseudo]) sess.scores[pseudo] = 0;
-            sess.scores[pseudo] += points;
+            sess.scores[pseudo] = (sess.scores[pseudo] || 0) + points;
         }
     });
 }
@@ -160,20 +136,9 @@ function corrigerReponses(sess) {
 // ─────────────────────────────────────────────────────
 // HOST_ACTION
 // ─────────────────────────────────────────────────────
-//
-// Actions attendues :
-//   - quiz:next_question
-//   - quiz:reveal
-//   - quiz:skip
-//   - quiz:reveal_indice { num }
-// ─────────────────────────────────────────────────────
 
-function handleHostAction(wss, ws, partieId, action, data = {}, helpers) {
-    const { broadcastToGame, broadcastToHost } = helpers;
-
-    if (!partieId) {
-        return envoyerErreur(helpers, ws, 'QUIZ_BAD_STATE', 'Partie inconnue.');
-    }
+export function handleHostAction(wss, ws, partieId, action, data, helpers) {
+    const { broadcastToGame, broadcastToHost, send } = helpers;
 
     let sess = getSession(partieId);
 
@@ -181,179 +146,106 @@ function handleHostAction(wss, ws, partieId, action, data = {}, helpers) {
 
         case 'quiz:next_question': {
             if (!sess) {
-                // Première utilisation : créer la session
                 sess = createSession(partieId);
-                // Informer le host que le quiz est prêt
                 broadcastToHost(wss, partieId, 'QUIZ_READY', {
-                    total:   sess.questions.length,
-                    message: 'Quiz prêt, vous pouvez commencer.',
+                    total: sess.questions.length,
+                    message: 'Quiz prêt.',
                 });
             }
 
-            if (!sess.questions.length) {
-                return envoyerErreur(helpers, ws, 'QUIZ_BAD_STATE', 'Aucune question disponible.');
-            }
-
-            // Passer à la question suivante
-            sess.idx += 1;
+            sess.idx++;
             sess.reponses.clear();
             sess.etat = 'question';
 
             if (sess.idx >= sess.questions.length) {
-                // Plus de questions → fin du quiz
-                const scores = sess.scores || {};
                 broadcastToGame(wss, partieId, 'QUIZ_END', {
-                    scores,
+                    scores: sess.scores,
                     total: sess.questions.length,
                 });
                 sess.etat = 'ended';
-                console.log(`[QUIZ] 🏁 Fin du quiz pour partie ${partieId}`);
                 return;
             }
 
             const payload = construirePayloadQuestion(sess);
-            if (!payload) {
-                return envoyerErreur(helpers, ws, 'QUIZ_BAD_STATE', 'Question introuvable.');
-            }
-
             broadcastToGame(wss, partieId, 'QUIZ_QUESTION', payload);
-            console.log(`[QUIZ] ▶ Question ${sess.idx + 1}/${sess.questions.length} pour partie ${partieId}`);
             break;
         }
 
         case 'quiz:reveal': {
-            if (!sess || sess.etat !== 'question' || sess.idx < 0) {
-                return envoyerErreur(helpers, ws, 'QUIZ_BAD_STATE', 'Aucune question en cours à révéler.');
-            }
+            if (!sess || sess.etat !== 'question') return;
 
             corrigerReponses(sess);
             const payload = construirePayloadCorrection(sess);
-            if (!payload) {
-                return envoyerErreur(helpers, ws, 'QUIZ_BAD_STATE', 'Impossible de construire la correction.');
-            }
-
             sess.etat = 'correction';
 
             broadcastToGame(wss, partieId, 'QUIZ_CORRECTION', payload);
             broadcastToGame(wss, partieId, 'SCORES_UPDATE', { scores: sess.scores });
-
-            console.log(`[QUIZ] ✅ Correction envoyée pour Q${sess.idx + 1} (partie ${partieId})`);
             break;
         }
 
         case 'quiz:skip': {
-            if (!sess || sess.etat !== 'question' || sess.idx < 0) {
-                return envoyerErreur(helpers, ws, 'QUIZ_BAD_STATE', 'Aucune question en cours à passer.');
-            }
+            if (!sess || sess.etat !== 'question') return;
 
             const payload = construirePayloadCorrection(sess);
-            if (!payload) {
-                return envoyerErreur(helpers, ws, 'QUIZ_BAD_STATE', 'Impossible de construire la correction.');
-            }
-
-            // On ne corrige pas les réponses, pas de points attribués
             sess.etat = 'correction';
 
             broadcastToGame(wss, partieId, 'QUIZ_CORRECTION', payload);
-            console.log(`[QUIZ] ⏭ Question passée pour partie ${partieId}`);
             break;
         }
 
         case 'quiz:reveal_indice': {
-            if (!sess || sess.etat !== 'question' || sess.idx < 0) {
-                return envoyerErreur(helpers, ws, 'QUIZ_BAD_STATE', 'Aucune question en cours.');
-            }
+            if (!sess || sess.etat !== 'question') return;
 
-            const num = Number(data.num || 0);
-            if (num !== 1 && num !== 2) {
-                return envoyerErreur(helpers, ws, 'QUIZ_BAD_STATE', 'Indice invalide.');
-            }
-
+            const num = Number(data.num);
             const q = sess.questions[sess.idx];
             const cle = num === 1 ? 'indice1' : 'indice2';
-            const texte = q[cle] || null;
+            const texte = q[cle];
 
-            if (!texte) {
-                return envoyerErreur(helpers, ws, 'QUIZ_BAD_STATE', `Pas d'indice ${num} pour cette question.`);
+            if (texte) {
+                broadcastToGame(wss, partieId, 'QUIZ_INDICE', { num, texte });
             }
-
-            broadcastToGame(wss, partieId, 'QUIZ_INDICE', { num, texte });
-            console.log(`[QUIZ] 💡 Indice ${num} révélé pour Q${sess.idx + 1} (partie ${partieId})`);
             break;
         }
-
-        default:
-            console.warn(`[QUIZ] ⚠️ Action host inconnue: ${action}`);
     }
 }
 
 // ─────────────────────────────────────────────────────
 // PLAYER_ACTION
 // ─────────────────────────────────────────────────────
-//
-// Actions attendues :
-//   - quiz:answer { texte }
-// ─────────────────────────────────────────────────────
 
-function handlePlayerAction(wss, ws, partieId, pseudo, action, data = {}, helpers) {
-    const { broadcastToHost } = helpers;
-
-    if (!partieId || !pseudo) {
-        return envoyerErreur(helpers, ws, 'QUIZ_BAD_STATE', 'Partie ou pseudo manquant.');
-    }
+export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, helpers) {
+    const { send, broadcastToHost } = helpers;
 
     const sess = getSession(partieId);
-    if (!sess || sess.etat !== 'question' || sess.idx < 0) {
-        // Question déjà terminée ou pas encore commencée
-        helpers.send(ws, 'QUIZ_ANSWER_ACK', { status: 'too_late' });
+    if (!sess || sess.etat !== 'question') {
+        send(ws, 'QUIZ_ANSWER_ACK', { status: 'too_late' });
         return;
     }
 
     switch (action) {
         case 'quiz:answer': {
-            const texte = String((data && data.texte) || '').trim();
+            const texte = String(data.texte || '').trim();
             if (!texte) {
-                helpers.send(ws, 'QUIZ_ANSWER_ACK', { status: 'invalid', texte: '' });
+                send(ws, 'QUIZ_ANSWER_ACK', { status: 'invalid' });
                 return;
             }
 
             if (sess.reponses.has(pseudo)) {
-                helpers.send(ws, 'QUIZ_ANSWER_ACK', { status: 'already_answered', texte });
+                send(ws, 'QUIZ_ANSWER_ACK', { status: 'already_answered' });
                 return;
             }
 
             sess.reponses.set(pseudo, { texte, correct: false });
-
-            // ACK au joueur
-            helpers.send(ws, 'QUIZ_ANSWER_ACK', { status: 'ok', texte });
-
-            // Info live au host
-            const nbReponses = sess.reponses.size;
-            const nbJoueurs  = null; // On ne connaît pas le nombre total de joueurs côté module
-            const allAnswered = false;
+            send(ws, 'QUIZ_ANSWER_ACK', { status: 'ok', texte });
 
             broadcastToHost(wss, partieId, 'QUIZ_RESPONSE_IN', {
                 pseudo,
-                nbReponses,
-                nbJoueurs,
-                allAnswered,
+                nbReponses: sess.reponses.size,
+                nbJoueurs: null,
+                allAnswered: false,
             });
 
-            console.log(`[QUIZ] ✉️ Réponse reçue de ${pseudo} pour Q${sess.idx + 1} (partie ${partieId})`);
             break;
         }
-
-        default:
-            console.warn(`[QUIZ] ⚠️ Action player inconnue: ${action}`);
     }
 }
-
-// ─────────────────────────────────────────────────────
-// EXPORTS
-// ─────────────────────────────────────────────────────
-
-module.exports = {
-    handleHostAction,
-    handlePlayerAction,
-    detruireSession,
-};
