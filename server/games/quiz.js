@@ -24,7 +24,76 @@
 //
 // ======================================================
 
-import { GameSocket } from '../core/socket.js';
+// Petite implémentation locale de GameSocket pour le client
+class GameSocket {
+    constructor() {
+        this.ws = null;
+        this.url = null;
+        this.handlers = {};
+        this.reconnectDelay = 1500;
+        this._shouldReconnect = true;
+    }
+
+    connect(url) {
+        this.url = url;
+        this._open();
+    }
+
+    _open() {
+        if (!this.url) return;
+        this.ws = new WebSocket(this.url);
+
+        this.ws.addEventListener('open', () => {
+            this._emit('__connected__');
+        });
+
+        this.ws.addEventListener('close', () => {
+            this._emit('__disconnected__');
+            if (this._shouldReconnect) {
+                setTimeout(() => this._open(), this.reconnectDelay);
+            }
+        });
+
+        this.ws.addEventListener('error', () => {
+            // Laisser le close gérer la reconnexion
+        });
+
+        this.ws.addEventListener('message', (evt) => {
+            let msg;
+            try {
+                msg = JSON.parse(evt.data);
+            } catch {
+                return;
+            }
+            const { type, payload = {} } = msg || {};
+            if (!type) return;
+            this._emit(type, payload);
+        });
+    }
+
+    on(type, cb) {
+        if (!this.handlers[type]) this.handlers[type] = [];
+        this.handlers[type].push(cb);
+    }
+
+    _emit(type, payload) {
+        const list = this.handlers[type];
+        if (!list) return;
+        list.forEach(fn => {
+            try { fn(payload); } catch { /* ignore */ }
+        });
+    }
+
+    send(type, payload = {}) {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+        this.ws.send(JSON.stringify({ type, payload }));
+    }
+
+    close() {
+        this._shouldReconnect = false;
+        if (this.ws) this.ws.close();
+    }
+}
 
 const socket = new GameSocket();
 
@@ -42,9 +111,9 @@ const S = {
     isPlayer:  false,
 
     // Quiz courant
-    questionEnCours: null,   // payload QUIZ_QUESTION
-    aRepondu:        false,
-    choixSelectionne: null,  // pour QCM
+    questionEnCours:  null,   // payload QUIZ_QUESTION
+    aRepondu:         false,
+    choixSelectionne: null,   // pour QCM
 };
 
 // ─────────────────────────────────────────────────────
