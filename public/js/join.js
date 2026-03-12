@@ -1,20 +1,29 @@
 // ======================================================
-// 🎮 JOIN.JS — Rejoindre une partie (v2 - corrigé)
+// 🎮 JOIN.JS v3.0 — CODE DE PARTIE AJOUTÉ
 // ======================================================
-// Fix :
-//  - socket.connect() appelé à l'init
-//  - Recherche par NOM EXACT de partie (pas juste l'ID)
-//  - Vérification pseudo déjà utilisé globalement + dans la partie
-//  - Liste des parties rechargée via REST + WebSocket live
-//  - Redirection vers le bon game.js selon le jeu
+// Nouveautés v3.0 :
+//  - handleJoinByCode()      : rejoint via code 6 caractères
+//  - PLAYER_JOIN_BY_CODE     : envoi WebSocket dédié
+//  - Pré-remplissage depuis ?code=XXXXXX (QR code / lien)
+//  - Validation REST /api/parties/code/:code avant WS
+//  - Auto-focus pseudo si code déjà rempli
+//  - Bouton #join-btn-code + champ #join-code (dans le HTML)
+// Conservé de v2 :
+//  - Recherche par nom exact (REST + local)
+//  - Liste des parties avec sélection
+//  - PLAYER_JOIN par partieId (flow original)
+//  - JOIN_OK → redirection vers le jeu
+//  - JOIN_ERROR → messages d'erreur clairs
+//  - Actualisation auto toutes les 5s
 // ======================================================
 
 import { GameSocket } from './core/socket.js';
 
 const socket = new GameSocket();
 
-// ── Config ───────────────────────────────────────────
+// ── Config ────────────────────────────────────────────
 const PSEUDO_REGEX = /^[a-zA-Z0-9_-]{2,20}$/;
+const CODE_REGEX   = /^[A-Z0-9]{6}$/;
 
 const GAME_ICONS = {
     quiz: '❓', justeprix: '💰', undercover: '🕵️', lml: '📖',
@@ -23,31 +32,31 @@ const GAME_ICONS = {
 };
 
 const JEU_PATHS = {
-    quiz: '/games/quiz/',
-    justeprix: '/games/justeprix/',
+    quiz:       '/games/quiz/',
+    justeprix:  '/games/justeprix/',
     undercover: '/games/undercover/',
-    lml: '/games/lml/',
-    mimer: '/games/mimer/',
-    pendu: '/games/pendu/',
-    petitbac: '/games/petitbac/',
-    memoire: '/games/memoire/',
-    morpion: '/games/morpion/',
+    lml:        '/games/lml/',
+    mimer:      '/games/mimer/',
+    pendu:      '/games/pendu/',
+    petitbac:   '/games/petitbac/',
+    memoire:    '/games/memoire/',
+    morpion:    '/games/morpion/',
     puissance4: '/games/puissance4/',
 };
 
-// ── DOM Helpers ──────────────────────────────────────
+// ── DOM Helpers ───────────────────────────────────────
 const $ = (id) => document.getElementById(id);
 const esc = (str) => String(str || '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-// ── State ────────────────────────────────────────────
+// ── State ─────────────────────────────────────────────
 const state = {
-    parties: [],
+    parties:          [],
     selectedPartieId: null,
-    selectedPartie: null,
-    isConnecting: false,
-    refreshTimer: null,
+    selectedPartie:   null,
+    isConnecting:     false,
+    refreshTimer:     null,
 };
 
 // ══════════════════════════════════════════════════════
@@ -127,8 +136,8 @@ function renderParties(parties) {
 
     container.innerHTML = filtered.map(p => {
         const isSelected = p.id === state.selectedPartieId;
-        const nbJoueurs = (p.joueurs || []).length;
-        const max = p.maxJoueurs || 8;
+        const nbJoueurs  = (p.joueurs || []).length;
+        const max        = p.maxJoueurs || 8;
         return `
         <div class="partie-item ${isSelected ? 'selected' : ''}" data-partie-id="${esc(p.id)}" style="
             display:flex;align-items:center;gap:0.75rem;padding:0.85rem 1rem;
@@ -156,7 +165,7 @@ function renderParties(parties) {
 
 function selectPartie(partieId) {
     state.selectedPartieId = partieId;
-    state.selectedPartie = state.parties.find(p => p.id === partieId);
+    state.selectedPartie   = state.parties.find(p => p.id === partieId);
 
     renderParties(state.parties);
     updateSelectedInfo();
@@ -231,12 +240,93 @@ function handleSearchByName() {
 }
 
 // ══════════════════════════════════════════════════════
-// VALIDATION
+// ✅ NEW v3.0 — REJOINDRE PAR CODE COURT
+// Résolution REST /api/parties/code/:code (validation UX rapide),
+// puis envoi WebSocket PLAYER_JOIN_BY_CODE.
+// ══════════════════════════════════════════════════════
+
+async function handleJoinByCode() {
+    const codeEl   = $('join-code');
+    const pseudoEl = $('join-pseudo');
+    if (!codeEl || !pseudoEl) return;
+
+    const code   = codeEl.value.trim().toUpperCase();
+    const pseudo = pseudoEl.value.trim();
+
+    // ── Validation du code ──────────────────────────
+    if (!CODE_REGEX.test(code)) {
+        toast('Code invalide — 6 caractères alphanumériques (ex : AB3X7K).', 'error');
+        codeEl.focus();
+        return;
+    }
+
+    // ── Validation du pseudo ────────────────────────
+    const vPseudo = validatePseudo(pseudo);
+    if (!vPseudo.valid) {
+        toast(vPseudo.error, 'error');
+        pseudoEl.focus();
+        return;
+    }
+
+    // ── Vérification REST (UX : erreur avant d'ouvrir WS) ──
+    try {
+        const res = await fetch(`/api/parties/code/${code}`, {
+            signal: AbortSignal.timeout(4000),
+        });
+
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            toast(errData.error || 'Code invalide ou expiré.', 'error');
+            return;
+        }
+
+        const partieData = await res.json();
+
+        // Vérification pseudo côté client
+        if ((partieData.joueurs || []).some(j => j.pseudo.toLowerCase() === pseudo.toLowerCase())) {
+            toast('Ce pseudo est déjà utilisé dans cette partie.', 'error');
+            return;
+        }
+
+        // Pré-sélectionner la partie pour cohérence avec le reste de l'UI
+        if (!state.parties.find(p => p.id === partieData.id)) {
+            state.parties.push(partieData);
+        }
+        state.selectedPartieId = partieData.id;
+        state.selectedPartie   = partieData;
+        renderParties(state.parties);
+        updateSelectedInfo();
+
+    } catch (err) {
+        console.error('[JOIN] Erreur vérification code:', err);
+        toast('Impossible de vérifier le code. Vérifiez votre connexion.', 'error');
+        return;
+    }
+
+    // ── Envoi WebSocket ─────────────────────────────
+    state.isConnecting = true;
+    const btn = $('join-btn-code');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Connexion…'; }
+
+    socket.send('PLAYER_JOIN_BY_CODE', { code, pseudo });
+
+    // Timeout de sécurité
+    setTimeout(() => {
+        if (state.isConnecting) {
+            state.isConnecting = false;
+            if (btn) { btn.disabled = false; btn.textContent = '→ Rejoindre'; }
+            toast('Délai dépassé. Vérifiez la connexion.', 'error');
+        }
+    }, 10000);
+}
+
+// ══════════════════════════════════════════════════════
+// VALIDATION PSEUDO
 // ══════════════════════════════════════════════════════
 
 function validatePseudo(pseudo) {
     const t = pseudo.trim();
-    if (t.length < 2) return { valid: false, error: 'Minimum 2 caractères.' };
+    if (t.length < 2)  return { valid: false, error: 'Minimum 2 caractères.' };
     if (t.length > 20) return { valid: false, error: 'Maximum 20 caractères.' };
     if (!PSEUDO_REGEX.test(t)) return { valid: false, error: 'Lettres, chiffres, tiret, underscore uniquement.' };
     return { valid: true };
@@ -244,23 +334,23 @@ function validatePseudo(pseudo) {
 
 function checkCanJoin() {
     const pseudoEl = $('join-pseudo');
-    const btn = $('join-btn-submit');
+    const btn      = $('join-btn-submit');
     if (!pseudoEl || !btn) return;
 
     const pseudo = pseudoEl.value.trim();
-    const ok = validatePseudo(pseudo).valid && !!state.selectedPartieId;
+    const ok     = validatePseudo(pseudo).valid && !!state.selectedPartieId;
     btn.disabled = !ok || state.isConnecting;
 }
 
 // ══════════════════════════════════════════════════════
-// REJOINDRE UNE PARTIE
+// REJOINDRE PAR LISTE / NOM (flow original)
 // ══════════════════════════════════════════════════════
 
 function handleJoin() {
     const pseudoEl = $('join-pseudo');
     if (!pseudoEl) return;
 
-    const pseudo = pseudoEl.value.trim();
+    const pseudo     = pseudoEl.value.trim();
     const validation = validatePseudo(pseudo);
 
     if (!validation.valid) { toast(validation.error, 'error'); return; }
@@ -302,7 +392,6 @@ function initSocketEvents() {
     socket.on('__connected__', () => {
         console.log('[JOIN] ✅ WebSocket connecté');
         updateWsStatus(true);
-        // Charger les parties via WS aussi (optionnel, en complément du REST)
         socket.send('GET_PARTIES', {});
     });
 
@@ -317,6 +406,7 @@ function initSocketEvents() {
         }
     });
 
+    // ✅ Commun aux deux flows (PLAYER_JOIN et PLAYER_JOIN_BY_CODE)
     socket.on('JOIN_OK', ({ pseudo, equipe, snapshot }) => {
         state.isConnecting = false;
         console.log('[JOIN] ✅ Rejoint:', pseudo, 'équipe:', equipe);
@@ -325,10 +415,10 @@ function initSocketEvents() {
             sessionStorage.setItem('mgu_game_session', JSON.stringify({
                 partieId: state.selectedPartieId,
                 pseudo,
-                equipe: equipe || null,
-                jeu: snapshot.jeu,
-                mode: snapshot.mode,
-                role: 'player',
+                equipe:   equipe || null,
+                jeu:      snapshot.jeu,
+                mode:     snapshot.mode,
+                role:     'player',
             }));
         } catch {}
 
@@ -343,15 +433,21 @@ function initSocketEvents() {
 
     socket.on('JOIN_ERROR', ({ code }) => {
         state.isConnecting = false;
-        const btn = $('join-btn-submit');
-        if (btn) { btn.disabled = false; btn.textContent = '🎮 Rejoindre'; }
+
+        // Réactiver tous les boutons possibles
+        const btnSubmit = $('join-btn-submit');
+        if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.textContent = '🎮 Rejoindre la partie'; }
+        const btnCode = $('join-btn-code');
+        if (btnCode) { btnCode.disabled = false; btnCode.textContent = '→ Rejoindre'; }
 
         const messages = {
-            GAME_NOT_FOUND: 'Partie introuvable ou terminée.',
-            PSEUDO_TAKEN: 'Ce pseudo est déjà utilisé dans cette partie.',
-            GAME_STARTED: 'La partie a déjà commencé.',
-            MAX_PLAYERS: 'La partie est complète.',
-            PSEUDO_INVALID: 'Pseudo invalide.',
+            GAME_NOT_FOUND:       'Partie introuvable ou terminée.',
+            CODE_INVALID:         'Code invalide ou expiré. Demandez le code à votre host.',
+            PSEUDO_TAKEN:         'Ce pseudo est déjà utilisé dans cette partie.',
+            PSEUDO_INVALID:       'Pseudo invalide.',
+            GAME_STARTED:         'La partie a déjà commencé.',
+            MAX_PLAYERS:          'La partie est complète.',
+            PLAYER_ALREADY_EXISTS:'Vous êtes déjà dans cette partie.',
         };
         toast(messages[code] || `Erreur : ${code}`, 'error');
     });
@@ -363,10 +459,10 @@ function initSocketEvents() {
 }
 
 function updateWsStatus(connected) {
-    const dot = $('ws-dot');
+    const dot   = $('ws-dot');
     const label = $('ws-label');
-    if (dot) dot.style.background = connected ? '#22c55e' : '#ef4444';
-    if (label) label.textContent = connected ? 'Connecté' : 'Déconnecté';
+    if (dot)   dot.style.background = connected ? '#22c55e' : '#ef4444';
+    if (label) label.textContent    = connected ? 'Connecté' : 'Déconnecté';
 }
 
 // ══════════════════════════════════════════════════════
@@ -374,14 +470,14 @@ function updateWsStatus(connected) {
 // ══════════════════════════════════════════════════════
 
 function init() {
-    console.log('[JOIN] Initialisation');
+    console.log('[JOIN] Initialisation v3.0');
 
     // Connexion WebSocket
     const wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     socket.connect(`${wsProto}//${location.host}/ws`);
     initSocketEvents();
 
-    // Champs
+    // ── Champ pseudo ────────────────────────────────
     const pseudoEl = $('join-pseudo');
     if (pseudoEl) {
         const last = localStorage.getItem('mgu_last_pseudo');
@@ -392,6 +488,7 @@ function init() {
         });
     }
 
+    // ── Champ nom de partie ──────────────────────────
     const nameInput = $('join-partie-name');
     if (nameInput) {
         nameInput.addEventListener('keydown', e => {
@@ -399,15 +496,52 @@ function init() {
         });
     }
 
+    // ── Champ code court ─────────────────────────────
+    const codeInput = $('join-code');
+    if (codeInput) {
+        // Forcer majuscules à la frappe
+        codeInput.addEventListener('input', e => {
+            e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        });
+        // Entrée = rejoindre par code
+        codeInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') handleJoinByCode();
+        });
+    }
+
+    // ── Boutons ──────────────────────────────────────
     $('join-btn-search')?.addEventListener('click', handleSearchByName);
     $('join-btn-submit')?.addEventListener('click', handleJoin);
+    $('join-btn-code')?.addEventListener('click', handleJoinByCode);
     $('join-btn-refresh')?.addEventListener('click', () => {
         state.selectedPartieId = null;
-        state.selectedPartie = null;
+        state.selectedPartie   = null;
         loadParties();
     });
 
-    // Charger les parties REST
+    // ── ✅ NEW v3.0 : pré-remplissage depuis l'URL ───
+    // Le QR code et les liens partagés incluent ?code=XXXXXX
+    const urlParams = new URLSearchParams(location.search);
+    const codeParam = urlParams.get('code');
+    if (codeParam) {
+        const cleaned = codeParam.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+        if (codeInput && cleaned) {
+            codeInput.value = cleaned;
+            // Focus sur le pseudo si le code est valide
+            if (CODE_REGEX.test(cleaned)) {
+                toast('Code de partie détecté — entrez votre pseudo !', 'info', 3500);
+                setTimeout(() => $('join-pseudo')?.focus(), 300);
+            }
+        }
+    }
+
+    // Pré-remplir pseudo depuis localStorage
+    if (pseudoEl && !pseudoEl.value) {
+        const last = localStorage.getItem('mgu_last_pseudo');
+        if (last) pseudoEl.value = last;
+    }
+
+    // ── Chargement initial des parties ──────────────
     loadParties();
 
     // Actualisation auto toutes les 5s

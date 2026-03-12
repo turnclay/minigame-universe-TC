@@ -1,18 +1,26 @@
 // ======================================================
-// 🔌 WS-HANDLER.JS v3.1 - DOUBLON FIXÉ
+// 🔌 WS-HANDLER.JS v4.0 — CODE DE PARTIE AJOUTÉ
 // ======================================================
-// Fix :
-//  - HOST_REJOIN : host peut se re-connecter après refresh
-//  - PLAYER_JOIN : broadcastToGame inclut le host
-//  - Logs détaillés pour debug
-//  - broadcastToPlayers séparé de broadcastToGame
-//  - ✅ ANTI-DOUBLONS sur PLAYER_JOIN
-//  - ✅ Utilisation de store.ajouterJoueur()
+// Nouveautés v4.0 :
+//  - MASTER_GENERATE_CODE : génère/récupère le code court de la partie
+//  - PLAYER_JOIN_BY_CODE  : rejoint via code 6 caractères (QR / lien / saisie)
+//  - Auto-génération du code à la création et au rejoin
+// Conservé de v3.1 :
+//  - HOST_AUTH, HOST_REJOIN, HOST_CREATE_GAME, HOST_START_GAME, HOST_END_GAME
+//  - HOST_ADD/REMOVE_POINTS, HOST_KICK_PLAYER, HOST_ACTION
+//  - PLAYER_JOIN (par partieId ou nomPartie)
+//  - PLAYER_ACTION, GET_PARTIES
+//  - Anti-doublons (store.ajouterJoueur)
+//  - broadcastToGame / broadcastToPlayers / broadcastToHost
 // ======================================================
 
 const store = require('./store.js');
 
 const PSEUDO_REGEX = /^[a-zA-Z0-9_-]{2,20}$/;
+
+// ─────────────────────────────────────────────────────
+// HELPERS ENVOI / BROADCAST
+// ─────────────────────────────────────────────────────
 
 function send(ws, type, payload = {}) {
     if (ws && ws.readyState === 1) {
@@ -56,6 +64,10 @@ function broadcastToHost(wss, partieId, type, payload = {}) {
     console.log(`[WS] 📢 broadcast (host only) ${type} → ${count} clients`);
 }
 
+// ─────────────────────────────────────────────────────
+// HELPERS MÉTIER
+// ─────────────────────────────────────────────────────
+
 function assignerEquipe(partie, pseudo) {
     if (partie.mode !== 'team' || !partie.equipes?.length) return null;
     const count = {};
@@ -83,6 +95,8 @@ function trouverPartie(partieId, nomPartie) {
     return null;
 }
 
+// ─────────────────────────────────────────────────────
+// HANDLER PRINCIPAL
 // ─────────────────────────────────────────────────────
 
 function handleMessage(wss, ws, type, payload) {
@@ -112,6 +126,13 @@ function handleMessage(wss, ws, type, payload) {
                 partieId,
                 snapshot: store.snapshotPartie(partieId),
             });
+
+            // ✅ NEW v4.0 : renvoyer le code existant si la partie en a un
+            if (partie.code) {
+                send(ws, 'CODE_GENERATED', { code: partie.code, partieId });
+                console.log(`[WS] 🔑 Code renvoyé au host après rejoin: ${partie.code}`);
+            }
+
             console.log(`[WS] ✅ HOST_REJOIN OK → "${partie.nom}" (${partieId})`);
             break;
         }
@@ -135,7 +156,12 @@ function handleMessage(wss, ws, type, payload) {
                 }
             }
 
-            const partie = store.creerPartie({ nom, jeu, mode, equipes: equipes || [], hostJoue: hostJoue || false, hostPseudo: hostPseudo || null });
+            const partie = store.creerPartie({
+                nom, jeu, mode,
+                equipes: equipes || [],
+                hostJoue: hostJoue || false,
+                hostPseudo: hostPseudo || null,
+            });
             ws._partieId = partie.id;
             store.setHostSocket(partie.id, ws);
 
@@ -143,7 +169,28 @@ function handleMessage(wss, ws, type, payload) {
                 partieId: partie.id,
                 snapshot: store.snapshotPartie(partie.id),
             });
-            console.log(`[WS] ✅ GAME_CREATED "${partie.nom}" → ${partie.id}`);
+
+            // ✅ NEW v4.0 : auto-générer le code dès la création
+            const code = store.genererCode(partie.id);
+            send(ws, 'CODE_GENERATED', { code, partieId: partie.id });
+            console.log(`[WS] ✅ GAME_CREATED "${partie.nom}" → ${partie.id} | code: ${code}`);
+            break;
+        }
+
+        // ── MASTER_GENERATE_CODE ────────────────────────
+        // ✅ NEW v4.0 : le host demande explicitement la génération/récupération du code
+        // Utile si le host veut régénérer ou si CODE_GENERATED a été manqué
+        case 'MASTER_GENERATE_CODE': {
+            if (!ws._isHost) return send(ws, 'ERROR', { code: 'NOT_HOST' });
+
+            const partie = store.getPartie(ws._partieId);
+            if (!partie) return send(ws, 'ERROR', { code: 'NO_ACTIVE_GAME' });
+
+            const code = store.genererCode(partie.id);
+            if (!code) return send(ws, 'ERROR', { code: 'CODE_GENERATION_FAILED' });
+
+            send(ws, 'CODE_GENERATED', { code, partieId: partie.id });
+            console.log(`[WS] ✅ MASTER_GENERATE_CODE → ${code} (${partie.id})`);
             break;
         }
 
@@ -169,6 +216,7 @@ function handleMessage(wss, ws, type, payload) {
 
             const snapshot = store.snapshotPartie(partie.id);
             store.terminerPartie(partie.id);
+            // ✅ Le code est invalidé automatiquement : getPartieByCode filtre statut 'terminee'
             broadcastToGame(wss, partie.id, 'GAME_ENDED', { snapshot });
             ws._partieId = null;
             console.log('[WS] ✅ GAME_ENDED');
@@ -224,8 +272,44 @@ function handleMessage(wss, ws, type, payload) {
             break;
         }
 
+        // ── PLAYER_JOIN_BY_CODE ────────────────────────
+        // ✅ NEW v4.0 : rejoint via code court 6 caractères (QR / lien / saisie manuelle)
+        // Résout le code → partieId, puis délègue à la logique PLAYER_JOIN existante
+        case 'PLAYER_JOIN_BY_CODE': {
+            const { code, pseudo } = payload;
+
+            console.log(`[WS] 🔹 PLAYER_JOIN_BY_CODE: code=${code} pseudo=${pseudo}`);
+
+            // Validation du pseudo
+            if (!pseudo || !PSEUDO_REGEX.test(pseudo)) {
+                return send(ws, 'JOIN_ERROR', { code: 'PSEUDO_INVALID' });
+            }
+
+            // Validation du format du code
+            if (!code || typeof code !== 'string' || !/^[A-Z0-9]{6}$/i.test(code.trim())) {
+                return send(ws, 'JOIN_ERROR', { code: 'CODE_INVALID' });
+            }
+
+            // Résolution du code → partie
+            const partieViaCode = store.getPartieByCode(code.trim());
+            if (!partieViaCode) {
+                console.log(`[WS] ❌ Code invalide ou expiré: ${code}`);
+                return send(ws, 'JOIN_ERROR', { code: 'CODE_INVALID' });
+            }
+
+            console.log(`[WS] 🔑 Code "${code}" résolu → partie "${partieViaCode.nom}" (${partieViaCode.id})`);
+
+            // Délégation à PLAYER_JOIN avec le partieId résolu
+            handleMessage(wss, ws, 'PLAYER_JOIN', {
+                pseudo,
+                partieId: partieViaCode.id,
+                nomPartie: null,
+            });
+            break;
+        }
+
         // ── PLAYER_JOIN ────────────────────────────────
-        // 🔥 SECTION CORRIGÉE - ANTI-DOUBLONS
+        // Rejoint par partieId ou nomPartie (flow original conservé intact)
         case 'PLAYER_JOIN': {
             const { pseudo, partieId, nomPartie } = payload;
 
@@ -253,7 +337,7 @@ function handleMessage(wss, ws, type, payload) {
                 return send(ws, 'JOIN_ERROR', { code: 'GAME_STARTED' });
             }
 
-            // ✅ Vérifier les pseudos en cas insensible
+            // ✅ Vérifier le pseudo (insensible à la casse)
             if (partie.joueurs.some(j => j.pseudo.toLowerCase() === pseudo.toLowerCase())) {
                 console.log(`[WS] ❌ Pseudo déjà pris: ${pseudo}`);
                 return send(ws, 'JOIN_ERROR', { code: 'PSEUDO_TAKEN' });
@@ -272,7 +356,7 @@ function handleMessage(wss, ws, type, payload) {
             // ✅ Créer l'objet joueur
             const joueur = { pseudo, equipe, score: 0, statut: 'connected' };
 
-            // ✅ Utiliser store.ajouterJoueur() (avec protection anti-doublons)
+            // ✅ Ajouter via store (protection anti-doublons intégrée)
             const result = store.ajouterJoueur(partie.id, joueur);
             if (!result) {
                 console.warn(`[WS] ⚠️ Impossible d'ajouter le joueur (peut-être déjà présent)`);
@@ -295,7 +379,7 @@ function handleMessage(wss, ws, type, payload) {
             });
             console.log(`[WS] ✅ Joueur confirmé: ${pseudo}`);
 
-            // ✅ Notifier TOUT LE MONDE (host inclus) - UNE SEULE FOIS
+            // ✅ Notifier TOUT LE MONDE (host inclus) — UNE SEULE FOIS
             const joueursActuels = store.getJoueurs(partie.id);
             console.log(`[WS] 📢 Broadcast PLAYER_JOINED à tous - ${joueursActuels.length} joueurs total`);
             console.log(`[WS]    Joueurs: [${joueursActuels.map(j => j.pseudo).join(', ')}]`);
@@ -309,7 +393,7 @@ function handleMessage(wss, ws, type, payload) {
             break;
         }
 
-        // ── PLAYER_ACTION ────────────────���─────────────
+        // ── PLAYER_ACTION ──────────────────────────────
         case 'PLAYER_ACTION': {
             if (!ws._partieId) return send(ws, 'ERROR', { code: 'NO_ACTIVE_GAME' });
             const partie = store.getPartie(ws._partieId);
@@ -339,6 +423,8 @@ function handleMessage(wss, ws, type, payload) {
     }
 }
 
+// ─────────────────────────────────────────────────────
+// SETUP WEBSOCKET
 // ─────────────────────────────────────────────────────
 
 function setupWebSocket(wss) {

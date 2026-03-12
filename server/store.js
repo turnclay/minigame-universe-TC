@@ -12,6 +12,61 @@ class Store {
         this.joueurTracker = new Map(); // { partieId → Set<pseudo> } - anti-doublons
     }
 
+    // ─────────────────────────────────────────────────────
+    // 🔑 CODES DE PARTIE
+    // ─────────────────────────────────────────────────────
+
+    /**
+     * Génère et associe un code court unique à une partie.
+     * Format : 6 caractères alphanumériques majuscules (ex: "AB3X7K")
+     * Collision retry jusqu'à 10 tentatives, très improbable en pratique.
+     */
+    genererCode(partieId) {
+        const partie = this.getPartie(partieId);
+        if (!partie) return null;
+
+        // Si un code existe déjà, le réutiliser
+        if (partie.code) return partie.code;
+
+        const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Pas I/O/0/1 pour lisibilité
+        let code, attempts = 0;
+        do {
+            code = Array.from({ length: 6 }, () =>
+                CHARS[Math.floor(Math.random() * CHARS.length)]
+            ).join('');
+            attempts++;
+        } while (this._codeExiste(code) && attempts < 10);
+
+        partie.code = code;
+        console.log(`[STORE] 🔑 Code généré: ${code} → ${partieId}`);
+        return code;
+    }
+
+    /** Vérifie qu'un code n'est pas déjà utilisé par une partie active */
+    _codeExiste(code) {
+        return Array.from(this.parties.values()).some(
+            p => p.code === code && p.statut !== 'terminee' && p.statut !== 'ended'
+        );
+    }
+
+    /**
+     * Retrouve une partie active par son code court (insensible à la casse).
+     * Retourne null si inexistante ou terminée.
+     */
+    getPartieByCode(code) {
+        if (!code) return null;
+        const upper = code.toUpperCase().trim();
+        return Array.from(this.parties.values()).find(
+            p => p.code === upper &&
+                 p.statut !== 'terminee' &&
+                 p.statut !== 'ended'
+        ) || null;
+    }
+
+    // ─────────────────────────────────────────────────────
+    // 🧩 PARTIES & JOUEURS
+    // ─────────────────────────────────────────────────────
+
     /**
      * Crée une nouvelle partie
      */

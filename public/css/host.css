@@ -1,5 +1,6 @@
 /* ======================================================
    host.css — Interface Host uniquement
+   v4.0 : Ajout des styles pour le code court de partie
    ====================================================== */
 
 .host-body {
@@ -229,6 +230,104 @@
 }
 .qr-placeholder-icon { font-size: 2rem; }
 
+/* ══════════════════════════════════════════════════════
+   ✅ NEW v4.0 — BLOC CODE COURT
+   Affiché dans le join-block, entre le lien et le QR
+   ══════════════════════════════════════════════════════ */
+
+.join-code-block {
+    background: rgba(0, 212, 255, 0.07);
+    border: 1px solid rgba(0, 212, 255, 0.25);
+    border-radius: var(--radius-sm, 8px);
+    padding: 0.85rem 1rem;
+    text-align: center;
+    animation: fadeCodeIn 0.4s ease;
+}
+
+@keyframes fadeCodeIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.join-code-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-text-mute, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0 0 0.4rem;
+    display: block;
+}
+
+/* Ligne code + bouton copie */
+.join-code-value-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    margin-bottom: 0.35rem;
+}
+
+/* Le code lui-même — grand, lisible, Orbitron */
+.join-code-value {
+    font-size: 2rem;
+    font-weight: 900;
+    font-family: var(--font-display, 'Orbitron', monospace);
+    letter-spacing: 0.3em;
+    color: #00d4ff;
+    line-height: 1;
+    /* Léger glow pour mettre en valeur */
+    text-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+}
+
+/* Bouton copier le code */
+.btn-copy-code {
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.25);
+    border-radius: var(--radius-sm, 6px);
+    color: var(--c-accent, #00d4ff);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0.25rem 0.5rem;
+    line-height: 1;
+    transition: all 0.15s;
+    flex-shrink: 0;
+}
+.btn-copy-code:hover {
+    background: rgba(0, 212, 255, 0.2);
+    transform: scale(1.05);
+}
+
+/* Hint sous le code */
+.join-code-hint {
+    font-size: 0.72rem;
+    color: var(--c-text-mute, #64748b);
+    margin: 0;
+}
+.join-code-hint strong {
+    color: var(--c-text, #e2e8f0);
+}
+
+/* ── Mini-affichage code dans l'écran spectateur ── */
+.sp-code-mini {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    margin-bottom: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.sp-code-mini .join-code-label {
+    font-size: 0.7rem;
+    margin: 0;
+}
+
+.sp-code-mini .join-code-value {
+    font-size: 1.5rem;
+    letter-spacing: 0.2em;
+}
+
 /* ── Game sections ── */
 .game-section { display: flex; flex-direction: column; gap: 0.6rem; }
 .section-header { display: flex; align-items: center; gap: 0.5rem; }
@@ -344,175 +443,204 @@
 ════════════════════════════════════════════ */
 
 .host-spectateur-root {
-  min-height: 100vh;
-  background: var(--c-bg, #0d0d1a);
-  display: flex;
-  flex-direction: column;
-  font-family: 'Exo 2', sans-serif;
+    min-height: 100vh;
+    background: var(--c-bg, #0d0d1a);
+    display: flex;
+    flex-direction: column;
+    font-family: 'Exo 2', sans-serif;
 }
 
 /* ── Header spectateur ── */
 .sp-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: .75rem 1.5rem;
-  background: rgba(255,255,255,.03);
-  border-bottom: 1px solid rgba(255,255,255,.07);
-  gap: 1rem;
-  flex-wrap: wrap;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .75rem 1.5rem;
+    background: rgba(255,255,255,.03);
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
 .sp-header-left {
-  display: flex;
-  align-items: center;
-  gap: .75rem;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
 }
 
 .sp-title-block {
-  display: flex;
-  align-items: center;
-  gap: .75rem;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
 }
 
 .sp-title {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 1.1rem;
-  color: #00d4ff;
-  margin: 0;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.1rem;
+    color: #00d4ff;
+    margin: 0;
 }
 
 .sp-header-right { display: flex; align-items: center; }
 
 .sp-info-chips {
-  display: flex;
-  gap: .5rem;
-  flex-wrap: wrap;
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
 }
 
 .sp-chip {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: rgba(0,212,255,.07);
-  border: 1px solid rgba(0,212,255,.2);
-  border-radius: 8px;
-  padding: .3rem .7rem;
-  min-width: 70px;
-  text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(0,212,255,.07);
+    border: 1px solid rgba(0,212,255,.2);
+    border-radius: 8px;
+    padding: .3rem .7rem;
+    min-width: 70px;
+    text-align: center;
 }
 
 .sp-chip-label {
-  font-size: .6rem;
-  color: rgba(255,255,255,.45);
-  text-transform: uppercase;
-  letter-spacing: .05em;
+    font-size: .6rem;
+    color: rgba(255,255,255,.45);
+    text-transform: uppercase;
+    letter-spacing: .05em;
 }
 
 .sp-chip strong {
-  font-size: .85rem;
-  color: #fff;
-  font-family: 'Orbitron', sans-serif;
+    font-size: .85rem;
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
 }
 
 /* ── Layout spectateur 3 colonnes ── */
 .sp-layout {
-  display: grid;
-  grid-template-columns: 240px 1fr 260px;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
-  flex: 1;
-  overflow: auto;
+    display: grid;
+    grid-template-columns: 240px 1fr 260px;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    flex: 1;
+    overflow: auto;
 }
 
 @media (max-width: 900px) {
-  .sp-layout {
-    grid-template-columns: 1fr;
-  }
+    .sp-layout {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* ── Panels ── */
 .sp-panel {
-  background: rgba(255,255,255,.03);
-  border: 1px solid rgba(255,255,255,.07);
-  border-radius: 12px;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: .75rem;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
 }
 
 .sp-panel-header { border-bottom: 1px solid rgba(255,255,255,.07); padding-bottom: .5rem; }
 
 .sp-panel-title {
-  font-size: .9rem;
-  font-family: 'Orbitron', sans-serif;
-  color: rgba(255,255,255,.7);
-  margin: 0;
+    font-size: .9rem;
+    font-family: 'Orbitron', sans-serif;
+    color: rgba(255,255,255,.7);
+    margin: 0;
 }
 
 /* ── Scores spectateur (plus grands) ── */
 .sp-scores-liste .score-row {
-  padding: .6rem .5rem;
+    padding: .6rem .5rem;
 }
 
 .sp-scores-liste .score-pts {
-  font-size: 1.3rem;
-  font-family: 'Orbitron', sans-serif;
-  color: #00d4ff;
-  min-width: 70px;
-  text-align: right;
+    font-size: 1.3rem;
+    font-family: 'Orbitron', sans-serif;
+    color: #00d4ff;
+    min-width: 70px;
+    text-align: right;
 }
 
 .sp-scores-liste .score-nom {
-  font-size: 1rem;
+    font-size: 1rem;
 }
 
 /* ── QR spectateur ── */
 .sp-qr {
-  align-self: center;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  margin-bottom: .5rem;
+    align-self: center;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: .5rem;
 }
 
 .sp-qr .qr-img {
-  width: 160px;
-  height: 160px;
-  border-radius: 8px;
+    width: 160px;
+    height: 160px;
+    border-radius: 8px;
+}
+
+/* ✅ NEW v4.0 : mini-bloc code dans le panel spectateur */
+.sp-code-mini {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(0, 212, 255, 0.07);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    border-radius: 8px;
+    width: 100%;
+    text-align: center;
+}
+
+.sp-code-mini .join-code-label {
+    font-size: 0.65rem;
+    margin: 0;
+    display: inline;
+}
+
+.sp-code-mini .join-code-value {
+    font-size: 1.4rem;
+    letter-spacing: 0.22em;
+    text-shadow: 0 0 14px rgba(0, 212, 255, 0.35);
 }
 
 /* ── Actions spectateur ── */
 .sp-actions {
-  display: flex;
-  flex-direction: column;
-  gap: .5rem;
-  margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    margin-top: auto;
 }
 
 /* ── Résultats finaux ── */
 .resultats-finaux {
-  background: rgba(0,212,255,.05);
-  border: 1px solid rgba(0,212,255,.2);
-  border-radius: 12px;
-  padding: 1.25rem;
-  margin-top: 1rem;
+    background: rgba(0,212,255,.05);
+    border: 1px solid rgba(0,212,255,.2);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-top: 1rem;
 }
 
 .resultats-titre {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 1rem;
-  color: #00d4ff;
-  margin: 0 0 .75rem;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    color: #00d4ff;
+    margin: 0 0 .75rem;
 }
 
 .resultat-row {
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-  padding: .4rem 0;
-  border-bottom: 1px solid rgba(255,255,255,.05);
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .4rem 0;
+    border-bottom: 1px solid rgba(255,255,255,.05);
 }
 
 .resultat-row:last-child { border-bottom: none; }

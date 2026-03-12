@@ -1,17 +1,16 @@
 // ======================================================
-// 🟦 HOST.JS v3.3 - FINAL FIX - DOUBLONS ÉLIMINÉS
+// 🟦 HOST.JS v4.0 — CODE DE PARTIE AJOUTÉ
 // ======================================================
-// Fix :
-//  - HOST_REJOIN après refresh page (socket reconnu côté serveur)
-//  - PLAYER_JOINED reçu correctement → affichage live des joueurs
-//  - Si hostJoue → bouton "Rejoindre comme joueur" → écran joueur du jeu
-//  - Fin de partie → reset complet → formulaire création
-//  - Nouvelle partie possible sans refresh
-//  - ✅ Statut 'lobby' défini à la création
-//  - ✅ UI mise à jour au premier joueur
-//  - ✅ Bouton START avec feedback visuel
-//  - ✅ SYNCHRONISATION LOBBY FIXÉE
-//  - ✅ ANTI-DOUBLONS PLAYER_JOINED
+// Nouveautés v4.0 :
+//  - socket.on('CODE_GENERATED') : reçoit et affiche le code court
+//  - renderCode() : affiche code + QR + lien sur base du code
+//  - renderGamePanel() : génère le lien avec le code (?code=XXXXXX)
+//  - HostState.code : stocke le code en mémoire
+// Conservé de v3.3 :
+//  - HOST_REJOIN après refresh page
+//  - PLAYER_JOINED live avec anti-doublons
+//  - Écran spectateur, scores, résultats
+//  - Reset complet pour nouvelle partie
 // ======================================================
 
 import { GameSocket } from './core/socket.js';
@@ -43,6 +42,7 @@ const HostState = {
     equipes: [], joueurs: [], scores: {}, statut: null,
     hostJoue: false, hostPseudo: null,
     partieEnCours: false, isConnecting: false,
+    code: null,               // ✅ NEW v4.0 : code court de la partie
     joueursTraites: new Set(), // 🔥 ANTI-DOUBLONS
 };
 
@@ -87,6 +87,7 @@ function initSocket() {
             renderGamePanel();
         }
         toast(`Partie "${HostState.partieNom}" récupérée`, 'info', 2500);
+        // Le code sera renvoyé par CODE_GENERATED depuis le serveur
     });
 
     socket.on('GAME_CREATED', ({ partieId, snapshot }) => {
@@ -95,7 +96,7 @@ function initSocket() {
         HostState.partieEnCours = true;
         HostState.isConnecting = false;
         HostState.statut = 'lobby';
-        HostState.joueursTraites.clear(); // 🔥 Reset anti-doublons
+        HostState.joueursTraites.clear();
         applySnapshot(snapshot);
         sauvegarderPartieLocale(snapshot);
 
@@ -109,7 +110,19 @@ function initSocket() {
             renderGamePanel();
         });
 
-        toast(`Partie "${HostState.partieNom}" créée ! Partagez le lien.`, 'success', 4000);
+        toast(`Partie "${HostState.partieNom}" créée ! Partagez le code.`, 'success', 4000);
+        // Le code arrivera juste après via CODE_GENERATED
+    });
+
+    // ✅ NEW v4.0 : réception du code court
+    socket.on('CODE_GENERATED', ({ code, partieId }) => {
+        console.log('[HOST] 🔑 Code reçu:', code, 'pour partie:', partieId);
+
+        // Vérifier que c'est bien notre partie
+        if (partieId && partieId !== HostState.partieId) return;
+
+        HostState.code = code;
+        renderCode(code);
     });
 
     // ── JOUEUR REJOINT - AVEC ANTI-DOUBLONS CÔTÉ CLIENT ──
@@ -119,35 +132,25 @@ function initSocket() {
         // 🔥 VÉRIFIER LES DOUBLONS CÔTÉ CLIENT
         if (HostState.joueursTraites.has(pseudo)) {
             console.warn('[HOST] ⚠️ DOUBLON IGNORÉ (déjà traité):', pseudo);
-            return; // Ignorer les doublons
+            return;
         }
 
-        // Marquer comme traité
         HostState.joueursTraites.add(pseudo);
         console.log('[HOST] ✅ Joueur marqué comme traité:', pseudo);
-
-        console.log('[HOST] Avant update - HostState.joueurs:', HostState.joueurs.length);
 
         // Mise à jour STRICTE de l'état avec la liste complète du serveur
         HostState.joueurs = Array.isArray(joueurs) ? [...joueurs] : [];
 
-        console.log('[HOST] Après update - HostState.joueurs:', HostState.joueurs.length);
-        console.log('[HOST] Liste complète:', HostState.joueurs.map(j => j.pseudo).join(', '));
-
         // Vérifier que le panel-game est visible
         const panelGame = $('panel-game');
         if (panelGame && panelGame.hidden) {
-            console.warn('[HOST] panel-game est caché, affichage...');
             show('panel-game');
         }
 
-        // Re-render COMPLET et FORCÉ
         requestAnimationFrame(() => {
-            console.log('[HOST] 🎨 Rendu lancé');
             renderGamePanel();
             renderJoueursConnectes();
             renderScores();
-            console.log('[HOST] 🎨 Rendu complété');
         });
 
         toast(`🎉 ${pseudo} a rejoint ! (${joueurs.length})`, 'success', 2500);
@@ -155,10 +158,7 @@ function initSocket() {
 
     socket.on('PLAYER_LEFT', ({ pseudo, joueurs }) => {
         console.log('[HOST] PLAYER_LEFT:', pseudo);
-
-        // 🔥 Retirer du tracker quand le joueur part
         HostState.joueursTraites.delete(pseudo);
-
         HostState.joueurs = Array.isArray(joueurs) ? [...joueurs] : [];
 
         requestAnimationFrame(() => {
@@ -194,6 +194,7 @@ function initSocket() {
         HostState.statut = 'terminee';
         HostState.partieEnCours = false;
         HostState.joueursTraites.clear();
+        HostState.code = null;
         _setStatutBadgeSp('terminee');
         hide('sp-btn-end');
         show('sp-btn-nouvelle');
@@ -388,12 +389,24 @@ function initControles() {
 
     $('h-btn-nouvelle')?.addEventListener('click', resetPourNouvellePartie);
 
+    // ✅ Copie le lien avec code
     $('h-btn-copy')?.addEventListener('click', () => {
         const link = $('h-join-link');
         if (!link?.href || link.href === '#') return;
         navigator.clipboard.writeText(link.href)
             .then(() => toast('Lien copié ! 📋', 'success', 1500))
             .catch(() => toast('Impossible de copier.', 'error'));
+    });
+
+    // ✅ NEW v4.0 : copie du code seul
+    document.addEventListener('click', e => {
+        if (e.target.id === 'h-btn-copy-code') {
+            const codeEl = $('h-code-value');
+            if (!codeEl) return;
+            navigator.clipboard.writeText(codeEl.textContent.trim())
+                .then(() => toast('Code copié ! 🔑', 'success', 1500))
+                .catch(() => toast('Impossible de copier.', 'error'));
+        }
     });
 
     $('btn-go-home')?.addEventListener('click', () => { window.location.href = '/'; });
@@ -434,7 +447,8 @@ function resetPourNouvellePartie() {
     Object.assign(HostState, {
         partieId: null, partieNom: null, jeu: null,
         equipes: [], joueurs: [], scores: {}, statut: null,
-        partieEnCours: false, hostJoue: false, hostPseudo: null, isConnecting: false,
+        partieEnCours: false, hostJoue: false, hostPseudo: null,
+        isConnecting: false, code: null,
     });
     HostState.joueursTraites.clear();
 
@@ -453,6 +467,10 @@ function resetPourNouvellePartie() {
 
     $('sp-btn-join-game')?.remove();
 
+    // ✅ Nettoyer l'affichage du code
+    const codeEl = $('h-code-court');
+    if (codeEl) codeEl.remove();
+
     renderEquipesForm();
 
     hide('host-spectateur');
@@ -466,13 +484,84 @@ function resetPourNouvellePartie() {
 }
 
 // ══════════════════════════════════════════════════════
+// ✅ NEW v4.0 — AFFICHAGE DU CODE COURT
+// ══════════════════════════════════════════════════════
+
+/**
+ * Affiche le code court, le QR et le lien partageable dans le panel-game.
+ * Met également à jour l'écran spectateur.
+ * @param {string} code - Le code 6 caractères
+ */
+function renderCode(code) {
+    if (!code || !HostState.partieId) return;
+
+    // Construire l'URL avec le code (les joueurs arrivent directement sur /join/?code=XXXXXX)
+    const joinUrl = `${location.origin}/join/?code=${code}`;
+
+    // ── Mettre à jour le lien dans join-block ───────────────
+    const linkEl = $('h-join-link');
+    if (linkEl) {
+        linkEl.href = joinUrl;
+        linkEl.textContent = joinUrl;
+    }
+
+    // ── Bloc code court — créé dynamiquement s'il n'existe pas ──
+    let codeEl = $('h-code-court');
+    if (!codeEl) {
+        codeEl = document.createElement('div');
+        codeEl.id = 'h-code-court';
+        codeEl.className = 'join-code-block';
+        // Insérer dans join-block, avant le QR container
+        const joinBlock = document.querySelector('.join-block');
+        const qrEl = $('h-qr');
+        if (joinBlock && qrEl) {
+            joinBlock.insertBefore(codeEl, qrEl);
+        } else if (joinBlock) {
+            joinBlock.appendChild(codeEl);
+        }
+    }
+
+    codeEl.innerHTML = `
+        <p class="join-code-label">📱 Code de la partie</p>
+        <div class="join-code-value-row">
+            <span class="join-code-value" id="h-code-value">${esc(code)}</span>
+            <button class="btn-copy-code" id="h-btn-copy-code" title="Copier le code">📋</button>
+        </div>
+        <p class="join-code-hint">Les joueurs tapent ce code sur la page <strong>Rejoindre</strong></p>`;
+
+    // ── QR code lobby ────────────────────────────────────────
+    _renderQR(joinUrl, 'h-qr');
+
+    // ── Écran spectateur : code + QR ────────────────────────
+    const spQr = $('sp-qr');
+    if (spQr) {
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(joinUrl)}&bgcolor=0d0d1a&color=00d4ff&margin=2`;
+        spQr.innerHTML = `
+            <div class="sp-code-mini">
+                <span class="join-code-label">Code :</span>
+                <strong class="join-code-value">${esc(code)}</strong>
+            </div>
+            <img src="${qrUrl}" alt="QR Code" width="150" height="150"
+                 style="border-radius:8px;display:block;margin-top:.5rem;"
+                 onerror="this.style.display='none'">`;
+    }
+
+    // ── Lien spectateur ──────────────────────────────────────
+    const spLink = $('sp-join-link');
+    if (spLink) { spLink.href = joinUrl; spLink.textContent = joinUrl; }
+}
+
+// ══════════════════════════════════════════════════════
 // PANEL LOBBY
 // ══════════════════════════════════════════════════════
 
 function renderGamePanel() {
     console.log('[RENDER] renderGamePanel - Joueurs:', HostState.joueurs.length);
 
-    const joinUrl = `${location.origin}/join/?partieId=${HostState.partieId}`;
+    // ✅ v4.0 : URL de base — sera enrichie par renderCode() si code disponible
+    const joinUrl = HostState.code
+        ? `${location.origin}/join/?code=${HostState.code}`
+        : `${location.origin}/join/?partieId=${HostState.partieId}`;
 
     const nomEl = $('h-info-nom');
     if (nomEl) nomEl.textContent = HostState.partieNom || '—';
@@ -491,7 +580,13 @@ function renderGamePanel() {
         linkEl.textContent = joinUrl;
     }
 
+    // Rendu du QR avec le bon lien
     _renderQR(joinUrl, 'h-qr');
+
+    // ✅ v4.0 : si le code est déjà connu, l'afficher immédiatement
+    if (HostState.code) {
+        renderCode(HostState.code);
+    }
 
     if (HostState.mode === 'team') {
         hide('bloc-joueurs-connectes');
@@ -516,7 +611,7 @@ function renderJoueursConnectes() {
         container.innerHTML = `<div style="text-align:center;padding:1.5rem;opacity:.5;">
             <div style="font-size:1.5rem;margin-bottom:.3rem;">👀</div>
             <p>En attente de joueurs…</p>
-            <p style="font-size:.8rem;margin-top:.25rem;">Partagez le lien ou le QR code</p>
+            <p style="font-size:.8rem;margin-top:.25rem;">Partagez le code ou le QR</p>
         </div>`;
         return;
     }
@@ -587,8 +682,10 @@ function afficherEcranSpectateur(snapshot) {
     hide('host-lobby');
     show('host-spectateur');
 
-    const joinUrl = `${location.origin}/join/?partieId=${HostState.partieId}`;
-    _renderQR(joinUrl, 'sp-qr');
+    // ✅ v4.0 : utiliser le lien avec code si disponible
+    const joinUrl = HostState.code
+        ? `${location.origin}/join/?code=${HostState.code}`
+        : `${location.origin}/join/?partieId=${HostState.partieId}`;
 
     if ($('sp-nom'))  $('sp-nom').textContent  = HostState.partieNom || '—';
     if ($('sp-jeu'))  $('sp-jeu').textContent  = (HostState.jeu || '—').toUpperCase();
@@ -597,6 +694,13 @@ function afficherEcranSpectateur(snapshot) {
 
     const spLink = $('sp-join-link');
     if (spLink) { spLink.href = joinUrl; spLink.textContent = joinUrl; }
+
+    // Afficher code + QR dans spectateur
+    if (HostState.code) {
+        renderCode(HostState.code);
+    } else {
+        _renderQR(joinUrl, 'sp-qr');
+    }
 
     if (HostState.hostJoue && HostState.hostPseudo) {
         const spActions = document.querySelector('.sp-actions');
@@ -692,7 +796,7 @@ function _setStatutBadgeSp(s) {
 function updateWsStatus(connected) {
     const dot   = $('ws-dot');
     const label = $('ws-label');
-    if (dot)   dot.style.background  = connected ? '#22c55e' : '#ef4444';
+    if (dot)   dot.style.background = connected ? '#22c55e' : '#ef4444';
     if (label) label.textContent = connected ? 'Connecté' : 'Déconnecté';
 }
 

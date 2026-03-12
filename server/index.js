@@ -1,6 +1,10 @@
 // ======================================================
 // 🟢 SERVEUR — MiniGame Universe v4.1
 // ======================================================
+// Nouveautés v4.1 :
+//  - Route GET /api/parties/code/:code — résout un code court → partie
+//    ⚠️  Déclarée AVANT /api/parties/:id pour éviter le conflit de routing
+// ======================================================
 
 require('dotenv').config();
 
@@ -97,6 +101,40 @@ app.get('/api/parties/by-name/:nom', (req, res) => {
     } catch { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
+// ✅ NEW v4.1 — Route par code court
+// ⚠️  DOIT être déclarée AVANT /api/parties/:id
+//     sinon Express interprète "code" comme un :id
+app.get('/api/parties/code/:code', (req, res) => {
+    try {
+        const code = req.params.code.toUpperCase().trim();
+
+        // Validation du format : exactement 6 caractères alphanumériques
+        if (!/^[A-Z0-9]{6}$/.test(code)) {
+            return res.status(400).json({ error: 'Format de code invalide (6 caractères alphanumériques attendus).' });
+        }
+
+        const p = store.getPartieByCode(code);
+        if (!p) {
+            return res.status(404).json({ error: 'Code invalide ou expiré. Vérifiez le code ou demandez à votre host.' });
+        }
+
+        res.json({
+            id:         p.id,
+            nom:        p.nom,
+            jeu:        p.jeu,
+            mode:       p.mode,
+            statut:     p.statut,
+            maxJoueurs: p.maxJoueurs || 8,
+            joueurs:    (p.joueurs || []).map(j => ({ pseudo: j.pseudo })),
+            equipes:    (p.equipes || []).map(e => ({ nom: e.nom })),
+        });
+    } catch (err) {
+        console.error('[API] /api/parties/code/:code:', err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Route par ID — après /code/:code pour éviter tout conflit
 app.get('/api/parties/:id', (req, res) => {
     try {
         const p = store.getPartie(req.params.id);
