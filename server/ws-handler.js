@@ -37,6 +37,19 @@
 
 const store = require('./store.js');
 
+// ── Modules de jeux ───────────────────────────────────
+// Chaque jeu expose handleHostAction() et handlePlayerAction()
+// Ils sont appelés depuis HOST_ACTION / PLAYER_ACTION quand
+// l'action commence par le préfixe du jeu (ex: "quiz:*")
+const quizHandler = require('./games/quiz.js');
+
+const JEU_HANDLERS = {
+    quiz: quizHandler,
+    // justeprix: require('./games/justeprix.js'),
+    // undercover: require('./games/undercover.js'),
+    // etc.
+};
+
 const PSEUDO_REGEX = /^[a-zA-Z0-9_-]{2,20}$/;
 
 // Délai de grâce (ms) après JOIN_OK pendant lequel ws.on('close') est ignoré.
@@ -215,6 +228,11 @@ function handleMessage(wss, ws, type, payload) {
             if (!partie) return send(ws, 'ERROR', { code: 'NO_ACTIVE_GAME' });
 
             const snapshot = store.snapshotPartie(partie.id);
+            // Nettoyer la session de jeu si elle existe
+            const jeuHandlerEnd = JEU_HANDLERS[partie.jeu];
+            if (jeuHandlerEnd?.detruireSession) {
+                jeuHandlerEnd.detruireSession(partie.id);
+            }
             store.terminerPartie(partie.id);
             broadcastToGame(wss, partie.id, 'GAME_ENDED', { snapshot });
             ws._partieId = null;
@@ -270,7 +288,18 @@ function handleMessage(wss, ws, type, payload) {
             if (!partie) return send(ws, 'ERROR', { code: 'NO_ACTIVE_GAME' });
             const { action, data } = payload;
             if (!action) return send(ws, 'ERROR', { code: 'MISSING_FIELDS' });
-            broadcastToPlayers(wss, partie.id, 'HOST_ACTION', { action, data: data || {} });
+
+            // Routing vers le module jeu si l'action contient un préfixe "jeu:*"
+            const jeuPrefixe = (action || '').split(':')[0];
+            const jeuHandler = JEU_HANDLERS[jeuPrefixe] || JEU_HANDLERS[partie.jeu];
+            if (jeuHandler && action.includes(':')) {
+                jeuHandler.handleHostAction(wss, ws, partie.id, action, data || {}, {
+                    broadcastToGame, broadcastToPlayers, broadcastToHost, send,
+                });
+            } else {
+                // Fallback : relayer aux joueurs (comportement générique)
+                broadcastToPlayers(wss, partie.id, 'HOST_ACTION', { action, data: data || {} });
+            }
             break;
         }
 
@@ -402,9 +431,20 @@ function handleMessage(wss, ws, type, payload) {
             const partie = store.getPartie(ws._partieId);
             if (!partie) return send(ws, 'ERROR', { code: 'NO_ACTIVE_GAME' });
             const { action, data } = payload;
-            broadcastToHost(wss, ws._partieId, 'PLAYER_ACTION', {
-                pseudo: ws._pseudo, equipe: ws._equipe, action, data: data || {},
-            });
+
+            // Routing vers le module jeu si l'action contient un préfixe "jeu:*"
+            const jeuPrefixePl = (action || '').split(':')[0];
+            const jeuHandlerPl = JEU_HANDLERS[jeuPrefixePl] || JEU_HANDLERS[partie.jeu];
+            if (jeuHandlerPl && action.includes(':')) {
+                jeuHandlerPl.handlePlayerAction(wss, ws, partie.id, ws._pseudo, action, data || {}, {
+                    broadcastToGame, broadcastToPlayers, broadcastToHost, send,
+                });
+            } else {
+                // Fallback : relayer au host (comportement générique)
+                broadcastToHost(wss, ws._partieId, 'PLAYER_ACTION', {
+                    pseudo: ws._pseudo, equipe: ws._equipe, action, data: data || {},
+                });
+            }
             break;
         }
 
