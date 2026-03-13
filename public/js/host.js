@@ -69,26 +69,43 @@ function initSocket() {
         tryRejoin();
     });
 
-    socket.on('HOST_REJOINED', ({ partieId, snapshot }) => {
-        console.log('[HOST] Rejoint la partie existante:', partieId);
-        HostState.partieId = partieId;
-        HostState.partieEnCours = true;
-        HostState.statut = snapshot.statut || 'lobby';
-        HostState.joueursTraites.clear();
-        applySnapshot(snapshot);
+socket.on('HOST_REJOINED', ({ partieId, snapshot }) => {
+    console.log('[HOST] Rejoint la partie existante:', partieId);
 
-        if (snapshot.statut === 'en_cours') {
-            hide('form-creation');
-            hide('panel-game');
-            afficherEcranSpectateur(snapshot);
-        } else {
-            hide('form-creation');
-            show('panel-game');
-            renderGamePanel();
-        }
-        toast(`Partie "${HostState.partieNom}" récupérée`, 'info', 2500);
-        // Le code sera renvoyé par CODE_GENERATED depuis le serveur
-    });
+    // --- Réhydratation complète du HostState ---
+    HostState.partieId = partieId;
+    HostState.partieEnCours = true;
+    HostState.statut = snapshot.statut || 'lobby';
+    HostState.partieNom = snapshot.nom;
+    HostState.jeu = snapshot.jeu;
+    HostState.mode = snapshot.mode;
+    HostState.equipes = snapshot.equipes || [];
+    HostState.joueurs = snapshot.joueurs || [];
+    HostState.scores = snapshot.scores || {};
+    HostState.joueursTraites.clear();
+
+    // --- Appliquer le snapshot à l’UI ---
+    applySnapshot(snapshot);
+
+    // --- Sauvegarder la session host pour les refresh suivants ---
+    sauvegarderSessionHost(snapshot);
+
+    // --- Sauvegarder dans l’historique local (écran "Continuer") ---
+    sauvegarderPartieLocale(snapshot);
+
+    // --- Affichage selon l’état de la partie ---
+    if (snapshot.statut === 'en_cours') {
+        hide('form-creation');
+        hide('panel-game');
+        afficherEcranSpectateur(snapshot);
+    } else {
+        hide('form-creation');
+        show('panel-game');
+        renderGamePanel();
+    }
+
+    toast(`Partie "${HostState.partieNom}" récupérée`, 'info', 2500);
+});
 
     socket.on('GAME_CREATED', ({ partieId, snapshot }) => {
         console.log('[HOST] GAME_CREATED:', partieId);
