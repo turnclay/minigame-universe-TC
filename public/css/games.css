@@ -1774,3 +1774,49 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
+/* ══════════════════════════════════════════════════════
+   QUIZ — ajouts v4.0
+   Timer joueur · Indice info · Barème
+   ══════════════════════════════════════════════════════ */
+
+/* Timer affiché au-dessus du champ de réponse du joueur */
+.quiz-timer {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--c-accent);
+    letter-spacing: 0.05em;
+    text-align: center;
+    padding: 0.35rem 0;
+    transition: color 0.3s;
+}
+
+.quiz-timer.timer-warning {
+    color: var(--c-warning);
+}
+
+.quiz-timer.timer-danger {
+    color: var(--c-danger);
+    animation: timerPulse 0.8s ease infinite alternate;
+}
+
+@keyframes timerPulse {
+    from { opacity: 1; }
+    to   { opacity: 0.55; }
+}
+
+/* Petit label "(N indice(s))" dans les lignes de correction */
+.corr-indice {
+    font-size: 0.75rem;
+    color: var(--c-warning);
+    opacity: 0.8;
+    font-style: italic;
+    margin-left: 0.25rem;
+}
+
+/* Info indices dans le feedback joueur */
+.corr-indice-info {
+    font-size: 0.82rem;
+    color: var(--c-text-mute);
+    margin-left: 0.4rem;
+}
