@@ -1,50 +1,85 @@
 // ======================================================
-// 🧠 QUIZ.JS — Module serveur (ESM) pour le jeu de quiz
+// 🧠 server/games/quiz.js
+// Module serveur ESM — Logique complète du jeu Quiz
+// ======================================================
+//
+// RÔLE :
+//   Ce module gère toute la logique serveur du Quiz.
+//   Il est appelé exclusivement depuis ws-handler.js.
+//
+// PATTERN :
+//   export function handleHostAction(wss, ws, partieId, action, data, helpers)
+//   export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, helpers)
+//
+// SESSIONS :
+//   Chaque partie possède une session en mémoire (Map `sessions`).
+//   La session est créée au premier quiz:next_question et détruite à la fin.
+//
+// CORRECTION :
+//   - Type "qcm"   : comparaison stricte insensible à la casse
+//   - Type "texte" : comparaison normalisée (casse + accents + espaces)
+//
+// MESSAGES ÉMIS :
+//   → QUIZ_READY          : session initialisée (host uniquement)
+//   → QUIZ_QUESTION       : nouvelle question (tous)
+//   → QUIZ_INDICE         : indice révélé (tous)
+//   → QUIZ_CORRECTION     : correction affichée (tous)
+//   → QUIZ_END            : quiz terminé (tous)
+//   → SCORES_UPDATE       : mise à jour des scores (tous)
+//   → QUIZ_ANSWER_ACK     : accusé de réception de la réponse (joueur uniquement)
+//   → QUIZ_RESPONSE_IN    : notification d'une réponse reçue (host uniquement)
 // ======================================================
 
-import fs from 'fs';
+import fs   from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// Pour reconstruire __dirname en ESM
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname  = path.dirname(__filename);
 
 // ─────────────────────────────────────────────────────
-// Chargement des questions
+// CHARGEMENT DES QUESTIONS
 // ─────────────────────────────────────────────────────
 
-let QUESTIONS = [];
+let QUESTIONS       = [];
 let QUESTIONS_TOTAL = 0;
+let _questionsLoaded = false;
 
 function chargerQuestions() {
-    if (QUESTIONS.length) return;
+    if (_questionsLoaded) return;
+    _questionsLoaded = true;
 
     try {
+        // data/questions.json est à la racine du projet (2 niveaux au-dessus de server/games/)
         const filePath = path.join(__dirname, '..', '..', 'data', 'questions.json');
-        const raw = fs.readFileSync(filePath, 'utf8');
+        const raw  = fs.readFileSync(filePath, 'utf8');
         const data = JSON.parse(raw);
 
-        if (Array.isArray(data)) {
-            QUESTIONS = data;
-        } else if (Array.isArray(data.questions)) {
-            QUESTIONS = data.questions;
-        } else {
-            console.error('[QUIZ] ❌ Format questions.json invalide');
-            QUESTIONS = [];
-        }
+        QUESTIONS = Array.isArray(data)
+            ? data
+            : Array.isArray(data.questions)
+                ? data.questions
+                : [];
 
         QUESTIONS_TOTAL = QUESTIONS.length;
         console.log(`[QUIZ] ✅ ${QUESTIONS_TOTAL} questions chargées`);
     } catch (err) {
-        console.error('[QUIZ] ❌ Erreur chargement questions.json:', err);
+        console.error('[QUIZ] ❌ Erreur chargement questions.json:', err.message);
         QUESTIONS = [];
-        QUESTIONS_TOTAL = 0;
     }
 }
 
 // ─────────────────────────────────────────────────────
-// Sessions en mémoire
+// SESSIONS EN MÉMOIRE
+// Structure d'une session :
+// {
+//   questions : Array   — liste mélangée des questions
+//   idx       : number  — index de la question actuelle (-1 = avant le début)
+//   etat      : string  — 'idle' | 'question' | 'correction' | 'ended'
+//   reponses  : Map<pseudo, { texte, correct }>
+//   scores    : Object<pseudo, number>
+//   startedAt : number  — timestamp de début
+// }
 // ─────────────────────────────────────────────────────
 
 const sessions = new Map();
@@ -55,101 +90,149 @@ function getSession(partieId) {
 
 function createSession(partieId) {
     chargerQuestions();
+
+    // Mélange de Fisher-Yates pour ne pas toujours poser les mêmes questions
+    const shuffled = [...QUESTIONS].sort(() => Math.random() - 0.5);
+
     const sess = {
-        questions: QUESTIONS,
-        idx: -1,
-        etat: 'idle',
-        reponses: new Map(),
-        scores: {},
+        questions : shuffled,
+        idx       : -1,
+        etat      : 'idle',
+        reponses  : new Map(),
+        scores    : {},
+        startedAt : Date.now(),
     };
+
     sessions.set(partieId, sess);
+    console.log(`[QUIZ] 🆕 Session créée: ${partieId} (${shuffled.length} questions)`);
     return sess;
 }
 
 export function detruireSession(partieId) {
-    sessions.delete(partieId);
-    console.log(`[QUIZ] 🧹 Session détruite pour partie ${partieId}`);
+    if (sessions.has(partieId)) {
+        sessions.delete(partieId);
+        console.log(`[QUIZ] 🧹 Session détruite: ${partieId}`);
+    }
 }
 
 // ─────────────────────────────────────────────────────
-// Helpers internes
+// HELPERS INTERNES
 // ─────────────────────────────────────────────────────
 
-function construirePayloadQuestion(sess) {
+/**
+ * Normalise une chaîne pour la comparaison :
+ * minuscules + suppression des accents + trim des espaces
+ */
+function normaliser(str) {
+    return String(str || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+}
+
+/**
+ * Construit le payload à envoyer lors d'une nouvelle question.
+ * Ne contient PAS la réponse — celle-ci reste côté serveur.
+ */
+function payloadQuestion(sess) {
     const q = sess.questions[sess.idx];
     if (!q) return null;
 
     return {
-        idx: sess.idx,
-        total: sess.questions.length,
-        theme: q.theme || q.categorie || null,
-        question: q.question || q.texte || '',
-        type: q.type === 'qcm' ? 'qcm' : 'texte',
-        choix: Array.isArray(q.choix) ? q.choix : null,
-        indice1: q.indice1 || null,
-        indice2: q.indice2 || null,
-        points: typeof q.points === 'number' ? q.points : 1,
+        idx      : sess.idx,
+        total    : sess.questions.length,
+        theme    : q.theme || q.categorie || null,
+        question : q.question || q.texte || '',
+        type     : q.type === 'qcm' ? 'qcm' : 'texte',
+        choix    : Array.isArray(q.choix) ? q.choix : null,
+        indice1  : q.indice1 || null,
+        indice2  : q.indice2 || null,
+        points   : typeof q.points === 'number' ? q.points : 1,
     };
 }
 
-function construirePayloadCorrection(sess) {
+/**
+ * Construit le payload de correction (inclut la bonne réponse et les réponses des joueurs).
+ */
+function payloadCorrection(sess) {
     const q = sess.questions[sess.idx];
     if (!q) return null;
 
-    const bonne = q.reponse || q.bonneReponse || '';
-    const points = typeof q.points === 'number' ? q.points : 1;
+    const bonneReponse = q.reponse || q.bonneReponse || '';
+    const points       = typeof q.points === 'number' ? q.points : 1;
 
     const reponses = Array.from(sess.reponses.entries()).map(([pseudo, r]) => ({
         pseudo,
-        texte: r.texte,
+        texte  : r.texte,
         correct: r.correct,
     }));
 
     return {
-        idx: sess.idx,
-        total: sess.questions.length,
-        theme: q.theme || q.categorie || null,
-        question: q.question || q.texte || '',
-        reponse: bonne,
-        type: q.type === 'qcm' ? 'qcm' : 'texte',
+        idx      : sess.idx,
+        total    : sess.questions.length,
+        theme    : q.theme || q.categorie || null,
+        question : q.question || q.texte || '',
+        reponse  : bonneReponse,
+        type     : q.type === 'qcm' ? 'qcm' : 'texte',
         points,
         reponses,
     };
 }
 
+/**
+ * Corrige toutes les réponses de la question courante
+ * et met à jour sess.scores.
+ */
 function corrigerReponses(sess) {
-    const q = sess.questions[sess.idx];
-    const bonne = String(q.reponse || q.bonneReponse || '').trim().toLowerCase();
+    const q      = sess.questions[sess.idx];
+    const bonne  = normaliser(q.reponse || q.bonneReponse || '');
     const points = typeof q.points === 'number' ? q.points : 1;
 
     sess.reponses.forEach((r, pseudo) => {
-        const texteNorm = String(r.texte || '').trim().toLowerCase();
-        const correct = texteNorm === bonne;
-        r.correct = correct;
+        const soumise = normaliser(r.texte);
+        r.correct = (soumise === bonne);
 
-        if (correct) {
+        if (r.correct) {
             sess.scores[pseudo] = (sess.scores[pseudo] || 0) + points;
         }
     });
 }
 
+/**
+ * Compte le nombre de joueurs attendus dans la partie.
+ * Utilisé pour la notification "allAnswered".
+ */
+function nbJoueursAttendu(wss, partieId) {
+    let count = 0;
+    wss.clients.forEach(c => {
+        if (c.readyState === 1 && !c._isHost && c._partieId === partieId) count++;
+    });
+    return count;
+}
+
 // ─────────────────────────────────────────────────────
-// HOST_ACTION
+// HOST ACTIONS
+// Actions déclenchées par le host via HOST_ACTION
 // ─────────────────────────────────────────────────────
 
 export function handleHostAction(wss, ws, partieId, action, data, helpers) {
     const { broadcastToGame, broadcastToHost, send } = helpers;
 
-    let sess = getSession(partieId);
-
     switch (action) {
 
+        // ────────────────────────────────────────────
+        // quiz:next_question
+        // Lance la prochaine question (ou initialise la session si première question)
+        // ────────────────────────────────────────────
         case 'quiz:next_question': {
+            let sess = getSession(partieId);
+
             if (!sess) {
                 sess = createSession(partieId);
                 broadcastToHost(wss, partieId, 'QUIZ_READY', {
-                    total: sess.questions.length,
-                    message: 'Quiz prêt.',
+                    total  : sess.questions.length,
+                    message: `Quiz prêt — ${sess.questions.length} questions.`,
                 });
             }
 
@@ -157,95 +240,155 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             sess.reponses.clear();
             sess.etat = 'question';
 
+            // Fin du quiz : toutes les questions ont été posées
             if (sess.idx >= sess.questions.length) {
                 broadcastToGame(wss, partieId, 'QUIZ_END', {
                     scores: sess.scores,
-                    total: sess.questions.length,
+                    total : sess.idx, // nb questions réellement posées
                 });
                 sess.etat = 'ended';
+                console.log(`[QUIZ] 🏁 Quiz terminé: ${partieId}`);
                 return;
             }
 
-            const payload = construirePayloadQuestion(sess);
+            const payload = payloadQuestion(sess);
             broadcastToGame(wss, partieId, 'QUIZ_QUESTION', payload);
+            console.log(`[QUIZ] ❓ Question ${sess.idx + 1}/${sess.questions.length}: ${partieId}`);
             break;
         }
 
+        // ────────────────────────────────────────────
+        // quiz:reveal
+        // Révèle la bonne réponse et attribue les points
+        // ────────────────────────────────────────────
         case 'quiz:reveal': {
-            if (!sess || sess.etat !== 'question') return;
+            const sess = getSession(partieId);
+            if (!sess || sess.etat !== 'question') {
+                return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE', message: 'Aucune question active.' });
+            }
 
             corrigerReponses(sess);
-            const payload = construirePayloadCorrection(sess);
+            const payload = payloadCorrection(sess);
             sess.etat = 'correction';
 
             broadcastToGame(wss, partieId, 'QUIZ_CORRECTION', payload);
             broadcastToGame(wss, partieId, 'SCORES_UPDATE', { scores: sess.scores });
+            console.log(`[QUIZ] ✅ Réponse révélée Q${sess.idx + 1}: ${partieId}`);
             break;
         }
 
+        // ────────────────────────────────────────────
+        // quiz:skip
+        // Passe la question sans attribuer de points
+        // ────────────────────────────────────────────
         case 'quiz:skip': {
-            if (!sess || sess.etat !== 'question') return;
+            const sess = getSession(partieId);
+            if (!sess || sess.etat !== 'question') {
+                return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE', message: 'Aucune question active.' });
+            }
 
-            const payload = construirePayloadCorrection(sess);
+            // On corrige quand même pour afficher les réponses,
+            // mais sans mise à jour des scores
+            const q      = sess.questions[sess.idx];
+            const bonne  = normaliser(q.reponse || q.bonneReponse || '');
+            sess.reponses.forEach(r => {
+                r.correct = normaliser(r.texte) === bonne;
+            });
+
+            const payload = payloadCorrection(sess);
             sess.etat = 'correction';
 
             broadcastToGame(wss, partieId, 'QUIZ_CORRECTION', payload);
+            // Pas de SCORES_UPDATE car les scores n'ont pas changé
+            console.log(`[QUIZ] ⏭ Question passée Q${sess.idx + 1}: ${partieId}`);
             break;
         }
 
+        // ────────────────────────────────────────────
+        // quiz:reveal_indice
+        // Révèle l'indice 1 ou 2 de la question courante
+        // ────────────────────────────────────────────
         case 'quiz:reveal_indice': {
+            const sess = getSession(partieId);
             if (!sess || sess.etat !== 'question') return;
 
-            const num = Number(data.num);
-            const q = sess.questions[sess.idx];
-            const cle = num === 1 ? 'indice1' : 'indice2';
-            const texte = q[cle];
+            const num  = Number(data.num);
+            if (num !== 1 && num !== 2) return;
 
-            if (texte) {
-                broadcastToGame(wss, partieId, 'QUIZ_INDICE', { num, texte });
+            const q     = sess.questions[sess.idx];
+            const texte = q[`indice${num}`];
+
+            if (!texte) {
+                return send(ws, 'ERROR', {
+                    code   : 'QUIZ_NO_INDICE',
+                    message: `Pas d'indice ${num} pour cette question.`,
+                });
             }
+
+            broadcastToGame(wss, partieId, 'QUIZ_INDICE', { num, texte });
+            console.log(`[QUIZ] 💡 Indice ${num} révélé Q${sess.idx + 1}: ${partieId}`);
             break;
         }
+
+        default:
+            console.warn(`[QUIZ] ⚠️ Action host inconnue: "${action}"`);
     }
 }
 
 // ─────────────────────────────────────────────────────
-// PLAYER_ACTION
+// PLAYER ACTIONS
+// Actions déclenchées par les joueurs via PLAYER_ACTION
 // ─────────────────────────────────────────────────────
 
 export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, helpers) {
     const { send, broadcastToHost } = helpers;
 
-    const sess = getSession(partieId);
-    if (!sess || sess.etat !== 'question') {
-        send(ws, 'QUIZ_ANSWER_ACK', { status: 'too_late' });
-        return;
-    }
-
     switch (action) {
+
+        // ────────────────────────────────────────────
+        // quiz:answer
+        // Le joueur envoie sa réponse à la question courante
+        // ────────────────────────────────────────────
         case 'quiz:answer': {
-            const texte = String(data.texte || '').trim();
-            if (!texte) {
-                send(ws, 'QUIZ_ANSWER_ACK', { status: 'invalid' });
-                return;
+            const sess = getSession(partieId);
+
+            // Vérifications de garde
+            if (!sess || sess.etat !== 'question') {
+                return send(ws, 'QUIZ_ANSWER_ACK', { status: 'too_late' });
             }
 
             if (sess.reponses.has(pseudo)) {
-                send(ws, 'QUIZ_ANSWER_ACK', { status: 'already_answered' });
-                return;
+                return send(ws, 'QUIZ_ANSWER_ACK', { status: 'already_answered' });
             }
 
+            const texte = String(data.texte || '').trim();
+            if (!texte) {
+                return send(ws, 'QUIZ_ANSWER_ACK', { status: 'invalid' });
+            }
+
+            // Enregistrement de la réponse (correct sera déterminé lors du reveal)
             sess.reponses.set(pseudo, { texte, correct: false });
+
+            // Accusé de réception au joueur
             send(ws, 'QUIZ_ANSWER_ACK', { status: 'ok', texte });
+
+            // Notification au host
+            const nbJoueurs   = nbJoueursAttendu(wss, partieId);
+            const nbReponses  = sess.reponses.size;
+            const allAnswered = nbJoueurs > 0 && nbReponses >= nbJoueurs;
 
             broadcastToHost(wss, partieId, 'QUIZ_RESPONSE_IN', {
                 pseudo,
-                nbReponses: sess.reponses.size,
-                nbJoueurs: null,
-                allAnswered: false,
+                nbReponses,
+                nbJoueurs,
+                allAnswered,
             });
 
+            console.log(`[QUIZ] 📝 Réponse de ${pseudo} (${nbReponses}/${nbJoueurs}): ${partieId}`);
             break;
         }
+
+        default:
+            console.warn(`[QUIZ] ⚠️ Action joueur inconnue: "${action}" (${pseudo})`);
     }
 }
