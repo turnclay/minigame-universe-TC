@@ -1,49 +1,37 @@
-// /public/js/main.js
+// /public/js/main.js  — v4.1
 // ======================================================
 // 🏠 MAIN — Navigation MiniGame Universe
 // ======================================================
-// Changements v4.0 (gestion des parties locales) :
+// Corrections v4.1 :
 //
-//   MODULE parties-store.js intégré
+//   BUG CORRIGÉ — Bouton "Reprendre" → mauvaise destination
 //   ─────────────────────────────────────────────────────
-//   Toutes les lectures / écritures de mgu_parties passent
-//   maintenant par les fonctions de parties-store.js.
-//   Avantages :
-//     - Structure canonique garantie
-//     - Nettoyage automatique au chargement
-//     - Tri intelligent (en_cours → lobby → terminée)
-//     - Suppression par partieId (plus d'index fragile)
-//     - Reprise fiable avec vérification serveur
+//   Avant : href="/host/?resume=..."
+//   Le host reprend sa partie via /host/, mais un joueur
+//   qui clique depuis "Mes parties" doit aller sur /join/
+//   pour choisir son pseudo et rejoindre la bonne partie.
+//   → Lien corrigé : href="/join/?resume=..."
 //
-//   RECHERCHE PAR NOM dans renderPartiesContinuer()
+//   AMÉLIORATION — Suppression par partieId (stable)
 //   ─────────────────────────────────────────────────────
-//   Un champ de recherche local filtre la liste sans
-//   quitter la page. searchLocalParties() fait la
-//   comparaison insensible à la casse.
+//   Avant : suppression par index numérique fragile
+//   (l'index change si la liste est réordonnée)
+//   → Suppression par partieId, stable quel que soit l'ordre.
 //
-//   NETTOYAGE AUTO au démarrage
+//   AMÉLIORATION — Badges de statut complets
 //   ─────────────────────────────────────────────────────
-//   cleanupLocalParties() est appelé dans init() pour
-//   purger les entrées expirées / dupliquées dès l'ouverture.
+//   Ajout du badge "Lobby" pour les parties en attente,
+//   en plus de "En cours" et "Terminée".
 //
-//   REPRISE ROBUSTE via resumeFromLocal()
+//   AMÉLIORATION — Nettoyage auto au chargement
 //   ─────────────────────────────────────────────────────
-//   Le bouton ▶ Reprendre appelle resumeFromLocal() qui
-//   vérifie le serveur avant de rediriger. Si la partie
-//   est introuvable ou terminée, un message d'erreur clair
-//   est affiché et l'entrée locale est mise à jour.
+//   cleanupLocalParties() retirera automatiquement les
+//   entrées expirées ou dupliquées au démarrage.
+//
+//   TOUT LE RESTE EST INCHANGÉ (navigation, jeux, menu…)
 // ======================================================
 
-import {
-    getLocalParties,
-    searchLocalParties,
-    cleanupLocalParties,
-    deleteLocalPartie,
-    resumeFromLocal,
-    getSortedLocalParties,
-} from './core/parties-store.js';
-
-// ── Imports optionnels — ne bloquent pas si les fichiers n'existent pas ──
+// ── Imports optionnels ────────────────────────────────
 let afficherStatistiques   = null;
 let afficherGestionJoueurs = null;
 let afficherGestionEquipes = null;
@@ -60,7 +48,7 @@ Promise.allSettled([
         .catch(() => {}),
 ]);
 
-// ── Méta-données des jeux ─────────────────────────────
+// ── Méta-données des 10 jeux ─────────────────────────────
 const JEUX = [
     {
         id: 'quiz',       nom: 'Quiz',           icon: '❓',
@@ -96,7 +84,7 @@ const JEUX = [
         id: 'pendu',      nom: 'Le Pendu',        icon: '🪢',
         desc: 'Devinez le mot lettre par lettre',
         joueurs: '2-8',  duree: '10-20 min',
-        regles: "Trouvez le mot caché en proposant des lettres. Chaque lettre fausse rapproche le pendu. Trouvez avant d'épuiser vos tentatives.",
+        regles: "Trouvez le mot caché en proposant des lettres. Chaque lettre fausse rapproche le pendu.",
     },
     {
         id: 'petitbac',   nom: 'Petit Bac',       icon: '📝',
@@ -108,19 +96,19 @@ const JEUX = [
         id: 'memoire',    nom: 'Mémoire Flash',   icon: '🧠',
         desc: 'Mémorisez des séquences de plus en plus longues',
         joueurs: '1-6',  duree: '10-30 min',
-        regles: "Une séquence de symboles est affichée brièvement. Reproduisez-la fidèlement. Chaque round la séquence s'allonge.",
+        regles: "Une séquence de symboles est affichée brièvement. Reproduisez-la fidèlement.",
     },
     {
         id: 'morpion',    nom: 'Morpion',         icon: '⭕',
         desc: 'Alignez 3 symboles en ligne, colonne ou diagonale',
         joueurs: '2',    duree: '5-10 min',
-        regles: 'Placez vos symboles (X ou O) à tour de rôle sur la grille 3×3. Alignez 3 symboles identiques en premier pour gagner.',
+        regles: 'Placez vos symboles (X ou O) à tour de rôle sur la grille 3×3. Alignez 3 identiques en premier pour gagner.',
     },
     {
         id: 'puissance4', nom: 'Puissance 4',     icon: '🔴',
         desc: 'Alignez 4 jetons avant votre adversaire',
         joueurs: '2',    duree: '10-15 min',
-        regles: 'Faites tomber vos jetons dans les colonnes. Alignez 4 jetons de votre couleur pour gagner.',
+        regles: 'Faites tomber vos jetons dans les colonnes. Alignez 4 de votre couleur pour gagner.',
     },
 ];
 
@@ -130,10 +118,8 @@ const $$ = sel => document.querySelector(sel);
 
 function esc(s) {
     return String(s || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 // ── État global ───────────────────────────────────────────
@@ -152,11 +138,201 @@ let elMenuOverlay  = null;
 let elMenuPanel    = null;
 let elBtnCloseMenu = null;
 
-// ─────────────────────────────────────────────────────
-// ÉTAT LOCAL : recherche dans les parties
-// ─────────────────────────────────────────────────────
-let _partiesSearchQuery = '';
-let _partiesResuming    = new Set(); // partieId en cours de vérification
+// ══════════════════════════════════════════════════════
+// GESTION LOCALE DES PARTIES
+// ══════════════════════════════════════════════════════
+
+const LS_KEY      = 'mgu_parties';
+const TTL_LOBBY   =  24 * 60 * 60 * 1000; //  1 jour
+const TTL_COURS   =   7 * 24 * 60 * 60 * 1000; //  7 jours
+const TTL_TERMINE =   2 * 24 * 60 * 60 * 1000; //  2 jours
+const MAX_PARTIES = 50;
+
+/**
+ * Lit le tableau brut depuis localStorage.
+ * @returns {object[]}
+ */
+function _lireParties() {
+    try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * Écrit le tableau dans localStorage.
+ * @param {object[]} parties
+ */
+function _ecrireParties(parties) {
+    try {
+        localStorage.setItem(LS_KEY, JSON.stringify(parties));
+    } catch {
+        // localStorage plein — on essaie après un nettoyage agressif
+        try {
+            const reduit = parties.slice(-20);
+            localStorage.setItem(LS_KEY, JSON.stringify(reduit));
+        } catch {}
+    }
+}
+
+/**
+ * Sauvegarde ou met à jour une entrée locale depuis un snapshot serveur.
+ * Normalise les champs pour que main.js et host.js écrivent la même structure.
+ *
+ * @param {object} snapshot  - snapshot brut du serveur (id ou partieId, nom, jeu…)
+ * @param {object} [extra]   - champs supplémentaires (code, lastSeen…)
+ */
+function saveLocalPartie(snapshot, extra = {}) {
+    if (!snapshot) return;
+    const partieId = snapshot.id || snapshot.partieId;
+    if (!partieId) return;
+
+    const now = Date.now();
+    const entry = {
+        partieId,
+        nom      : snapshot.nom     || '',
+        jeu      : snapshot.jeu     || '',
+        mode     : snapshot.mode    || 'solo',
+        statut   : snapshot.statut  || 'lobby',
+        scores   : snapshot.scores  || {},
+        joueurs  : (snapshot.joueurs || []).map(j => ({
+            pseudo: j.pseudo || j,
+            equipe: j.equipe || null,
+        })),
+        equipes  : snapshot.equipes || [],
+        code     : extra.code    || null,
+        savedAt  : now,
+        lastSeen : extra.lastSeen || now,
+        createdAt: snapshot.createdAt || now,
+    };
+
+    const parties = _lireParties();
+    const idx = parties.findIndex(p => p.partieId === partieId);
+    if (idx >= 0) {
+        parties[idx] = { ...parties[idx], ...entry, createdAt: parties[idx].createdAt || entry.createdAt };
+    } else {
+        parties.push(entry);
+    }
+    _ecrireParties(cleanupLocalParties(parties));
+}
+
+/**
+ * Recherche locale par nom exact (insensible à la casse).
+ * Retourne toutes les correspondances triées par pertinence.
+ *
+ * @param {string} query
+ * @returns {object[]}
+ */
+function searchLocalParties(query) {
+    if (!query || !query.trim()) return [];
+    const q = query.trim().toLowerCase();
+    return _lireParties().filter(p => (p.nom || '').toLowerCase() === q);
+}
+
+/**
+ * Nettoie le tableau de parties :
+ *   – supprime les expirées selon TTL par statut
+ *   – dédoublonne sur partieId
+ *   – limite à MAX_PARTIES entrées
+ *
+ * Peut être appelé avec un tableau en paramètre (interne)
+ * ou sans (lit et écrit localStorage).
+ *
+ * @param {object[]} [arr]  - si fourni, retourne le tableau nettoyé sans I/O
+ * @returns {object[]}
+ */
+function cleanupLocalParties(arr) {
+    const now    = Date.now();
+    const source = arr || _lireParties();
+
+    // 1. Dédoublonner par partieId (garde le plus récent)
+    const map = new Map();
+    for (const p of source) {
+        if (!p.partieId) continue;
+        const existing = map.get(p.partieId);
+        const tsNew = p.lastSeen || p.savedAt || 0;
+        const tsOld = existing ? (existing.lastSeen || existing.savedAt || 0) : -1;
+        if (!existing || tsNew > tsOld) map.set(p.partieId, p);
+    }
+
+    // 2. Filtrer par TTL
+    const filtered = Array.from(map.values()).filter(p => {
+        const age    = now - (p.savedAt || p.createdAt || 0);
+        const statut = p.statut || 'lobby';
+        if (statut === 'terminee' || statut === 'ended')  return age < TTL_TERMINE;
+        if (statut === 'en_cours' || statut === 'started') return age < TTL_COURS;
+        return age < TTL_LOBBY;
+    });
+
+    // 3. Trier : en_cours > lobby > terminée, puis par lastSeen DESC
+    const ORDER = { en_cours: 0, started: 0, lobby: 1, waiting: 1, terminee: 2, ended: 2 };
+    filtered.sort((a, b) => {
+        const sa = ORDER[a.statut] ?? 9;
+        const sb = ORDER[b.statut] ?? 9;
+        if (sa !== sb) return sa - sb;
+        return (b.lastSeen || b.savedAt || 0) - (a.lastSeen || a.savedAt || 0);
+    });
+
+    // 4. Limiter
+    const result = filtered.slice(0, MAX_PARTIES);
+
+    // Si appelé sans argument → écrire dans localStorage
+    if (!arr) _ecrireParties(result);
+
+    return result;
+}
+
+/**
+ * Tente de reprendre une partie depuis une entrée locale.
+ * Vérifie d'abord le serveur, redirige vers /join/?resume= si OK.
+ *
+ * @param {object} partie  - entrée locale (depuis _lireParties)
+ */
+async function resumeFromLocal(partie) {
+    if (!partie?.partieId) return;
+
+    // Vérifier côté serveur
+    try {
+        const res = await fetch(`/api/parties/${partie.partieId}`, {
+            signal: AbortSignal.timeout(4000),
+        });
+        if (!res.ok) {
+            // 404 → partie introuvable → nettoyer local
+            if (res.status === 404) {
+                const parties = _lireParties().map(p =>
+                    p.partieId === partie.partieId ? { ...p, statut: 'terminee' } : p
+                );
+                _ecrireParties(parties);
+                alert('Cette partie n\'existe plus sur le serveur.');
+                renderPartiesContinuer();
+                return;
+            }
+            throw new Error(`HTTP ${res.status}`);
+        }
+        const data   = await res.json();
+        const statut = data.statut || data.partie?.statut;
+        if (statut === 'terminee' || statut === 'ended') {
+            const parties = _lireParties().map(p =>
+                p.partieId === partie.partieId ? { ...p, statut: 'terminee' } : p
+            );
+            _ecrireParties(parties);
+            alert('Cette partie est déjà terminée.');
+            renderPartiesContinuer();
+            return;
+        }
+    } catch (err) {
+        // Pas de réseau → on tente quand même (offline-first)
+        console.warn('[MAIN] Vérification serveur impossible:', err.message);
+    }
+
+    // Rediriger vers /join/ avec le partieId en paramètre resume
+    // → join.js pré-sélectionnera la partie et affichera le champ pseudo
+    window.location.href = `/join/?resume=${encodeURIComponent(partie.partieId)}`;
+}
 
 // ══════════════════════════════════════════════════════
 // NAVIGATION
@@ -221,7 +397,6 @@ function goDetail(jeuId) {
 }
 
 function goParties() {
-    _partiesSearchQuery = '';
     showScreen('parties');
     updateNav('parties');
     renderPartiesContinuer();
@@ -246,13 +421,11 @@ function retourContextuel() {
 
 function renderStatsBar() {
     try {
-        const parties = getLocalParties();
-
+        const parties    = cleanupLocalParties();
         const joueursRaw = localStorage.getItem('mgu_joueurs') ||
                            localStorage.getItem('mgu_players') || '[]';
         const joueurs    = JSON.parse(joueursRaw);
-
-        const totalPts = parties.reduce((sum, p) =>
+        const totalPts   = parties.reduce((sum, p) =>
             sum + Object.values(p.scores || {}).reduce((s, v) => s + (v || 0), 0), 0);
 
         const elP   = $('stat-parties');
@@ -262,9 +435,7 @@ function renderStatsBar() {
         if (elP)   elP.textContent   = parties.length;
         if (elJ)   elJ.textContent   = Array.isArray(joueurs) ? joueurs.length : 0;
         if (elPts) elPts.textContent = totalPts;
-    } catch {
-        // silencieux
-    }
+    } catch {}
 }
 
 // ══════════════════════════════════════════════════════
@@ -335,259 +506,120 @@ function renderDetail(jeu) {
 // PARTIES SAUVEGARDÉES
 // ══════════════════════════════════════════════════════
 
-/**
- * Rend la liste des parties sauvegardées localement.
- *
- * Fonctionnalités :
- *   - Champ de recherche par nom exact (filtre en temps réel)
- *   - Badges de statut colorés
- *   - Tri : en_cours → lobby → terminée, puis par lastSeen DESC
- *   - Reprise robuste : vérification serveur avant redirect
- *   - Suppression par partieId (stable même si liste réordonnée)
- *   - Message d'état si reprise en cours
- */
 function renderPartiesContinuer() {
     const container = $('parties-continuer-list');
     if (!container) return;
 
-    // ── Zone de recherche ──────────────────────────────
-    _renderSearchBar(container);
+    // Nettoyage + tri au moment du rendu
+    const parties = cleanupLocalParties();
 
-    // ── Récupérer les parties ──────────────────────────
-    let parties = getSortedLocalParties();
-
-    // Appliquer le filtre de recherche
-    const q = _partiesSearchQuery.trim().toLowerCase();
-    if (q) {
-        parties = parties.filter(p => (p.nom || '').toLowerCase() === q);
-    }
-
-    // ── Cas liste vide ────────────────────────────────
     if (parties.length === 0) {
-        const listEl = $('parties-list-body') || document.createElement('div');
-        listEl.id = 'parties-list-body';
-        listEl.innerHTML = q
-            ? `<div class="parties-vide">
-                <div class="parties-vide-icon">🔍</div>
-                <p>Aucune partie nommée <strong>"${esc(q)}"</strong> dans l'historique local.</p>
-               </div>`
-            : `<div class="parties-vide">
+        container.innerHTML = `
+            <div class="parties-vide">
                 <div class="parties-vide-icon">📋</div>
                 <p>Aucune partie sauvegardée pour l'instant.</p>
                 <button class="btn-secondary" id="btn-pv-jeux">Lancer une première partie</button>
-               </div>`;
-        // S'assurer que listEl est dans le container
-        if (!$('parties-list-body')) container.appendChild(listEl);
+            </div>`;
         $('btn-pv-jeux')?.addEventListener('click', goJeux);
         return;
     }
 
-    // ── Rendu des cartes ─────────────────────────────
-    const listHTML = parties.slice(0, 20).map(p => _renderPartieCard(p)).join('');
+    container.innerHTML = parties.slice(0, 20).map((p, i) => {
+        const meta    = JEUX.find(j => j.id === p.jeu) || { icon: '🎮', nom: p.jeu || 'Partie' };
+        const date    = _formatDate(p.lastSeen || p.savedAt || p.createdAt);
+        const joueurs = p.joueurs || [];
+        const chips   = joueurs.slice(0, 4)
+            .map(j => `<span class="pc-joueur-chip">${esc(j.pseudo || j)}</span>`).join('');
+        const more    = joueurs.length > 4
+            ? `<span class="pc-joueur-chip pc-joueur-more">+${joueurs.length - 4}</span>`
+            : '';
+        const statutBadge = _statutBadge(p.statut);
 
-    // Injecter dans le corps de liste (après la barre de recherche)
-    let listEl = $('parties-list-body');
-    if (!listEl) {
-        listEl = document.createElement('div');
-        listEl.id = 'parties-list-body';
-        container.appendChild(listEl);
-    }
-    listEl.innerHTML = listHTML;
+        return `
+        <div class="partie-continue-card animate-in" style="animation-delay:${i * 0.05}s">
+            <div class="partie-continue-icon">${meta.icon}</div>
+            <div class="partie-continue-info">
+                <div class="partie-continue-nom">
+                    ${esc(p.nom || meta.nom)} ${statutBadge}
+                </div>
+                <div class="partie-continue-meta">
+                    <span>${esc(meta.nom)}</span>
+                    ${date ? `<span>·</span><span>${date}</span>` : ''}
+                    ${p.mode ? `<span>·</span><span>${p.mode === 'team' ? '🛡️ Équipes' : '👤 Solo'}</span>` : ''}
+                </div>
+                <div class="partie-continue-joueurs">${chips}${more}</div>
+            </div>
+            <div class="partie-continue-actions">
+                <button
+                    class="btn-primary btn-sm btn-reprendre"
+                    data-partie-id="${esc(p.partieId)}"
+                >▶ Rejoindre</button>
+                <button
+                    class="btn-ghost btn-sm btn-del-partie"
+                    data-partie-id="${esc(p.partieId)}"
+                    title="Supprimer de l'historique"
+                >🗑</button>
+            </div>
+        </div>`;
+    }).join('');
 
-    // ── Attacher les handlers ─────────────────────────
-    listEl.querySelectorAll('.btn-reprendre').forEach(btn => {
-        btn.addEventListener('click', () => {
+    // ── Handler "Rejoindre" ───────────────────────────
+    // Redirige vers /join/?resume=<partieId>
+    // join.js se chargera de pré-sélectionner la partie
+    // et de demander le pseudo avant de rejoindre.
+    container.querySelectorAll('.btn-reprendre').forEach(btn => {
+        btn.addEventListener('click', async () => {
             const partieId = btn.dataset.partieId;
             const partie   = parties.find(p => p.partieId === partieId);
-            if (partie) _handleReprendre(btn, partie);
+            if (!partie) return;
+
+            btn.disabled    = true;
+            btn.textContent = '⏳…';
+
+            await resumeFromLocal(partie);
+
+            // Si on revient ici c'est qu'il y avait une erreur
+            btn.disabled    = false;
+            btn.textContent = '▶ Rejoindre';
         });
     });
 
-    listEl.querySelectorAll('.btn-del-partie').forEach(btn => {
+    // ── Handler "Supprimer" ───────────────────────────
+    container.querySelectorAll('.btn-del-partie').forEach(btn => {
         btn.addEventListener('click', () => {
-            const partieId = btn.dataset.partieId;
             if (!confirm("Supprimer cette partie de l'historique local ?")) return;
-            deleteLocalPartie(partieId);
+            const partieId = btn.dataset.partieId;
+            const parties  = _lireParties().filter(p => p.partieId !== partieId);
+            _ecrireParties(parties);
             renderPartiesContinuer();
         });
     });
 }
 
 /**
- * Génère le HTML de la barre de recherche et l'injecte dans container.
- * Ne crée la barre qu'une seule fois.
- */
-function _renderSearchBar(container) {
-    if ($('parties-search-bar')) return; // déjà présente
-
-    const bar = document.createElement('div');
-    bar.id = 'parties-search-bar';
-    bar.style.cssText = 'display:flex;gap:.5rem;margin-bottom:1rem;';
-    bar.innerHTML = `
-        <input
-            id="parties-search-input"
-            type="text"
-            placeholder="Rechercher par nom exact…"
-            autocomplete="off"
-            style="flex:1;padding:.55rem .85rem;border-radius:8px;border:1px solid rgba(255,255,255,.1);
-                   background:rgba(255,255,255,.05);color:inherit;font-size:.9rem;outline:none;"
-            value="${esc(_partiesSearchQuery)}"
-        >
-        <button id="parties-search-btn" class="btn-secondary btn-sm"
-            style="flex-shrink:0;padding:.5rem .9rem;">🔍</button>
-        ${_partiesSearchQuery
-            ? `<button id="parties-search-clear" class="btn-ghost btn-sm"
-                style="flex-shrink:0;padding:.5rem .9rem;">✕</button>`
-            : ''}`;
-
-    container.prepend(bar);
-
-    const input = $('parties-search-input');
-    const doSearch = () => {
-        _partiesSearchQuery = input?.value || '';
-        // Supprimer puis recréer le corps de liste (pas la barre)
-        const old = $('parties-list-body');
-        if (old) old.remove();
-        renderPartiesContinuer();
-    };
-
-    input?.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
-    $('parties-search-btn')?.addEventListener('click', doSearch);
-    $('parties-search-clear')?.addEventListener('click', () => {
-        _partiesSearchQuery = '';
-        renderPartiesContinuer();
-    });
-}
-
-/**
- * Génère le HTML d'une carte de partie.
- */
-function _renderPartieCard(p) {
-    const meta    = JEUX.find(j => j.id === p.jeu) || { icon: '🎮', nom: p.jeu || 'Partie' };
-    const date    = _formatDate(p.lastSeen || p.savedAt || p.createdAt);
-    const joueurs = (p.joueurs || []);
-    const chips   = joueurs.slice(0, 4)
-        .map(j => `<span class="pc-joueur-chip">${esc(j.pseudo || j)}</span>`).join('');
-    const more    = joueurs.length > 4
-        ? `<span class="pc-joueur-chip pc-joueur-more">+${joueurs.length - 4}</span>`
-        : '';
-
-    const statutBadge = _statutBadge(p.statut);
-    const isResuming  = _partiesResuming.has(p.partieId);
-
-    const reprendreLabel = isResuming ? '⏳ Vérification…' : '▶ Reprendre';
-    const reprendreDisabled = isResuming ? 'disabled' : '';
-
-    return `
-    <div class="partie-continue-card animate-in" data-partie-id="${esc(p.partieId)}">
-        <div class="partie-continue-icon">${meta.icon}</div>
-        <div class="partie-continue-info">
-            <div class="partie-continue-nom">
-                ${esc(p.nom || meta.nom)}
-                ${statutBadge}
-            </div>
-            <div class="partie-continue-meta">
-                <span>${meta.nom}</span>
-                ${date ? `<span>·</span><span>${date}</span>` : ''}
-                ${p.mode ? `<span>·</span><span>${p.mode === 'team' ? '🛡️ Équipes' : '👤 Solo'}</span>` : ''}
-                ${p.code ? `<span>·</span><span class="partie-code-badge">🔑 ${esc(p.code)}</span>` : ''}
-            </div>
-            <div class="partie-continue-joueurs">${chips}${more}</div>
-        </div>
-        <div class="partie-continue-actions">
-            <button
-                class="btn-primary btn-sm btn-reprendre"
-                data-partie-id="${esc(p.partieId)}"
-                ${reprendreDisabled}
-            >${reprendreLabel}</button>
-            <button
-                class="btn-ghost btn-sm btn-del-partie"
-                data-partie-id="${esc(p.partieId)}"
-                title="Supprimer de l'historique"
-            >🗑</button>
-        </div>
-    </div>`;
-}
-
-/**
- * Badge HTML coloré selon le statut.
+ * Génère un badge HTML coloré selon le statut.
  */
 function _statutBadge(statut) {
     const map = {
-        en_cours : ['badge-statut badge-en-cours',  'En cours'],
-        started  : ['badge-statut badge-en-cours',  'En cours'],
-        lobby    : ['badge-statut badge-lobby',      'Lobby'],
-        waiting  : ['badge-statut badge-lobby',      'Lobby'],
-        terminee : ['badge-statut badge-terminee',   'Terminée'],
-        ended    : ['badge-statut badge-terminee',   'Terminée'],
+        en_cours  : ['badge-statut badge-en-cours', 'En cours'],
+        started   : ['badge-statut badge-en-cours', 'En cours'],
+        lobby     : ['badge-statut badge-lobby',    'Lobby'],
+        waiting   : ['badge-statut badge-lobby',    'Lobby'],
+        terminee  : ['badge-statut badge-terminee', 'Terminée'],
+        ended     : ['badge-statut badge-terminee', 'Terminée'],
     };
     const [cls, label] = map[statut] || ['badge-statut', statut || '?'];
     return `<span class="${cls}">${label}</span>`;
 }
 
 /**
- * Formate un timestamp en date courte française.
+ * Formate un timestamp en date courte lisible.
  */
 function _formatDate(ts) {
     if (!ts) return '';
     try {
-        return new Date(ts).toLocaleDateString('fr-FR', {
-            day: '2-digit', month: 'short',
-        });
+        return new Date(ts).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
     } catch { return ''; }
-}
-
-/**
- * Gère le clic sur "▶ Reprendre".
- * Affiche un état de chargement, vérifie le serveur, redirige ou affiche une erreur.
- */
-async function _handleReprendre(btn, partie) {
-    if (_partiesResuming.has(partie.partieId)) return;
-
-    _partiesResuming.add(partie.partieId);
-    btn.disabled    = true;
-    btn.textContent = '⏳ Vérification…';
-
-    try {
-        const result = await resumeFromLocal(partie);
-
-        if (result.ok && result.url) {
-            window.location.href = result.url;
-            return; // navigation en cours
-        }
-
-        // Erreur — mettre à jour la carte
-        const msgs = {
-            not_found : '⚠️ Partie introuvable sur le serveur.',
-            ended     : '🏁 Cette partie est déjà terminée.',
-            invalid   : '❌ Données invalides.',
-        };
-        const msg = msgs[result.reason] || `❌ Erreur : ${result.reason}`;
-        _showCardError(partie.partieId, msg);
-        renderPartiesContinuer(); // rafraîchir pour refléter le nouveau statut
-
-    } catch (err) {
-        _showCardError(partie.partieId, '❌ Erreur réseau.');
-    } finally {
-        _partiesResuming.delete(partie.partieId);
-    }
-}
-
-/**
- * Affiche un message d'erreur inline dans la carte.
- */
-function _showCardError(partieId, msg) {
-    const card = document.querySelector(`.partie-continue-card[data-partie-id="${CSS.escape(partieId)}"]`);
-    if (!card) return;
-
-    const existing = card.querySelector('.partie-resume-error');
-    if (existing) existing.remove();
-
-    const el = document.createElement('p');
-    el.className = 'partie-resume-error';
-    el.style.cssText = 'color:#f87171;font-size:.8rem;margin:.4rem 0 0;grid-column:1/-1;';
-    el.textContent = msg;
-    card.appendChild(el);
 }
 
 // ══════════════════════════════════════════════════════
@@ -628,11 +660,9 @@ function toggleMusique() {
 // ══════════════════════════════════════════════════════
 
 function init() {
-    // ── Nettoyage automatique au démarrage ────────────
-    // Supprime les entrées expirées / dupliquées sans bloquer l'UI
-    setTimeout(() => cleanupLocalParties(), 500);
+    // Nettoyage silencieux au démarrage
+    setTimeout(() => cleanupLocalParties(), 300);
 
-    // ── Références DOM ────────────────────────────────
     elBtnRetour    = $('btn-retour-permanent');
     elBtnHome      = $('btn-home-permanent');
     elBtnMenu      = $('btn-menu-permanent');
@@ -650,7 +680,6 @@ function init() {
         parties : $('screen-parties'),
     };
 
-    // ── Top-nav-bar ───────────────────────────────────
     elBtnRetour?.addEventListener('click', retourContextuel);
     elBtnHome?.addEventListener('click', goHome);
     elBtnMenu?.addEventListener('click', ouvrirMenu);
@@ -661,7 +690,6 @@ function init() {
         goHome();
     });
 
-    // ── Menu latéral ──────────────────────────────────
     elBtnCloseMenu?.addEventListener('click', fermerMenu);
     elMenuOverlay?.addEventListener('click', fermerMenu);
     document.addEventListener('keydown', e => { if (e.key === 'Escape') fermerMenu(); });
@@ -670,45 +698,33 @@ function init() {
 
     $('menu-home')?.addEventListener('click', () => {
         fermerMenu();
-        if (typeof afficherStatistiques === 'function') {
-            afficherStatistiques();
-        } else {
-            goHome();
-        }
+        if (typeof afficherStatistiques === 'function') afficherStatistiques();
+        else goHome();
     });
 
     $('menu-parties')?.addEventListener('click', () => { fermerMenu(); goParties(); });
 
     $('menu-joueurs')?.addEventListener('click', () => {
         fermerMenu();
-        if (typeof afficherGestionJoueurs === 'function') {
-            afficherGestionJoueurs();
-        } else {
-            console.warn('[MAIN] menu/joueurs.js non chargé');
-        }
+        if (typeof afficherGestionJoueurs === 'function') afficherGestionJoueurs();
+        else console.warn('[MAIN] menu/joueurs.js non chargé');
     });
 
     $('menu-equipes')?.addEventListener('click', () => {
         fermerMenu();
-        if (typeof afficherGestionEquipes === 'function') {
-            afficherGestionEquipes();
-        } else {
-            console.warn('[MAIN] menu/equipes.js non chargé');
-        }
+        if (typeof afficherGestionEquipes === 'function') afficherGestionEquipes();
+        else console.warn('[MAIN] menu/equipes.js non chargé');
     });
 
-    // ── CTA accueil ───────────────────────────────────
     $('btn-nouvelle-partie')?.addEventListener('click', () => goHost());
     $('btn-continuer')?.addEventListener('click', goParties);
     $('btn-voir-jeux')?.addEventListener('click', goJeux);
     $('btn-parties-nouvelle')?.addEventListener('click', () => goHost());
 
-    // ── Boutons retour internes ───────────────────────
     $('btn-retour-jeux')?.addEventListener('click', goHome);
     $('btn-retour-detail')?.addEventListener('click', goJeux);
     $('btn-retour-parties')?.addEventListener('click', goHome);
 
-    // ── État initial ──────────────────────────────────
     [SCREENS.jeux, SCREENS.detail, SCREENS.parties].forEach(el => {
         if (el) el.hidden = true;
     });
@@ -718,10 +734,10 @@ function init() {
 }
 
 // ── Exposition pour les modules externes ──────────────────
+window.saveLocalPartie        = saveLocalPartie;
 window.renderPartiesContinuer = renderPartiesContinuer;
 window.addEventListener('mgu:afficher-parties', () => goParties());
 
-// ── Point d'entrée ────────────────────────────────────────
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else {
