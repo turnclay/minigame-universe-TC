@@ -568,11 +568,15 @@ const HostSession = {
             socket.on('PLAYER_JOINED', ({ pseudo, joueurs }) => {
                 console.log(`[HOST] 👤 Joueur rejoint: ${pseudo} (${joueurs.length} total)`);
                 this._afficherCompteurJoueurs(joueurs.length);
+                // Ajouter le joueur dans GameState + DOM hôte
+                HostSession._syncJoueurRejoint(pseudo);
             });
 
             socket.on('PLAYER_LEFT', ({ pseudo, joueurs }) => {
                 console.log(`[HOST] 👤 Joueur parti: ${pseudo}`);
                 this._afficherCompteurJoueurs(joueurs.length);
+                // Retirer le joueur de GameState + DOM hôte
+                HostSession._syncJoueurParti(pseudo);
             });
 
             socket.on('SCORES_UPDATE', ({ scores }) => {
@@ -638,6 +642,59 @@ const HostSession = {
         console.log('[HOST] 📤 HOST_END_GAME');
     },
 
+    // ── Synchroniser un joueur WS dans GameState + DOM hôte ────
+    // Ajoute le pseudo dans la liste des joueurs sélectionnés,
+    // exactement comme si l'hôte l'avait ajouté manuellement.
+    _syncJoueurRejoint(pseudo) {
+        if (!pseudo) return;
+
+        // 1. Ajouter dans GameState si absent
+        if (!GameState.joueurs.includes(pseudo)) {
+            GameState.joueurs.push(pseudo);
+            GameState.scores[pseudo] = GameState.scores[pseudo] ?? 0;
+        }
+
+        // 2. Mettre à jour le DOM #joueurs-selectionnes-container
+        const container = document.getElementById('joueurs-selectionnes-container');
+        if (!container) return;
+
+        // Éviter les doublons dans le DOM
+        if (container.querySelector(`[data-joueur="${CSS.escape(pseudo)}"]`)) return;
+
+        const div = document.createElement('div');
+        div.className = 'joueur-tag';
+        div.dataset.joueurWs = pseudo; // marqueur : ajouté par WS
+        div.innerHTML = `
+            <span class="nom">${_escHtml(pseudo)}</span>
+            <span class="remove" data-joueur="${_escHtml(pseudo)}">✖</span>`;
+
+        // Bouton ✖ : expulser via WS + retirer du DOM
+        div.querySelector('.remove').addEventListener('click', () => {
+            if (HostSession._partieId) {
+                socket.send('HOST_KICK_PLAYER', { pseudo });
+            }
+            HostSession._syncJoueurParti(pseudo);
+        });
+
+        container.appendChild(div);
+        console.log(`[HOST] ✅ Joueur affiché dans le lobby: ${pseudo}`);
+    },
+
+    _syncJoueurParti(pseudo) {
+        if (!pseudo) return;
+
+        // 1. Retirer de GameState
+        GameState.joueurs = (GameState.joueurs || []).filter(j => j !== pseudo);
+        delete GameState.scores[pseudo];
+
+        // 2. Retirer du DOM
+        const container = document.getElementById('joueurs-selectionnes-container');
+        if (!container) return;
+        const tag = container.querySelector(`[data-joueur="${CSS.escape(pseudo)}"]`);
+        tag?.closest('.joueur-tag')?.remove();
+        console.log(`[HOST] ✅ Joueur retiré du lobby: ${pseudo}`);
+    },
+
     // ── Afficher le lien / QR de rejointe ─────────────────────
     // Cherche #ws-join-info dans le DOM ; ne fait rien s'il est absent.
     _afficherLienJoin(joinUrl, code) {
@@ -664,6 +721,11 @@ const HostSession = {
         el.textContent = `${count} joueur${count > 1 ? 's' : ''} connecté${count > 1 ? 's' : ''}`;
     },
 };
+
+// Helper escapeHtml pour _syncJoueurRejoint
+function _escHtml(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
 // Exposer pour les modules hote (quiz_hote.js, etc.)
 window.HostSession = HostSession;

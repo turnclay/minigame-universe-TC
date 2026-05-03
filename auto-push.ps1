@@ -1,3 +1,4 @@
+#Cmd : powershell -ExecutionPolicy Bypass -File .\auto-push.ps1
 # --- CONFIGURATION ---
 $projectPath = "C:\Users\clayt\PycharmProjects\MiniGameV2"   # 🔥 Dossier de ta V2
 $renderServiceId = "srv-d6kv2u5m5p6s7389veag"                # 🔥 ID de ton service Render (V3 à remplacer)
