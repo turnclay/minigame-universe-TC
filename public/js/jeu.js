@@ -1101,7 +1101,7 @@ function _jeuIcon(jeu) {
 JeuRegistry.register('quiz', QuizModule);
 
 // ─────────────────────────────────────────────────────
-// POINT D'ENTRÉE — JeuApp
+// POINT D'ENTRÉE — JeuApp (version adaptée à jeu.html)
 // ─────────────────────────────────────────────────────
 
 const JeuApp = {
@@ -1110,23 +1110,13 @@ const JeuApp = {
     init() {
         const session = chargerSession();
 
-        // Aucun partieId détectable → erreur
+        // Aucun partieId détectable → afficher erreur dans #id-corps
         if (!session) {
-            document.body.innerHTML = `
-                <div style="display:flex;align-items:center;justify-content:center;
-                    height:100vh;color:#f87171;font-size:1.1rem;text-align:center;padding:2rem;flex-direction:column;gap:1rem;">
-                    <span style="font-size:3rem;">❌</span>
-                    <p>Paramètres manquants.<br>
-                    <small style="opacity:.6;">Utilisez le lien fourni par le host.</small></p>
-                    <a href="/" style="padding:.6rem 1.5rem;background:rgba(255,255,255,.1);border-radius:8px;color:white;text-decoration:none;">
-                        🏠 Accueil
-                    </a>
-                </div>`;
+            this._afficherErreurParametres();
             return;
         }
 
         // Format V2 natif : partieId présent mais pseudo manquant
-        // → afficher un formulaire de saisie du pseudo, puis continuer
         if (session.needsPseudo) {
             this._afficherFormulairePseudo(session);
             return;
@@ -1135,79 +1125,82 @@ const JeuApp = {
         this._demarrer(session);
     },
 
-    // ── Formulaire de saisie du pseudo (flow V2 natif) ────────
-    _afficherFormulairePseudo(session) {
-        const nomPartie = session.partieNom || 'Partie';
-        const jeuLabel  = session.jeu ? session.jeu.toUpperCase() : '';
+    // ─────────────────────────────────────────────
+    // ERREUR : paramètres manquants
+    // ─────────────────────────────────────────────
+    _afficherErreurParametres() {
+        const corps = document.getElementById('id-corps');
+        const etat  = document.getElementById('id-etat');
 
-        document.body.innerHTML = `
-            <div style="display:flex;align-items:center;justify-content:center;
-                min-height:100vh;padding:2rem;background:#0d0d1a;">
-                <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
-                    border-radius:20px;padding:2.5rem 2rem;max-width:380px;width:100%;text-align:center;">
-                    <div style="font-size:2.5rem;margin-bottom:.5rem;">🎮</div>
-                    <h2 style="color:white;margin:0 0 .25rem;font-size:1.2rem;">${esc(nomPartie)}</h2>
-                    ${jeuLabel ? `<div style="font-size:.8rem;opacity:.5;margin-bottom:1.5rem;text-transform:uppercase;letter-spacing:.1em;">${esc(jeuLabel)}</div>` : '<div style="margin-bottom:1.5rem;"></div>'}
-                    <label style="display:block;font-size:.8rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem;text-align:left;">
-                        Ton pseudo
-                    </label>
-                    <input id="input-pseudo-jeu" type="text" maxlength="20" autocomplete="off"
-                        placeholder="Entre ton pseudo…"
-                        style="width:100%;box-sizing:border-box;padding:.75rem 1rem;
-                            background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.18);
-                            border-radius:10px;color:white;font-size:1rem;font-family:inherit;
-                            outline:none;margin-bottom:1rem;">
-                    <button id="btn-rejoindre-jeu"
-                        style="width:100%;padding:.85rem;background:linear-gradient(135deg,#6a5af9,#8a2be2);
-                            border:none;border-radius:12px;color:white;font-size:1rem;
-                            font-weight:700;cursor:pointer;font-family:inherit;">
-                        🚀 Rejoindre
-                    </button>
-                    <p id="err-pseudo-jeu" style="color:#f87171;font-size:.85rem;margin:.75rem 0 0;min-height:1.2em;"></p>
-                    <a href="/" style="display:inline-block;margin-top:1rem;font-size:.8rem;
-                        color:rgba(255,255,255,.3);text-decoration:none;">← Retour à l'accueil</a>
-                </div>
+        corps.innerHTML = `
+            <div style="text-align:center;color:#f87171;">
+                <div style="font-size:3rem;">❌</div>
+                <p>Paramètres manquants.<br>
+                <small style="opacity:.6;">Utilisez le lien fourni par l'hôte.</small></p>
+                <a href="index.html" class="btn-retour">🏠 Accueil</a>
             </div>
-            <style>
-                body { margin:0; font-family:'Segoe UI',sans-serif; }
-                #input-pseudo-jeu:focus { border-color:#00d4ff; box-shadow:0 0 0 3px rgba(0,212,255,.2); }
-                #btn-rejoindre-jeu:hover { opacity:.9; transform:translateY(-1px); }
-            </style>`;
+        `;
 
-        const input  = document.getElementById('input-pseudo-jeu');
-        const btn    = document.getElementById('btn-rejoindre-jeu');
-        const errEl  = document.getElementById('err-pseudo-jeu');
+        etat.textContent = "";
+
+        document.getElementById('phase-identification').style.display = "block";
+        document.getElementById('phase-jeu').style.display = "none";
+    },
+
+    // ─────────────────────────────────────────────
+    // FORMULAIRE PSEUDO → injecté dans #id-corps
+    // ─────────────────────────────────────────────
+    _afficherFormulairePseudo(session) {
+        const corps = document.getElementById('id-corps');
+        const etat  = document.getElementById('id-etat');
+
+        corps.innerHTML = `
+            <label class="id-label">Ton pseudo</label>
+            <input id="input-pseudo-jeu" type="text" maxlength="20" autocomplete="off"
+                   class="id-input" placeholder="Entre ton pseudo…">
+            <button id="btn-rejoindre-jeu" class="id-btn">🚀 Rejoindre</button>
+            <p id="err-pseudo-jeu" class="id-err"></p>
+        `;
+
+        const input = document.getElementById('input-pseudo-jeu');
+        const btn   = document.getElementById('btn-rejoindre-jeu');
+        const errEl = document.getElementById('err-pseudo-jeu');
 
         const valider = () => {
             const pseudo = input.value.trim();
+
             if (!pseudo || pseudo.length < 2) {
-                errEl.textContent = 'Pseudo trop court (2 caractères minimum).';
-                input.focus();
+                errEl.textContent = "Pseudo trop court (2 caractères minimum).";
                 return;
             }
             if (!/^[a-zA-Z0-9_-]{2,20}$/.test(pseudo)) {
-                errEl.textContent = 'Lettres, chiffres, tiret ou underscore uniquement.';
-                input.focus();
+                errEl.textContent = "Lettres, chiffres, tiret ou underscore uniquement.";
                 return;
             }
-            errEl.textContent = '';
-            // Compléter la session et continuer
+
             const sessionComplete = { ...session, pseudo, needsPseudo: false };
-            try { sessionStorage.setItem('mgu_game_session', JSON.stringify(sessionComplete)); } catch {}
+            sessionStorage.setItem('mgu_game_session', JSON.stringify(sessionComplete));
             this._demarrer(sessionComplete);
         };
 
-        input.addEventListener('keydown', e => { if (e.key === 'Enter') valider(); });
+        input.addEventListener('keydown', e => e.key === "Enter" && valider());
         btn.addEventListener('click', valider);
-        setTimeout(() => input.focus(), 100);
+
+        input.focus();
     },
 
-    // ── Démarrage effectif après que le pseudo est connu ──────
+    // ─────────────────────────────────────────────
+    // DÉMARRAGE DU JEU
+    // ─────────────────────────────────────────────
     _demarrer(session) {
         this.session = session;
 
+        // Basculer vers la phase jeu
+        document.getElementById('phase-identification').style.display = "none";
+        document.getElementById('phase-jeu').style.display = "block";
+
         // Connexion WebSocket
-        const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const proto = location.protocol === "https:" ? "wss:" : "ws:";
         socket.connect(`${proto}//${location.host}/ws`);
 
         // Exposer globalement pour les modules V2 existants
@@ -1215,21 +1208,21 @@ const JeuApp = {
         window.jeuSocket = socket;
 
         // Dispatch par rôle
-        const role = session.role || 'player';
-        if (role === 'host') {
+        const role = session.role || "player";
+
+        if (role === "host") {
             RoleHost.init(session);
-        } else if (role === 'host-player') {
+        } else if (role === "host-player") {
             RoleHost.init(session);
-            RolePlayer.init({ ...session, role: 'host-player' });
+            RolePlayer.init({ ...session, role: "host-player" });
         } else {
             RolePlayer.init(session);
         }
-    },
+    }
 };
 
-document.addEventListener('DOMContentLoaded', () => JeuApp.init());
+document.addEventListener("DOMContentLoaded", () => JeuApp.init());
 
-// Expositions globales pour les modules V2 (jeux/*.js, modules/*_hote.js)
-// Ils peuvent appeler window.jeuSocket.send(...) pour envoyer des actions
+// Expositions globales pour les modules V2
 window.JeuRegistry = JeuRegistry;
 window.QuizModule  = QuizModule;
