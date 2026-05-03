@@ -1239,6 +1239,7 @@ const JeuApp = {
 
 document.addEventListener("DOMContentLoaded", () => JeuApp.init());
 
+
 // ─────────────────────────────────────────────────────
 // RÔLE PLAYER — version jeu.html invité
 // ─────────────────────────────────────────────────────
