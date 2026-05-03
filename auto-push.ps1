@@ -1,8 +1,8 @@
 #Cmd : powershell -ExecutionPolicy Bypass -File .\auto-push.ps1
 # --- CONFIGURATION ---
-$projectPath = "C:\Users\clayt\PycharmProjects\MiniGameV2"   # 🔥 Dossier de ta V2
-$renderServiceId = "srv-d6kv2u5m5p6s7389veag"                # 🔥 ID de ton service Render (V3 à remplacer)
-$renderApiKey = "rnd_h5AV4uaXG6HYErpoqf0y5fbVQQIU"           # 🔥 Clé API Render
+$projectPath = "C:\Users\clayt\PycharmProjects\MiniGameV2"
+$renderServiceId = "srv-d6kv2u5m5p6s7389veag"
+$renderApiKey = "rnd_h5AV4uaXG6HYErpoqf0y5fbVQQIU"
 
 # --- SCRIPT ---
 Write-Host "📁 Passage dans le dossier MiniGameV2..."
@@ -20,11 +20,18 @@ Set-Content -Path "$projectPath\.render-restart" -Value (Get-Date).ToString()
 # Vérifie s'il y a des modifications
 $changes = git status --porcelain
 
-if ($changes) {
-    Write-Host "🟢 Modifications détectées, push en cours..."
+# Vérifie si la branche locale est en avance sur origin/main
+$aheadInfo = git rev-list --left-right --count origin/main...main 2>$null
+$ahead = 0
+if ($aheadInfo) {
+    $ahead = [int]($aheadInfo.Split()[1])
+}
+
+if ($changes -or $ahead -gt 0) {
+    Write-Host "🟢 Push nécessaire (modifications ou commits en avance)."
 
     git add .
-    git commit -m "Auto update MiniGameV2"
+    git commit -m "Auto update MiniGameV2" 2>$null
 
     Write-Host "⬆️ Push vers GitHub..."
     git push origin main
@@ -44,5 +51,5 @@ if ($changes) {
     Write-Host "🎉 Redeploy lancé sur Render !"
 }
 else {
-    Write-Host "⚪ Aucun changement détecté. Rien à push."
+    Write-Host "⚪ Aucun changement et aucun commit en avance. Rien à push."
 }
