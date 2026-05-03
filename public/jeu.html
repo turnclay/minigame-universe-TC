@@ -6,6 +6,17 @@
   <title>MiniGame Universe – Joueur</title>
   <meta name="theme-color" content="#6366f1">
   <link rel="icon" type="image/png" href="images/LogoMiniGame.png">
+
+  <!--
+    CSS de jeu.html :
+      invite.css   — tout ce dont jeu.html a besoin (base, layout, jeux invités)
+      reglages.css — panneau réglages injecté par navigation.js
+      gestion.css  — joueur-tag, score-entry partagés hôte/invité
+
+    style.css n'est PAS chargé ici : il est le CSS de index.html (hôte).
+    Ses règles body/.screen/.game-screen casseraient le layout invité.
+    Tout ce qu'invite.css emprunte à style.css est redéfini localement.
+  -->
   <link rel="stylesheet" href="css/invite.css">
   <link rel="stylesheet" href="css/reglages.css">
   <link rel="stylesheet" href="css/gestion.css">
@@ -13,91 +24,95 @@
 <body>
 
 <!-- ═══════════════════════════════════════════════════════════
-     BARRE DE NAVIGATION PERMANENTE (invité)
-     Visible dès que #phase-jeu est actif.
+     NAVBAR INVITÉ
+     Masquée par défaut. Visible (.visible) dès que
+     initNavbarInvite() est appelé par jeu.js.
 ═══════════════════════════════════════════════════════════ -->
 <nav class="invite-navbar" id="invite-navbar" aria-label="Navigation invité">
-
-  <!-- Accueil (bascule vers index.html en tant qu'hôte) -->
-  <button class="invite-nav-btn" id="btn-home-permanent" aria-label="Retour à l'accueil">
-    🏠
-  </button>
-
-  <!-- Menu invité -->
-  <button class="invite-nav-btn" id="btn-menu-permanent" aria-label="Ouvrir le menu">
-    ☰
-  </button>
+  <button class="invite-nav-btn" id="btn-home-permanent" aria-label="Retour à l'accueil">🏠</button>
+  <button class="invite-nav-btn" id="btn-menu-permanent" aria-label="Ouvrir le menu">☰</button>
 </nav>
 
+
 <!-- ═══════════════════════════════════════════════════════════
-     PHASE 1 : IDENTIFICATION
-     Tout le contenu (#id-corps, méta) est injecté par jeu.js.
-     Aucun script inline ici — GameManager gère tout.
+     PHASE 1 — IDENTIFICATION
+     Visible au chargement.
+     Masquée par jeu.js après JOIN_OK ou si pseudo est dans l'URL.
+
+     IDs utilisés par jeu.js :
+       #id-corps     — champ pseudo + bouton injectés dynamiquement
+       #id-etat      — messages d'état (erreur, attente…)
+       #id-meta-nom, #id-meta-jeu, #id-meta-hote, #id-meta-date, #id-meta-id
 ═══════════════════════════════════════════════════════════ -->
 <div id="phase-identification">
   <div class="id-card">
 
-    <img src="images/LogoMiniGame.png" alt="Logo" class="id-logo" onerror="this.style.display='none'">
-    <h1 class="id-title">Rejoindre la partie</h1>
-    <p class="id-subtitle" id="id-subtitle">Tu as été invité·e à une partie MiniGame Universe</p>
+    <img src="images/LogoMiniGame.png" alt="Logo"
+         class="id-logo" onerror="this.style.display='none'">
 
-    <!-- Méta remplies par GameManager._remplirMeta() -->
+    <h1 class="id-title">Rejoindre la partie</h1>
+    <p class="id-subtitle" id="id-subtitle">Tu as été invité·e à rejoindre MiniGame Universe</p>
+
     <div class="id-meta" id="id-meta">
+
       <div class="id-meta-row" id="id-row-hote" style="display:none;">
         <span class="id-meta-label">Hôte</span>
         <span class="id-meta-val" id="id-meta-hote">—</span>
       </div>
+
       <div class="id-meta-row">
         <span class="id-meta-label">Partie</span>
         <span class="id-meta-val" id="id-meta-nom">—</span>
       </div>
+
       <div class="id-meta-row">
         <span class="id-meta-label">Jeu</span>
         <span class="id-meta-val" id="id-meta-jeu">—</span>
       </div>
+
       <div class="id-meta-row" id="id-row-date" style="display:none;">
         <span class="id-meta-label">Créée le</span>
         <span class="id-meta-val" id="id-meta-date">—</span>
       </div>
+
       <div class="id-meta-row">
         <span class="id-meta-label">ID</span>
-        <span class="id-meta-val" id="id-meta-id" style="font-size:.72rem;opacity:.55;font-family:monospace;">—</span>
+        <span class="id-meta-val id-meta-mono" id="id-meta-id">—</span>
       </div>
+
     </div>
 
-    <!-- Champ pseudo + bouton injectés par GameManager._construireCorps() -->
     <div id="id-corps"></div>
 
-    <!-- Zone état injectée par GameManager._phaseId.afficherEtat() -->
-    <div class="id-etat" id="id-etat"></div>
+    <div class="id-etat" id="id-etat" role="status" aria-live="polite"></div>
 
-    <a href="index.html" style="display:inline-block;margin-top:18px;font-size:.8rem;color:rgba(255,255,255,.4);text-decoration:none;">← Retour à l'accueil</a>
+    <a href="index.html" class="id-back-link">← Retour à l'accueil</a>
   </div>
 </div>
 
+
 <!-- ═══════════════════════════════════════════════════════════
-     PHASE 2 : JEU
-     Header + contenu dynamique géré par GameManager.
+     PHASE 2 — JEU
+     Masquée au chargement. Affichée après JOIN_OK.
+
+     .jeu-header  — barre fixe : pseudo, nom de partie, badge jeu
+     #jeu-contenu — contenu dynamique injecté par les modules
 ═══════════════════════════════════════════════════════════ -->
 <div id="phase-jeu">
-  <div class="jeu-header">
+
+  <header class="jeu-header">
     <div class="jeu-header-left">
       <span class="jeu-pseudo" id="hdr-pseudo">—</span>
       <span class="jeu-partie" id="hdr-partie">—</span>
     </div>
     <span class="jeu-badge" id="hdr-jeu">—</span>
-  </div>
-  <div id="jeu-contenu"></div>
+  </header>
+
+  <main id="jeu-contenu"></main>
+
 </div>
 
 
-<!-- ═══════════════════════════════════════════════════════════
-     POINT D'ENTRÉE UNIQUE
-     jeu.js (module ES6) s'initialise sur DOMContentLoaded
-     et expose window.GameManager pour le debug console.
-     Aucun autre script — pas de conflit de timing.
-═══════════════════════════════════════════════════════════ -->
 <script type="module" src="js/jeu.js"></script>
-
 </body>
 </html>
