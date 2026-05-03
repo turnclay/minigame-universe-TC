@@ -20,36 +20,35 @@ Set-Content -Path "$projectPath\.render-restart" -Value (Get-Date).ToString()
 # Vérifie s'il y a des modifications
 $changes = git status --porcelain
 
-# Vérifie si la branche locale est en avance sur origin/main
-$aheadInfo = git rev-list --left-right --count origin/main...main 2>$null
-$ahead = 0
-if ($aheadInfo) {
-    $ahead = [int]($aheadInfo.Split()[1])
-}
-
-if ($changes -or $ahead -gt 0) {
-    Write-Host "🟢 Push nécessaire (modifications ou commits en avance)."
-
+if ($changes) {
+    Write-Host "🟢 Modifications détectées → commit..."
     git add .
-    git commit -m "Auto update MiniGameV2" 2>$null
+    git commit -m "Auto update MiniGameV2"
+}
 
-    Write-Host "⬆️ Push vers GitHub..."
-    git push origin main
+Write-Host "⬆️ Tentative de push normal..."
+git push origin main
 
-    Write-Host "🚀 Déclenchement du redeploy Render..."
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "⚠️ Push normal impossible → tentative de force push..."
+    git push origin main --force
 
-    $headers = @{
-        "Authorization" = "Bearer $renderApiKey"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "❌ Force push impossible. Intervention manuelle requise."
+        exit 1
     }
-
-    Invoke-RestMethod `
-        -Method POST `
-        -Uri "https://api.render.com/v1/services/$renderServiceId/deploys" `
-        -Headers $headers `
-        -ContentType "application/json"
-
-    Write-Host "🎉 Redeploy lancé sur Render !"
 }
-else {
-    Write-Host "⚪ Aucun changement et aucun commit en avance. Rien à push."
+
+Write-Host "🚀 Déclenchement du redeploy Render..."
+
+$headers = @{
+    "Authorization" = "Bearer $renderApiKey"
 }
+
+Invoke-RestMethod `
+    -Method POST `
+    -Uri "https://api.render.com/v1/services/$renderServiceId/deploys" `
+    -Headers $headers `
+    -ContentType "application/json"
+
+Write-Host "🎉 Redeploy lancé sur Render !"
