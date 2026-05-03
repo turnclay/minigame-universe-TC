@@ -12,6 +12,48 @@
 ============================================ */
 
 /* ============================================
+   1. VARIABLES CSS (tokens partagés avec style.css)
+============================================ */
+:root {
+    --glass-light:          rgba(255,255,255,0.08);
+    --glass-medium:         rgba(255,255,255,0.15);
+    --glass-strong:         rgba(255,255,255,0.25);
+    --glass-hover:          rgba(255,255,255,0.35);
+    --glass-border-light:   rgba(255,255,255,0.15);
+    --glass-border-medium:  rgba(255,255,255,0.25);
+    --glass-border-strong:  rgba(255,255,255,0.40);
+    --gradient-aurora:      linear-gradient(135deg,rgba(138,43,226,.3) 0%,rgba(75,44,255,.3) 25%,rgba(0,198,255,.3) 50%,rgba(138,43,226,.3) 75%,rgba(255,0,128,.3) 100%);
+    --gradient-button:      linear-gradient(135deg,#6a5af9 0%,#8a2be2 100%);
+    --gradient-accent:      linear-gradient(135deg,#00c6ff 0%,#4b2cff 100%);
+    --neon-cyan:            #00d4ff;
+    --neon-purple:          #8a2be2;
+    --neon-pink:            #ff0080;
+    --neon-blue:            #4b2cff;
+    --glow-cyan:            rgba(0,212,255,0.6);
+    --glow-purple:          rgba(138,43,226,0.6);
+    --shadow-soft:          0 8px 32px rgba(0,0,0,.25);
+    --shadow-medium:        0 12px 40px rgba(0,0,0,.35);
+    --shadow-strong:        0 16px 48px rgba(0,0,0,.45);
+    --shadow-glow-cyan:     0 0 20px var(--glow-cyan);
+    --shadow-glow-purple:   0 0 20px var(--glow-purple);
+    --radius-xs:  6px;
+    --radius-sm:  10px;
+    --radius-md:  12px;
+    --radius-lg:  18px;
+    --radius-xl:  24px;
+    --space-xs:   8px;
+    --space-sm:   12px;
+    --space-md:   20px;
+    --space-lg:   30px;
+    --space-xl:   40px;
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.25s ease;
+    --transition-slow: 0.40s ease;
+    --font-primary:   "Orbitron", sans-serif;
+    --font-secondary: "Poppins", sans-serif;
+}
+
+/* ============================================
    2. SYSTÈME D'INVITATION (QR / Lien)
 ============================================ */
 .invite-notif {
