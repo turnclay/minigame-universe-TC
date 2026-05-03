@@ -1,0 +1,155 @@
+/* ============================================
+   ⚙️ REGLAGES.CSS — Panneau de réglages
+   MiniGame Universe
+============================================ */
+
+.reglages-overlay {
+    position: fixed; inset: 0; z-index: 299;
+    background: rgba(0,0,0,.6);
+    backdrop-filter: blur(6px);
+    opacity: 0; transition: opacity .35s;
+}
+.reglages-overlay.open { opacity: 1; }
+
+.reglages-panel {
+    position: fixed; right: 0; top: 0; bottom: 0;
+    width: min(420px, 100vw);
+    z-index: 300;
+    background: rgba(15, 10, 35, 0.97);
+    backdrop-filter: blur(24px);
+    border-left: 1px solid rgba(255,255,255,.1);
+    overflow-y: auto;
+    padding: 24px 22px 40px;
+    color: white;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    transform: translateX(100%);
+    transition: transform .35s cubic-bezier(.4,0,.2,1);
+}
+.reglages-panel.open { transform: translateX(0); }
+
+.reglages-header {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+}
+
+.reglages-title { font-size: 1.2rem; font-weight: 800; }
+
+.reglages-close {
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 10px; color: white;
+    font-size: 1rem; width: 38px; height: 38px;
+    cursor: pointer; transition: background .2s;
+    font-family: inherit;
+}
+.reglages-close:hover { background: rgba(255,255,255,.22); }
+
+/* ── SECTIONS ────────────────────────────── */
+.reglages-body { display: flex; flex-direction: column; gap: 28px; }
+
+.reglages-section {
+    display: flex; flex-direction: column; gap: 14px;
+}
+
+.reglages-section-title {
+    font-size: .85rem;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: rgba(255,255,255,.5);
+    font-weight: 700;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.reglages-section-desc {
+    font-size: .82rem;
+    color: rgba(255,255,255,.5);
+    line-height: 1.5;
+}
+
+/* ── GRILLE THÈMES ───────────────────────── */
+.themes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+}
+
+.theme-card {
+    background: rgba(255,255,255,.06);
+    border: 1.5px solid rgba(255,255,255,.12);
+    border-radius: 14px; padding: 14px 10px;
+    cursor: pointer; text-align: center;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 6px;
+    transition: border-color .2s, background .2s, transform .15s;
+    font-family: inherit; color: white;
+    position: relative; overflow: hidden;
+}
+.theme-card:hover    { background: rgba(255,255,255,.1); transform: translateY(-2px); }
+.theme-card.active   { border-color: #00d4ff; background: rgba(0,212,255,.1); }
+
+.theme-icon  { font-size: 1.4rem; }
+.theme-label { font-size: .82rem; font-weight: 700; }
+.theme-desc  { font-size: .7rem; color: rgba(255,255,255,.5); line-height: 1.3; }
+
+.theme-active-badge {
+    position: absolute; top: 6px; right: 6px;
+    background: #00d4ff; color: #000;
+    font-size: .65rem; font-weight: 800;
+    padding: 2px 6px; border-radius: 6px;
+}
+
+/* Previews de couleur par thème */
+.theme-preview {
+    width: 48px; height: 28px; border-radius: 8px;
+    display: block; margin: 0 auto 2px;
+}
+.theme-preview--aurora  { background: linear-gradient(135deg,#4b2cff,#8a2be2,#00c6ff); }
+.theme-preview--sunset  { background: linear-gradient(135deg,#ff6b35,#f7441d,#ff0080); }
+.theme-preview--forest  { background: linear-gradient(135deg,#134e2a,#1a6b35,#00ff87); }
+.theme-preview--ocean   { background: linear-gradient(135deg,#0c1445,#1a237e,#006064); }
+.theme-preview--gold    { background: linear-gradient(135deg,#1a0a00,#4a1c00,#c8930a); }
+.theme-preview--cyber   { background: linear-gradient(135deg,#1a0026,#2d0057,#ff0090); }
+
+/* ── LIGNE RÉGLAGE (toggle) ──────────────── */
+.reglages-row {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 10px;
+}
+
+.reglages-row-label { font-size: .9rem; font-weight: 600; }
+
+/* ── TOGGLE SWITCH ───────────────────────── */
+.toggle-switch {
+    width: 48px; height: 26px; border-radius: 13px;
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.2);
+    cursor: pointer; position: relative;
+    transition: background .2s; padding: 0;
+}
+.toggle-switch.on { background: #00d4ff; border-color: #00d4ff; }
+
+.toggle-knob {
+    position: absolute; top: 3px; left: 3px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: white; transition: left .2s;
+    pointer-events: none;
+}
+.toggle-switch.on .toggle-knob { left: 25px; }
+
+/* ── BOUTON DANGER ───────────────────────── */
+.btn-danger-reglages {
+    width: 100%; padding: 12px;
+    background: rgba(239,68,68,.15);
+    border: 1px solid rgba(239,68,68,.35);
+    border-radius: 12px; color: #fca5a5;
+    font-size: .9rem; font-weight: 700;
+    cursor: pointer; transition: background .2s;
+    font-family: inherit;
+}
+.btn-danger-reglages:hover { background: rgba(239,68,68,.3); }

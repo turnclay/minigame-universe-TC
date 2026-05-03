@@ -1,0 +1,29 @@
+# ======================================================
+# render.yaml — MiniGame V2 — Déploiement Render
+# ======================================================
+# Service Web Node.js avec persistance des données.
+#
+# IMPORTANT : Le fichier server/store-data.json est créé
+# automatiquement à l'exécution. Il ne doit PAS être
+# versionné dans Git (.gitignore).
+#
+# Variables d'environnement à configurer dans Render :
+#   NODE_ENV=production
+#   (PORT et RENDER_EXTERNAL_URL sont injectées automatiquement)
+# ======================================================
+
+services:
+  - type: web
+    name: minigame-v2
+    env: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+    disk:
+      name: store-data
+      mountPath: /data
+      sizeGB: 1
