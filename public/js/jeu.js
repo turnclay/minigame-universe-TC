@@ -88,16 +88,34 @@ function hideBanner() {
 // ─────────────────────────────────────────────────────
 
 function chargerSession() {
-    const params   = new URLSearchParams(location.search);
-    const partieId = params.get('partieId') || null;
-    const pseudo   = params.get('pseudo')   || null;
-    const role     = params.get('role')     || 'player';
-    const jeu      = params.get('jeu')      || null;
+    const params     = new URLSearchParams(location.search);
+    const partieId   = params.get('partieId')   || params.get('sessionId') || null;
+    const pseudo     = params.get('pseudo')      || null;
+    const role       = params.get('role')        || 'player';
+    const jeu        = params.get('jeu')         || null;
+    // Paramètres format V2 natif (générés par invite.js)
+    const partieNom  = params.get('partieNom')   || null;
+    const hote       = params.get('hote')        || null;
 
+    // Format complet V3 : partieId + pseudo présents → session directe
     if (partieId && pseudo) {
-        const session = { partieId, pseudo, role, jeu };
+        const session = { partieId, pseudo, role, jeu, partieNom, hote };
         try { sessionStorage.setItem('mgu_game_session', JSON.stringify(session)); } catch {}
         return session;
+    }
+
+    // Format V2 natif : partieId présent mais pseudo absent
+    // → retourner une session partielle : JeuApp demandera le pseudo
+    if (partieId) {
+        return {
+            partieId,
+            pseudo      : null,
+            role        : role || 'player',
+            jeu,
+            partieNom,
+            hote,
+            needsPseudo : true,
+        };
     }
 
     // Fallback : sessionStorage (après navigation join → jeu)
@@ -1016,6 +1034,7 @@ const JeuApp = {
     init() {
         const session = chargerSession();
 
+        // Aucun partieId détectable → erreur
         if (!session) {
             document.body.innerHTML = `
                 <div style="display:flex;align-items:center;justify-content:center;
@@ -1030,6 +1049,85 @@ const JeuApp = {
             return;
         }
 
+        // Format V2 natif : partieId présent mais pseudo manquant
+        // → afficher un formulaire de saisie du pseudo, puis continuer
+        if (session.needsPseudo) {
+            this._afficherFormulairePseudo(session);
+            return;
+        }
+
+        this._demarrer(session);
+    },
+
+    // ── Formulaire de saisie du pseudo (flow V2 natif) ────────
+    _afficherFormulairePseudo(session) {
+        const nomPartie = session.partieNom || 'Partie';
+        const jeuLabel  = session.jeu ? session.jeu.toUpperCase() : '';
+
+        document.body.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:center;
+                min-height:100vh;padding:2rem;background:#0d0d1a;">
+                <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+                    border-radius:20px;padding:2.5rem 2rem;max-width:380px;width:100%;text-align:center;">
+                    <div style="font-size:2.5rem;margin-bottom:.5rem;">🎮</div>
+                    <h2 style="color:white;margin:0 0 .25rem;font-size:1.2rem;">${esc(nomPartie)}</h2>
+                    ${jeuLabel ? `<div style="font-size:.8rem;opacity:.5;margin-bottom:1.5rem;text-transform:uppercase;letter-spacing:.1em;">${esc(jeuLabel)}</div>` : '<div style="margin-bottom:1.5rem;"></div>'}
+                    <label style="display:block;font-size:.8rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem;text-align:left;">
+                        Ton pseudo
+                    </label>
+                    <input id="input-pseudo-jeu" type="text" maxlength="20" autocomplete="off"
+                        placeholder="Entre ton pseudo…"
+                        style="width:100%;box-sizing:border-box;padding:.75rem 1rem;
+                            background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.18);
+                            border-radius:10px;color:white;font-size:1rem;font-family:inherit;
+                            outline:none;margin-bottom:1rem;">
+                    <button id="btn-rejoindre-jeu"
+                        style="width:100%;padding:.85rem;background:linear-gradient(135deg,#6a5af9,#8a2be2);
+                            border:none;border-radius:12px;color:white;font-size:1rem;
+                            font-weight:700;cursor:pointer;font-family:inherit;">
+                        🚀 Rejoindre
+                    </button>
+                    <p id="err-pseudo-jeu" style="color:#f87171;font-size:.85rem;margin:.75rem 0 0;min-height:1.2em;"></p>
+                    <a href="/" style="display:inline-block;margin-top:1rem;font-size:.8rem;
+                        color:rgba(255,255,255,.3);text-decoration:none;">← Retour à l'accueil</a>
+                </div>
+            </div>
+            <style>
+                body { margin:0; font-family:'Segoe UI',sans-serif; }
+                #input-pseudo-jeu:focus { border-color:#00d4ff; box-shadow:0 0 0 3px rgba(0,212,255,.2); }
+                #btn-rejoindre-jeu:hover { opacity:.9; transform:translateY(-1px); }
+            </style>`;
+
+        const input  = document.getElementById('input-pseudo-jeu');
+        const btn    = document.getElementById('btn-rejoindre-jeu');
+        const errEl  = document.getElementById('err-pseudo-jeu');
+
+        const valider = () => {
+            const pseudo = input.value.trim();
+            if (!pseudo || pseudo.length < 2) {
+                errEl.textContent = 'Pseudo trop court (2 caractères minimum).';
+                input.focus();
+                return;
+            }
+            if (!/^[a-zA-Z0-9_-]{2,20}$/.test(pseudo)) {
+                errEl.textContent = 'Lettres, chiffres, tiret ou underscore uniquement.';
+                input.focus();
+                return;
+            }
+            errEl.textContent = '';
+            // Compléter la session et continuer
+            const sessionComplete = { ...session, pseudo, needsPseudo: false };
+            try { sessionStorage.setItem('mgu_game_session', JSON.stringify(sessionComplete)); } catch {}
+            this._demarrer(sessionComplete);
+        };
+
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') valider(); });
+        btn.addEventListener('click', valider);
+        setTimeout(() => input.focus(), 100);
+    },
+
+    // ── Démarrage effectif après que le pseudo est connu ──────
+    _demarrer(session) {
         this.session = session;
 
         // Connexion WebSocket
@@ -1037,7 +1135,7 @@ const JeuApp = {
         socket.connect(`${proto}//${location.host}/ws`);
 
         // Exposer globalement pour les modules V2 existants
-        window.JeuApp = this;
+        window.JeuApp    = this;
         window.jeuSocket = socket;
 
         // Dispatch par rôle
@@ -1045,7 +1143,6 @@ const JeuApp = {
         if (role === 'host') {
             RoleHost.init(session);
         } else if (role === 'host-player') {
-            // L'hôte-joueur : initialise les deux côtés
             RoleHost.init(session);
             RolePlayer.init({ ...session, role: 'host-player' });
         } else {
