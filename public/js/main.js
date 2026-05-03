@@ -310,6 +310,8 @@ function initStartSolo() {
             alert("Sélectionne au moins un joueur."); return;
         }
         GameState.mode = "solo";
+        // ── Créer la partie côté serveur WS ──────────────────────
+        HostSession.creerPartie();
 
         if (GameState.jeu === "morpion") {
             if (GameState.joueurs.length < 2 || GameState.joueurs.length > 3) {
@@ -546,6 +548,13 @@ const HostSession = {
                 this._partieId = partieId;
                 this._snapshot = snapshot;
                 localStorage.setItem('ws_partie_id', partieId);
+
+                // ── Synchronisation ID critique ────────────────────────
+                // invite.js utilise 'minigame_partie_session_id' pour construire
+                // les liens d'invitation. On le met à jour avec le vrai UUID
+                // serveur pour que les invités arrivent avec le bon partieId.
+                localStorage.setItem('minigame_partie_session_id', partieId);
+
                 this._afficherLienJoin(joinUrl, snapshot?.codeCourt);
             });
 

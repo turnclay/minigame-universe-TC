@@ -408,21 +408,54 @@ const RolePlayer = {
         });
 
         socket.on('JOIN_ERROR', ({ code }) => {
-            // PLAYER_NOT_FOUND → premier join (pas encore de rejoin possible)
-            if (code === 'PLAYER_NOT_FOUND' || code === 'GAME_NOT_FOUND') {
+            // PLAYER_NOT_FOUND sur PLAYER_REJOIN → première connexion,
+            // tenter un PLAYER_JOIN une seule fois.
+            if (code === 'PLAYER_NOT_FOUND') {
                 socket.send('PLAYER_JOIN', {
                     pseudo   : session.pseudo,
                     partieId : session.partieId,
                 });
                 return;
             }
+
+            // GAME_NOT_FOUND : la partie n'existe pas encore côté serveur.
+            // NE PAS boucler — afficher un message avec bouton retry.
+            if (code === 'GAME_NOT_FOUND') {
+                const contenu = document.querySelector('#player-waiting, #phase-jeu, main') || document.body;
+                contenu.innerHTML = `
+                    <div style="display:flex;flex-direction:column;align-items:center;
+                        justify-content:center;min-height:60vh;text-align:center;padding:2rem;gap:1rem;">
+                        <span style="font-size:3rem;">⏳</span>
+                        <h2 style="color:white;margin:0;">Partie pas encore prête</h2>
+                        <p style="color:rgba(255,255,255,.6);max-width:320px;">
+                            L'hôte n'a pas encore créé la partie côté serveur,
+                            ou le serveur a redémarré. Attends quelques secondes
+                            que l'hôte lance le jeu, puis réessaie.
+                        </p>
+                        <button id="btn-retry-join"
+                            style="padding:.75rem 2rem;background:rgba(0,212,255,.15);
+                                border:1px solid rgba(0,212,255,.4);border-radius:10px;
+                                color:#00d4ff;font-size:.95rem;cursor:pointer;font-family:inherit;">
+                            🔄 Réessayer
+                        </button>
+                        <a href="/" style="font-size:.8rem;color:rgba(255,255,255,.3);text-decoration:none;margin-top:.5rem;">
+                            ← Retour à l'accueil
+                        </a>
+                    </div>`;
+                document.getElementById('btn-retry-join')?.addEventListener('click', () => {
+                    window.location.reload();
+                });
+                return;
+            }
+
             const msgs = {
-                PSEUDO_TAKEN  : 'Ce pseudo est déjà utilisé.',
-                GAME_STARTED  : "La partie est déjà en cours.",
+                PSEUDO_TAKEN  : 'Ce pseudo est déjà utilisé dans cette partie.',
+                GAME_STARTED  : "La partie est déjà en cours — ton pseudo n'est pas dans la liste.",
                 MAX_PLAYERS   : 'La partie est complète.',
-                PSEUDO_INVALID: 'Pseudo invalide.',
+                PSEUDO_INVALID: 'Pseudo invalide (2-20 caractères).',
+                MISSING_FIELDS: 'Données manquantes.',
             };
-            toast(msgs[code] || `Erreur: ${code}`, 'error', 5000);
+            toast(msgs[code] || 'Erreur: ' + code, 'error', 5000);
         });
 
         socket.on('JOIN_OK', ({ pseudo, equipe, snapshot }) => {
