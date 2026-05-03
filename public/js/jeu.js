@@ -1152,7 +1152,6 @@ const JeuApp = {
     // ─────────────────────────────────────────────
     _afficherFormulairePseudo(session) {
         const corps = document.getElementById('id-corps');
-        const etat  = document.getElementById('id-etat');
 
         corps.innerHTML = `
             <label class="id-label">Ton pseudo</label>
@@ -1226,3 +1225,4 @@ document.addEventListener("DOMContentLoaded", () => JeuApp.init());
 // Expositions globales pour les modules V2
 window.JeuRegistry = JeuRegistry;
 window.QuizModule  = QuizModule;
+
