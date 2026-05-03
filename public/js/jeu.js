@@ -1115,36 +1115,58 @@ const JeuApp = {
     session: null,
 
     init() {
-        const session = chargerSession();
+        // 1️⃣ Extraire les paramètres de l’URL
+        const params = new URLSearchParams(window.location.search);
 
-        // Aucun partieId détectable → on reste dans jeu.html mais on affiche une erreur dans l’UI
-        if (!session) {
+        const partieId   = params.get("partieId");
+        const jeu        = params.get("jeu");
+        const partieNom  = params.get("nom");
+        const hote       = params.get("hote");
+        const codeCourt  = params.get("code");
+        const pseudoURL  = params.get("pseudo"); // optionnel
+
+        // 2️⃣ Vérification minimale
+        if (!partieId || !jeu) {
             const etat = document.getElementById('id-etat');
-            if (etat) {
-                etat.textContent = "Paramètres manquants. Utilise le lien fourni par l'hôte.";
-            }
+            if (etat) etat.textContent = "Paramètres manquants. Utilise le lien fourni par l'hôte.";
             return;
         }
 
+        // 3️⃣ Construire la session à partir de l’URL
+        const session = {
+            partieId,
+            jeu,
+            partieNom: partieNom || "Partie",
+            hote: hote || null,
+            codeCourt: codeCourt || null,
+            pseudo: pseudoURL || null,
+            role: "player",
+            needsPseudo: !pseudoURL
+        };
+
+        // 4️⃣ Sauvegarder dans sessionStorage
+        try {
+            sessionStorage.setItem("mgu_game_session", JSON.stringify(session));
+        } catch {}
+
         this.session = session;
 
-        // Remplir les métadonnées dans la carte d’identification
+        // 5️⃣ Remplir la carte d’identification
         this._remplirMeta(session);
 
-        // Si pseudo manquant (flow V2) → afficher le formulaire dans #id-corps
-        if (session.needsPseudo || !session.pseudo) {
+        // 6️⃣ Si pseudo manquant → afficher le formulaire
+        if (!session.pseudo) {
             this._afficherFormulairePseudo(session);
             return;
         }
 
-        // Sinon on peut directement démarrer le flux joueur
+        // 7️⃣ Sinon → démarrer directement
         this._demarrer(session);
     },
 
+    // Remplissage de la carte d’identification
     _remplirMeta(session) {
         const { partieId, partieNom, jeu, hote } = session;
-        const nomPartie = partieNom || 'Partie';
-        const jeuLabel  = jeu ? jeu.toUpperCase() : '—';
 
         const metaNom  = document.getElementById('id-meta-nom');
         const metaJeu  = document.getElementById('id-meta-jeu');
@@ -1152,29 +1174,25 @@ const JeuApp = {
         const metaHote = document.getElementById('id-meta-hote');
         const rowHote  = document.getElementById('id-row-hote');
 
-        if (metaNom)  metaNom.textContent  = nomPartie;
-        if (metaJeu)  metaJeu.textContent  = jeuLabel;
-        if (metaId)   metaId.textContent   = partieId || '—';
-        if (metaHote) metaHote.textContent = hote || '—';
-        if (rowHote)  rowHote.style.display = hote ? '' : 'none';
+        if (metaNom)  metaNom.textContent  = partieNom || "Partie";
+        if (metaJeu)  metaJeu.textContent  = (jeu || "—").toUpperCase();
+        if (metaId)   metaId.textContent   = partieId || "—";
+        if (metaHote) metaHote.textContent = hote || "—";
+
+        if (rowHote) rowHote.style.display = hote ? "" : "none";
     },
 
+    // Formulaire pseudo
     _afficherFormulairePseudo(session) {
         const cont = document.getElementById('id-corps');
         const etat = document.getElementById('id-etat');
         if (!cont) return;
 
-        const nomPartie = session.partieNom || 'Partie';
-        const jeuLabel  = session.jeu ? session.jeu.toUpperCase() : '';
-
         cont.innerHTML = `
             <label class="id-label" for="input-pseudo-jeu">Ton pseudo</label>
             <input id="input-pseudo-jeu" type="text" maxlength="20" autocomplete="off"
-                   placeholder="Entre ton pseudo…"
-                   class="id-input">
-            <button id="btn-rejoindre-jeu" class="id-btn-primary">
-                🚀 Rejoindre
-            </button>
+                   placeholder="Entre ton pseudo…" class="id-input">
+            <button id="btn-rejoindre-jeu" class="id-btn-primary">🚀 Rejoindre</button>
         `;
 
         const input = document.getElementById('input-pseudo-jeu');
@@ -1183,45 +1201,43 @@ const JeuApp = {
         const valider = () => {
             const pseudo = input.value.trim();
             if (!pseudo || pseudo.length < 2) {
-                if (etat) etat.textContent = 'Pseudo trop court (2 caractères minimum).';
+                if (etat) etat.textContent = "Pseudo trop court (2 caractères minimum).";
                 input.focus();
                 return;
             }
             if (!/^[a-zA-Z0-9_-]{2,20}$/.test(pseudo)) {
-                if (etat) etat.textContent = 'Lettres, chiffres, tiret ou underscore uniquement.';
+                if (etat) etat.textContent = "Lettres, chiffres, tiret ou underscore uniquement.";
                 input.focus();
                 return;
             }
-            if (etat) etat.textContent = '';
 
             const sessionComplete = { ...session, pseudo, needsPseudo: false };
-            try { sessionStorage.setItem('mgu_game_session', JSON.stringify(sessionComplete)); } catch {}
+            try { sessionStorage.setItem("mgu_game_session", JSON.stringify(sessionComplete)); } catch {}
+
             this._demarrer(sessionComplete);
         };
 
-        input.addEventListener('keydown', e => { if (e.key === 'Enter') valider(); });
-        btn.addEventListener('click', valider);
+        input.addEventListener("keydown", e => { if (e.key === "Enter") valider(); });
+        btn.addEventListener("click", valider);
+
         setTimeout(() => input.focus(), 100);
     },
 
+    // Démarrage du flux joueur
     _demarrer(session) {
         this.session = session;
 
-        // Connexion WebSocket
-        const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const proto = location.protocol === "https:" ? "wss:" : "ws:";
         socket.connect(`${proto}//${location.host}/ws`);
 
-        // Exposer globalement pour les modules V2 existants
         window.JeuApp    = this;
         window.jeuSocket = socket;
 
-        // Ici, côté jeu.html, on ne gère que le rôle joueur
         RolePlayer.init(session);
-    },
+    }
 };
 
-document.addEventListener('DOMContentLoaded', () => JeuApp.init());
-
+document.addEventListener("DOMContentLoaded", () => JeuApp.init());
 
 // ─────────────────────────────────────────────────────
 // RÔLE PLAYER — version jeu.html invité
