@@ -119,6 +119,11 @@ export function afficherJoueursSelectionnes(containerId) {
     import('../modules/invite.js').then(m => {
         if (GameState.joueurs.length > 0) {
             m.afficherBlocInvitation();
+            // Dès qu'un joueur est sélectionné, créer la partie WS
+            // pour que les invités puissent rejoindre avant le lancement.
+            if (typeof window._hostCreerPartieQuandPret === 'function') {
+                window._hostCreerPartieQuandPret();
+            }
         } else {
             document.getElementById('bloc-invitation')?.remove();
         }

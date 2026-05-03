@@ -387,7 +387,10 @@ const RolePlayer = {
     scoreLocal: 0,
 
     init(session) {
-        this.session = session;
+        this.session           = session;
+        this._waitingForGame   = false;
+        this._waitingAttempts  = 0;
+        this._waitingMax       = 40;
         hide('view-host');
         show('view-player');
         setText('pg-pseudo', session.pseudo);
@@ -419,32 +422,45 @@ const RolePlayer = {
             }
 
             // GAME_NOT_FOUND : la partie n'existe pas encore côté serveur.
-            // NE PAS boucler — afficher un message avec bouton retry.
+            // Attendre que l'hôte la crée (polling 3s), max 2 minutes.
             if (code === 'GAME_NOT_FOUND') {
-                const contenu = document.querySelector('#player-waiting, #phase-jeu, main') || document.body;
-                contenu.innerHTML = `
-                    <div style="display:flex;flex-direction:column;align-items:center;
-                        justify-content:center;min-height:60vh;text-align:center;padding:2rem;gap:1rem;">
-                        <span style="font-size:3rem;">⏳</span>
-                        <h2 style="color:white;margin:0;">Partie pas encore prête</h2>
-                        <p style="color:rgba(255,255,255,.6);max-width:320px;">
-                            L'hôte n'a pas encore créé la partie côté serveur,
-                            ou le serveur a redémarré. Attends quelques secondes
-                            que l'hôte lance le jeu, puis réessaie.
-                        </p>
-                        <button id="btn-retry-join"
-                            style="padding:.75rem 2rem;background:rgba(0,212,255,.15);
-                                border:1px solid rgba(0,212,255,.4);border-radius:10px;
-                                color:#00d4ff;font-size:.95rem;cursor:pointer;font-family:inherit;">
-                            🔄 Réessayer
-                        </button>
-                        <a href="/" style="font-size:.8rem;color:rgba(255,255,255,.3);text-decoration:none;margin-top:.5rem;">
-                            ← Retour à l'accueil
-                        </a>
-                    </div>`;
-                document.getElementById('btn-retry-join')?.addEventListener('click', () => {
-                    window.location.reload();
-                });
+                if (!this._waitingForGame) {
+                    this._waitingForGame  = true;
+                    this._waitingAttempts = 0;
+                    this._waitingMax      = 40; // 40 × 3s = 2 minutes
+                    this._afficherAttenteCreation(session);
+                }
+                this._waitingAttempts++;
+                if (this._waitingAttempts >= this._waitingMax) {
+                    // Timeout — afficher bouton reload
+                    const el = document.getElementById('attente-creation-msg');
+                    if (el) el.innerHTML = `
+                        <p style="color:#f87171;">L'hôte n'a pas créé la partie.<br>Vérifie le lien et réessaie.</p>
+                        <button onclick="location.reload()" style="margin-top:.5rem;padding:.6rem 1.5rem;
+                            background:rgba(0,212,255,.15);border:1px solid rgba(0,212,255,.4);
+                            border-radius:8px;color:#00d4ff;cursor:pointer;font-family:inherit;">
+                            🔄 Recharger
+                        </button>`;
+                    return;
+                }
+                // Réessayer dans 3 secondes
+                setTimeout(() => {
+                    if (this._waitingForGame) {
+                        const el = document.getElementById('attente-countdown');
+                        let count = 3;
+                        const iv = setInterval(() => {
+                            count--;
+                            if (el) el.textContent = count > 0 ? `Tentative dans ${count}s…` : 'Connexion…';
+                            if (count <= 0) {
+                                clearInterval(iv);
+                                socket.send('PLAYER_JOIN', {
+                                    pseudo   : session.pseudo,
+                                    partieId : session.partieId,
+                                });
+                            }
+                        }, 1000);
+                    }
+                }, 100);
                 return;
             }
 
@@ -460,6 +476,7 @@ const RolePlayer = {
 
         socket.on('JOIN_OK', ({ pseudo, equipe, snapshot }) => {
             hideBanner();
+            this._waitingForGame = false; // stopper le polling d'attente
             this.snapshot = snapshot;
             this.session.equipe = equipe;
             toast(`Bienvenue ${pseudo} ! En attente du lancement…`, 'success', 3000);
@@ -504,6 +521,32 @@ const RolePlayer = {
         socket.on('__connected__', () => {
             hideBanner();
         });
+    },
+
+    _afficherAttenteCreation(session) {
+        const contenu = document.querySelector('#player-waiting, #phase-jeu, main') || document.body;
+        const partieNom = session.partieNom || 'la partie';
+        contenu.innerHTML = `
+            <div style="display:flex;flex-direction:column;align-items:center;
+                justify-content:center;min-height:60vh;text-align:center;padding:2rem;gap:1.25rem;">
+                <div style="width:48px;height:48px;border:4px solid rgba(0,212,255,.2);
+                    border-top-color:#00d4ff;border-radius:50%;animation:spin .9s linear infinite;"></div>
+                <h2 style="color:white;margin:0;">En attente de l'hôte…</h2>
+                <div id="attente-creation-msg">
+                    <p style="color:rgba(255,255,255,.6);max-width:320px;margin:0;">
+                        Connecté en tant que <strong style="color:#00d4ff;">${esc(session.pseudo)}</strong><br>
+                        L'hôte est en train de configurer <strong>${esc(partieNom)}</strong>.<br>
+                        Tu rejoindras automatiquement dès qu'il sera prêt.
+                    </p>
+                    <p id="attente-countdown" style="color:rgba(255,255,255,.3);font-size:.82rem;margin-top:.5rem;">
+                        Tentative dans 3s…
+                    </p>
+                </div>
+                <a href="/" style="font-size:.8rem;color:rgba(255,255,255,.25);text-decoration:none;margin-top:.5rem;">
+                    ← Retour à l'accueil
+                </a>
+            </div>
+            <style>@keyframes spin { to { transform: rotate(360deg); } }</style>`;
     },
 
     _afficherAttente(snapshot) {

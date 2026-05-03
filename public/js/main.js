@@ -533,6 +533,13 @@ const HostSession = {
                 const savedId = localStorage.getItem('ws_partie_id');
                 if (savedId) {
                     socket.send('HOST_REJOIN', { partieId: savedId });
+                    return;
+                }
+
+                // Si des joueurs sont déjà sélectionnés (ex: retour arrière depuis jeu),
+                // créer immédiatement la partie WS pour que les invités puissent rejoindre.
+                if (GameState.joueurs && GameState.joueurs.length > 0 && GameState.jeu) {
+                    this.creerPartie();
                 }
             });
 
@@ -659,5 +666,13 @@ const HostSession = {
 };
 
 // Exposer pour les modules hote (quiz_hote.js, etc.)
-// Ils peuvent appeler HostSession.terminer() en fin de jeu
 window.HostSession = HostSession;
+
+// Hook appelé par afficherJoueursSelectionnes() dans joueurs.js
+// dès qu'un joueur est ajouté → créer la partie WS immédiatement
+// pour que l'invité puisse rejoindre avant le clic Commencer.
+window._hostCreerPartieQuandPret = function() {
+    if (HostSession._authenticated && !HostSession._partieId) {
+        HostSession.creerPartie();
+    }
+};
