@@ -208,7 +208,6 @@ const RoleHost = {
         socket.on('ERROR', ({ code, message }) => {
             if (code === 'GAME_NOT_FOUND') {
                 toast('Partie introuvable — elle a peut-être expiré.', 'warning', 5000);
-                // L'hôte devra recréer via main.js
             } else {
                 toast(message || `Erreur: ${code}`, 'error');
             }
@@ -267,28 +266,36 @@ const RoleHost = {
         this._renderScores(snap.scores || {});
     },
 
+    // ─────────────────────────────────────────────────────
+    // 🔥 NOUVELLE VERSION — Mise à jour du conteneur hôte
+    // ─────────────────────────────────────────────────────
     _renderJoueurs(joueurs) {
-        const el = $('h-joueurs-connectes');
-        const nb = $('h-nb-joueurs');
-        if (nb) nb.textContent = joueurs.length;
-        if (!el) return;
-        if (joueurs.length === 0) {
-            el.innerHTML = '<div style="text-align:center;padding:1.5rem;opacity:.5;"><p>En attente de joueurs…</p></div>';
+        const cont = document.getElementById('joueurs-selectionnes-container');
+        if (!cont) return;
+
+        // Aucun joueur
+        if (!joueurs.length) {
+            cont.innerHTML = `
+                <div class="joueur-tag empty">
+                    <span class="nom" style="opacity:.6;">En attente de joueurs…</span>
+                </div>`;
             return;
         }
-        el.innerHTML = joueurs.map(j => {
-            const init = (j.pseudo || '?').charAt(0).toUpperCase();
-            return `<div style="display:flex;align-items:center;gap:.6rem;padding:.5rem .75rem;background:rgba(255,255,255,.04);border-radius:8px;margin-bottom:.4rem;">
-                <span style="width:30px;height:30px;border-radius:50%;background:#00d4ff22;display:flex;align-items:center;justify-content:center;font-weight:700;color:#00d4ff;">${init}</span>
-                <span style="flex:1;font-weight:500;">${esc(j.pseudo)}</span>
-                ${j.equipe ? `<span style="font-size:.75rem;opacity:.6;background:rgba(255,255,255,.06);padding:.2rem .5rem;border-radius:4px;">🛡️ ${esc(j.equipe)}</span>` : ''}
-                <button class="btn-kick" data-pseudo="${esc(j.pseudo)}" style="background:none;border:1px solid #f8717140;color:#f87171;padding:.2rem .5rem;border-radius:5px;cursor:pointer;font-size:.8rem;">✖</button>
-            </div>`;
-        }).join('');
-        el.querySelectorAll('.btn-kick').forEach(btn => {
+
+        // Liste des joueurs
+        cont.innerHTML = joueurs.map(j => `
+            <div class="joueur-tag">
+                <span class="nom">${esc(j.pseudo)}</span>
+                <span class="remove" data-joueur="${esc(j.pseudo)}">✖</span>
+            </div>
+        `).join('');
+
+        // Gestion du bouton ✖ (expulsion)
+        cont.querySelectorAll('.remove').forEach(btn => {
             btn.addEventListener('click', () => {
-                if (confirm(`Expulser ${btn.dataset.pseudo} ?`)) {
-                    socket.send('HOST_KICK_PLAYER', { pseudo: btn.dataset.pseudo });
+                const pseudo = btn.dataset.joueur;
+                if (confirm(`Expulser ${pseudo} ?`)) {
+                    socket.send('HOST_KICK_PLAYER', { pseudo });
                 }
             });
         });
@@ -374,6 +381,7 @@ const helpers_host = {
     hide,
     $,
 };
+
 
 // ─────────────────────────────────────────────────────
 // RÔLE PLAYER
@@ -1101,7 +1109,7 @@ function _jeuIcon(jeu) {
 JeuRegistry.register('quiz', QuizModule);
 
 // ─────────────────────────────────────────────────────
-// POINT D'ENTRÉE — JeuApp
+// POINT D'ENTRÉE — JeuApp (version jeu.html invité)
 // ─────────────────────────────────────────────────────
 
 const JeuApp = {
@@ -1110,88 +1118,83 @@ const JeuApp = {
     init() {
         const session = chargerSession();
 
-        // Aucun partieId détectable → erreur
+        // Aucun partieId détectable → on reste dans jeu.html mais on affiche une erreur dans l’UI
         if (!session) {
-            document.body.innerHTML = `
-                <div style="display:flex;align-items:center;justify-content:center;
-                    height:100vh;color:#f87171;font-size:1.1rem;text-align:center;padding:2rem;flex-direction:column;gap:1rem;">
-                    <span style="font-size:3rem;">❌</span>
-                    <p>Paramètres manquants.<br>
-                    <small style="opacity:.6;">Utilisez le lien fourni par le host.</small></p>
-                    <a href="/" style="padding:.6rem 1.5rem;background:rgba(255,255,255,.1);border-radius:8px;color:white;text-decoration:none;">
-                        🏠 Accueil
-                    </a>
-                </div>`;
+            const etat = document.getElementById('id-etat');
+            if (etat) {
+                etat.textContent = "Paramètres manquants. Utilise le lien fourni par l'hôte.";
+            }
             return;
         }
 
-        // Format V2 natif : partieId présent mais pseudo manquant
-        // → afficher un formulaire de saisie du pseudo, puis continuer
-        if (session.needsPseudo) {
+        this.session = session;
+
+        // Remplir les métadonnées dans la carte d’identification
+        this._remplirMeta(session);
+
+        // Si pseudo manquant (flow V2) → afficher le formulaire dans #id-corps
+        if (session.needsPseudo || !session.pseudo) {
             this._afficherFormulairePseudo(session);
             return;
         }
 
+        // Sinon on peut directement démarrer le flux joueur
         this._demarrer(session);
     },
 
-    // ── Formulaire de saisie du pseudo (flow V2 natif) ────────
+    _remplirMeta(session) {
+        const { partieId, partieNom, jeu, hote } = session;
+        const nomPartie = partieNom || 'Partie';
+        const jeuLabel  = jeu ? jeu.toUpperCase() : '—';
+
+        const metaNom  = document.getElementById('id-meta-nom');
+        const metaJeu  = document.getElementById('id-meta-jeu');
+        const metaId   = document.getElementById('id-meta-id');
+        const metaHote = document.getElementById('id-meta-hote');
+        const rowHote  = document.getElementById('id-row-hote');
+
+        if (metaNom)  metaNom.textContent  = nomPartie;
+        if (metaJeu)  metaJeu.textContent  = jeuLabel;
+        if (metaId)   metaId.textContent   = partieId || '—';
+        if (metaHote) metaHote.textContent = hote || '—';
+        if (rowHote)  rowHote.style.display = hote ? '' : 'none';
+    },
+
     _afficherFormulairePseudo(session) {
+        const cont = document.getElementById('id-corps');
+        const etat = document.getElementById('id-etat');
+        if (!cont) return;
+
         const nomPartie = session.partieNom || 'Partie';
         const jeuLabel  = session.jeu ? session.jeu.toUpperCase() : '';
 
-        document.body.innerHTML = `
-            <div style="display:flex;align-items:center;justify-content:center;
-                min-height:100vh;padding:2rem;background:#0d0d1a;">
-                <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
-                    border-radius:20px;padding:2.5rem 2rem;max-width:380px;width:100%;text-align:center;">
-                    <div style="font-size:2.5rem;margin-bottom:.5rem;">🎮</div>
-                    <h2 style="color:white;margin:0 0 .25rem;font-size:1.2rem;">${esc(nomPartie)}</h2>
-                    ${jeuLabel ? `<div style="font-size:.8rem;opacity:.5;margin-bottom:1.5rem;text-transform:uppercase;letter-spacing:.1em;">${esc(jeuLabel)}</div>` : '<div style="margin-bottom:1.5rem;"></div>'}
-                    <label style="display:block;font-size:.8rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem;text-align:left;">
-                        Ton pseudo
-                    </label>
-                    <input id="input-pseudo-jeu" type="text" maxlength="20" autocomplete="off"
-                        placeholder="Entre ton pseudo…"
-                        style="width:100%;box-sizing:border-box;padding:.75rem 1rem;
-                            background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.18);
-                            border-radius:10px;color:white;font-size:1rem;font-family:inherit;
-                            outline:none;margin-bottom:1rem;">
-                    <button id="btn-rejoindre-jeu"
-                        style="width:100%;padding:.85rem;background:linear-gradient(135deg,#6a5af9,#8a2be2);
-                            border:none;border-radius:12px;color:white;font-size:1rem;
-                            font-weight:700;cursor:pointer;font-family:inherit;">
-                        🚀 Rejoindre
-                    </button>
-                    <p id="err-pseudo-jeu" style="color:#f87171;font-size:.85rem;margin:.75rem 0 0;min-height:1.2em;"></p>
-                    <a href="/" style="display:inline-block;margin-top:1rem;font-size:.8rem;
-                        color:rgba(255,255,255,.3);text-decoration:none;">← Retour à l'accueil</a>
-                </div>
-            </div>
-            <style>
-                body { margin:0; font-family:'Segoe UI',sans-serif; }
-                #input-pseudo-jeu:focus { border-color:#00d4ff; box-shadow:0 0 0 3px rgba(0,212,255,.2); }
-                #btn-rejoindre-jeu:hover { opacity:.9; transform:translateY(-1px); }
-            </style>`;
+        cont.innerHTML = `
+            <label class="id-label" for="input-pseudo-jeu">Ton pseudo</label>
+            <input id="input-pseudo-jeu" type="text" maxlength="20" autocomplete="off"
+                   placeholder="Entre ton pseudo…"
+                   class="id-input">
+            <button id="btn-rejoindre-jeu" class="id-btn-primary">
+                🚀 Rejoindre
+            </button>
+        `;
 
-        const input  = document.getElementById('input-pseudo-jeu');
-        const btn    = document.getElementById('btn-rejoindre-jeu');
-        const errEl  = document.getElementById('err-pseudo-jeu');
+        const input = document.getElementById('input-pseudo-jeu');
+        const btn   = document.getElementById('btn-rejoindre-jeu');
 
         const valider = () => {
             const pseudo = input.value.trim();
             if (!pseudo || pseudo.length < 2) {
-                errEl.textContent = 'Pseudo trop court (2 caractères minimum).';
+                if (etat) etat.textContent = 'Pseudo trop court (2 caractères minimum).';
                 input.focus();
                 return;
             }
             if (!/^[a-zA-Z0-9_-]{2,20}$/.test(pseudo)) {
-                errEl.textContent = 'Lettres, chiffres, tiret ou underscore uniquement.';
+                if (etat) etat.textContent = 'Lettres, chiffres, tiret ou underscore uniquement.';
                 input.focus();
                 return;
             }
-            errEl.textContent = '';
-            // Compléter la session et continuer
+            if (etat) etat.textContent = '';
+
             const sessionComplete = { ...session, pseudo, needsPseudo: false };
             try { sessionStorage.setItem('mgu_game_session', JSON.stringify(sessionComplete)); } catch {}
             this._demarrer(sessionComplete);
@@ -1202,7 +1205,6 @@ const JeuApp = {
         setTimeout(() => input.focus(), 100);
     },
 
-    // ── Démarrage effectif après que le pseudo est connu ──────
     _demarrer(session) {
         this.session = session;
 
@@ -1214,22 +1216,202 @@ const JeuApp = {
         window.JeuApp    = this;
         window.jeuSocket = socket;
 
-        // Dispatch par rôle
-        const role = session.role || 'player';
-        if (role === 'host') {
-            RoleHost.init(session);
-        } else if (role === 'host-player') {
-            RoleHost.init(session);
-            RolePlayer.init({ ...session, role: 'host-player' });
-        } else {
-            RolePlayer.init(session);
-        }
+        // Ici, côté jeu.html, on ne gère que le rôle joueur
+        RolePlayer.init(session);
     },
 };
 
 document.addEventListener('DOMContentLoaded', () => JeuApp.init());
 
-// Expositions globales pour les modules V2 (jeux/*.js, modules/*_hote.js)
-// Ils peuvent appeler window.jeuSocket.send(...) pour envoyer des actions
-window.JeuRegistry = JeuRegistry;
-window.QuizModule  = QuizModule;
+
+// ─────────────────────────────────────────────────────
+// RÔLE PLAYER — version jeu.html invité
+// ─────────────────────────────────────────────────────
+
+const RolePlayer = {
+    session   : null,
+    snapshot  : null,
+    gameState : null,
+    module    : null,
+    scoreLocal: 0,
+    _waitingForGame  : false,
+    _waitingAttempts : 0,
+    _waitingMax      : 40,
+
+    init(session) {
+        this.session = session;
+
+        // Phase identification visible au début, phase jeu masquée
+        const phaseId  = document.getElementById('phase-identification');
+        const phaseJeu = document.getElementById('phase-jeu');
+        if (phaseId)  phaseId.style.display  = '';
+        if (phaseJeu) phaseJeu.style.display = 'none';
+
+        // Header jeu (rempli plus tard après JOIN_OK)
+        const hdrPseudo  = document.getElementById('hdr-pseudo');
+        const hdrPartie  = document.getElementById('hdr-partie');
+        const hdrJeu     = document.getElementById('hdr-jeu');
+        if (hdrPseudo) hdrPseudo.textContent = session.pseudo || '—';
+        if (hdrPartie) hdrPartie.textContent = session.partieNom || 'Partie';
+        if (hdrJeu)    hdrJeu.textContent    = (session.jeu || '').toUpperCase();
+
+        // Une fois connecté au WS, on tente un REJOIN puis JOIN
+        socket.once('__connected__', () => {
+            socket.send('PLAYER_REJOIN', { partieId: session.partieId, pseudo: session.pseudo });
+        });
+
+        socket.on('REJOIN_OK', ({ pseudo, equipe, snapshot, gameState }) => {
+            hideBanner();
+            this.snapshot  = snapshot;
+            this.gameState = gameState;
+            this.session.equipe = equipe;
+            toast(`Reconnecté : ${pseudo} 👋`, 'success', 2000);
+            this._basculerVersJeu(snapshot);
+            this._chargerModule(snapshot?.jeu || session.jeu, gameState, snapshot);
+        });
+
+        socket.on('JOIN_ERROR', ({ code }) => {
+            this._gererJoinError(code, session);
+        });
+
+        socket.on('JOIN_OK', ({ pseudo, equipe, snapshot }) => {
+            hideBanner();
+            this._waitingForGame = false;
+            this.snapshot = snapshot;
+            this.session.equipe = equipe;
+            toast(`Bienvenue ${pseudo} ! En attente du lancement…`, 'success', 3000);
+            this._basculerVersJeu(snapshot);
+            this._afficherAttente(snapshot);
+        });
+
+        socket.on('GAME_STARTED', ({ snapshot }) => {
+            this.snapshot = snapshot;
+            toast('La partie commence ! 🚀', 'success', 2000);
+            this._chargerModule(snapshot?.jeu || session.jeu, null, snapshot);
+        });
+
+        socket.on('HOST_ACTION', ({ action, data }) => {
+            if (this.module?.onHostAction) this.module.onHostAction(action, data);
+        });
+
+        socket.on('SCORES_UPDATE', ({ scores }) => {
+            const pts = scores?.[session.pseudo] ?? this.scoreLocal;
+            this.scoreLocal = pts;
+            if (this.module?.onScores) this.module.onScores(scores);
+        });
+
+        socket.on('GAME_ENDED', ({ snapshot }) => {
+            this.snapshot = snapshot;
+            // Ici, on pourra plus tard afficher un écran de fin dans #jeu-contenu
+        });
+
+        socket.on('KICKED', ({ reason }) => {
+            toast(`Vous avez été expulsé : ${reason || 'par le host'}`, 'error', 5000);
+            setTimeout(() => window.location.href = '/jeu', 2000);
+        });
+
+        socket.on('HOST_DISCONNECTED', ({ message }) => {
+            showBanner(`⚠️ ${message || "Le host s'est déconnecté"}`);
+        });
+
+        socket.on('__disconnected__', () => {
+            showBanner('⚠️ Connexion perdue — reconnexion en cours…');
+        });
+
+        socket.on('__connected__', () => {
+            hideBanner();
+        });
+    },
+
+    _gererJoinError(code, session) {
+        const etat = document.getElementById('id-etat');
+        const msgs = {
+            PSEUDO_TAKEN  : 'Ce pseudo est déjà utilisé dans cette partie.',
+            GAME_STARTED  : "La partie est déjà en cours — ton pseudo n'est pas dans la liste.",
+            MAX_PLAYERS   : 'La partie est complète.',
+            PSEUDO_INVALID: 'Pseudo invalide (2-20 caractères).',
+            MISSING_FIELDS: 'Données manquantes.',
+        };
+        if (etat) etat.textContent = msgs[code] || 'Erreur: ' + code;
+
+        if (code === 'GAME_NOT_FOUND') {
+            // On pourrait ici afficher un message plus spécifique dans id-etat
+            if (etat) etat.textContent = "La partie n'existe pas encore ou a expiré.";
+        }
+    },
+
+    _basculerVersJeu(snapshot) {
+        const phaseId  = document.getElementById('phase-identification');
+        const phaseJeu = document.getElementById('phase-jeu');
+        if (phaseId)  phaseId.style.display  = 'none';
+        if (phaseJeu) phaseJeu.style.display = '';
+
+        const hdrPseudo = document.getElementById('hdr-pseudo');
+        const hdrPartie = document.getElementById('hdr-partie');
+        const hdrJeu    = document.getElementById('hdr-jeu');
+
+        if (hdrPseudo) hdrPseudo.textContent = this.session.pseudo || '—';
+        if (hdrPartie) hdrPartie.textContent = snapshot?.nom || this.session.partieNom || 'Partie';
+        if (hdrJeu)    hdrJeu.textContent    = (snapshot?.jeu || this.session.jeu || '').toUpperCase();
+    },
+
+    _afficherAttente(snapshot) {
+        const cont = document.getElementById('jeu-contenu');
+        if (!cont) return;
+        const jeuIcon   = _jeuIcon(snapshot?.jeu);
+        const modeLabel = snapshot?.mode === 'team' ? '🛡️ Équipes' : '👤 Solo';
+
+        cont.innerHTML = `
+            <div class="invite-wait-screen">
+                <div class="invite-wait-card">
+                    <div class="invite-wait-icon">${jeuIcon}</div>
+                    <div class="invite-wait-title">${esc(snapshot?.nom || 'Partie')}</div>
+                    <div class="invite-wait-sub">
+                        ${(snapshot?.jeu || '').toUpperCase()} · ${modeLabel}
+                    </div>
+                    <div class="invite-wait-meta">
+                        <div class="invite-wait-label">Ton pseudo</div>
+                        <div class="invite-wait-value">${esc(this.session.pseudo)}</div>
+                        ${this.session.equipe ? `<div class="invite-wait-team">🛡️ ${esc(this.session.equipe)}</div>` : ''}
+                    </div>
+                    <div class="invite-wait-count" id="attente-joueurs-count">
+                        👥 ${(snapshot?.joueurs || []).length} joueur(s) connecté(s)
+                    </div>
+                </div>
+                <p class="invite-wait-footer">En attente du lancement…</p>
+            </div>
+        `;
+
+        socket.on('PLAYER_JOINED', ({ joueurs }) => {
+            const el = document.getElementById('attente-joueurs-count');
+            if (el) el.textContent = `👥 ${joueurs.length} joueur(s) connecté(s)`;
+        });
+    },
+
+    _chargerModule(jeu, gameState, snapshot) {
+        if (this.module?.destroy) this.module.destroy();
+
+        const mod = JeuRegistry.get(jeu);
+        const cont = document.getElementById('jeu-contenu');
+        if (!cont) return;
+
+        if (mod) {
+            this.module = mod;
+            // Le module se charge dans #jeu-contenu (il connaît helpers_player)
+            if (mod.initPlayer) mod.initPlayer(this.session, socket, gameState, snapshot, helpers_player);
+        } else {
+            cont.innerHTML = `
+                <div class="invite-wait-screen">
+                    <div class="invite-wait-card">
+                        <div class="invite-wait-icon">🖥️</div>
+                        <div class="invite-wait-title">Jeu sur écran principal</div>
+                        <div class="invite-wait-sub">
+                            <strong>${esc(jeu)}</strong> se joue sur l'écran de l'hôte.<br>
+                            Tu es inscrit en tant que <strong>${esc(this.session.pseudo)}</strong>.
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    },
+};
