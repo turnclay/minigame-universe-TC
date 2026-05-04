@@ -36,13 +36,6 @@
 
 <!-- ═══════════════════════════════════════════════════════════
      PHASE 1 — IDENTIFICATION
-     Visible au chargement.
-     Masquée par jeu.js après JOIN_OK ou si pseudo est dans l'URL.
-
-     IDs utilisés par jeu.js :
-       #id-corps     — champ pseudo + bouton injectés dynamiquement
-       #id-etat      — messages d'état (erreur, attente…)
-       #id-meta-nom, #id-meta-jeu, #id-meta-hote, #id-meta-date, #id-meta-id
 ═══════════════════════════════════════════════════════════ -->
 <div id="phase-identification">
   <div class="id-card">
@@ -70,7 +63,7 @@
         <span class="id-meta-val" id="id-meta-jeu">—</span>
       </div>
 
-      <div class="id-meta-row" id="id-row-date" style="display:none;">
+      <div class="id-meta-row" id="id-row-date">
         <span class="id-meta-label">Créée le</span>
         <span class="id-meta-val" id="id-meta-date">—</span>
       </div>
@@ -82,13 +75,18 @@
 
     </div>
 
-    <div id="id-corps"></div>
+    <!-- 🔥 INPUT + BOUTON REJOINDRE -->
+    <div id="id-corps">
+      <input id="id-pseudo" class="id-input" type="text" placeholder="Ton pseudo">
+      <button id="btn-join" class="id-btn">Rejoindre la partie</button>
+    </div>
 
     <div class="id-etat" id="id-etat" role="status" aria-live="polite"></div>
 
     <a href="index.html" class="id-back-link">← Retour à l'accueil</a>
   </div>
 </div>
+
 
 
 <!-- ═══════════════════════════════════════════════════════════

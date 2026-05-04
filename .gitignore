@@ -4,3 +4,8 @@ server/store-data.json
 .venv/
 __pycache__/
 *.pyc
+
+# Fichiers Excel temporaires
+~$*.xlsx
+~$*.xls
+*.tmp

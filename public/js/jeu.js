@@ -975,9 +975,34 @@ const RolePlayer = {
         const hdrPseudo  = document.getElementById('hdr-pseudo');
         const hdrPartie  = document.getElementById('hdr-partie');
         const hdrJeu     = document.getElementById('hdr-jeu');
+
         if (hdrPseudo) hdrPseudo.textContent = session.pseudo || '—';
-        if (hdrPartie) hdrPartie.textContent = session.partieNom || 'Partie';
-        if (hdrJeu)    hdrJeu.textContent    = (session.jeu || '').toUpperCase();
+
+        // 🔥 Affichage "Créée le"
+        if (hdrPartie) hdrPartie.textContent = session.createdAt
+            ? "Créée le " + formatDate(session.createdAt)
+            : "Créée le —";
+
+        if (hdrJeu) hdrJeu.textContent = (session.jeu || '').toUpperCase();
+
+        // Listener bouton rejoindre
+        const btnJoin = document.getElementById('btn-join');
+        const inputPseudo = document.getElementById('id-pseudo');
+
+        if (btnJoin && inputPseudo) {
+            btnJoin.addEventListener('click', () => {
+                const pseudo = inputPseudo.value.trim();
+                if (pseudo.length < 2) {
+                    document.getElementById('id-etat').textContent = "Pseudo trop court.";
+                    return;
+                }
+                this.session.pseudo = pseudo;
+                socket.send('PLAYER_JOIN', {
+                    pseudo,
+                    partieId: session.partieId
+                });
+            });
+        }
 
         // Une fois connecté au WS, on tente un REJOIN puis JOIN
         socket.once('__connected__', () => {
@@ -1026,7 +1051,6 @@ const RolePlayer = {
 
         socket.on('GAME_ENDED', ({ snapshot }) => {
             this.snapshot = snapshot;
-            // Ici, on pourra plus tard afficher un écran de fin dans #jeu-contenu
         });
 
         socket.on('KICKED', ({ reason }) => {
@@ -1047,23 +1071,6 @@ const RolePlayer = {
         });
     },
 
-    _gererJoinError(code, session) {
-        const etat = document.getElementById('id-etat');
-        const msgs = {
-            PSEUDO_TAKEN  : 'Ce pseudo est déjà utilisé dans cette partie.',
-            GAME_STARTED  : "La partie est déjà en cours — ton pseudo n'est pas dans la liste.",
-            MAX_PLAYERS   : 'La partie est complète.',
-            PSEUDO_INVALID: 'Pseudo invalide (2-20 caractères).',
-            MISSING_FIELDS: 'Données manquantes.',
-        };
-        if (etat) etat.textContent = msgs[code] || 'Erreur: ' + code;
-
-        if (code === 'GAME_NOT_FOUND') {
-            // On pourrait ici afficher un message plus spécifique dans id-etat
-            if (etat) etat.textContent = "La partie n'existe pas encore ou a expiré.";
-        }
-    },
-
     _basculerVersJeu(snapshot) {
         const phaseId  = document.getElementById('phase-identification');
         const phaseJeu = document.getElementById('phase-jeu');
@@ -1075,13 +1082,19 @@ const RolePlayer = {
         const hdrJeu    = document.getElementById('hdr-jeu');
 
         if (hdrPseudo) hdrPseudo.textContent = this.session.pseudo || '—';
-        if (hdrPartie) hdrPartie.textContent = snapshot?.nom || this.session.partieNom || 'Partie';
-        if (hdrJeu)    hdrJeu.textContent    = (snapshot?.jeu || this.session.jeu || '').toUpperCase();
+
+        // 🔥 Affichage "Créée le"
+        if (hdrPartie) hdrPartie.textContent = snapshot?.createdAt
+            ? "Créée le " + formatDate(snapshot.createdAt)
+            : "Créée le —";
+
+        if (hdrJeu) hdrJeu.textContent = (snapshot?.jeu || this.session.jeu || '').toUpperCase();
     },
 
     _afficherAttente(snapshot) {
         const cont = document.getElementById('jeu-contenu');
         if (!cont) return;
+
         const jeuIcon   = _jeuIcon(snapshot?.jeu);
         const modeLabel = snapshot?.mode === 'team' ? '🛡️ Équipes' : '👤 Solo';
 
@@ -1089,19 +1102,24 @@ const RolePlayer = {
             <div class="invite-wait-screen">
                 <div class="invite-wait-card">
                     <div class="invite-wait-icon">${jeuIcon}</div>
-                    <div class="invite-wait-title">${esc(snapshot?.nom || 'Partie')}</div>
+
+                    <div class="invite-wait-title">Créée le ${formatDate(snapshot?.createdAt)}</div>
+
                     <div class="invite-wait-sub">
                         ${(snapshot?.jeu || '').toUpperCase()} · ${modeLabel}
                     </div>
+
                     <div class="invite-wait-meta">
                         <div class="invite-wait-label">Ton pseudo</div>
                         <div class="invite-wait-value">${esc(this.session.pseudo)}</div>
                         ${this.session.equipe ? `<div class="invite-wait-team">🛡️ ${esc(this.session.equipe)}</div>` : ''}
                     </div>
+
                     <div class="invite-wait-count" id="attente-joueurs-count">
                         👥 ${(snapshot?.joueurs || []).length} joueur(s) connecté(s)
                     </div>
                 </div>
+
                 <p class="invite-wait-footer">En attente du lancement…</p>
             </div>
         `;
@@ -1111,31 +1129,5 @@ const RolePlayer = {
             if (el) el.textContent = `👥 ${joueurs.length} joueur(s) connecté(s)`;
         });
     },
-
-    _chargerModule(jeu, gameState, snapshot) {
-        if (this.module?.destroy) this.module.destroy();
-
-        const mod = JeuRegistry.get(jeu);
-        const cont = document.getElementById('jeu-contenu');
-        if (!cont) return;
-
-        if (mod) {
-            this.module = mod;
-            // Le module se charge dans #jeu-contenu (il connaît helpers_player)
-            if (mod.initPlayer) mod.initPlayer(this.session, socket, gameState, snapshot, helpers_player);
-        } else {
-            cont.innerHTML = `
-                <div class="invite-wait-screen">
-                    <div class="invite-wait-card">
-                        <div class="invite-wait-icon">🖥️</div>
-                        <div class="invite-wait-title">Jeu sur écran principal</div>
-                        <div class="invite-wait-sub">
-                            <strong>${esc(jeu)}</strong> se joue sur l'écran de l'hôte.<br>
-                            Tu es inscrit en tant que <strong>${esc(this.session.pseudo)}</strong>.
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-    },
 };
+
