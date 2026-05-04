@@ -873,63 +873,69 @@ const JeuApp = {
     },
 
     // Remplissage de la carte d’identification
-    _remplirMeta(session) {
-        const { partieId, partieNom, jeu, hote } = session;
+_remplirMeta(session) {
+    const { partieId, partieNom, jeu, hote, createdAt } = session;
 
-        const metaNom  = document.getElementById('id-meta-nom');
-        const metaJeu  = document.getElementById('id-meta-jeu');
-        const metaId   = document.getElementById('id-meta-id');
-        const metaHote = document.getElementById('id-meta-hote');
-        const rowHote  = document.getElementById('id-row-hote');
+    const metaNom   = document.getElementById('id-meta-nom');
+    const metaJeu   = document.getElementById('id-meta-jeu');
+    const metaId    = document.getElementById('id-meta-id');
+    const metaHote  = document.getElementById('id-meta-hote');
+    const rowHote   = document.getElementById('id-row-hote');
 
-        if (metaNom)  metaNom.textContent  = partieNom || "Partie";
-        if (metaJeu)  metaJeu.textContent  = (jeu || "—").toUpperCase();
-        if (metaId)   metaId.textContent   = partieId || "—";
-        if (metaHote) metaHote.textContent = hote || "—";
+    // 🔥 NOUVEAU : date de création
+    const metaDate  = document.getElementById('id-meta-date');
+    const rowDate   = document.getElementById('id-row-date');
 
-        if (rowHote) rowHote.style.display = hote ? "" : "none";
-    },
+    if (metaNom)  metaNom.textContent  = partieNom || "—";
+    if (metaJeu)  metaJeu.textContent  = (jeu || "—").toUpperCase();
+    if (metaId)   metaId.textContent   = partieId || "—";
+    if (metaHote) metaHote.textContent = hote || "—";
 
-    // Formulaire pseudo
-    _afficherFormulairePseudo(session) {
-        const cont = document.getElementById('id-corps');
-        const etat = document.getElementById('id-etat');
-        if (!cont) return;
+    if (rowHote) rowHote.style.display = hote ? "" : "none";
 
-        cont.innerHTML = `
-            <label class="id-label" for="input-pseudo-jeu">Ton pseudo</label>
-            <input id="input-pseudo-jeu" type="text" maxlength="20" autocomplete="off"
-                   placeholder="Entre ton pseudo…" class="id-input">
-            <button id="btn-rejoindre-jeu" class="id-btn-primary">🚀 Rejoindre</button>
-        `;
+    // 🔥 Ajout du champ "Créée le"
+    if (metaDate) metaDate.textContent = createdAt ? formatDate(createdAt) : "—";
+    if (rowDate)  rowDate.style.display = createdAt ? "" : "none";
+},
 
-        const input = document.getElementById('input-pseudo-jeu');
-        const btn   = document.getElementById('btn-rejoindre-jeu');
 
-        const valider = () => {
-            const pseudo = input.value.trim();
-            if (!pseudo || pseudo.length < 2) {
-                if (etat) etat.textContent = "Pseudo trop court (2 caractères minimum).";
-                input.focus();
-                return;
-            }
-            if (!/^[a-zA-Z0-9_-]{2,20}$/.test(pseudo)) {
-                if (etat) etat.textContent = "Lettres, chiffres, tiret ou underscore uniquement.";
-                input.focus();
-                return;
-            }
+// Formulaire pseudo — version statique (HTML déjà présent)
+_afficherFormulairePseudo(session) {
+    const btnJoin     = document.getElementById('btn-join');
+    const inputPseudo = document.getElementById('id-pseudo');
+    const etat        = document.getElementById('id-etat');
 
-            const sessionComplete = { ...session, pseudo, needsPseudo: false };
-            try { sessionStorage.setItem("mgu_game_session", JSON.stringify(sessionComplete)); } catch {}
+    if (!btnJoin || !inputPseudo) return;
 
-            this._demarrer(sessionComplete);
-        };
+    const valider = () => {
+        const pseudo = inputPseudo.value.trim();
 
-        input.addEventListener("keydown", e => { if (e.key === "Enter") valider(); });
-        btn.addEventListener("click", valider);
+        if (pseudo.length < 2) {
+            if (etat) etat.textContent = "Pseudo trop court.";
+            return;
+        }
 
-        setTimeout(() => input.focus(), 100);
-    },
+        if (!/^[a-zA-Z0-9_-]{2,20}$/.test(pseudo)) {
+            if (etat) etat.textContent = "Lettres, chiffres, tirets ou underscore uniquement.";
+            return;
+        }
+
+        // Mise à jour de la session
+        this.session.pseudo = pseudo;
+
+        // Envoi au serveur
+        socket.send('PLAYER_JOIN', {
+            pseudo,
+            partieId: session.partieId
+        });
+    };
+
+    btnJoin.addEventListener('click', valider);
+    inputPseudo.addEventListener('keydown', e => {
+        if (e.key === 'Enter') valider();
+    });
+}
+
 
     // Démarrage du flux joueur
     _demarrer(session) {
@@ -946,7 +952,6 @@ const JeuApp = {
 };
 
 document.addEventListener("DOMContentLoaded", () => JeuApp.init());
-
 
 // ─────────────────────────────────────────────────────
 // RÔLE PLAYER — version jeu.html invité
@@ -1092,42 +1097,42 @@ const RolePlayer = {
     },
 
     _afficherAttente(snapshot) {
-        const cont = document.getElementById('jeu-contenu');
-        if (!cont) return;
+    const cont = document.getElementById('jeu-contenu');
+    if (!cont) return;
 
-        const jeuIcon   = _jeuIcon(snapshot?.jeu);
-        const modeLabel = snapshot?.mode === 'team' ? '🛡️ Équipes' : '👤 Solo';
+    const jeuIcon   = _jeuIcon(snapshot?.jeu);
+    const modeLabel = snapshot?.mode === 'team' ? '🛡️ Équipes' : '👤 Solo';
 
-        cont.innerHTML = `
-            <div class="invite-wait-screen">
-                <div class="invite-wait-card">
-                    <div class="invite-wait-icon">${jeuIcon}</div>
+    cont.innerHTML = `
+        <div class="invite-wait-screen">
+            <div class="invite-wait-card">
+                <div class="invite-wait-icon">${jeuIcon}</div>
 
-                    <div class="invite-wait-title">Créée le ${formatDate(snapshot?.createdAt)}</div>
+                <div class="invite-wait-title">Créée le ${formatDate(snapshot?.createdAt)}</div>
 
-                    <div class="invite-wait-sub">
-                        ${(snapshot?.jeu || '').toUpperCase()} · ${modeLabel}
-                    </div>
-
-                    <div class="invite-wait-meta">
-                        <div class="invite-wait-label">Ton pseudo</div>
-                        <div class="invite-wait-value">${esc(this.session.pseudo)}</div>
-                        ${this.session.equipe ? `<div class="invite-wait-team">🛡️ ${esc(this.session.equipe)}</div>` : ''}
-                    </div>
-
-                    <div class="invite-wait-count" id="attente-joueurs-count">
-                        👥 ${(snapshot?.joueurs || []).length} joueur(s) connecté(s)
-                    </div>
+                <div class="invite-wait-sub">
+                    ${(snapshot?.jeu || '').toUpperCase()} · ${modeLabel}
                 </div>
 
-                <p class="invite-wait-footer">En attente du lancement…</p>
+                <div class="invite-wait-meta">
+                    <div class="invite-wait-label">Ton pseudo</div>
+                    <div class="invite-wait-value">${esc(this.session.pseudo)}</div>
+                    ${this.session.equipe ? `<div class="invite-wait-team">🛡️ ${esc(this.session.equipe)}</div>` : ''}
+                </div>
+
+                <div class="invite-wait-count" id="attente-joueurs-count">
+                    👥 ${(snapshot?.joueurs || []).length} joueur(s) connecté(s)
+                </div>
             </div>
-        `;
 
-        socket.on('PLAYER_JOINED', ({ joueurs }) => {
-            const el = document.getElementById('attente-joueurs-count');
-            if (el) el.textContent = `👥 ${joueurs.length} joueur(s) connecté(s)`;
-        });
+            <p class="invite-wait-footer">En attente du lancement…</p>
+        </div>
+    `;
+
+    socket.on('PLAYER_JOINED', ({ joueurs }) => {
+        const el = document.getElementById('attente-joueurs-count');
+        if (el) el.textContent = `👥 ${joueurs.length} joueur(s) connecté(s)`;
+    });
     },
-};
 
+};
