@@ -1,4 +1,5 @@
 #Cmd : powershell -ExecutionPolicy Bypass -File .\auto-push.ps1
+
 # --- CONFIGURATION ---
 $projectPath = "C:\Users\clayt\PycharmProjects\MiniGameV2"
 $renderServiceId = "srv-d6kv2u5m5p6s7389veag"
@@ -22,7 +23,13 @@ $changes = git status --porcelain
 
 if ($changes) {
     Write-Host "🟢 Modifications détectées → commit..."
+
+    # IMPORTANT : n'ajoute QUE les fichiers suivis (respecte .gitignore)
+    git add -u
+
+    # Ajoute les nouveaux fichiers NON ignorés
     git add .
+
     git commit -m "Auto update MiniGameV2"
 }
 
