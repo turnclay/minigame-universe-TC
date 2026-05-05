@@ -127,9 +127,14 @@ function getGameState(partieId, jeu) {
 // L'hôte construit le lien dans main.js (ou host.js pour les
 // parties créées depuis la page dédiée) en ajoutant &pseudo=...
 function buildJoinUrl(partie) {
-    const base = `/jeu?partieId=${encodeURIComponent(partie.id)}`;
-    if (partie.codeCourt) return `${base}&code=${encodeURIComponent(partie.codeCourt)}`;
-    return base;
+    const params = new URLSearchParams({
+        partieId  : partie.id,
+        partieNom : partie.nom || '',
+        jeu       : partie.jeu || '',
+        createdAt : partie.createdAt ? new Date(partie.createdAt).getTime() : Date.now(),
+    });
+    if (partie.codeCourt) params.set('code', partie.codeCourt);
+    return `/jeu?${params.toString()}`;
 }
 
 // ─────────────────────────────────────────────────────
@@ -376,7 +381,10 @@ function handleMessage(wss, ws, type, payload) {
             }
 
             if (!estStatutLobby(partie.statut)) {
-                return send(ws, 'JOIN_ERROR', { code: 'GAME_NOT_FOUND' });
+                // La partie est en cours et le pseudo n'est pas dans la liste.
+                // Retourner GAME_STARTED (plus précis que GAME_NOT_FOUND)
+                // pour que l'invité sache que la partie existe mais a déjà commencé.
+                return send(ws, 'JOIN_ERROR', { code: 'GAME_STARTED' });
             }
             if (partie.joueurs.some(j => j.pseudo.toLowerCase() === pseudo.toLowerCase())) {
                 return send(ws, 'JOIN_ERROR', { code: 'PSEUDO_TAKEN' });

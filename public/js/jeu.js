@@ -482,24 +482,61 @@ const JeuApp={
     },
 
     _afficherFormulairePseudo(session){
-        const etat=$('id-etat');
-        // Lire les IDs déjà présents dans jeu.html (#id-pseudo + #btn-join)
-        // Fallback : si absent, chercher les anciens IDs injectés dynamiquement
-        const input=$('id-pseudo')||$('input-pseudo-jeu');
-        const btn  =$('btn-join')||$('btn-rejoindre-jeu');
-        if(!input||!btn)return;
-        const valider=()=>{
-            const p=input?.value.trim()||''
-            if(p.length<2){if(etat)etat.textContent='Pseudo trop court (2 caractères minimum).';input?.focus();return;}
-            if(!/^[a-zA-Z0-9_-]{2,20}$/.test(p)){if(etat)etat.textContent='Lettres, chiffres, tiret ou underscore uniquement.';input?.focus();return;}
-            if(etat)etat.textContent='';
-            const sc={...session,pseudo:p,needsPseudo:false};
-            try{sessionStorage.setItem('mgu_game_session',JSON.stringify(sc));}catch{}
-            this._demarrer(sc);
+        const etat  = $('id-etat');
+        // Lire les éléments statiques de jeu.html
+        const input = $('id-pseudo');
+        const btn   = $('btn-join');
+
+        if (!input || !btn) {
+            // Fallback : les IDs ne sont pas dans le DOM (version ancienne)
+            if (etat) etat.textContent = "Erreur : formulaire introuvable dans jeu.html.";
+            return;
+        }
+
+        // Réinitialiser
+        input.value   = '';
+        input.disabled = false;
+        if (etat) etat.textContent = '';
+
+        const valider = () => {
+            const p = input.value.trim();
+
+            // Validation
+            if (p.length < 2) {
+                if (etat) etat.textContent = 'Pseudo trop court (2 caractères minimum).';
+                input.focus();
+                return;
+            }
+            if (!/^[a-zA-Z0-9_-]{2,20}$/.test(p)) {
+                if (etat) etat.textContent = 'Lettres, chiffres, tiret ou underscore uniquement.';
+                input.focus();
+                return;
+            }
+
+            // Désactiver pour éviter double-clic
+            btn.disabled   = true;
+            btn.textContent = '⏳ Connexion…';
+            input.disabled  = true;
+            if (etat) etat.textContent = '';
+
+            // Compléter la session avec le pseudo saisi
+            const sessionComplete = { ...session, pseudo: p, needsPseudo: false };
+            try { sessionStorage.setItem('mgu_game_session', JSON.stringify(sessionComplete)); } catch {}
+
+            // Démarrer le flux WS — socket.connect() appelé ici
+            this._demarrer(sessionComplete);
         };
-        input?.addEventListener('keydown',e=>{if(e.key==='Enter')valider();});
-        btn?.addEventListener('click',valider);
-        setTimeout(()=>input?.focus(),120);
+
+        // Listener Enter sur le champ
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') valider(); });
+
+        // Listener clic bouton — une seule fois (évite accumulation de listeners)
+        btn.replaceWith(btn.cloneNode(true)); // cloner pour nettoyer anciens listeners
+        const freshBtn = $('btn-join');
+        freshBtn.addEventListener('click', valider);
+
+        // Focus auto
+        setTimeout(() => input.focus(), 100);
     },
 
     _demarrer(session){

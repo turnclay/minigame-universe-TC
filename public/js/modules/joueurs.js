@@ -1,7 +1,7 @@
 // /js/modules/joueurs.js
 
 import { $, $$, show, hide } from "../core/dom.js";
-import { afficherBlocInvitation, arreterPollingInvites, resetPartieSessionId } from './invite.js';
+import { afficherBlocInvitation, arreterPollingInvites } from './invite.js';
 import { GameState } from "../core/state.js";
 import {
     getPlayers,
@@ -118,9 +118,14 @@ export function afficherJoueursSelectionnes(containerId) {
     // (joueurs.js ← invite.js ← joueurs.js).
     import('../modules/invite.js').then(m => {
         if (GameState.joueurs.length > 0) {
-            m.afficherBlocInvitation();
-            // Dès qu'un joueur est sélectionné, créer la partie WS
-            // pour que les invités puissent rejoindre avant le lancement.
+            // Si le bloc existe déjà (UUID serveur disponible) → juste mettre à jour le lien.
+            // Sinon → afficher le bloc (qui affichera le lien dès qu'UUID disponible).
+            if (document.getElementById('bloc-invitation')) {
+                m.mettreAJourLienInvitation();
+            } else {
+                m.afficherBlocInvitation();
+            }
+            // Créer la partie WS dès qu'un joueur est sélectionné.
             if (typeof window._hostCreerPartieQuandPret === 'function') {
                 window._hostCreerPartieQuandPret();
             }
@@ -142,12 +147,13 @@ export function initFormSolo() {
     GameState.scores                = {};
     GameState.partieEnCoursChargee  = false;
 
-    // ✅ Générer un NOUVEL ID de session pour cette partie.
-    // Cela crée une nouvelle clé localStorage "invite_rejoint_<newId>"
-    // vierge de tout historique — les anciens pseudos (Clay, Lolo, Marwa…)
-    // stockés sous l'ancien ID ne seront plus jamais relus par le polling.
+    // Stopper l'ancien polling localStorage (remplacé par WS).
+    // Ne PAS appeler resetPartieSessionId() ici :
+    //   cette clé contient l'UUID serveur reçu via GAME_CREATED,
+    //   la supprimer casserait le lien d'invitation.
+    // La réinitialisation de la partie WS est gérée par HostSession
+    // dans main.js (creerPartie / AUTH_OK / GAME_CREATED).
     arreterPollingInvites();
-    resetPartieSessionId();
 
     // Vider l'affichage des tags
     const container = $("joueurs-selectionnes-container");
@@ -196,8 +202,9 @@ export function initFormSolo() {
         });
     }
 
-    // 🔗 Bloc d'invitation QR + lien
-    afficherBlocInvitation();
+    // Le bloc invitation est affiché par afficherJoueursSelectionnes()
+    // dès qu'un joueur est ajouté ET que l'UUID serveur est disponible.
+    // Ne pas l'appeler ici : aucun UUID disponible à ce stade.
 }
 
 

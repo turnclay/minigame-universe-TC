@@ -529,18 +529,19 @@ const HostSession = {
                 console.log('[HOST] ✅ Authentifié');
                 this._authenticated = true;
 
-                // Si une partie était en cours (refresh de page) → tenter un rejoin
+                // Tenter un HOST_REJOIN uniquement si un ID serveur est en mémoire.
+                // Si HOST_REJOIN échoue (ERROR GAME_NOT_FOUND), nettoyer l'ID
+                // pour forcer une nouvelle création de partie.
                 const savedId = localStorage.getItem('ws_partie_id');
                 if (savedId) {
+                    console.log('[HOST] 🔄 Tentative HOST_REJOIN —', savedId);
                     socket.send('HOST_REJOIN', { partieId: savedId });
                     return;
                 }
 
-                // Si des joueurs sont déjà sélectionnés (ex: retour arrière depuis jeu),
-                // créer immédiatement la partie WS pour que les invités puissent rejoindre.
-                if (GameState.joueurs && GameState.joueurs.length > 0 && GameState.jeu) {
-                    this.creerPartie();
-                }
+                // Pas d'ID sauvegardé → rien à faire ici.
+                // creerPartie() sera appelé au clic btn-start-solo
+                // ou via window._hostCreerPartieQuandPret().
             });
 
             socket.on('HOST_REJOINED', ({ partieId, snapshot, joinUrl }) => {
@@ -554,13 +555,17 @@ const HostSession = {
                 console.log('[HOST] ✅ Partie créée —', partieId);
                 this._partieId = partieId;
                 this._snapshot = snapshot;
-                localStorage.setItem('ws_partie_id', partieId);
 
-                // ── Synchronisation ID critique ────────────────────────
-                // invite.js utilise 'minigame_partie_session_id' pour construire
-                // les liens d'invitation. On le met à jour avec le vrai UUID
-                // serveur pour que les invités arrivent avec le bon partieId.
+                // Stocker l'UUID serveur — c'est le seul ID autorisé
+                localStorage.setItem('ws_partie_id', partieId);
+                // Synchroniser avec invite.js (setPartieSessionId empêche toute génération locale)
                 localStorage.setItem('minigame_partie_session_id', partieId);
+
+                // Notifier invite.js pour mettre à jour le lien immédiatement
+                import('./modules/invite.js').then(m => {
+                    m.setPartieSessionId(partieId);
+                    m.mettreAJourLienInvitation();
+                }).catch(() => {});
 
                 this._afficherLienJoin(joinUrl, snapshot?.codeCourt);
             });
@@ -568,15 +573,20 @@ const HostSession = {
             socket.on('PLAYER_JOINED', ({ pseudo, joueurs }) => {
                 console.log(`[HOST] 👤 Joueur rejoint: ${pseudo} (${joueurs.length} total)`);
                 this._afficherCompteurJoueurs(joueurs.length);
-                // Ajouter le joueur dans GameState + DOM hôte
+                // Ajouter dans GameState + DOM #joueurs-selectionnes-container
                 HostSession._syncJoueurRejoint(pseudo);
+                // Toast visible pour l'hôte
+                HostSession._toastHote(`🎉 ${pseudo} a rejoint la partie !`, 'success');
+                // Mettre à jour le snapshot local
+                this._snapshot = { ...(this._snapshot || {}), joueurs };
             });
 
             socket.on('PLAYER_LEFT', ({ pseudo, joueurs }) => {
                 console.log(`[HOST] 👤 Joueur parti: ${pseudo}`);
                 this._afficherCompteurJoueurs(joueurs.length);
-                // Retirer le joueur de GameState + DOM hôte
                 HostSession._syncJoueurParti(pseudo);
+                HostSession._toastHote(`${pseudo} a quitté la partie`, 'warning');
+                this._snapshot = { ...(this._snapshot || {}), joueurs };
             });
 
             socket.on('SCORES_UPDATE', ({ scores }) => {
@@ -592,8 +602,23 @@ const HostSession = {
                 localStorage.removeItem('ws_partie_id');
             });
 
-            socket.on('ERROR', ({ code }) => {
-                console.warn('[HOST] ⚠️ Erreur WS:', code);
+            socket.on('ERROR', ({ code, message }) => {
+                console.warn('[HOST] ⚠️ Erreur WS:', code, message);
+                // HOST_REJOIN échoue → l'ID sauvegardé est périmé
+                if (code === 'GAME_NOT_FOUND') {
+                    console.log('[HOST] 🧹 Suppression ID périmé — nouvelle partie requise');
+                    localStorage.removeItem('ws_partie_id');
+                    localStorage.removeItem('minigame_partie_session_id');
+                    this._partieId = null;
+                    // Si des joueurs sont prêts, recréer la partie immédiatement
+                    if (GameState.joueurs && GameState.joueurs.length > 0 && GameState.jeu) {
+                        this.creerPartie();
+                    }
+                }
+                if (code === 'HOST_ALREADY_HAS_GAME') {
+                    // Déjà une partie active en session — ignorer
+                    console.log('[HOST] ℹ️ Partie déjà active côté serveur');
+                }
             });
 
         } catch (err) {
@@ -693,6 +718,35 @@ const HostSession = {
         const tag = container.querySelector(`[data-joueur="${CSS.escape(pseudo)}"]`);
         tag?.closest('.joueur-tag')?.remove();
         console.log(`[HOST] ✅ Joueur retiré du lobby: ${pseudo}`);
+    },
+
+    // ── Toast visible côté hôte ───────────────────────────────
+    // Crée un toast léger sans dépendance externe.
+    _toastHote(msg, type = 'info') {
+        const COLORS = { success: '#22c55e', error: '#ef4444', warning: '#f59e0b', info: '#00d4ff' };
+        const ICONS  = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+        let c = document.getElementById('host-toast-container');
+        if (!c) {
+            c = document.createElement('div');
+            c.id = 'host-toast-container';
+            c.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:.4rem;max-width:320px;pointer-events:none;';
+            document.body.appendChild(c);
+        }
+        const el = document.createElement('div');
+        el.style.cssText = [
+            'display:flex;gap:.5rem;align-items:center;padding:.65rem .9rem;border-radius:10px',
+            `background:#1e1e2e;color:#fff;border-left:3px solid ${COLORS[type] || COLORS.info}`,
+            'box-shadow:0 4px 16px rgba(0,0,0,.5)',
+            'opacity:0;transition:opacity .25s,transform .25s;transform:translateY(6px)',
+            'font-size:.88rem;font-weight:600;pointer-events:auto',
+        ].join(';');
+        el.innerHTML = `<span>${ICONS[type] || 'ℹ️'}</span><span>${msg}</span>`;
+        c.appendChild(el);
+        requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
+        setTimeout(() => {
+            el.style.opacity = '0'; el.style.transform = 'translateY(6px)';
+            setTimeout(() => el.remove(), 260);
+        }, 4000);
     },
 
     // ── Afficher le lien / QR de rejointe ─────────────────────
