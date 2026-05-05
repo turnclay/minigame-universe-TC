@@ -326,7 +326,7 @@ const QuizModule={
             <div style="padding:1rem 0;display:flex;flex-direction:column;gap:1rem;">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;">
                     <span style="font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:4px 10px;">${esc(theme||'—')}</span>
-                    <span style="font-size:.75rem;color:#64748b;font-weight:600;">Q ${posees} / ${total??this._totalQ||'?'}</span>
+                    <span style="font-size:.75rem;color:#64748b;font-weight:600;">Q ${posees} / ${total != null ? total : (this._totalQ || '?')}</span>
                 </div>
                 <div style="font-size:1.15rem;font-weight:700;line-height:1.45;text-align:center;padding:.75rem;background:rgba(255,255,255,.04);border-radius:12px;">${esc(question)}</div>
                 <div style="display:flex;flex-direction:column;gap:.5rem;">
@@ -364,7 +364,7 @@ const QuizModule={
         if(!maRep)fb='<div style="background:rgba(100,116,139,.12);border:1px solid rgba(100,116,139,.3);border-radius:10px;padding:.75rem;color:rgba(255,255,255,.6);">😶 Tu n\'as pas répondu à temps.</div>';
         else if(maRep.correct){const p=maRep.estPremier?' 🏆 Premier correct!':'';fb=`<div style="background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);border-radius:10px;padding:.75rem;color:#4ade80;font-weight:600;">🎉 Bonne réponse ! <strong>+${maRep.points} pt${maRep.points!==1?'s':''}</strong>${p}</div>`;}
         else fb=`<div style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:.75rem;color:#fca5a5;">❌ Mauvaise réponse — tu as écrit : <em>${esc(maRep.texte)}</em></div>`;
-        cont.innerHTML=`<div style="padding:1rem 0;display:flex;flex-direction:column;gap:1rem;"><div style="display:flex;justify-content:space-between;font-size:.75rem;color:#64748b;"><span>${esc(theme||'—')}</span><span>Q ${posees} / ${total??this._totalQ}</span></div><div style="font-size:1rem;font-weight:600;line-height:1.4;color:rgba(255,255,255,.8);text-align:center;">${esc(question)}</div><div style="text-align:center;"><div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.4);margin-bottom:.35rem;">Réponse correcte</div><div style="font-size:1.25rem;font-weight:800;color:#00d4ff;">${esc(reponse)}</div></div>${fb}<p style="font-size:.8rem;color:rgba(255,255,255,.35);text-align:center;margin:0;">En attente de la prochaine question…</p></div>`;
+        cont.innerHTML=`<div style="padding:1rem 0;display:flex;flex-direction:column;gap:1rem;"><div style="display:flex;justify-content:space-between;font-size:.75rem;color:#64748b;"><span>${esc(theme||'—')}</span><span>Q ${posees} / ${total != null ? total : this._totalQ}</span></div><div style="font-size:1rem;font-weight:600;line-height:1.4;color:rgba(255,255,255,.8);text-align:center;">${esc(question)}</div><div style="text-align:center;"><div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.4);margin-bottom:.35rem;">Réponse correcte</div><div style="font-size:1.25rem;font-weight:800;color:#00d4ff;">${esc(reponse)}</div></div>${fb}<p style="font-size:.8rem;color:rgba(255,255,255,.35);text-align:center;margin:0;">En attente de la prochaine question…</p></div>`;
     },
 
     _afficherFin(scores,pseudo){
@@ -437,6 +437,7 @@ const JeuApp={
         const partieNom=params.get('partieNom')||params.get('nom')||null;
         const hote=params.get('hote')||null;
         const codeCourt=params.get('code')||null;
+        const createdAt=params.get('createdAt')||null;
 
         if(!partieId){
             const etat=$('id-etat');const sub=$('id-subtitle');
@@ -445,7 +446,7 @@ const JeuApp={
             return;
         }
 
-        const session={partieId,pseudo,jeu,partieNom:partieNom||'Partie',hote,codeCourt,role:'player',needsPseudo:!pseudo};
+        const session={partieId,pseudo,jeu,partieNom:partieNom||'Partie',hote,codeCourt,createdAt,role:'player',needsPseudo:!pseudo};
         try{sessionStorage.setItem('mgu_game_session',JSON.stringify(session));}catch{}
         this.session=session;
         this._remplirMeta(session);
@@ -455,11 +456,29 @@ const JeuApp={
     },
 
     _remplirMeta(s){
-        setText('id-meta-nom',s.partieNom||'Partie');
-        setText('id-meta-jeu',s.jeu?s.jeu.toUpperCase():'—');
-        setText('id-meta-id',s.partieId||'—');
-        setText('id-meta-hote',s.hote||'—');
-        const rh=$('id-row-hote');if(rh)rh.style.display=s.hote?'':' none';
+        const JEUX_LABELS={quiz:'❓ Quiz',justeprix:'💰 Juste Prix',undercover:'🕵️ Undercover',
+            lml:'📖 Maxi Lettres',mimer:'🎭 Mimer',mimedessine:'🎭 Mimer',pendu:'🪢 Pendu',
+            petitbac:'📝 Petit Bac',memoire:'🧠 Mémoire',morpion:'⭕ Morpion',puissance4:'🔴 Puissance 4'};
+        setText('id-meta-nom', s.partieNom || 'Partie');
+        setText('id-meta-jeu', s.jeu ? (JEUX_LABELS[s.jeu.toLowerCase()] || s.jeu.toUpperCase()) : '—');
+        setText('id-meta-id',  s.partieId || '—');
+        setText('id-meta-hote', s.hote || '—');
+        // Ligne hôte
+        const rh=$('id-row-hote');
+        if(rh) rh.style.display = s.hote ? '' : 'none';
+        // Date de création depuis createdAt (timestamp ou ISO)
+        const rowDate=$('id-row-date');
+        if(s.createdAt && rowDate) {
+            try {
+                const d = new Date(isNaN(s.createdAt) ? s.createdAt : Number(s.createdAt));
+                const dateStr = d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'})
+                    + ' à ' + d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+                setText('id-meta-date', dateStr);
+                rowDate.style.display = '';
+            } catch { rowDate.style.display = 'none'; }
+        } else if(rowDate) {
+            rowDate.style.display = 'none';
+        }
     },
 
     _afficherFormulairePseudo(session){
