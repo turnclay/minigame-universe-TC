@@ -79,13 +79,6 @@
       ⬅️
     </button>
 
-    <!-- Bouton Reset (nouvelle partie propre) -->
-    <button class="btn-reset-permanent" id="btn-reset-permanent"
-            aria-label="Nouvelle partie — réinitialiser la session"
-            title="Nouvelle partie">
-      🔄
-    </button>
-
     <!-- Bouton Accueil -->
     <button class="btn-home-permanent" id="btn-home-permanent" aria-label="Retour à l'accueil">
       🏠
@@ -337,10 +330,23 @@
     </div>
 
     <!-- ══════════════════════════════════════════════════════
-         BLOC INVITATION — Statique, masqué par défaut.
-         Rendu visible par invite.js (afficherBlocInvitation / mettreAJourLienInvitation)
-         dès que GAME_CREATED a fourni un partieId valide.
-         Jamais injecté ou recréé par JavaScript.
+         BLOC INVITATION — statique, masqué par défaut.
+         Rendu visible + rempli par invite.js (afficherBlocInvitation /
+         mettreAJourLienInvitation) dès que GAME_CREATED a fourni
+         un partieId valide. Jamais injecté ni recréé par JS.
+
+         IDs utilisés par invite.js :
+           #bloc-invitation    — conteneur (hidden par défaut)
+           #invite-row-hote    — ligne hôte (hidden si absent)
+           #invite-meta-hote   — pseudo hôte
+           #invite-meta-nom    — nom de la partie
+           #invite-meta-jeu    — jeu (label lisible)
+           #invite-meta-date   — date de création
+           #invite-meta-id     — partieId UUID
+           #invite-link-input  — lien à copier (readonly)
+           #invite-copy-btn    — bouton copier (disabled par défaut)
+           #invite-showqr-btn  — bouton QR (disabled par défaut)
+           #invite-copy-confirm — confirmation copie (hidden)
     ══════════════════════════════════════════════════════ -->
     <div id="bloc-invitation" class="bloc-invitation" hidden aria-live="polite">
 
@@ -353,39 +359,52 @@
       </div>
 
       <div class="invite-meta">
-        <span class="invite-meta-item">
+
+        <!-- Ligne hôte — masquée si GameState.joueurs[0] absent -->
+        <span id="invite-row-hote" class="invite-meta-item" hidden>
           <span class="invite-meta-label">Hôte :</span>
-          <span class="invite-meta-val invite-meta-hote" id="invite-meta-hote"
+          <span class="invite-meta-val" id="invite-meta-hote"
                 style="color:#c4b5fd;">—</span>
         </span>
+
         <span class="invite-meta-item">
           <span class="invite-meta-label">Partie :</span>
           <span class="invite-meta-val" id="invite-meta-nom">—</span>
         </span>
+
         <span class="invite-meta-item">
           <span class="invite-meta-label">Jeu :</span>
           <span class="invite-meta-val" id="invite-meta-jeu">—</span>
         </span>
+
         <span class="invite-meta-item">
           <span class="invite-meta-label">Créée le :</span>
           <span class="invite-meta-val" id="invite-meta-date"
                 style="font-size:.78rem;">—</span>
         </span>
+
         <span class="invite-meta-item">
           <span class="invite-meta-label">ID :</span>
           <span class="invite-meta-val invite-id" id="invite-meta-id">—</span>
         </span>
+
       </div>
 
       <div class="invite-link-row">
-        <input id="invite-link-input" class="invite-link-input" type="text"
-               readonly value="" aria-label="Lien d'invitation"
-               placeholder="En attente de la création de la partie…">
+        <input
+          id="invite-link-input"
+          class="invite-link-input"
+          type="text"
+          readonly
+          value=""
+          aria-label="Lien d'invitation"
+          placeholder="En attente de la création de la partie…"
+        >
         <button id="invite-copy-btn" class="invite-copy-btn"
-                title="Copier le lien" aria-label="Copier le lien"
+                aria-label="Copier le lien" title="Copier le lien"
                 disabled>📋</button>
         <button id="invite-showqr-btn" class="invite-copy-btn"
-                title="Afficher le QR Code" aria-label="QR Code"
+                aria-label="Afficher le QR Code" title="QR Code"
                 disabled>📷</button>
       </div>
 
@@ -393,7 +412,7 @@
         ✅ Lien copié !
       </p>
 
-    </div>
+    </div><!-- /#bloc-invitation -->
 
     <!-- Bouton démarrer -->
     <button id="btn-start-solo" class="btn-start-game" aria-label="Démarrer la partie"
