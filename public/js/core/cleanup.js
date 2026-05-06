@@ -11,9 +11,11 @@
 //   partie_scores_*      partie_revelation_*   partie_demande_etat_*
 //   partie_premier_*     partie_nav_*          partie_validation_*
 //   invite_rejoint_*     invite_pret_*
+//
+// Clés exactes nettoyées :
 //   invite_joueur_context
 //   partie:signal
-//   minigame_partie_session_id  (régénéré par invite.js)
+//   minigame_partie_session_id   ← SUPPRESSION ACTIVÉE
 // =============================================================
 
 const PREFIXES_SESSION = [
@@ -33,11 +35,10 @@ const PREFIXES_SESSION = [
 const CLES_EXACTES = [
     'invite_joueur_context',
     'partie:signal',
-    // NE PAS supprimer minigame_partie_session_id — quiz_hote.js en dépend
+    'minigame_partie_session_id', // ← désormais supprimée systématiquement
 ];
 
 // Clés parasites permanentes à nettoyer UNE FOIS au démarrage
-// (données d'anciennes sessions ou fonctionnalités non utilisées)
 const CLES_PARASITES = [
     'equipes_enregistrees',
     'minigame_theme',
@@ -45,10 +46,6 @@ const CLES_PARASITES = [
     'scores_comptabilises',
 ];
 
-/**
- * Nettoyer toutes les clés de session.
- * NE touche PAS : players, parties, scores_globaux, performances.
- */
 export function nettoyerSession() {
     const keysToDelete = [];
 
@@ -65,10 +62,6 @@ export function nettoyerSession() {
     return keysToDelete.length;
 }
 
-/**
- * Nettoyer UNIQUEMENT les clés parasites (appelé au démarrage de l'app).
- * Ne touche pas aux données de jeu en cours.
- */
 export function nettoyerParasites() {
     let count = 0;
     CLES_PARASITES.forEach(k => {
@@ -81,12 +74,7 @@ export function nettoyerParasites() {
     return count;
 }
 
-/**
- * Nettoyage total — TOUT supprimer sauf les données permanentes.
- * Utilisé par le bouton "Réinitialiser" dans les réglages.
- */
 export function nettoyerTout() {
     nettoyerSession();
-    // Conserver players, parties, scores_globaux, performances
     console.log('[CLEANUP] 🧹 Nettoyage complet effectué');
 }
