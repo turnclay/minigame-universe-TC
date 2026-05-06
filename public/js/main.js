@@ -378,7 +378,8 @@ export function lancerJeu(game, options = {}) {
         }
     }
 
-    const pid = localStorage.getItem('minigame_partie_session_id') || '';
+    // Lire l'ID WS (seule source de vérité) pour signalDemarrage (canal localStorage fallback)
+    const pid = localStorage.getItem('ws_partie_id') || '';
     hideAll(["home","choix-mode","form-solo","form-equipes","choix-jeu","liste-parties"]);
     masquerUndercoverComplet();
     masquerModules();
@@ -529,19 +530,22 @@ const HostSession = {
                 console.log('[HOST] ✅ Authentifié');
                 this._authenticated = true;
 
-                // Tenter un HOST_REJOIN uniquement si un ID serveur est en mémoire.
-                // Si HOST_REJOIN échoue (ERROR GAME_NOT_FOUND), nettoyer l'ID
-                // pour forcer une nouvelle création de partie.
+                // HOST_REJOIN : uniquement si un ID WS valide existe.
+                // Un ID est considéré valide si ws_partie_id est présent.
+                // Si le serveur répond ERROR GAME_NOT_FOUND, on nettoie
+                // et on laisse l'hôte recréer une partie normalement.
                 const savedId = localStorage.getItem('ws_partie_id');
                 if (savedId) {
-                    console.log('[HOST] 🔄 Tentative HOST_REJOIN —', savedId);
+                    console.log('[HOST] 🔄 HOST_REJOIN —', savedId);
                     socket.send('HOST_REJOIN', { partieId: savedId });
+                    // Ne pas return : laisser les autres handlers s'enregistrer
                     return;
                 }
 
-                // Pas d'ID sauvegardé → rien à faire ici.
-                // creerPartie() sera appelé au clic btn-start-solo
-                // ou via window._hostCreerPartieQuandPret().
+                // Pas d'ID → démarrage propre.
+                // creerPartie() sera appelé par _hostCreerPartieQuandPret()
+                // dès qu'un joueur est ajouté, ou par btn-start-solo.
+                console.log('[HOST] ℹ️ Pas de partie sauvegardée — prêt à créer');
             });
 
             socket.on('HOST_REJOINED', ({ partieId, snapshot, joinUrl }) => {
@@ -556,10 +560,10 @@ const HostSession = {
                 this._partieId = partieId;
                 this._snapshot = snapshot;
 
-                // Stocker l'UUID serveur — c'est le seul ID autorisé
+                // Stocker l'UUID serveur — c'est le seul ID autorisé.
+                // minigame_partie_session_id est synchronisé par invite.js
+                // via setPartieSessionId() dans l'import dynamique ci-dessous.
                 localStorage.setItem('ws_partie_id', partieId);
-                // Synchroniser avec invite.js (setPartieSessionId empêche toute génération locale)
-                localStorage.setItem('minigame_partie_session_id', partieId);
 
                 // Notifier invite.js pour mettre à jour le lien immédiatement
                 import('./modules/invite.js').then(m => {
@@ -599,25 +603,42 @@ const HostSession = {
                 console.log('[HOST] 🏁 Partie terminée (WS)');
                 this._partieId = null;
                 this._snapshot = null;
+                // Supprimer les deux clés d'ID — nettoyage complet
                 localStorage.removeItem('ws_partie_id');
+                localStorage.removeItem('minigame_partie_session_id');
+                // Notifier invite.js
+                import('./modules/invite.js').then(m => m.resetPartieSessionId()).catch(() => {});
             });
 
             socket.on('ERROR', ({ code, message }) => {
-                console.warn('[HOST] ⚠️ Erreur WS:', code, message);
-                // HOST_REJOIN échoue → l'ID sauvegardé est périmé
+                console.warn('[HOST] ⚠️ Erreur WS:', code, message || '');
+
                 if (code === 'GAME_NOT_FOUND') {
-                    console.log('[HOST] 🧹 Suppression ID périmé — nouvelle partie requise');
+                    // HOST_REJOIN a échoué : l'ID sauvegardé est périmé (partie expirée).
+                    // Supprimer les deux clés pour repartir proprement.
+                    console.log('[HOST] 🧹 ID périmé supprimé — prêt pour une nouvelle partie');
                     localStorage.removeItem('ws_partie_id');
                     localStorage.removeItem('minigame_partie_session_id');
                     this._partieId = null;
-                    // Si des joueurs sont prêts, recréer la partie immédiatement
+                    import('./modules/invite.js').then(m => m.resetPartieSessionId()).catch(() => {});
+                    // Recréer immédiatement si des joueurs sont déjà configurés
                     if (GameState.joueurs && GameState.joueurs.length > 0 && GameState.jeu) {
                         this.creerPartie();
                     }
                 }
+
                 if (code === 'HOST_ALREADY_HAS_GAME') {
-                    // Déjà une partie active en session — ignorer
-                    console.log('[HOST] ℹ️ Partie déjà active côté serveur');
+                    // Le serveur a encore une partie liée à cette connexion WS.
+                    // Ne rien faire : HOST_REJOINED arrivera ou l'hôte recréera manuellement.
+                    console.log('[HOST] ℹ️ Partie déjà active côté serveur — attente HOST_REJOINED');
+                }
+
+                if (code === 'NAME_TAKEN') {
+                    // Nom de partie déjà utilisé par une autre partie non terminée.
+                    // Forcer un nouveau nom pour débloquer la situation.
+                    console.warn('[HOST] ⚠️ Nom de partie déjà pris :', GameState.partieNom);
+                    this._partieId = null;
+                    this._toastHote('Ce nom de partie est déjà utilisé. Change le nom et réessaie.', 'error');
                 }
             });
 

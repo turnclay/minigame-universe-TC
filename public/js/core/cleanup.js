@@ -1,6 +1,6 @@
 // /js/core/cleanup.js
 // =============================================================
-// 🧹 CLEANUP — Nettoyage du localStorage entre les parties
+// CLEANUP — Nettoyage du localStorage entre les parties
 // =============================================================
 // Appelé par l'hôte avant de créer une nouvelle partie.
 // Supprime toutes les clés de session sans toucher aux données
@@ -12,10 +12,11 @@
 //   partie_premier_*     partie_nav_*          partie_validation_*
 //   invite_rejoint_*     invite_pret_*
 //
-// Clés exactes nettoyées :
+// Clés exactes supprimées :
 //   invite_joueur_context
 //   partie:signal
-//   minigame_partie_session_id   ← SUPPRESSION ACTIVÉE
+//   minigame_partie_session_id   ← UUID de partie (réattribué par GAME_CREATED)
+//   ws_partie_id                 ← UUID WS (réattribué par GAME_CREATED)
 // =============================================================
 
 const PREFIXES_SESSION = [
@@ -35,10 +36,13 @@ const PREFIXES_SESSION = [
 const CLES_EXACTES = [
     'invite_joueur_context',
     'partie:signal',
-    'minigame_partie_session_id', // ← désormais supprimée systématiquement
+    // IDs de partie — toujours supprimés entre deux parties.
+    // Le seul ID valide est celui reçu de GAME_CREATED (ws_partie_id).
+    // minigame_partie_session_id est un alias synchronisé au même moment.
+    'minigame_partie_session_id',
+    'ws_partie_id',
 ];
 
-// Clés parasites permanentes à nettoyer UNE FOIS au démarrage
 const CLES_PARASITES = [
     'equipes_enregistrees',
     'minigame_theme',
@@ -46,6 +50,10 @@ const CLES_PARASITES = [
     'scores_comptabilises',
 ];
 
+/**
+ * Nettoyer toutes les clés de session.
+ * NE touche PAS : players, parties, scores_globaux, performances.
+ */
 export function nettoyerSession() {
     const keysToDelete = [];
 
@@ -58,10 +66,14 @@ export function nettoyerSession() {
     }
 
     keysToDelete.forEach(k => localStorage.removeItem(k));
-    console.log(`[CLEANUP] 🧹 ${keysToDelete.length} clé(s) supprimée(s) :`, keysToDelete);
+    console.log(`[CLEANUP] ${keysToDelete.length} cle(s) supprimee(s) :`, keysToDelete);
     return keysToDelete.length;
 }
 
+/**
+ * Nettoyer UNIQUEMENT les clés parasites (appelé au démarrage de l'app).
+ * Ne touche pas aux données de jeu en cours.
+ */
 export function nettoyerParasites() {
     let count = 0;
     CLES_PARASITES.forEach(k => {
@@ -70,11 +82,15 @@ export function nettoyerParasites() {
             count++;
         }
     });
-    if (count) console.log(`[CLEANUP] 🧹 ${count} clé(s) parasite(s) supprimée(s)`);
+    if (count) console.log(`[CLEANUP] ${count} cle(s) parasite(s) supprimee(s)`);
     return count;
 }
 
+/**
+ * Nettoyage total — TOUT supprimer sauf les données permanentes.
+ * Utilisé par le bouton "Réinitialiser" dans les réglages.
+ */
 export function nettoyerTout() {
     nettoyerSession();
-    console.log('[CLEANUP] 🧹 Nettoyage complet effectué');
+    console.log('[CLEANUP] Nettoyage complet effectue');
 }
