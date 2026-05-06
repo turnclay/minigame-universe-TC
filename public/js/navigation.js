@@ -10,6 +10,7 @@ import {
     getAllPerformances,
     getPlayers
 } from "./core/storage.js";
+import { nettoyerSession } from "./core/cleanup.js";
 
 // ======================================================
 // 🗺️ HISTORIQUE DE NAVIGATION
@@ -31,6 +32,25 @@ function estEcranJeu(ecran) {
 }
 
 // ======================================================
+// 🔄 BOUTON RESET PERMANENT (entre ⬅️ et 🏠)
+// ======================================================
+// Nettoie la session et ramène à l'accueil sans demander de confirmation.
+// Utilisé pour démarrer une nouvelle partie proprement.
+export function initBoutonReset() {
+    const btnReset = $("btn-reset-permanent");
+    if (!btnReset) return;
+    btnReset.addEventListener("click", () => {
+        fermerMenu();
+        // Confirmation uniquement si une partie de jeu est en cours
+        const ecranActuel = getEcranActuel();
+        if (estEcranJeu(ecranActuel)) {
+            if (!confirm("Réinitialiser la session et revenir à l'accueil ?")) return;
+        }
+        naviguerVersAccueil();
+    });
+}
+
+// ======================================================
 // 🏠 BOUTON ACCUEIL PERMANENT
 // ======================================================
 export function initBoutonAccueil() {
@@ -38,6 +58,11 @@ export function initBoutonAccueil() {
     if (!btnHome) return;
     btnHome.addEventListener("click", () => {
         fermerMenu();
+        // Confirmation si partie de jeu en cours
+        const ecranActuel = getEcranActuel();
+        if (estEcranJeu(ecranActuel)) {
+            if (!demanderQuitterPartie()) return;
+        }
         naviguerVersAccueil();
     });
 }
@@ -89,16 +114,58 @@ export function naviguerVersAccueil() {
     masquerScoreboard();
     show("home");
 
+    // Nettoyage session au retour à l'accueil
+    // Supprime ws_partie_id, minigame_partie_session_id et toutes les clés de jeu.
+    // GameState et HostSession sont réinitialisés via resetSession().
+    _resetSessionComplete();
+
     // Import dynamique pour éviter la dépendance circulaire navigation ↔ main
     import('./main.js').then(m => {
         if (typeof m.initHomeHub === 'function') m.initHomeHub();
     }).catch(() => {
-        // Fallback si window.initHomeHub est exposé
         if (typeof window.initHomeHub === 'function') window.initHomeHub();
     });
 
     const btnRetour = $("btn-retour-permanent");
     if (btnRetour) btnRetour.hidden = true;
+}
+
+// ── Reset complet de la session (nettoyage localStorage + WS + GameState) ──
+function _resetSessionComplete() {
+    // 1. Nettoyer localStorage
+    nettoyerSession();
+
+    // 2. Réinitialiser HostSession WS (fermer la partie serveur + reset état)
+    try {
+        if (window.HostSession) {
+            if (typeof window.HostSession.terminer === 'function') {
+                window.HostSession.terminer(); // HOST_END_GAME si partie active
+            }
+            window.HostSession._partieId = null;
+            window.HostSession._snapshot = null;
+        }
+    } catch {}
+
+    // 3. Réinitialiser invite.js (masquer le bloc, effacer l'ID en mémoire)
+    import('./modules/invite.js').then(m => {
+        if (typeof m.resetPartieSessionId === 'function') m.resetPartieSessionId();
+    }).catch(() => {});
+
+    // 4. Réinitialiser GameState
+    try {
+        if (window.GameState) {
+            window.GameState.mode               = null;
+            window.GameState.jeu                = null;
+            window.GameState.jeuActuel          = null;
+            window.GameState.partieNom          = '';
+            window.GameState.joueurs            = [];
+            window.GameState.equipes            = [];
+            window.GameState.scores             = {};
+            window.GameState.partieEnCoursChargee = false;
+        }
+    } catch {}
+
+    console.log('[NAV] 🧹 Session réinitialisée — prêt pour une nouvelle partie');
 }
 
 // ======================================================
@@ -938,6 +1005,7 @@ export function initNavigation() {
     // Auto-afficher le thème du pendu dès qu'il est disponible (bouton supprimé)
     _initPenduThemeAuto();
     initThemeSauvegarde();
+    initBoutonReset();
     initBoutonAccueil();
     initBoutonRetour();
     initBoutonMenu();

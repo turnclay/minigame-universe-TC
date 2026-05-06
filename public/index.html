@@ -79,6 +79,13 @@
       ⬅️
     </button>
 
+    <!-- Bouton Reset (nouvelle partie propre) -->
+    <button class="btn-reset-permanent" id="btn-reset-permanent"
+            aria-label="Nouvelle partie — réinitialiser la session"
+            title="Nouvelle partie">
+      🔄
+    </button>
+
     <!-- Bouton Accueil -->
     <button class="btn-home-permanent" id="btn-home-permanent" aria-label="Retour à l'accueil">
       🏠
@@ -327,6 +334,65 @@
           Créer et ajouter
         </button>
       </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         BLOC INVITATION — Statique, masqué par défaut.
+         Rendu visible par invite.js (afficherBlocInvitation / mettreAJourLienInvitation)
+         dès que GAME_CREATED a fourni un partieId valide.
+         Jamais injecté ou recréé par JavaScript.
+    ══════════════════════════════════════════════════════ -->
+    <div id="bloc-invitation" class="bloc-invitation" hidden aria-live="polite">
+
+      <div class="invite-header">
+        <span class="invite-icon">📱</span>
+        <div>
+          <h3 class="invite-title">Inviter des joueurs</h3>
+          <p class="invite-subtitle">Partage le lien ou scanne le QR</p>
+        </div>
+      </div>
+
+      <div class="invite-meta">
+        <span class="invite-meta-item">
+          <span class="invite-meta-label">Hôte :</span>
+          <span class="invite-meta-val invite-meta-hote" id="invite-meta-hote"
+                style="color:#c4b5fd;">—</span>
+        </span>
+        <span class="invite-meta-item">
+          <span class="invite-meta-label">Partie :</span>
+          <span class="invite-meta-val" id="invite-meta-nom">—</span>
+        </span>
+        <span class="invite-meta-item">
+          <span class="invite-meta-label">Jeu :</span>
+          <span class="invite-meta-val" id="invite-meta-jeu">—</span>
+        </span>
+        <span class="invite-meta-item">
+          <span class="invite-meta-label">Créée le :</span>
+          <span class="invite-meta-val" id="invite-meta-date"
+                style="font-size:.78rem;">—</span>
+        </span>
+        <span class="invite-meta-item">
+          <span class="invite-meta-label">ID :</span>
+          <span class="invite-meta-val invite-id" id="invite-meta-id">—</span>
+        </span>
+      </div>
+
+      <div class="invite-link-row">
+        <input id="invite-link-input" class="invite-link-input" type="text"
+               readonly value="" aria-label="Lien d'invitation"
+               placeholder="En attente de la création de la partie…">
+        <button id="invite-copy-btn" class="invite-copy-btn"
+                title="Copier le lien" aria-label="Copier le lien"
+                disabled>📋</button>
+        <button id="invite-showqr-btn" class="invite-copy-btn"
+                title="Afficher le QR Code" aria-label="QR Code"
+                disabled>📷</button>
+      </div>
+
+      <p id="invite-copy-confirm" class="invite-copy-confirm" hidden>
+        ✅ Lien copié !
+      </p>
+
     </div>
 
     <!-- Bouton démarrer -->

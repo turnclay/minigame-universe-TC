@@ -17,8 +17,6 @@
 // ============================================================
 
 import { GameState } from '../core/state.js';
-import { addPlayer } from '../core/storage.js';
-import { afficherJoueursSelectionnes } from './joueurs.js';
 import { ouvrirModaleQR, _injecterModaleQR } from './parties.js';
 
 const INVITE_KEY_PREFIX = 'invite_rejoint_';
@@ -46,6 +44,23 @@ export function setPartieSessionId(id) {
 export function resetPartieSessionId() {
     partieSessionId = null;
     localStorage.removeItem(PARTIE_ID_KEY);
+    // Masquer et réinitialiser le bloc statique
+    const bloc = document.getElementById('bloc-invitation');
+    if (bloc) {
+        bloc.hidden = true;
+        const input = document.getElementById('invite-link-input');
+        if (input) input.value = '';
+        ['invite-meta-hote','invite-meta-nom','invite-meta-jeu',
+         'invite-meta-date','invite-meta-id'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = '—';
+        });
+        const btnCopy = document.getElementById('invite-copy-btn');
+        const btnQR   = document.getElementById('invite-showqr-btn');
+        if (btnCopy) { btnCopy.disabled = true; btnCopy.onclick = null; }
+        if (btnQR)   { btnQR.disabled   = true; btnQR.onclick   = null; }
+    }
+    console.log('[INVITE] 🧹 partieSessionId réinitialisé — bloc masqué');
 }
 
 // ── Construire le lien d'invitation ──────────────────────
@@ -73,18 +88,36 @@ export function construireLienInvitation() {
     return `${base}/jeu.html?${params.toString()}`;
 }
 
-// ── Mettre à jour le lien affiché ────────────────────────
+// ── Mettre à jour le lien et les métadonnées du bloc statique ──
+// Appelé par main.js après GAME_CREATED.
 export function mettreAJourLienInvitation() {
-    const lien = construireLienInvitation();
-    if (!lien) return; // pas d'ID serveur → ne rien afficher
+    const lien     = construireLienInvitation();
+    const partieId = getPartieSessionId();
+    if (!lien || !partieId) return;
 
+    // Mettre à jour le champ lien
     const input = document.getElementById('invite-link-input');
     if (input) input.value = lien;
 
-    const idEl = document.querySelector('.invite-id');
-    if (idEl) idEl.textContent = getPartieSessionId();
+    // Mettre à jour l'ID affiché
+    const idEl = document.getElementById('invite-meta-id');
+    if (idEl) idEl.textContent = partieId;
+    // Compat : ancien selector .invite-id (conservé si présent ailleurs)
+    document.querySelectorAll('.invite-id').forEach(el => { el.textContent = partieId; });
 
-    // QR code
+    // Activer les boutons si le bloc est visible
+    const btnCopy = document.getElementById('invite-copy-btn');
+    const btnQR   = document.getElementById('invite-showqr-btn');
+    if (btnCopy) { btnCopy.disabled = false; btnCopy.onclick = _onCopierLien; }
+    if (btnQR)   {
+        btnQR.disabled = false;
+        btnQR.onclick  = () => {
+            if (!document.getElementById('modale-qr')) _injecterModaleQR();
+            ouvrirModaleQR(lien, GameState.partieNom || 'Partie');
+        };
+    }
+
+    // QR code (si div présent — modale externe)
     const qrDiv = document.getElementById('invite-qr-div');
     if (qrDiv) {
         qrDiv.innerHTML = '';
@@ -99,32 +132,32 @@ export function mettreAJourLienInvitation() {
         } catch {}
     }
 
-    // Bouton copier
-    const copyBtn = document.getElementById('invite-copy-btn');
-    if (copyBtn) {
-        copyBtn.onclick = () => {
-            navigator.clipboard.writeText(lien).catch(() => {
-                const inp = document.getElementById('invite-link-input');
-                if (inp) { inp.select(); document.execCommand('copy'); }
-            });
-        };
-    }
+    // Rendre le bloc visible s'il ne l'est pas déjà
+    const bloc = document.getElementById('bloc-invitation');
+    if (bloc) bloc.hidden = false;
 
     console.log('[INVITE] 🔗 Lien mis à jour :', lien);
 }
 
-// ── Afficher le bloc invitation ───────────────────────────
+// ── Afficher et remplir le bloc invitation statique ──────
+// Le bloc #bloc-invitation est défini dans index.html (statique).
+// Cette fonction le rend visible et met à jour ses champs.
+// Elle ne crée AUCUN élément DOM.
 export function afficherBlocInvitation() {
-    document.getElementById('bloc-invitation')?.remove();
+    const bloc = document.getElementById('bloc-invitation');
+    if (!bloc) return; // le bloc doit être dans index.html
 
     const lien     = construireLienInvitation();
     const partieId = getPartieSessionId();
+
     if (!lien || !partieId) {
-        console.warn('[INVITE] ⚠️ afficherBlocInvitation() ignoré — pas de partieId serveur');
+        // Pas encore d'ID serveur — masquer le bloc et attendre GAME_CREATED
+        bloc.hidden = true;
+        console.warn('[INVITE] ⚠️ Pas de partieId serveur — bloc masqué');
         return;
     }
 
-    const nomPartie = GameState.partieNom || 'Partie';
+    // Remplir les métadonnées statiques
     const JEUX_LABELS = {
         quiz:'❓ Quiz', justeprix:'💰 Juste Prix', undercover:'🕵️ Undercover',
         lml:'📖 Maxi Lettres', mimer:'🎭 Mimer', mimedessine:'🎭 Mimer',
@@ -138,57 +171,51 @@ export function afficherBlocInvitation() {
     const dateStr  = d.toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'numeric'})
                    + ' à ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'});
 
-    const bloc = document.createElement('div');
-    bloc.id        = 'bloc-invitation';
-    bloc.className = 'bloc-invitation';
-    bloc.innerHTML = `
-        <div class="invite-header">
-            <span class="invite-icon">📱</span>
-            <div>
-                <h3 class="invite-title">Inviter des joueurs</h3>
-                <p class="invite-subtitle">Partage le lien ou scanne le QR</p>
-            </div>
-        </div>
-        <div class="invite-meta">
-            ${hote ? `<span class="invite-meta-item"><span class="invite-meta-label">Hôte :</span> <span class="invite-meta-val" style="color:#c4b5fd;">${esc(hote)}</span></span>` : ''}
-            <span class="invite-meta-item"><span class="invite-meta-label">Partie :</span> <span class="invite-meta-val">${esc(nomPartie)}</span></span>
-            <span class="invite-meta-item"><span class="invite-meta-label">Jeu :</span> <span class="invite-meta-val">${esc(jeuLabel)}</span></span>
-            <span class="invite-meta-item"><span class="invite-meta-label">Créée le :</span> <span class="invite-meta-val" style="font-size:.78rem;">${dateStr}</span></span>
-            <span class="invite-meta-item"><span class="invite-meta-label">ID :</span> <span class="invite-meta-val invite-id">${partieId}</span></span>
-        </div>
-        <div class="invite-link-row">
-            <input id="invite-link-input" class="invite-link-input" type="text" readonly
-                   value="${esc(lien)}" aria-label="Lien d'invitation">
-            <button id="invite-copy-btn" class="invite-copy-btn" title="Copier le lien">📋</button>
-            <button id="invite-showqr-btn" class="invite-copy-btn" title="Afficher le QR">📷</button>
-        </div>
-        <p id="invite-copy-confirm" class="invite-copy-confirm" hidden>✅ Lien copié !</p>
-    `;
+    _setText('invite-meta-hote', hote || '—');
+    _setText('invite-meta-nom',  GameState.partieNom || '—');
+    _setText('invite-meta-jeu',  jeuLabel);
+    _setText('invite-meta-date', dateStr);
+    _setText('invite-meta-id',   partieId);
 
-    const formSolo = document.getElementById('form-solo');
-    const btnStart = document.getElementById('btn-start-solo');
-    if (formSolo && btnStart) formSolo.insertBefore(bloc, btnStart);
-    else document.body.appendChild(bloc);
+    // Masquer la ligne hôte si absent
+    const ligneHote = document.getElementById('invite-meta-hote')?.closest('.invite-meta-item');
+    if (ligneHote) ligneHote.style.display = hote ? '' : 'none';
 
-    // Copier
-    document.getElementById('invite-copy-btn').addEventListener('click', () => {
-        navigator.clipboard.writeText(lien).then(() => {
-            const msg = document.getElementById('invite-copy-confirm');
-            if (msg) { msg.hidden = false; setTimeout(() => { msg.hidden = true; }, 2500); }
-        }).catch(() => {
-            const inp = document.getElementById('invite-link-input');
-            if (inp) { inp.select(); document.execCommand('copy'); }
-        });
-    });
+    // Remplir et activer le champ lien
+    const input = document.getElementById('invite-link-input');
+    if (input) { input.value = lien; }
 
-    // QR
-    document.getElementById('invite-showqr-btn').addEventListener('click', () => {
+    // Activer les boutons (désactivés par défaut dans le HTML)
+    const btnCopy = document.getElementById('invite-copy-btn');
+    const btnQR   = document.getElementById('invite-showqr-btn');
+    if (btnCopy) { btnCopy.disabled = false; btnCopy.onclick = _onCopierLien; }
+    if (btnQR)   { btnQR.disabled   = false; btnQR.onclick   = () => {
         if (!document.getElementById('modale-qr')) _injecterModaleQR();
-        ouvrirModaleQR(lien, nomPartie);
-    });
+        ouvrirModaleQR(lien, GameState.partieNom || 'Partie');
+    }; }
 
-    // Démarrer l'écoute WS des joueurs (plus de polling localStorage)
-    demarrerEcouteWS();
+    // Rendre le bloc visible
+    bloc.hidden = false;
+
+    console.log('[INVITE] ✅ Bloc invitation affiché — partieId :', partieId);
+}
+
+// ── Gestionnaire copier (réutilisé par mettreAJourLienInvitation) ──
+function _onCopierLien() {
+    const lien = construireLienInvitation();
+    if (!lien) return;
+    navigator.clipboard.writeText(lien).then(() => {
+        const msg = document.getElementById('invite-copy-confirm');
+        if (msg) { msg.hidden = false; setTimeout(() => { msg.hidden = true; }, 2500); }
+    }).catch(() => {
+        const inp = document.getElementById('invite-link-input');
+        if (inp) { inp.select(); document.execCommand('copy'); }
+    });
+}
+
+function _setText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text ?? '—';
 }
 
 // ── Écoute WS des joueurs qui rejoignent ──────────────────
