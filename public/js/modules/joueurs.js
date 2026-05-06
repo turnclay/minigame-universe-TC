@@ -130,7 +130,9 @@ export function afficherJoueursSelectionnes(containerId) {
                 window._hostCreerPartieQuandPret();
             }
         } else {
-            document.getElementById('bloc-invitation')?.remove();
+            // Masquer le bloc statique (ne pas le supprimer — il est dans le HTML)
+            const bloc = document.getElementById('bloc-invitation');
+            if (bloc) bloc.hidden = true;
         }
     }).catch(() => {});
 }
