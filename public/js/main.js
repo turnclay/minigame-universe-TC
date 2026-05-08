@@ -371,7 +371,15 @@ export function lancerJeu(game, options = {}) {
     if (game.toLowerCase() === "undercover") return;
 
     if (!fromLoad) {
+        // Sauvegarder les clés WS de la partie courante AVANT nettoyerSession()
+        // car nettoyerSession() les supprime (elles sont dans CLES_EXACTES).
+        // On les restaure immédiatement après pour que les *_hote.js puissent les lire.
+        const _wsId   = localStorage.getItem('ws_partie_id');
+        const _mgsId  = localStorage.getItem('minigame_partie_session_id');
         nettoyerSession();
+        if (_wsId)  localStorage.setItem('ws_partie_id', _wsId);
+        if (_mgsId) localStorage.setItem('minigame_partie_session_id', _mgsId);
+
         if (!GameState.partieEnCoursChargee) {
             const p = loadGame();
             if (!p || p.nomPartie !== GameState.partieNom) creerNouvellePartie();
@@ -451,6 +459,18 @@ function _countdown(onEnd) {
 window.lancerJeu   = lancerJeu;
 window.initHomeHub = initHomeHub;
 
+// ── Exposer tous les initialiseurs de jeu sur window ──────────────
+// GAME_INITIALIZERS utilise window[fnName]() pour lancer chaque jeu.
+// Les modules ES6 ne pollent pas window automatiquement — on le fait ici.
+// Note : initialiserQuiz est exposé par quiz.js lui-même (window.initialiserQuiz).
+// Les autres doivent être exposés depuis main.js qui les importe.
+window.initialiserPendu      = initialiserPendu;
+window.initialiserMemoire    = initialiserMemoire;
+window.initialiserPuissance4 = initialiserPuissance4;
+window.initialiserMimer      = initialiserMimer;
+window.initialiserPetitBac   = initialiserPetitBac;
+// initialiserLML, initialiserJustePrix : exposés par leurs fichiers respectifs
+
 // ============================================
 // TOOLTIPS
 // ============================================
@@ -480,13 +500,15 @@ function init() {
     initGameButtons();
     initModeCards();
     initStartSolo();
-    initialiserPendu();
     masquerUndercoverComplet();
 
     // ── Connecter le socket host en arrière-plan ───────────────
     // Non bloquant : si le serveur est indisponible, tout le
     // reste de l'application fonctionne normalement.
     HostSession.init();
+    // NOTE : initialiserPendu() N'est PAS appelé ici.
+    // Il est déclenché par lancerJeu() → GAME_INITIALIZERS['pendu'] → window.initialiserPendu()
+    // Appeler les jeux au démarrage global provoque les erreurs "partieId introuvable".
 }
 
 window.addEventListener("DOMContentLoaded", init);
