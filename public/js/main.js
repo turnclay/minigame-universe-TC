@@ -676,9 +676,12 @@ const HostSession = {
     // Appelé par lancerJeu() — déclenche GAME_STARTED côté serveur
     // → broadcasté à tous les joueurs connectés en WS
     notifierDemarrage() {
-        if (!this._authenticated || !this._partieId) return;
-        socket.send('HOST_START_GAME');
-        console.log('[HOST] 📤 HOST_START_GAME');
+        if (!this._authenticated || !this._partieId) {
+            console.warn('[HOST] notifierDemarrage() ignoré — pas authentifié ou pas de partieId');
+            return;
+        }
+        socket.send('HOST_START_GAME', { partieId: this._partieId });
+        console.log('[HOST] 📤 HOST_START_GAME —', this._partieId);
     },
 
     // ── Terminer la partie ─────────────────────────────────────
@@ -802,8 +805,12 @@ function _escHtml(s) {
     return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// Exposer pour les modules hote (quiz_hote.js, etc.)
+// Exposer pour les modules hote (quiz_hote.js, quiz.js, etc.)
 window.HostSession = HostSession;
+// Exposer le socket WS sur window pour que les modules de jeu
+// (quiz.js, lml.js, etc.) puissent l'utiliser via window.jeuSocket.
+// Doit être assigné AVANT le premier appel à initialiserQuiz().
+window.jeuSocket = socket;
 
 // Hook appelé par afficherJoueursSelectionnes() dans joueurs.js
 // dès qu'un joueur est ajouté → créer la partie WS immédiatement
