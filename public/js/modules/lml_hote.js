@@ -21,8 +21,10 @@ let _lettresEnCours     = [];
 let _listenerActif      = false;
 
 function partieId() {
-    const id = localStorage.getItem('minigame_partie_session_id');
-    if (!id) console.warn('[LML_HOTE] ⚠️ session_id introuvable !');
+    // Lire ws_partie_id (source de vérité) avec fallback minigame_partie_session_id
+    const id = localStorage.getItem('ws_partie_id')
+             || localStorage.getItem('minigame_partie_session_id');
+    if (!id) console.warn('[HOTE] ⚠️ Aucun partieId en localStorage — GAME_CREATED pas encore reçu ?');
     return id || 'inconnu';
 }
 
@@ -49,7 +51,7 @@ function _getNbTotal() {
     const t = (GameState.joueurs || []).length;
     if (t > 0) return t;
     try {
-        const pid = localStorage.getItem('minigame_partie_session_id');
+        const pid = localStorage.getItem('ws_partie_id') || localStorage.getItem('minigame_partie_session_id');
         const r   = pid && localStorage.getItem(`invite_rejoint_${pid}`);
         if (r) return JSON.parse(r).length + 1;
     } catch {}

@@ -17,8 +17,10 @@
 import { GameState } from '../core/state.js';
 
 function partieId() {
-    const id = localStorage.getItem('minigame_partie_session_id');
-    if (!id) console.warn('[P4_HOTE] ⚠️ session_id introuvable !');
+    // Lire ws_partie_id (source de vérité) avec fallback minigame_partie_session_id
+    const id = localStorage.getItem('ws_partie_id')
+             || localStorage.getItem('minigame_partie_session_id');
+    if (!id) console.warn('[HOTE] ⚠️ Aucun partieId en localStorage — GAME_CREATED pas encore reçu ?');
     return id || 'inconnu';
 }
 

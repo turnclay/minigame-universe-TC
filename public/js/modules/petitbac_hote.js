@@ -23,8 +23,10 @@ import { GameState } from '../core/state.js';
 
 // ── Helpers clés ──────────────────────────────────────────────
 function partieId() {
-    const id = localStorage.getItem('minigame_partie_session_id');
-    if (!id) console.warn('[PB_HOTE] ⚠️ session_id introuvable !');
+    // Lire ws_partie_id (source de vérité) avec fallback minigame_partie_session_id
+    const id = localStorage.getItem('ws_partie_id')
+             || localStorage.getItem('minigame_partie_session_id');
+    if (!id) console.warn('[HOTE] ⚠️ Aucun partieId en localStorage — GAME_CREATED pas encore reçu ?');
     return id || 'inconnu';
 }
 const cleQ  = () => `partie_question_${partieId()}`;
@@ -104,7 +106,7 @@ function _getNbTotal() {
     const n = (GameState.joueurs || []).length;
     if (n > 0) return n;
     try {
-        const pid = localStorage.getItem('minigame_partie_session_id');
+        const pid = localStorage.getItem('ws_partie_id') || localStorage.getItem('minigame_partie_session_id');
         const r   = pid && localStorage.getItem(`invite_rejoint_${pid}`);
         if (r) { const l = JSON.parse(r); return l.length + 1; }
     } catch {}
