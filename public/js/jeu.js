@@ -146,15 +146,18 @@ const JeuApp = {
     _demarrer(session) {
         this.session = session;
 
-        // Connecter le socket
-        socket.connect();
-
         // Exposer sur window pour compatibilité modules existants
         window.JeuApp    = this;
         window.jeuSocket = socket;
 
-        // Déléguer entièrement à Player
+        // Enregistrer les listeners Player AVANT de connecter le socket.
+        // Si socket.connect() est appelé en premier, __connected__ peut
+        // se déclencher avant que Player.init() ait enregistré son .once(),
+        // et PLAYER_REJOIN ne serait jamais envoyé.
         Player.init(session, socket);
+
+        // Connecter après — __connected__ sera émis après l'enregistrement
+        socket.connect();
     },
 };
 

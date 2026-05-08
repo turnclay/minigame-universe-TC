@@ -534,9 +534,10 @@ window.addEventListener("DOMContentLoaded", init);
 // ============================================
 const HostSession = {
 
-    _partieId   : null,
-    _snapshot   : null,
+    _partieId      : null,
+    _snapshot      : null,
     _authenticated : false,
+    _pendingStart  : false,   // démarrage en attente de GAME_CREATED
 
     // ── Connexion initiale ─────────────────────────────────────
     init() {
@@ -583,17 +584,23 @@ const HostSession = {
                 this._snapshot = snapshot;
 
                 // Stocker l'UUID serveur — c'est le seul ID autorisé.
-                // minigame_partie_session_id est synchronisé par invite.js
-                // via setPartieSessionId() dans l'import dynamique ci-dessous.
                 localStorage.setItem('ws_partie_id', partieId);
 
-                // Notifier invite.js pour mettre à jour le lien immédiatement
+                // Synchroniser invite.js avec le nouveau partieId
                 import('./modules/invite.js').then(m => {
                     m.setPartieSessionId(partieId);
                     m.mettreAJourLienInvitation();
                 }).catch(() => {});
 
                 this._afficherLienJoin(joinUrl, snapshot?.codeCourt);
+
+                // Si un démarrage était en attente (notifierDemarrage() appelé
+                // avant que la partie soit créée), l'envoyer maintenant.
+                if (this._pendingStart) {
+                    this._pendingStart = false;
+                    socket.send('HOST_START_GAME', { partieId });
+                    console.log('[HOST] 📤 HOST_START_GAME différé —', partieId);
+                }
             });
 
             socket.on('PLAYER_JOINED', ({ pseudo, joueurs }) => {
@@ -698,12 +705,24 @@ const HostSession = {
     // Appelé par lancerJeu() — déclenche GAME_STARTED côté serveur
     // → broadcasté à tous les joueurs connectés en WS
     notifierDemarrage() {
-        if (!this._authenticated || !this._partieId) {
-            console.warn('[HOST] notifierDemarrage() ignoré — pas authentifié ou pas de partieId');
+        if (!this._authenticated) {
+            console.warn('[HOST] notifierDemarrage() ignoré — pas authentifié');
             return;
         }
-        socket.send('HOST_START_GAME', { partieId: this._partieId });
-        console.log('[HOST] 📤 HOST_START_GAME —', this._partieId);
+        if (this._partieId) {
+            // Partie déjà créée → démarrer immédiatement
+            socket.send('HOST_START_GAME', { partieId: this._partieId });
+            console.log('[HOST] 📤 HOST_START_GAME —', this._partieId);
+        } else {
+            // GAME_CREATED pas encore reçu → créer la partie maintenant si possible,
+            // puis envoyer HOST_START_GAME dès la réception de GAME_CREATED.
+            console.warn('[HOST] ⏳ Pas de partieId — attente de GAME_CREATED pour démarrer');
+            this._pendingStart = true;
+            // Forcer la création si pas encore faite
+            if (this._authenticated && !this._partieId) {
+                this.creerPartie();
+            }
+        }
     },
 
     // ── Terminer la partie ─────────────────────────────────────

@@ -124,12 +124,20 @@ export const Player = {
         this._initEcranIdentification();
 
         // ── Connecté → tenter REJOIN d'abord ──────────────────
-        socket.once('__connected__', () => {
+        // Si le socket est déjà connecté (reconnexion rapide),
+        // envoyer PLAYER_REJOIN immédiatement.
+        // Sinon, attendre __connected__.
+        const _envoyerRejoin = () => {
             socket.send('PLAYER_REJOIN', {
                 partieId : session.partieId,
                 pseudo   : session.pseudo,
             });
-        });
+        };
+        if (socket.connected) {
+            _envoyerRejoin();
+        } else {
+            socket.once('__connected__', _envoyerRejoin);
+        }
 
         // ── Reconnexion réussie ────────────────────────────────
         socket.on('REJOIN_OK', ({ pseudo, equipe, snapshot, gameState }) => {
@@ -322,7 +330,7 @@ export const Player = {
         // Autres codes d'erreur
         const msgs = {
             PSEUDO_TAKEN   : 'Ce pseudo est déjà utilisé dans cette partie.',
-            GAME_STARTED   : "La partie est déjà en cours — ton pseudo n'est pas dans la liste.",
+            GAME_STARTED   : "La partie a déjà commencé — demande à l'hôte de t'ajouter.",
             MAX_PLAYERS    : 'La partie est complète.',
             PSEUDO_INVALID : 'Pseudo invalide (2-20 caractères alphanumériques).',
             MISSING_FIELDS : 'Données manquantes. Vérifie le lien.',
@@ -330,6 +338,11 @@ export const Player = {
         const msg = msgs[code] || `Erreur : ${code}`;
         if (etat) etat.textContent = msg;
         toast(msg, 'error', 5000);
+        // Réactiver le formulaire pour permettre de réessayer
+        const btn   = $('btn-join');
+        const input = $('id-pseudo');
+        if (btn)   { btn.disabled = false; btn.textContent = '🚀 Rejoindre la partie'; }
+        if (input) input.disabled = false;
     },
 
     // ──────────────────────────────────────────────────────────
