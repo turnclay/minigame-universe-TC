@@ -191,27 +191,52 @@ function injecterPanneauInvites() {
 // 🎧 LISTENERS HÔTE → commandes WS serveur
 // ======================================================
 function attacherListenersQuiz(socket) {
-    // Question suivante
+
+    // 🚀 BOUTON START — DÉMARRE LA PREMIÈRE QUESTION
+    const btnStart = document.getElementById('btn-start-solo');
+    if (btnStart) {
+        btnStart.onclick = () => {
+            // Demander au serveur d'envoyer la première question
+            socket.send('HOST_ACTION', { action: 'quiz:next_question', data: {} });
+
+            // Masquer le bouton START
+            btnStart.disabled = true;
+            btnStart.style.display = 'none';
+
+            // Activer le bouton "Suivant"
+            const btnNext = $('btn-next');
+            if (btnNext) {
+                btnNext.disabled = false;
+                btnNext.style.opacity = '1';
+            }
+        };
+    }
+
+    // 👉 Question suivante (déjà correct)
     ['btn-next', 'btn-next-arrow'].forEach(id => {
         const el = $(id);
-        if (el) el.onclick = () => socket.send('HOST_ACTION', { action: 'quiz:next_question', data: {} });
+        if (el) el.onclick = () =>
+            socket.send('HOST_ACTION', { action: 'quiz:next_question', data: {} });
     });
 
-    // btn-prev désactivé : le serveur ne séquence qu'en avant
+    // 👉 Bouton précédent désactivé
     const prev = $('btn-prev');
     if (prev) { prev.disabled = true; prev.style.opacity = '0.3'; }
 
-    // Indices
+    // 👉 Indices
     const ind1 = $('btn-indice1');
-    if (ind1) ind1.onclick = () => socket.send('HOST_ACTION', { action: 'quiz:reveal_indice', data: { num: 1 } });
-    const ind2 = $('btn-indice2');
-    if (ind2) ind2.onclick = () => socket.send('HOST_ACTION', { action: 'quiz:reveal_indice', data: { num: 2 } });
+    if (ind1) ind1.onclick = () =>
+        socket.send('HOST_ACTION', { action: 'quiz:reveal_indice', data: { num: 1 } });
 
-    // Afficher réponse (révélation)
+    const ind2 = $('btn-indice2');
+    if (ind2) ind2.onclick = () =>
+        socket.send('HOST_ACTION', { action: 'quiz:reveal_indice', data: { num: 2 } });
+
+    // 👉 Révélation
     const btnAff = document.getElementById('btn-afficher-reponse');
     if (btnAff) btnAff.onclick = () => _declencherAfficherReponse();
 
-    // Réponse hôte (s'il joue)
+    // 👉 Réponse hôte
     const btnEnv = document.getElementById('btn-valider-reponse');
     if (btnEnv) {
         btnEnv.onclick = () => {
@@ -224,14 +249,21 @@ function attacherListenersQuiz(socket) {
     }
 }
 
+
 // ======================================================
 // 📡 ABONNEMENTS ÉVÉNEMENTS SERVEUR (côté hôte)
 // ======================================================
 function abonnerEvenementsServeur(socket) {
+
     socket.on('QUIZ_READY', ({ total, message }) => {
         console.log('[QUIZ] 📚 ' + (message || total + ' questions chargées'));
-        const btnNext = $('btn-next');
-        if (btnNext) { btnNext.disabled = false; btnNext.style.opacity = '1'; }
+
+        // Activer le bouton START quand les questions sont prêtes
+        const btnStart = document.getElementById('btn-start-solo');
+        if (btnStart) {
+            btnStart.disabled = false;
+            btnStart.style.opacity = '1';
+        }
     });
 
     socket.on('QUIZ_QUESTION',   payload => _onQuizQuestion(payload));
@@ -249,9 +281,11 @@ function abonnerEvenementsServeur(socket) {
             Object.assign(GameState.scores, scores);
         }
         _publierScores();
-        if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
+        if (typeof window.afficherScoreboard === 'function')
+            window.afficherScoreboard();
     });
 }
+
 
 // ======================================================
 // 📥 INITIALISATION PRINCIPALE
