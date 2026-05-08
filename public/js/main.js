@@ -374,10 +374,10 @@ export function lancerJeu(game, options = {}) {
         // Sauvegarder les clés WS de la partie courante AVANT nettoyerSession()
         // car nettoyerSession() les supprime (elles sont dans CLES_EXACTES).
         // On les restaure immédiatement après pour que les *_hote.js puissent les lire.
-        const _wsId   = localStorage.getItem('ws_partie_id');
+        const _wsId   = localStorage.getItem('minigame_partie_id');
         const _mgsId  = localStorage.getItem('minigame_partie_session_id');
         nettoyerSession();
-        if (_wsId)  localStorage.setItem('ws_partie_id', _wsId);
+        if (_wsId)  localStorage.setItem('minigame_partie_id', _wsId);
         if (_mgsId) localStorage.setItem('minigame_partie_session_id', _mgsId);
 
         if (!GameState.partieEnCoursChargee) {
@@ -387,7 +387,7 @@ export function lancerJeu(game, options = {}) {
     }
 
     // Lire l'ID WS (seule source de vérité) pour signalDemarrage (canal localStorage fallback)
-    const pid = localStorage.getItem('ws_partie_id') || '';
+    const pid = localStorage.getItem('minigame_partie_id') || '';
     hideAll(["home","choix-mode","form-solo","form-equipes","choix-jeu","liste-parties"]);
     masquerUndercoverComplet();
     masquerModules();
@@ -554,10 +554,10 @@ const HostSession = {
                 this._authenticated = true;
 
                 // HOST_REJOIN : uniquement si un ID WS valide existe.
-                // Un ID est considéré valide si ws_partie_id est présent.
+                // Un ID est considéré valide si minigame_partie_id est présent.
                 // Si le serveur répond ERROR GAME_NOT_FOUND, on nettoie
                 // et on laisse l'hôte recréer une partie normalement.
-                const savedId = localStorage.getItem('ws_partie_id');
+                const savedId = localStorage.getItem('minigame_partie_id');
                 if (savedId) {
                     console.log('[HOST] 🔄 HOST_REJOIN —', savedId);
                     socket.send('HOST_REJOIN', { partieId: savedId });
@@ -584,7 +584,7 @@ const HostSession = {
                 this._snapshot = snapshot;
 
                 // Stocker l'UUID serveur — c'est le seul ID autorisé.
-                localStorage.setItem('ws_partie_id', partieId);
+                localStorage.setItem('minigame_partie_id', partieId);
 
                 // Synchroniser invite.js avec le nouveau partieId
                 import('./modules/invite.js').then(m => {
@@ -633,7 +633,7 @@ const HostSession = {
                 this._partieId = null;
                 this._snapshot = null;
                 // Supprimer les deux clés d'ID — nettoyage complet
-                localStorage.removeItem('ws_partie_id');
+                localStorage.removeItem('minigame_partie_id');
                 localStorage.removeItem('minigame_partie_session_id');
                 // Notifier invite.js
                 import('./modules/invite.js').then(m => m.resetPartieSessionId()).catch(() => {});
@@ -646,7 +646,7 @@ const HostSession = {
                     // HOST_REJOIN a échoué : l'ID sauvegardé est périmé (partie expirée).
                     // Supprimer les deux clés pour repartir proprement.
                     console.log('[HOST] 🧹 ID périmé supprimé — prêt pour une nouvelle partie');
-                    localStorage.removeItem('ws_partie_id');
+                    localStorage.removeItem('minigame_partie_id');
                     localStorage.removeItem('minigame_partie_session_id');
                     this._partieId = null;
                     import('./modules/invite.js').then(m => m.resetPartieSessionId()).catch(() => {});

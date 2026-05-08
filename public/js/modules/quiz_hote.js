@@ -37,7 +37,7 @@ function _ws()   { return window.jeuSocket || null; }
 function _wsOk() { const s = _ws(); return !!(s && s.connected); }
 
 // ── Clés localStorage (compat signal.js + scoreboard) ──
-function _pid()       { return localStorage.getItem('ws_partie_id') || localStorage.getItem('minigame_partie_session_id') || 'inconnu'; }
+function _pid()       { return localStorage.getItem('minigame_partie_id') || localStorage.getItem('minigame_partie_id') || 'inconnu'; }
 function _cleScores() { return `partie_scores_${_pid()}`; }
 function _cleEtat()   { return `partie_etat_${_pid()}`; }
 
@@ -280,7 +280,7 @@ export function nettoyerPartieInvites() {
     _wsListenersActifs  = false;
 
     const pid = _pid();
-    ['partie_question_', 'partie_reponses_', 'partie_validation_', 'partie_scores_',
+    ['partie_question_minigame_partie_id', 'partie_reponses_', 'partie_validation_', 'partie_scores_',
      'partie_premier_correct_', 'partie_nav_', 'partie_revelation_']
         .forEach(k => localStorage.removeItem(k + pid));
     publierEtat('fin');
