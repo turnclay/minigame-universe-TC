@@ -151,7 +151,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             // Cela évite QUIZ_END {total:0} sur une session vide.
             if (s.questions.length === 0) {
                 console.warn('[QUIZ] ⚠️ next_question ignoré — quiz:load pas encore reçu');
-                return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE', message: 'Chargez les questions d'abord (quiz:load).' });
+                return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE', message: 'Chargez les questions avec quiz:load.' });
             }
             if (s.posees >= s.questions.length) {
                 // Plus de questions → fin légitime
