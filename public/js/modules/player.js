@@ -387,40 +387,25 @@ export const Player = {
         if (input) input.disabled = false;
     },
 
-// ──────────────────────────────────────────────────────────
-// BASCULE identification → jeu
-// ──────────────────────────────────────────────────────────
-_basculeVersJeu(snapshot) {
-    const phId  = $('phase-identification');
-    const phJeu = $('phase-jeu');
+    // ──────────────────────────────────────────────────────────
+    // BASCULE identification → jeu
+    // ──────────────────────────────────────────────────────────
+    _basculerVersJeu(snapshot) {
+        const phId  = $('phase-identification');
+        const phJeu = $('phase-jeu');
+        if (phId)  { phId.style.display  = 'none'; phId.hidden  = true;  }
+        if (phJeu) { phJeu.style.display = '';     phJeu.hidden = false;  }
 
-    // Masquer PHASE 1 proprement
-    if (phId) {
-        phId.style.display = 'none';
-        phId.hidden = true;
-        phId.classList.add('hidden');
-    }
+        setText('hdr-pseudo', this.session.pseudo || '—');
+        setText('hdr-partie', snapshot?.nom || this.session.partieNom || 'Partie');
+        setText('hdr-jeu',   (snapshot?.jeu || this.session.jeu || '').toUpperCase());
 
-    // Afficher PHASE 2 proprement (corrige le display:none du CSS)
-    if (phJeu) {
-        phJeu.style.display = 'flex';   // ← FORCÉ pour écraser le CSS
-        phJeu.hidden = false;
-        phJeu.classList.remove('hidden', 'd-none', 'invisible');
-    }
+        const nav = $('invite-navbar');
+        if (nav) nav.classList.add('visible');
 
-    // Remplir le header
-    setText('hdr-pseudo', this.session.pseudo || '—');
-    setText('hdr-partie', snapshot?.nom || this.session.partieNom || 'Partie');
-    setText('hdr-jeu',   (snapshot?.jeu || this.session.jeu || '').toUpperCase());
-
-    // Afficher la navbar
-    const nav = $('invite-navbar');
-    if (nav) nav.classList.add('visible');
-
-    // Initialiser les boutons navbar invité (🏠 et ☰) — une seule fois
-    _initNavbar();
-}
-
+        // Initialiser les boutons navbar invité (🏠 et ☰) — une seule fois
+        _initNavbar();
+    },
 
     // ──────────────────────────────────────────────────────────
     // ÉCRANS GÉNÉRIQUES

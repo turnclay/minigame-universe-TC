@@ -61,7 +61,7 @@ body{font-family:var(--font-secondary);background:var(--gradient-background);bac
 .id-back-link:hover{color:rgba(255,255,255,.65)}
 
 /* ── 3. PHASE JEU ──────────────────────────────────────────── */
-#phase-jeu{display:none;flex-direction:column;min-height:100vh;padding-top:80px}
+#phase-jeu{display:flex;flex-direction:column;min-height:100vh;padding-top:80px}
 .jeu-header{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:rgba(10,5,30,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.08);box-shadow:0 4px 20px rgba(0,0,0,.3);height:56px}
 .jeu-header-left{display:flex;flex-direction:column;gap:2px}
 .jeu-pseudo{font-family:var(--font-primary);font-size:.9rem;font-weight:700;color:var(--neon-cyan)}
