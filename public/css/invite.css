@@ -60,16 +60,6 @@ body{font-family:var(--font-secondary);background:var(--gradient-background);bac
 .id-back-link{display:inline-block;margin-top:var(--space-md);font-size:.8rem;color:rgba(255,255,255,.35);text-decoration:none;transition:color .2s}
 .id-back-link:hover{color:rgba(255,255,255,.65)}
 
-/* ── 3. PHASE JEU ──────────────────────────────────────────── */
-#phase-jeu{display:none;flex-direction:column;min-height:100vh;padding-top:80px}
-.jeu-header{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:rgba(10,5,30,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.08);box-shadow:0 4px 20px rgba(0,0,0,.3);height:56px}
-.jeu-header-left{display:flex;flex-direction:column;gap:2px}
-.jeu-pseudo{font-family:var(--font-primary);font-size:.9rem;font-weight:700;color:var(--neon-cyan)}
-.jeu-partie{font-size:.72rem;color:rgba(255,255,255,.45);font-weight:500}
-.jeu-badge{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.7);background:var(--glass-light);border:1px solid var(--glass-border-light);border-radius:20px;padding:4px 10px}
-#jeu-contenu{flex:1;padding:var(--space-md);max-width:600px;margin:0 auto;width:100%}
-.jeu-card{background:var(--glass-medium);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--glass-border-light);border-radius:var(--radius-xl);padding:var(--space-lg) var(--space-md);animation:fadeIn .4s ease-out;box-shadow:var(--shadow-soft)}
-
 /* ── 4. NAVBAR & MENU INVITÉ ───────────────────────────────── */
 .invite-navbar{position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-80px);z-index:600;display:flex;align-items:center;gap:10px;background:rgba(10,5,30,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);border-radius:40px;padding:8px 18px;box-shadow:0 8px 32px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.06);opacity:0;pointer-events:none;transition:transform .4s cubic-bezier(.4,0,.2,1),opacity .4s}
 .invite-navbar.visible{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
