@@ -7933,3 +7933,128 @@ select:focus-visible {
         border: 1px solid #ccc;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   BLOC INVITATION — Styles du bloc QR/lien dans #form-solo
+   (séparé de invite.css pour éviter les conflits sur index.html)
+═══════════════════════════════════════════════════════════ */
+.bloc-invitation {
+    background: rgba(0,212,255,.06);
+    border: 1px solid rgba(0,212,255,.2);
+    border-radius: 16px;
+    padding: 18px 20px;
+    margin: 20px auto;
+    max-width: 520px;
+    text-align: left;
+}
+
+.invite-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+.invite-icon { font-size: 1.6rem; }
+.invite-title {
+    font-size: 1rem;
+    font-weight: 800;
+    margin: 0 0 2px;
+    color: #fff;
+}
+.invite-subtitle {
+    font-size: .78rem;
+    color: rgba(255,255,255,.5);
+    margin: 0;
+}
+
+.invite-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin-bottom: 14px;
+    font-size: .8rem;
+}
+.invite-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.invite-meta-label {
+    color: rgba(255,255,255,.45);
+    font-weight: 600;
+}
+.invite-meta-val {
+    color: #00d4ff;
+    font-weight: 700;
+}
+.invite-id {
+    font-family: monospace;
+    font-size: .72rem;
+    color: rgba(255,255,255,.5) !important;
+}
+
+.invite-link-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.invite-link-input {
+    flex: 1;
+    min-width: 0;
+    padding: 9px 12px;
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 10px;
+    color: #fff;
+    font-size: .8rem;
+    font-family: monospace;
+    outline: none;
+}
+.invite-copy-btn {
+    padding: 9px 13px;
+    background: rgba(0,212,255,.12);
+    border: 1px solid rgba(0,212,255,.3);
+    border-radius: 10px;
+    color: #00d4ff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background .2s;
+    flex-shrink: 0;
+}
+.invite-copy-btn:hover { background: rgba(0,212,255,.25); }
+.invite-copy-btn:disabled {
+    opacity: .35;
+    cursor: not-allowed;
+}
+.invite-copy-confirm {
+    font-size: .8rem;
+    color: #4ade80;
+    margin: 6px 0 0;
+    font-weight: 600;
+}
+
+/* Toast notification invité */
+.invite-notif {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    background: rgba(15,10,35,.95);
+    border: 1px solid rgba(0,212,255,.35);
+    border-radius: 12px;
+    padding: 12px 18px;
+    color: #fff;
+    font-size: .9rem;
+    font-weight: 600;
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    transform: translateY(80px);
+    opacity: 0;
+    transition: transform .3s cubic-bezier(.4,0,.2,1), opacity .3s;
+    pointer-events: none;
+    max-width: 300px;
+}
+.invite-notif.show {
+    transform: translateY(0);
+    opacity: 1;
+}

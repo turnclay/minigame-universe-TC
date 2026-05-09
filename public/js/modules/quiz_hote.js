@@ -37,7 +37,7 @@ function _ws()   { return window.jeuSocket || null; }
 function _wsOk() { const s = _ws(); return !!(s && s.connected); }
 
 // ── Clés localStorage (compat signal.js + scoreboard) ──
-function _pid()       { return localStorage.getItem('minigame_partie_id') || localStorage.getItem('minigame_partie_id') || 'inconnu'; }
+function _pid()       { return localStorage.getItem('minigame_partie_id') || localStorage.getItem('minigame_partie_session_id') || localStorage.getItem('ws_partie_id') || 'inconnu'; }
 function _cleScores() { return `partie_scores_${_pid()}`; }
 function _cleEtat()   { return `partie_etat_${_pid()}`; }
 

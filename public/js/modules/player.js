@@ -189,6 +189,26 @@ export const Player = {
             this.module?.onScores?.(scores);
         });
 
+        // ── Relay QUIZ_* vers QuizModule (enregistré tôt pour éviter
+        //    les pertes si QUIZ_QUESTION arrive avant initPlayer()) ────
+        // Ces listeners sont enregistrés dès Player.init() et relaient
+        // vers this.module si QuizModule est déjà chargé.
+        const quizEvents = ['QUIZ_QUESTION','QUIZ_CORRECTION','QUIZ_END',
+                            'QUIZ_INDICE','QUIZ_ANSWER_ACK','QUIZ_RESPONSE_IN'];
+        quizEvents.forEach(evt => {
+            socket.on(evt, payload => {
+                if (this.module && typeof this.module['_on' + evt] === 'function') {
+                    this.module['_on' + evt](payload);
+                } else if (this.module) {
+                    // Délégation générique via onWsEvent si disponible
+                    this.module.onWsEvent?.(evt, payload);
+                }
+                // Si module pas encore chargé : l'événement sera perdu.
+                // QuizModule.initPlayer() enregistre ses propres listeners
+                // sock.on() qui fonctionneront pour les événements suivants.
+            });
+        });
+
         // ── Fin de partie ──────────────────────────────────────
         socket.on('GAME_ENDED', ({ snapshot }) => {
             this.snapshot = snapshot;
@@ -636,31 +656,12 @@ const QuizModule = {
         this._afficherEcranAttente();
         if (gameState) this._rehydrater(gameState, session.pseudo);
 
-        sock.on('QUIZ_QUESTION',   payload  => {
-            if (payload.total) this._totalQ = payload.total;
-            this._afficherQuestion(payload);
-        });
-        sock.on('QUIZ_INDICE',     ({ num, texte }) => {
-            const el = $(`p-indice${num}`);
-            if (el) { el.textContent = `💡 Indice ${num} : ${texte}`; el.hidden = false; }
-        });
-        sock.on('QUIZ_ANSWER_ACK', ({ status, texte }) => {
-            if (status === 'ok') {
-                this._aRepondu = true;
-                this._arreterTimer();
-                this._confirmerEnvoi(texte);
-            } else if (status === 'already_answered') toast('Vous avez déjà répondu.', 'warning');
-            else if (status === 'too_late')           toast('Trop tard.', 'warning');
-            else                                      toast('Réponse invalide.', 'error');
-        });
-        sock.on('QUIZ_CORRECTION', payload => {
-            this._arreterTimer();
-            this._afficherCorrection(payload, session.pseudo);
-        });
-        sock.on('QUIZ_END',        ({ scores }) => {
-            this._arreterTimer();
-            this._afficherFin(scores, session.pseudo);
-        });
+        // Listeners directs sur le socket (cas normal)
+        sock.on('QUIZ_QUESTION',   payload  => this._onQUIZ_QUESTION(payload));
+        sock.on('QUIZ_INDICE',     payload  => this._onQUIZ_INDICE(payload));
+        sock.on('QUIZ_ANSWER_ACK', payload  => this._onQUIZ_ANSWER_ACK(payload));
+        sock.on('QUIZ_CORRECTION', payload  => this._onQUIZ_CORRECTION(payload));
+        sock.on('QUIZ_END',        payload  => this._onQUIZ_END(payload));
 
         $('p-btn-send')?.addEventListener('click',    () => this._envoyerReponse());
         $('p-answer-input')?.addEventListener('keydown', e => {
@@ -671,6 +672,33 @@ const QuizModule = {
     destroy() { this._arreterTimer(); },
     onHostAction() {},
     onScores()    {},
+
+    // ── Aliases pour le relay Player.init() ────────────────────
+    _onQUIZ_QUESTION(payload) {
+        if (payload.total) this._totalQ = payload.total;
+        this._afficherQuestion(payload);
+    },
+    _onQUIZ_INDICE({ num, texte }) {
+        const el = $(`p-indice${num}`);
+        if (el) { el.textContent = `💡 Indice ${num} : ${texte}`; el.hidden = false; }
+    },
+    _onQUIZ_ANSWER_ACK({ status, texte }) {
+        if (status === 'ok') {
+            this._aRepondu = true;
+            this._arreterTimer();
+            this._confirmerEnvoi(texte);
+        } else if (status === 'already_answered') toast('Vous avez déjà répondu.', 'warning');
+        else if (status === 'too_late')           toast('Trop tard.', 'warning');
+        else                                      toast('Réponse invalide.', 'error');
+    },
+    _onQUIZ_CORRECTION(payload) {
+        this._arreterTimer();
+        this._afficherCorrection(payload, this._session?.pseudo);
+    },
+    _onQUIZ_END({ scores }) {
+        this._arreterTimer();
+        this._afficherFin(scores, this._session?.pseudo);
+    },
 
     _afficherEcranAttente() {
         const cont = $('jeu-contenu');
