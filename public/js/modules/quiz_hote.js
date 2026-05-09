@@ -59,10 +59,17 @@ function _initWsListeners() {
         if (nbJoueurs) _nbJoueursWS = nbJoueurs;
         _afficherPanneauAttenteWS();
         if (allAnswered) {
-            _activerBoutonAfficher();
+            // Tous ont répondu → activer btn-afficher mais NE PAS révéler auto
+            // L'hôte décide quand cliquer sur "Afficher"
+            _activerBoutonAfficher('✅ Tous ont répondu — Cliquez pour révéler');
         } else {
             _mettreAJourBoutonAfficher(nbReponses, nbJoueurs);
         }
+    });
+
+    // Timer écoulé → activer btn-afficher même si pas tout le monde a répondu
+    s.on('QUIZ_TIMER_EXPIRED', ({ nbReponses, nbJoueurs }) => {
+        _activerBoutonAfficher('⏱ Timer écoulé — Cliquez pour révéler');
     });
 
     s.on('QUIZ_CORRECTION', ({ reponses, reponse: bonneReponse }) => {
@@ -104,11 +111,11 @@ function _initWsListeners() {
 // ──────────────────────────────────────────────────────
 // Boutons hôte
 // ──────────────────────────────────────────────────────
-function _activerBoutonAfficher() {
+function _activerBoutonAfficher(titre) {
     const btn = document.getElementById('btn-afficher-reponse');
     if (!btn) return;
     btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
-    btn.title    = '✅ Tous ont répondu — Cliquez pour révéler';
+    btn.title    = titre || '✅ Cliquez pour révéler la réponse';
     if (!document.getElementById('style-btn-pulse')) {
         const s = document.createElement('style');
         s.id = 'style-btn-pulse';

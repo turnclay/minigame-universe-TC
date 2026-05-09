@@ -46,14 +46,18 @@ function getSession(partieId) {
 
 function creerSession(partieId) {
     const session = {
-        phase         : 'idle',   // idle | question | correction | ended
-        questions     : [],
-        posees        : 0,
-        questionEnCours : null,
-        reponses      : {},       // { pseudo: { texte, ts, indicesVus } }
-        indicesBroadcast: 0,      // nb indices déjà révélés (pour rejoins)
+        phase            : 'idle',
+        questions        : [],
+        posees           : 0,
+        questionEnCours  : null,
+        reponses         : {},
+        indicesBroadcast : 0,
         revelationEnCours: false,
-        timerHandle   : null,
+        timerHandle      : null,
+        timerIndice1     : null,
+        timerIndice2     : null,
+        timerReveal      : null,
+        _dernieresReponses: [],
     };
     sessions.set(partieId, session);
     return session;
@@ -91,7 +95,12 @@ export function getSessionState(partieId) {
 
 export function detruireSession(partieId) {
     const s = getSession(partieId);
-    if (s?.timerHandle) clearTimeout(s.timerHandle);
+    if (s) {
+        if (s.timerHandle)  clearTimeout(s.timerHandle);
+        if (s.timerIndice1) clearTimeout(s.timerIndice1);
+        if (s.timerIndice2) clearTimeout(s.timerIndice2);
+        if (s.timerReveal)  clearTimeout(s.timerReveal);
+    }
     sessions.delete(partieId);
     console.log(`[QUIZ] 🗑️ Session détruite: ${partieId}`);
 }
@@ -135,6 +144,17 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
                 message : `${questions.length} question${questions.length > 1 ? 's' : ''} chargée${questions.length > 1 ? 's' : ''} !`,
             });
             console.log(`[QUIZ] 📚 ${questions.length} questions chargées pour ${partieId}`);
+
+            // ── Lancement automatique de la 1ère question ──────────────
+            // L'hôte n'a pas à cliquer sur btn-next pour démarrer.
+            // On délègue à next_question via un micro-délai pour laisser
+            // QUIZ_READY arriver sur les clients avant QUIZ_QUESTION.
+            setTimeout(() => {
+                const sNow = getSession(partieId);
+                if (sNow && sNow.phase === 'idle' && sNow.questions.length > 0) {
+                    handleHostAction(wss, ws, partieId, 'quiz:next_question', {}, helpers);
+                }
+            }, 800);
             break;
         }
 
@@ -168,12 +188,14 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             s.revelationEnCours = false;
             s._dernieresReponses = [];
 
-            const DUREE = 60; // secondes
-            const tsDebut = Date.now();
+            const DUREE    = 60;  // secondes par question
+            const T_INDICE1 = 40; // indice 1 après 40s
+            const T_INDICE2 = 50; // indice 2 après 50s
+            const tsDebut   = Date.now();
 
-            // Timestamps absolus des indices (conservés depuis quiz_hote.js)
-            q._tsIndice1 = tsDebut + (DUREE - 30) * 1000; // après 30s
-            q._tsIndice2 = tsDebut + (DUREE - 10) * 1000; // après 50s
+            // Timestamps absolus des indices
+            q._tsIndice1 = tsDebut + T_INDICE1 * 1000;
+            q._tsIndice2 = tsDebut + T_INDICE2 * 1000;
             q._tsDebut   = tsDebut;
             q._duree     = DUREE;
 
@@ -181,13 +203,55 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             broadcastToGame(wss, partieId, 'QUIZ_QUESTION', payload);
             console.log(`[QUIZ] ❓ Q${s.posees}/${s.questions.length}: ${q.Question || q.question}`);
 
-            // Timer automatique → révélation à la fin
-            if (s.timerHandle) clearTimeout(s.timerHandle);
+            // Nettoyer les anciens timers
+            if (s.timerHandle)   { clearTimeout(s.timerHandle);   s.timerHandle   = null; }
+            if (s.timerIndice1)  { clearTimeout(s.timerIndice1);  s.timerIndice1  = null; }
+            if (s.timerIndice2)  { clearTimeout(s.timerIndice2);  s.timerIndice2  = null; }
+
+            // ── Indice 1 automatique à 40s ────────────────────────────
+            const texte1 = q['Indice 1'] || q.indice1 || '';
+            if (texte1) {
+                s.timerIndice1 = setTimeout(() => {
+                    if (s.phase !== 'question') return;
+                    s.indicesBroadcast = Math.max(s.indicesBroadcast, 1);
+                    broadcastToGame(wss, partieId, 'QUIZ_INDICE', { num: 1, texte: texte1 });
+                    console.log(`[QUIZ] 💡 Indice 1 auto (40s) → ${partieId}`);
+                }, T_INDICE1 * 1000);
+            }
+
+            // ── Indice 2 automatique à 50s ────────────────────────────
+            const texte2 = q['Indice 2'] || q.indice2 || '';
+            if (texte2) {
+                s.timerIndice2 = setTimeout(() => {
+                    if (s.phase !== 'question') return;
+                    s.indicesBroadcast = Math.max(s.indicesBroadcast, 2);
+                    broadcastToGame(wss, partieId, 'QUIZ_INDICE', { num: 2, texte: texte2 });
+                    console.log(`[QUIZ] 💡 Indice 2 auto (50s) → ${partieId}`);
+                }, T_INDICE2 * 1000);
+            }
+
+            // ── Timer principal (60s) ─────────────────────────────────
+            // À expiration : notifier l'hôte que le timer est écoulé
+            // (active btn-afficher-reponse côté client),
+            // PUIS révéler automatiquement 5s plus tard si l'hôte n'a pas agi.
             s.timerHandle = setTimeout(() => {
-                if (s.phase === 'question' && !s.revelationEnCours) {
-                    console.log(`[QUIZ] ⏱ Timer écoulé → révélation auto`);
-                    _declencharRevelation(wss, partieId, s, helpers, 'timer');
-                }
+                if (s.phase !== 'question') return;
+                console.log(`[QUIZ] ⏱ Timer écoulé (60s) → ${partieId}`);
+
+                // Notifier l'hôte : timer fini, il peut révéler manuellement
+                broadcastToHost(wss, partieId, 'QUIZ_TIMER_EXPIRED', {
+                    partieId,
+                    nbReponses : Object.keys(s.reponses).length,
+                    nbJoueurs  : (store.getPartie(partieId)?.joueurs || []).length,
+                });
+
+                // Révélation automatique 5s après si l'hôte n'a pas cliqué
+                s.timerReveal = setTimeout(() => {
+                    if (s.phase === 'question' && !s.revelationEnCours) {
+                        console.log(`[QUIZ] ⏱ Révélation auto (65s) → ${partieId}`);
+                        _declencharRevelation(wss, partieId, s, helpers, 'timer');
+                    }
+                }, 5000);
             }, DUREE * 1000);
             break;
         }
@@ -291,10 +355,14 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
                 pseudo, nbReponses, nbJoueurs, allAnswered,
             });
 
-            // Si tout le monde a répondu → révélation automatique
+            // Si tout le monde a répondu → notifier l'hôte pour qu'il
+            // active btn-afficher-reponse. PAS de révélation automatique :
+            // l'hôte choisit quand révéler via quiz:reveal.
+            // (La révélation auto arrive à 65s si l'hôte n'agit pas.)
             if (allAnswered && !s.revelationEnCours) {
-                console.log(`[QUIZ] ✅ Tous ont répondu → révélation auto`);
-                _declencharRevelation(wss, partieId, s, helpers, 'all_answered');
+                console.log(`[QUIZ] ✅ Tous ont répondu — hôte peut révéler`);
+                // QUIZ_RESPONSE_IN avec allAnswered:true suffit côté client
+                // pour activer btn-afficher-reponse (déjà envoyé juste au-dessus)
             }
             break;
         }
@@ -312,7 +380,10 @@ function _declencharRevelation(wss, partieId, s, helpers, source) {
     if (s.revelationEnCours) return;
     s.revelationEnCours = true;
 
-    if (s.timerHandle) { clearTimeout(s.timerHandle); s.timerHandle = null; }
+    if (s.timerHandle)  { clearTimeout(s.timerHandle);  s.timerHandle  = null; }
+    if (s.timerIndice1) { clearTimeout(s.timerIndice1); s.timerIndice1 = null; }
+    if (s.timerIndice2) { clearTimeout(s.timerIndice2); s.timerIndice2 = null; }
+    if (s.timerReveal)  { clearTimeout(s.timerReveal);  s.timerReveal  = null; }
 
     const { broadcastToGame, broadcastToHost, broadcastToPlayers } = helpers;
     const q            = s.questionEnCours;

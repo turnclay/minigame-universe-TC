@@ -216,7 +216,8 @@ export const Player = {
         // Ces listeners sont enregistrés dès Player.init() et relaient
         // vers this.module si QuizModule est déjà chargé.
         const quizEvents = ['QUIZ_QUESTION','QUIZ_CORRECTION','QUIZ_END',
-                            'QUIZ_INDICE','QUIZ_ANSWER_ACK','QUIZ_RESPONSE_IN'];
+                            'QUIZ_INDICE','QUIZ_ANSWER_ACK','QUIZ_RESPONSE_IN',
+                            'QUIZ_TIMER_EXPIRED'];
         quizEvents.forEach(evt => {
             socket.on(evt, payload => {
                 if (this.module && typeof this.module['_on' + evt] === 'function') {
@@ -742,8 +743,9 @@ const QuizModule = {
         sock.on('QUIZ_QUESTION',   payload  => this._onQUIZ_QUESTION(payload));
         sock.on('QUIZ_INDICE',     payload  => this._onQUIZ_INDICE(payload));
         sock.on('QUIZ_ANSWER_ACK', payload  => this._onQUIZ_ANSWER_ACK(payload));
-        sock.on('QUIZ_CORRECTION', payload  => this._onQUIZ_CORRECTION(payload));
-        sock.on('QUIZ_END',        payload  => this._onQUIZ_END(payload));
+        sock.on('QUIZ_CORRECTION',    payload  => this._onQUIZ_CORRECTION(payload));
+        sock.on('QUIZ_END',           payload  => this._onQUIZ_END(payload));
+        sock.on('QUIZ_TIMER_EXPIRED', ()       => this._onQUIZ_TIMER_EXPIRED());
 
         $('p-btn-send')?.addEventListener('click',    () => this._envoyerReponse());
         $('p-answer-input')?.addEventListener('keydown', e => {
@@ -772,6 +774,22 @@ const QuizModule = {
         } else if (status === 'already_answered') toast('Vous avez déjà répondu.', 'warning');
         else if (status === 'too_late')           toast('Trop tard.', 'warning');
         else                                      toast('Réponse invalide.', 'error');
+    },
+    _onQUIZ_TIMER_EXPIRED() {
+        // Timer serveur écoulé → bloquer la saisie si l'invité n'a pas répondu
+        this._timerExpire = true;
+        this._arreterTimer();
+        const input = $('p-answer-input');
+        const btn   = $('p-btn-send');
+        if (input && !this._aRepondu) {
+            input.disabled     = true;
+            input.placeholder  = '⏱ Temps écoulé';
+        }
+        if (btn && !this._aRepondu) {
+            btn.disabled    = true;
+            btn.textContent = '⏱ Temps écoulé';
+        }
+        if (!this._aRepondu) toast('⏱ Temps écoulé ! En attente de la correction…', 'warning', 3000);
     },
     _onQUIZ_CORRECTION(payload) {
         this._arreterTimer();

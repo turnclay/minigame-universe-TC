@@ -101,6 +101,15 @@ function _onQuizQuestion(payload) {
 
     _demarrerTimerVisuel(ts);
     setTimeout(() => _afficherReponsesInvitesSurHote('invites-reponses'), 500);
+
+    // Désactiver btn-next pendant la question (réactivé sur QUIZ_CORRECTION)
+    const btnNxt = $('btn-next');
+    if (btnNxt) {
+        btnNxt.disabled      = true;
+        btnNxt.style.opacity = '0.35';
+        btnNxt.title         = 'Révélez la réponse avant de passer à la suivante';
+        btnNxt.style.animation = '';
+    }
     console.log('[QUIZ] ❓ Q' + posees + '/' + total + ': ' + question);
 }
 
@@ -112,6 +121,24 @@ function _onQuizCorrection(payload) {
     _publierScores();
     if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
     console.log('[QUIZ] ✅ Correction Q' + posees + '/' + total + ': "' + reponse + '"');
+
+    // Réactiver btn-next après la correction
+    const btnNext = $('btn-next');
+    if (btnNext) {
+        btnNext.disabled       = false;
+        btnNext.style.opacity  = '1';
+        btnNext.style.animation = 'btnPulse .5s ease';
+        setTimeout(() => { if (btnNext) btnNext.style.animation = ''; }, 600);
+    }
+    // Désactiver btn-afficher-reponse (correction déjà faite)
+    const btnAff = document.getElementById('btn-afficher-reponse');
+    if (btnAff) {
+        btnAff.disabled        = true;
+        btnAff.style.opacity   = '0.3';
+        btnAff.style.cursor    = 'not-allowed';
+        btnAff.style.animation = '';
+        btnAff.title           = 'Réponse déjà révélée — cliquez sur Question suivante';
+    }
 }
 
 function _onQuizEnd({ scores, total }) {
@@ -192,27 +219,11 @@ function injecterPanneauInvites() {
 // ======================================================
 function attacherListenersQuiz(socket) {
 
-    // 🚀 BOUTON START — DÉMARRE LA PREMIÈRE QUESTION
+    // 🚀 BOUTON START — masqué (le démarrage est automatique après quiz:load)
     const btnStart = document.getElementById('btn-start-solo');
-    if (btnStart) {
-        btnStart.onclick = () => {
-            // Demander au serveur d'envoyer la première question
-            socket.send('HOST_ACTION', { action: 'quiz:next_question', data: {} });
+    if (btnStart) btnStart.style.display = 'none';
 
-            // Masquer le bouton START
-            btnStart.disabled = true;
-            btnStart.style.display = 'none';
-
-            // Activer le bouton "Suivant"
-            const btnNext = $('btn-next');
-            if (btnNext) {
-                btnNext.disabled = false;
-                btnNext.style.opacity = '1';
-            }
-        };
-    }
-
-    // 👉 Question suivante (déjà correct)
+    // 👉 Question suivante
     ['btn-next', 'btn-next-arrow'].forEach(id => {
         const el = $(id);
         if (el) el.onclick = () =>
@@ -257,13 +268,9 @@ function abonnerEvenementsServeur(socket) {
 
     socket.on('QUIZ_READY', ({ total, message }) => {
         console.log('[QUIZ] 📚 ' + (message || total + ' questions chargées'));
-
-        // Activer le bouton START quand les questions sont prêtes
+        // QUIZ_READY suivi du lancement auto — btn-start-solo n'est plus nécessaire
         const btnStart = document.getElementById('btn-start-solo');
-        if (btnStart) {
-            btnStart.disabled = false;
-            btnStart.style.opacity = '1';
-        }
+        if (btnStart) btnStart.style.display = 'none';
     });
 
     socket.on('QUIZ_QUESTION',   payload => _onQuizQuestion(payload));
@@ -275,6 +282,12 @@ function abonnerEvenementsServeur(socket) {
         if (el) el.textContent = texte;
     });
 
+    // Timer écoulé côté serveur → activer btn-afficher-reponse
+    socket.on('QUIZ_TIMER_EXPIRED', ({ nbReponses, nbJoueurs }) => {
+        console.log('[QUIZ] ⏱ Timer expiré — activation btn-afficher-reponse');
+        _activerBoutonAfficherReponse();
+    });
+
     socket.on('SCORES_UPDATE', ({ scores }) => {
         if (scores) {
             GameState.scores = GameState.scores || {};
@@ -284,6 +297,23 @@ function abonnerEvenementsServeur(socket) {
         if (typeof window.afficherScoreboard === 'function')
             window.afficherScoreboard();
     });
+}
+
+// Active btn-afficher-reponse avec feedback visuel
+function _activerBoutonAfficherReponse() {
+    const btn = document.getElementById('btn-afficher-reponse');
+    if (!btn) return;
+    btn.disabled        = false;
+    btn.style.opacity   = '1';
+    btn.style.cursor    = 'pointer';
+    btn.style.animation = 'btnPulse .6s ease infinite alternate';
+    btn.title           = '⏱ Timer écoulé — Cliquez pour révéler la réponse';
+    // Injecter l'animation si absente
+    if (!document.getElementById('style-btn-pulse')) {
+        const s = document.createElement('style'); s.id = 'style-btn-pulse';
+        s.textContent = '@keyframes btnPulse{0%{transform:scale(1)}100%{transform:scale(1.05)}}';
+        document.head.appendChild(s);
+    }
 }
 
 
