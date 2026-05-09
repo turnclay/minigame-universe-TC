@@ -17,10 +17,15 @@ let _partieSessionId = null;  // mémoire module — UUID reçu de GAME_CREATED
 // ID DE PARTIE — source de vérité : serveur uniquement
 // ══════════════════════════════════════════════════════════════
 
-/** Retourne l'UUID serveur ou null — jamais ne génère localement. */
+/** Retourne l'UUID serveur ou null — jamais ne génère localement.
+ *  Fallback : lit ws_partie_id si minigame_partie_session_id absent
+ *  (cas où GAME_CREATED a écrit ws_partie_id mais l'import dynamique
+ *  de setPartieSessionId() n'est pas encore résolu). */
 export function getPartieSessionId() {
     if (_partieSessionId) return _partieSessionId;
-    const stored = localStorage.getItem(PARTIE_ID_KEY);
+    const stored = localStorage.getItem(PARTIE_ID_KEY)
+                || localStorage.getItem('ws_partie_id')
+                || localStorage.getItem('minigame_partie_id');
     if (stored) { _partieSessionId = stored; return stored; }
     return null;
 }

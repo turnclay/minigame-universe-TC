@@ -26,6 +26,17 @@
 //   — Aucune autre clé. Tout le reste passe par WS.
 // ================================================================
 
+// ── Import navigation invité (lazy pour éviter circular deps) ──────────
+let _navbarInite = false;
+async function _initNavbar() {
+    if (_navbarInite) return;
+    _navbarInite = true;
+    try {
+        const nav = await import('../navigation.js');
+        if (typeof nav.initNavbarInvite === 'function') nav.initNavbarInvite();
+    } catch(e) { console.warn('[PLAYER] initNavbarInvite indisponible:', e.message); }
+}
+
 // ── Clé localStorage invité ────────────────────────────────────
 const PLAYER_ID_KEY = 'mgu_player_id';
 
@@ -168,11 +179,14 @@ export const Player = {
             this._afficherAttente(snapshot);
         });
 
-        // ── GAME_STARTED → countdown → module jeu ─────────────
+        // ── GAME_STARTED → basculer + countdown → module jeu ────
         socket.on('GAME_STARTED', ({ snapshot }) => {
             this.snapshot        = snapshot;
             this._waitingForGame = false;
             toast('La partie commence ! 🚀', 'success', 2000);
+            // Garantir que #phase-jeu est visible (cas: invité déjà en attente
+            // ou qui rejoint juste avant le démarrage sans avoir eu JOIN_OK visible)
+            this._basculerVersJeu(snapshot);
             this._afficherCountdown(3, () =>
                 this._chargerModule(snapshot?.jeu || session.jeu, null, snapshot)
             );
@@ -380,6 +394,9 @@ export const Player = {
 
         const nav = $('invite-navbar');
         if (nav) nav.classList.add('visible');
+
+        // Initialiser les boutons navbar invité (🏠 et ☰) — une seule fois
+        _initNavbar();
     },
 
     // ──────────────────────────────────────────────────────────
