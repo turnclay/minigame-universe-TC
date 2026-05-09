@@ -111,6 +111,14 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
         // data = { questions: [ { Question, Thème, Indice 1, Indice 2, Réponse } ] }
         case 'load': {
             let s = getSession(partieId);
+
+            // Si une session existe en phase 'ended' ou avec des données résiduelles,
+            // la recréer proprement pour éviter QUIZ_END {total:0} sur next_question.
+            if (s && (s.phase === 'ended' || s.questions.length === 0)) {
+                if (s.timerHandle) clearTimeout(s.timerHandle);
+                sessions.delete(partieId);
+                s = null;
+            }
             if (!s) s = creerSession(partieId);
 
             const questions = Array.isArray(data.questions) ? data.questions : [];
@@ -138,8 +146,15 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             if (s.phase === 'question') {
                 return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE', message: 'Une question est déjà en cours.' });
             }
+            // Si la session n'a pas encore de questions chargées (session résiduelle
+            // ou quiz:load pas encore reçu), refuser silencieusement.
+            // Cela évite QUIZ_END {total:0} sur une session vide.
+            if (s.questions.length === 0) {
+                console.warn('[QUIZ] ⚠️ next_question ignoré — quiz:load pas encore reçu');
+                return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE', message: 'Chargez les questions d'abord (quiz:load).' });
+            }
             if (s.posees >= s.questions.length) {
-                // Plus de questions → fin
+                // Plus de questions → fin légitime
                 _terminerQuiz(wss, partieId, s, helpers);
                 return;
             }

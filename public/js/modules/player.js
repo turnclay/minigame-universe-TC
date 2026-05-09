@@ -179,17 +179,25 @@ export const Player = {
             this._afficherAttente(snapshot);
         });
 
-        // ── GAME_STARTED → basculer + countdown → module jeu ────
+        // ── GAME_STARTED → basculer + module immédiat + countdown visuel ─
         socket.on('GAME_STARTED', ({ snapshot }) => {
             this.snapshot        = snapshot;
             this._waitingForGame = false;
-            toast('La partie commence ! 🚀', 'success', 2000);
-            // Garantir que #phase-jeu est visible (cas: invité déjà en attente
-            // ou qui rejoint juste avant le démarrage sans avoir eu JOIN_OK visible)
+
+            // 1. Basculer vers #phase-jeu immédiatement (idempotent)
             this._basculerVersJeu(snapshot);
-            this._afficherCountdown(3, () =>
-                this._chargerModule(snapshot?.jeu || session.jeu, null, snapshot)
-            );
+
+            // 2. Charger le module JEU IMMÉDIATEMENT — pas après le countdown.
+            //    Le countdown est visuel seulement ; les events WS (QUIZ_READY,
+            //    QUIZ_QUESTION…) peuvent arriver pendant ces 3s et doivent
+            //    être reçus par le module déjà initialisé.
+            const jeuReel = snapshot?.jeu || session.jeu;
+            this._chargerModule(jeuReel, null, snapshot);
+
+            // 3. Overlay countdown par-dessus (ne masque pas #jeu-contenu)
+            this._afficherCountdownOverlay(3, () => {
+                toast('La partie commence ! 🚀', 'success', 2000);
+            });
         });
 
         // ── Relay vers module jeu actif ────────────────────────
@@ -504,9 +512,66 @@ export const Player = {
         }
     },
 
+    // ── Countdown OVERLAY (par-dessus le contenu, ne l'efface pas) ────
+    _afficherCountdownOverlay(n, onEnd) {
+        // Supprimer un éventuel countdown précédent
+        document.getElementById('pl-cd-overlay')?.remove();
+
+        if (!document.getElementById('style-pl-cd')) {
+            const s = document.createElement('style'); s.id = 'style-pl-cd';
+            s.textContent = `
+                @keyframes plCdPop {
+                    0%  { transform:scale(1.4); opacity:0 }
+                    60% { transform:scale(.93)             }
+                    100%{ transform:scale(1);   opacity:1  }
+                }
+                #pl-cd-overlay {
+                    position:fixed; inset:0; z-index:800;
+                    display:flex; align-items:center; justify-content:center;
+                    flex-direction:column; gap:1rem;
+                    background:rgba(0,0,0,.72); backdrop-filter:blur(8px);
+                    pointer-events:none;
+                }
+                .pl-cd-n {
+                    font-size:6rem; font-weight:900; color:white;
+                    text-shadow:0 0 60px rgba(0,212,255,.9);
+                    animation:plCdPop .4s cubic-bezier(.4,0,.2,1);
+                }
+                .pl-cd-l {
+                    font-size:1rem; color:rgba(255,255,255,.7);
+                    font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+                }`;
+            document.head.appendChild(s);
+        }
+
+        const ov  = document.createElement('div'); ov.id = 'pl-cd-overlay';
+        const nEl = document.createElement('div'); nEl.className = 'pl-cd-n'; nEl.textContent = String(n);
+        const lEl = document.createElement('div'); lEl.className = 'pl-cd-l'; lEl.textContent = 'La partie commence…';
+        ov.append(nEl, lEl);
+        document.body.appendChild(ov);
+
+        let cur = n;
+        const iv = setInterval(() => {
+            cur--;
+            if (cur > 0) {
+                nEl.style.animation = 'none';
+                nEl.textContent = String(cur);
+                requestAnimationFrame(() => {
+                    nEl.style.animation = 'plCdPop .4s cubic-bezier(.4,0,.2,1)';
+                });
+            } else {
+                clearInterval(iv);
+                ov.style.opacity = '0';
+                ov.style.transition = 'opacity .3s';
+                setTimeout(() => { ov.remove(); if (onEnd) onEnd(); }, 300);
+            }
+        }, 1000);
+    },
+
+    // ── Countdown dans #jeu-contenu (conservé pour compat, non utilisé par GAME_STARTED) ─
     _afficherCountdown(n, onEnd) {
         const cont = $('jeu-contenu');
-        if (!cont) { onEnd(); return; }
+        if (!cont) { if (onEnd) onEnd(); return; }
         if (!$('style-pl-cd')) {
             const s = document.createElement('style'); s.id = 'style-pl-cd';
             s.textContent = `
@@ -712,7 +777,14 @@ const QuizModule = {
         this._arreterTimer();
         this._afficherCorrection(payload, this._session?.pseudo);
     },
-    _onQUIZ_END({ scores }) {
+    _onQUIZ_END({ scores, total }) {
+        // Ignorer QUIZ_END {total:0} — artifact d'une session résiduelle
+        // côté serveur (ancienne partie non nettoyée).
+        // Un quiz valide a toujours total >= 1.
+        if (!total || total === 0) {
+            console.warn('[QUIZ] ⚠️ QUIZ_END ignoré — total:0 (session résiduelle serveur)');
+            return;
+        }
         this._arreterTimer();
         this._afficherFin(scores, this._session?.pseudo);
     },
