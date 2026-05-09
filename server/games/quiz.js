@@ -406,20 +406,14 @@ function _declencharRevelation(wss, partieId, s, helpers, source) {
         const sim     = bonneReponse ? _similarite(texte, bonneReponse) : 0;
         const correct = sim >= 0.85;
 
-        // Calcul des points (conservé depuis quiz_hote.js)
-        let points = 0;
-        if (correct) {
-            if (tsRep < tsIndice1)      points = 2;   // avant indice1
-            else if (tsRep < tsIndice2) points = 1;   // après indice1
-            else                        points = 1;   // après indice2 → 1pt (base)
-        }
+        // Calcul simplifié : 1pt bonne réponse, bonus 1pt premier correct
+        let points = correct ? 1 : 0;
 
         resultats.push({
             pseudo,
             texte,
             correct,
             points,
-            indicesVus: data.indicesVus || 0,
             estPremier: false,
         });
 
@@ -447,8 +441,16 @@ function _declencharRevelation(wss, partieId, s, helpers, source) {
     broadcastToGame(wss, partieId, 'QUIZ_CORRECTION', payload);
 
     // Mise à jour des scores pour tous
-    broadcastToGame(wss, partieId, 'SCORES_UPDATE', {
-        scores: store.getScores(partieId),
+    const scoresActuels = store.getScores(partieId);
+    broadcastToGame(wss, partieId, 'SCORES_UPDATE', { scores: scoresActuels });
+
+    // Notifier l'hôte qu'il peut passer à la question suivante
+    const { broadcastToHost } = helpers;
+    broadcastToHost(wss, partieId, 'QUIZ_CAN_NEXT', {
+        posees   : s.posees,
+        total    : s.questions.length,
+        remaining: s.questions.length - s.posees,
+        scores   : scoresActuels,
     });
 
     console.log(`[QUIZ] 📊 Révélation (${source}) — ${resultats.length} réponse(s), bonne: "${bonneReponse}"`);

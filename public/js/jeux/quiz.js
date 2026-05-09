@@ -122,23 +122,8 @@ function _onQuizCorrection(payload) {
     if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
     console.log('[QUIZ] ✅ Correction Q' + posees + '/' + total + ': "' + reponse + '"');
 
-    // Réactiver btn-next après la correction
-    const btnNext = $('btn-next');
-    if (btnNext) {
-        btnNext.disabled       = false;
-        btnNext.style.opacity  = '1';
-        btnNext.style.animation = 'btnPulse .5s ease';
-        setTimeout(() => { if (btnNext) btnNext.style.animation = ''; }, 600);
-    }
-    // Désactiver btn-afficher-reponse (correction déjà faite)
-    const btnAff = document.getElementById('btn-afficher-reponse');
-    if (btnAff) {
-        btnAff.disabled        = true;
-        btnAff.style.opacity   = '0.3';
-        btnAff.style.cursor    = 'not-allowed';
-        btnAff.style.animation = '';
-        btnAff.title           = 'Réponse déjà révélée — cliquez sur Question suivante';
-    }
+    // Note : btn-next et btn-afficher sont gérés par QUIZ_CAN_NEXT
+    // (envoyé par le serveur juste après QUIZ_CORRECTION)
 }
 
 function _onQuizEnd({ scores, total }) {
@@ -296,6 +281,34 @@ function abonnerEvenementsServeur(socket) {
         _publierScores();
         if (typeof window.afficherScoreboard === 'function')
             window.afficherScoreboard();
+    });
+
+    // Serveur confirme que la révélation est faite → activer btn-next
+    socket.on('QUIZ_CAN_NEXT', ({ posees, total, remaining }) => {
+        console.log('[QUIZ] ✅ QUIZ_CAN_NEXT — Q' + posees + '/' + total + ' — remaining:' + remaining);
+
+        const btnNext = $('btn-next');
+        if (btnNext) {
+            btnNext.disabled       = false;
+            btnNext.style.opacity  = '1';
+            btnNext.style.cursor   = 'pointer';
+            btnNext.title          = remaining > 0
+                ? 'Passer à la question suivante (' + remaining + ' restante' + (remaining > 1 ? 's' : '') + ')'
+                : 'Terminer le quiz';
+            // Petit pulse pour signaler que c'est cliquable
+            btnNext.style.animation = 'btnPulse .4s ease';
+            setTimeout(() => { if (btnNext) btnNext.style.animation = ''; }, 450);
+        }
+
+        // Désactiver btn-afficher (révélation déjà faite)
+        const btnAff = document.getElementById('btn-afficher-reponse');
+        if (btnAff) {
+            btnAff.disabled        = true;
+            btnAff.style.opacity   = '0.3';
+            btnAff.style.cursor    = 'not-allowed';
+            btnAff.style.animation = '';
+            btnAff.title           = 'Réponse révélée — cliquez sur Question suivante';
+        }
     });
 }
 

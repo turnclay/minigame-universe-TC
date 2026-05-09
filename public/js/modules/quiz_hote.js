@@ -37,9 +37,15 @@ function _ws()   { return window.jeuSocket || null; }
 function _wsOk() { const s = _ws(); return !!(s && s.connected); }
 
 // ── Clés localStorage (compat signal.js + scoreboard) ──
-function _pid()       { return localStorage.getItem('minigame_partie_id') || localStorage.getItem('minigame_partie_session_id') || localStorage.getItem('ws_partie_id') || 'inconnu'; }
-function _cleScores() { return `partie_scores_${_pid()}`; }
-function _cleEtat()   { return `partie_etat_${_pid()}`; }
+function _pid() { return localStorage.getItem('minigame_partie_id') || localStorage.getItem('minigame_partie_session_id') || localStorage.getItem('ws_partie_id') || ''; }
+function _cleScores() {
+    const pid = _pid();
+    return pid ? `partie_scores_${pid}` : null;
+}
+function _cleEtat()   {
+    const pid = _pid();
+    return pid ? `partie_etat_${pid}` : null;
+}
 
 function _pseudoHote() { return (GameState?.joueurs?.[0]) || 'Hôte'; }
 
@@ -221,11 +227,13 @@ function _afficherPanneauResultats(resultats, bonneReponse) {
 // ──────────────────────────────────────────────────────
 
 export function publierEtat(etat) {
-    localStorage.setItem(_cleEtat(), etat);
+    const cle = _cleEtat();
+    if (cle) localStorage.setItem(cle, etat);
 }
 
 export function publierScores() {
-    localStorage.setItem(_cleScores(), JSON.stringify(GameState.scores || {}));
+    const cle = _cleScores();
+    if (cle) localStorage.setItem(cle, JSON.stringify(GameState.scores || {}));
     if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
 }
 
@@ -245,6 +253,8 @@ export function declencherAfficherReponse() {
     if (_validationEnCours) return;
     _validationEnCours = true;
 
+    // Désactiver seulement btn-afficher et btn-valider — PAS btn-next
+    // btn-next sera réactivé par QUIZ_CAN_NEXT quand le serveur confirme la révélation
     const btnEnvoyer  = document.getElementById('btn-valider-reponse');
     const btnAfficher = document.getElementById('btn-afficher-reponse');
     if (btnEnvoyer)  { btnEnvoyer.disabled  = true; btnEnvoyer.style.opacity  = '0.45'; }
@@ -287,9 +297,11 @@ export function nettoyerPartieInvites() {
     _wsListenersActifs  = false;
 
     const pid = _pid();
-    ['partie_question_minigame_partie_id', 'partie_reponses_', 'partie_validation_', 'partie_scores_',
-     'partie_premier_correct_', 'partie_nav_', 'partie_revelation_']
-        .forEach(k => localStorage.removeItem(k + pid));
+    if (pid) {
+        ['partie_question_', 'partie_reponses_', 'partie_validation_', 'partie_scores_',
+         'partie_premier_correct_', 'partie_nav_', 'partie_revelation_', 'partie_etat_']
+            .forEach(k => localStorage.removeItem(k + pid));
+    }
     publierEtat('fin');
 
     if (_wsOk()) _ws().send('HOST_END_GAME', {});

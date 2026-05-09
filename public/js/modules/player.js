@@ -200,15 +200,22 @@ export const Player = {
             });
         });
 
+        // Exposer Player sur window pour accès global (ex: _afficherCorrection)
+        window.Player = this;
+
         // ── Relay vers module jeu actif ────────────────────────
         socket.on('HOST_ACTION', ({ action, data }) => {
             this.module?.onHostAction?.(action, data);
         });
 
         socket.on('SCORES_UPDATE', ({ scores }) => {
-            const pts = scores?.[this.session.pseudo] ?? this.scoreLocal;
-            this.scoreLocal = pts;
+            if (scores && this.session?.pseudo) {
+                this.scoreLocal = scores[this.session.pseudo] ?? this.scoreLocal;
+            }
             this.module?.onScores?.(scores);
+            // Mettre à jour l'affichage du score si visible
+            const el = document.getElementById('p-mes-points');
+            if (el) el.textContent = (this.scoreLocal ?? 0) + ' pt' + ((this.scoreLocal ?? 0) > 1 ? 's' : '');
         });
 
         // ── Relay QUIZ_* vers QuizModule (enregistré tôt pour éviter
@@ -217,7 +224,7 @@ export const Player = {
         // vers this.module si QuizModule est déjà chargé.
         const quizEvents = ['QUIZ_QUESTION','QUIZ_CORRECTION','QUIZ_END',
                             'QUIZ_INDICE','QUIZ_ANSWER_ACK','QUIZ_RESPONSE_IN',
-                            'QUIZ_TIMER_EXPIRED'];
+                            'QUIZ_TIMER_EXPIRED','QUIZ_CAN_NEXT'];
         quizEvents.forEach(evt => {
             socket.on(evt, payload => {
                 if (this.module && typeof this.module['_on' + evt] === 'function') {
@@ -745,7 +752,8 @@ const QuizModule = {
         sock.on('QUIZ_ANSWER_ACK', payload  => this._onQUIZ_ANSWER_ACK(payload));
         sock.on('QUIZ_CORRECTION',    payload  => this._onQUIZ_CORRECTION(payload));
         sock.on('QUIZ_END',           payload  => this._onQUIZ_END(payload));
-        sock.on('QUIZ_TIMER_EXPIRED', ()       => this._onQUIZ_TIMER_EXPIRED());
+        sock.on('QUIZ_TIMER_EXPIRED', ()         => this._onQUIZ_TIMER_EXPIRED());
+        sock.on('QUIZ_CAN_NEXT',      ({ scores }) => this._onQUIZ_CAN_NEXT(scores));
 
         $('p-btn-send')?.addEventListener('click',    () => this._envoyerReponse());
         $('p-answer-input')?.addEventListener('keydown', e => {
@@ -774,6 +782,14 @@ const QuizModule = {
         } else if (status === 'already_answered') toast('Vous avez déjà répondu.', 'warning');
         else if (status === 'too_late')           toast('Trop tard.', 'warning');
         else                                      toast('Réponse invalide.', 'error');
+    },
+    _onQUIZ_CAN_NEXT(scores) {
+        // Mettre à jour les scores affichés si la correction est visible
+        if (scores && this._session?.pseudo) {
+            const mesPoints = scores[this._session.pseudo] ?? 0;
+            const el = $('p-mes-points');
+            if (el) el.textContent = mesPoints + ' pt' + (mesPoints > 1 ? 's' : '');
+        }
     },
     _onQUIZ_TIMER_EXPIRED() {
         // Timer serveur écoulé → bloquer la saisie si l'invité n'a pas répondu
@@ -911,27 +927,32 @@ const QuizModule = {
         const { theme, question, reponse, reponses, posees, total } = payload;
         const maRep = (reponses || []).find(r => r.pseudo === pseudo);
 
+        // Score total du joueur dans GameState (mis à jour par SCORES_UPDATE)
+        const scoresActuels = window.Player?.scoreLocal ?? 0;
+
         let fb;
         if (!maRep) {
             fb = `<div style="background:rgba(100,116,139,.12);
                 border:1px solid rgba(100,116,139,.3);border-radius:10px;
                 padding:.75rem;color:rgba(255,255,255,.6);">
-                😶 Tu n'as pas répondu à temps.
+                😶 Tu n'as pas répondu à temps. +0 pt
             </div>`;
         } else if (maRep.correct) {
-            const prem = maRep.estPremier ? ' 🏆 Premier correct !' : '';
+            const prem = maRep.estPremier
+                ? '<span style="color:#fbbf24;"> 🏆 +1 bonus premier !</span>'
+                : '';
+            const totalPts = maRep.points;
             fb = `<div style="background:rgba(34,197,94,.12);
                 border:1px solid rgba(34,197,94,.3);border-radius:10px;
                 padding:.75rem;color:#4ade80;font-weight:600;">
-                🎉 Bonne réponse !
-                <strong>+${maRep.points} pt${maRep.points !== 1 ? 's' : ''}${prem}</strong>
+                🎉 Bonne réponse ! <strong>+${totalPts} pt${totalPts !== 1 ? 's' : ''}</strong>${prem}
             </div>`;
         } else {
             fb = `<div style="background:rgba(239,68,68,.12);
                 border:1px solid rgba(239,68,68,.3);border-radius:10px;
                 padding:.75rem;color:#fca5a5;">
                 ❌ Mauvaise réponse — tu as écrit :
-                <em>${esc(maRep.texte)}</em>
+                <em>${esc(maRep.texte)}</em> +0 pt
             </div>`;
         }
 
@@ -957,6 +978,13 @@ const QuizModule = {
                     </div>
                 </div>
                 ${fb}
+                <div id="p-mes-points-row" style="text-align:center;margin-top:.5rem;
+                    padding:.5rem;background:rgba(0,212,255,.06);border-radius:8px;
+                    font-size:.82rem;color:rgba(255,255,255,.5);">
+                    Ton score : <span id="p-mes-points" style="color:#00d4ff;font-weight:700;">
+                        ${this.scoreLocal ?? 0} pt${(this.scoreLocal ?? 0) > 1 ? 's' : ''}
+                    </span>
+                </div>
                 <p style="font-size:.8rem;color:rgba(255,255,255,.35);
                     text-align:center;margin:0;">
                     En attente de la prochaine question…
