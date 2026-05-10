@@ -220,12 +220,11 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             const hostPseudo = partie?.hostPseudo;
             if (hostPseudo && data.reponseHote) {
                 const ts = data.tsHote || Date.now();
-                s.reponses[hostPseudo] = {
-                    texte: (data.reponseHote || '').trim(),
-                    ts,
-                    indicesVus: 2, // host sees all indices
-                };
-            }
+s.reponses[hostPseudo] = {
+    texte: (data.reponseHote || data.texte || data.reponse || '').trim(),
+    ts,
+    indicesVus: 2,
+};
 
             _declencherRevelation(wss, partieId, s, helpers, 'host');
             break;
@@ -296,7 +295,7 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
                 return send(ws, 'QUIZ_ANSWER_ACK', { status: 'already_answered' });
             }
 
-            const texte = (data.texte || '').trim();
+            const texte = (data.texte || data.reponse || '').trim();
             if (!texte) {
                 return send(ws, 'QUIZ_ANSWER_ACK', { status: 'invalid' });
             }
@@ -312,8 +311,12 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
 
             send(ws, 'QUIZ_ANSWER_ACK', { status: 'ok', texte });
 
-            const partie     = store.getPartie(partieId);
-            const nbInvites  = (partie?.joueurs || []).length;
+            const nbInvites = (partie?.joueurs || []).length;
+            const hostPseudo = partie?.hostPseudo;
+            const totalAttendus = hostPseudo ? nbInvites + 1 : nbInvites;
+            const nbReponses = Object.keys(s.reponses).length;
+            const allAnswered = nbReponses >= totalAttendus;
+
             // nbJoueurs envoyé = invités seulement.
             // Le client ajoute +1 pour l'hôte dans _nbJoueursTotal().
             const nbReponses = Object.keys(s.reponses).length;
