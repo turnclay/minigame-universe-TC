@@ -86,7 +86,7 @@ function _initWsListeners() {
         _afficherPanneauAttenteWS();
     });
 
-    s.on('QUIZ_RESPONSE_IN', ({ pseudo, nbReponses, nbJoueurs, allAnswered }) => {
+    s.on('QUIZ_RESPONSE_IN', ({ pseudo, nbRecus, nbJoueurs, allAnswered }) => {
         if (!pseudo || pseudo === 'null' || pseudo === 'undefined') return;
 
         if (!_reponsesRecues[pseudo]) {
@@ -407,12 +407,12 @@ export function envoyerReponseHote(rep) {
 
     // Vérifier si tous (invités + hôte) ont répondu
     const nbTotal    = _nbJoueursTotal();
-    const nbReponses = Object.keys(_reponsesRecues).length;
+    const nbRecus = Object.keys(_reponsesRecues).length;
 
-    if (nbReponses >= nbTotal) {
+    if (nbRecus >= nbTotal) {
         _activerBoutonAfficher('✅ Tous ont répondu — Cliquez pour révéler');
     } else {
-        _mettreAJourBoutonAfficher(nbReponses, nbTotal);
+        _mettreAJourBoutonAfficher(nbRecus, nbTotal);
     }
 }
 
