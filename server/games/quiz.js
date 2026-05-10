@@ -312,16 +312,17 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
 
             send(ws, 'QUIZ_ANSWER_ACK', { status: 'ok', texte });
 
-            const partie        = store.getPartie(partieId);
-            const nbInvites     = (partie?.joueurs || []).length;
-            const nbJoueursTotal = nbInvites + 1; // invités + hôte
-            const nbReponses    = Object.keys(s.reponses).length;
-            const allAnswered   = nbReponses >= nbJoueursTotal;
+            const partie     = store.getPartie(partieId);
+            const nbInvites  = (partie?.joueurs || []).length;
+            // nbJoueurs envoyé = invités seulement.
+            // Le client ajoute +1 pour l'hôte dans _nbJoueursTotal().
+            const nbReponses = Object.keys(s.reponses).length;
+            const allAnswered = nbReponses >= nbInvites; // invités ont-ils tous répondu ?
 
             broadcastToHost(wss, partieId, 'QUIZ_RESPONSE_IN', {
                 pseudo,
                 nbReponses,
-                nbJoueurs: nbJoueursTotal,
+                nbJoueurs: nbInvites, // invités seulement
                 allAnswered,
             });
 
