@@ -1,478 +1,582 @@
+// ============================================================
+// /js/jeux/quiz.js — v3.2 WS-server-driven (RENDER-SAFE & FIXED)
+// ============================================================
+// Déploiement Render : chemins absolus, imports robustes, gestion erreurs
+// Corrections WS : vérifications connexion, try/catch, cohérence partieId
+// ============================================================
+
+import { $ } from '../core/dom.js';
+import { GameState } from '../core/state.js';
+import { ajouterPoints } from '../modules/scoreboard.js';
+
+// ── État local (UI uniquement — plus de séquence locale) ──
+let _timerLocal     = null;
+let _tempsRestant   = 60;
+let _questionEnCours = null;  // payload de la dernière QUIZ_QUESTION reçue
+
+// ── Stubs module hôte (remplacés par chargerModuleHote) ──
+let _publierEtat                    = () => {};
+let _publierScores                  = () => {};
+let _afficherReponsesInvitesSurHote = () => {};
+let _viderReponses                  = () => {};
+let _declencherAfficherReponse      = () => {};
+let _envoyerReponseHote             = () => {};
+
 // ======================================================
-// 🎮 server/games/quiz.js — v1.1 (FIXED — synchro WS)
+// 📡 CHARGEMENT DU MODULE HÔTE (robuste pour Render)
+// ======================================================
+async function chargerModuleHote() {
+    try {
+        const m = await import('../modules/quiz_hote.js');
+
+        _publierEtat                    = m.publierEtat;
+        _publierScores                  = m.publierScores;
+        _afficherReponsesInvitesSurHote = m.afficherReponsesInvitesSurHote;
+        _viderReponses                  = m.viderReponses;
+        _declencherAfficherReponse      = m.declencherAfficherReponse || (() => {});
+        _envoyerReponseHote             = m.envoyerReponseHote        || (() => {});
+
+        if (typeof window !== 'undefined') {
+            window._quizEnvoyerReponseHote   = rep => _envoyerReponseHote(rep);
+            window._quizDeclencherAfficher   = ()  => _declencherAfficherReponse();
+            window._quizDeclencherValidation = ()  => _declencherAfficherReponse();
+        }
+
+        console.log('[QUIZ] ✅ Module hôte chargé');
+        return true;
+    } catch (e) {
+        console.warn('[QUIZ] ⚠️ quiz_hote.js indisponible :', e.message);
+        console.error('[QUIZ] 📍 Stack:', e.stack);
+        return false;
+    }
+}
+
+// ======================================================
+// 🖥️ HANDLERS ÉVÉNEMENTS WS SERVEUR
 // ======================================================
 
-import store from '../store.js';
+function _onQuizQuestion(payload) {
+    const { question, theme, posees, total, ts, hasIndice1, hasIndice2 } = payload;
+    _questionEnCours = payload;
 
-// ─────────────────────────────────────────────────────
-// Sessions en mémoire
-// ─────────────────────────────────────────────────────
-
-const sessions = new Map();
-
-function getSession(partieId) {
-    return sessions.get(partieId) || null;
-}
-
-function creerSession(partieId) {
-    const session = {
-        phase             : 'idle',
-        questions         : [],
-        posees            : 0,
-        questionEnCours   : null,
-        reponses          : {},
-        indicesBroadcast  : 0,
-        revelationEnCours : false,
-        timerHandle       : null,
-        timerIndice1      : null,
-        timerIndice2      : null,
-        timerReveal       : null,
-        _dernieresReponses: [],
-        _autoStartPending : false,
-    };
-    sessions.set(partieId, session);
-    return session;
-}
-
-// ─────────────────────────────────────────────────────
-// API publique
-// ─────────────────────────────────────────────────────
-
-export function getSessionState(partieId) {
-    const s = getSession(partieId);
-    if (!s) return null;
-
-    const base = { phase: s.phase, total: s.questions.length };
-
-    if (s.phase === 'question' && s.questionEnCours) {
-        return {
-            ...base,
-            payload         : _questionPayload(s, s.questionEnCours),
-            indicesBroadcast: s.indicesBroadcast,
-            nbReponses      : Object.keys(s.reponses).length,
-        };
+    try {
+        _viderReponses();
+    } catch (err) {
+        console.warn('[QUIZ] ⚠️ Erreur _viderReponses:', err.message);
     }
-    if (s.phase === 'correction' && s.questionEnCours) {
-        return {
-            ...base,
-            payload: _correctionPayload(s, s.questionEnCours, s._dernieresReponses || []),
-        };
+
+    const tEl = $('theme-display');
+    if (tEl) tEl.textContent = theme || '—';
+
+    const qEl = $('question');
+    if (qEl) qEl.textContent = question || '';
+
+    const i1  = $('indice1');
+    if (i1) i1.textContent = '';
+
+    const i2  = $('indice2');
+    if (i2) i2.textContent = '';
+
+    const rp  = $('reponse');
+    if (rp) rp.textContent = '';
+
+    const inp = document.getElementById('quiz-reponse-input');
+    if (inp) {
+        inp.value = '';
+        inp.disabled = false;
     }
-    if (s.phase === 'ended') {
-        return { ...base, scores: store.getScores(partieId) };
+
+    const btnEnv = document.getElementById('btn-valider-reponse');
+    if (btnEnv) {
+        btnEnv.disabled      = false;
+        btnEnv._sent         = false;
+        btnEnv.style.opacity = '';
+        btnEnv.textContent   = '✅ Envoyer';
     }
-    return base;
-}
 
-export function detruireSession(partieId) {
-    const s = getSession(partieId);
-    if (s) {
-        if (s.timerHandle)  clearTimeout(s.timerHandle);
-        if (s.timerIndice1) clearTimeout(s.timerIndice1);
-        if (s.timerIndice2) clearTimeout(s.timerIndice2);
-        if (s.timerReveal)  clearTimeout(s.timerReveal);
+    const btnAff = document.getElementById('btn-afficher-reponse');
+    if (btnAff) {
+        btnAff.disabled        = true;
+        btnAff.style.opacity   = '0.4';
+        btnAff.style.cursor    = 'not-allowed';
+        btnAff.title           = 'En attente des réponses de tous les joueurs…';
+        btnAff.style.animation = '';
     }
-    sessions.delete(partieId);
-    console.log(`[QUIZ] 🗑️ Session détruite: ${partieId}`);
-}
 
-// ─────────────────────────────────────────────────────
-// Handlers d'actions HÔTE
-// ─────────────────────────────────────────────────────
+    const b1 = $('btn-indice1');
+    if (b1) b1.disabled = !hasIndice1;
 
-export function handleHostAction(wss, ws, partieId, action, data, helpers) {
-    const { broadcastToGame, broadcastToHost, send } = helpers;
-    const cmd = action.split(':')[1];
+    const b2 = $('btn-indice2');
+    if (b2) b2.disabled = !hasIndice2;
 
-    switch (cmd) {
+    const vEl = document.getElementById('verif-resultat');
+    if (vEl) vEl.hidden = true;
 
-        // ───────────────────────────────────────────────
-        // quiz:load
-        // ───────────────────────────────────────────────
-        case 'load': {
-            let s = getSession(partieId);
+    _demarrerTimerVisuel(ts);
 
-            if (s && (s.phase === 'ended' || s.questions.length === 0)) {
-                if (s.timerHandle) clearTimeout(s.timerHandle);
-                sessions.delete(partieId);
-                s = null;
+    setTimeout(() => {
+        try {
+            if (typeof _afficherReponsesInvitesSurHote === 'function') {
+                _afficherReponsesInvitesSurHote('invites-reponses');
             }
-            if (!s) s = creerSession(partieId);
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur affichage panneau:', err.message);
+        }
+    }, 500);
 
-            const questions = Array.isArray(data.questions) ? data.questions : [];
-            if (questions.length === 0) {
-                return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE', message: 'Aucune question fournie.' });
+    // Désactiver btn-next pendant la question (réactivé sur QUIZ_CORRECTION)
+    const btnNxt = $('btn-next');
+    if (btnNxt) {
+        btnNxt.disabled      = true;
+        btnNxt.style.opacity = '0.35';
+        btnNxt.title         = 'Révélez la réponse avant de passer à la suivante';
+        btnNxt.style.animation = '';
+    }
+    console.log('[QUIZ] ❓ Q' + posees + '/' + total + ': ' + question);
+}
+
+function _onQuizCorrection(payload) {
+    _arreterTimerVisuel();
+    const { reponse, posees, total } = payload;
+    const repEl = $('reponse');
+    if (repEl && reponse) repEl.textContent = reponse;
+
+    // Stocker la bonne réponse dans _questionEnCours pour quiz_hote.js
+    if (_questionEnCours) {
+        _questionEnCours.reponse         = reponse;
+        _questionEnCours['Réponse']      = reponse;
+    }
+
+    try {
+        _publierScores();
+    } catch (err) {
+        console.warn('[QUIZ] ⚠️ Erreur publierScores:', err.message);
+    }
+
+    if (typeof window.afficherScoreboard === 'function') {
+        try {
+            window.afficherScoreboard();
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur afficherScoreboard:', err.message);
+        }
+    }
+
+    console.log('[QUIZ] ✅ Correction Q' + posees + '/' + total + ': "' + reponse + '"');
+}
+
+function _onQuizEnd({ scores, total }) {
+    _arreterTimerVisuel();
+
+    try {
+        _publierEtat('fin');
+    } catch (err) {
+        console.warn('[QUIZ] ⚠️ Erreur publierEtat:', err.message);
+    }
+
+    if (scores) {
+        GameState.scores = GameState.scores || {};
+        Object.assign(GameState.scores, scores);
+        try {
+            _publierScores();
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur publierScores fin:', err.message);
+        }
+    }
+
+    if (typeof window.afficherScoreboard === 'function') {
+        try {
+            window.afficherScoreboard();
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur afficherScoreboard fin:', err.message);
+        }
+    }
+
+    console.log('[QUIZ] 🏁 Fin — ' + total + ' questions');
+}
+
+// ======================================================
+// ⏱ TIMER VISUEL (affichage seulement — timer réel = serveur)
+// ======================================================
+function _demarrerTimerVisuel(tsDebut) {
+    _arreterTimerVisuel();
+    _tempsRestant = 60;
+    const t = $('timer');
+    if (!t) return;
+    t.textContent = '1:00';
+    t.classList.remove('clignote');
+
+    if (tsDebut) {
+        const ecoulees = Math.floor((Date.now() - tsDebut) / 1000);
+        _tempsRestant = Math.max(0, 60 - ecoulees);
+    }
+
+    _timerLocal = setInterval(() => {
+        _tempsRestant--;
+        if (t) {
+            const m = Math.floor(_tempsRestant / 60);
+            const s = (_tempsRestant % 60).toString().padStart(2, '0');
+            t.textContent = m + ':' + s;
+            if (_tempsRestant <= 5 && _tempsRestant > 0) t.classList.add('clignote');
+            if (_tempsRestant <= 0) {
+                _arreterTimerVisuel();
+                t.textContent = '0:00';
+                t.classList.remove('clignote');
             }
+        }
+    }, 1000);
+}
 
-            s.questions = questions;
-            s.posees    = 0;
-            s.phase     = 'idle';
+function _arreterTimerVisuel() {
+    if (_timerLocal) {
+        clearInterval(_timerLocal);
+        _timerLocal = null;
+    }
+}
 
-            broadcastToGame(wss, partieId, 'QUIZ_READY', {
-                total   : questions.length,
-                message : `${questions.length} question${questions.length > 1 ? 's' : ''} chargée${questions.length > 1 ? 's' : ''} !`,
-            });
+// ======================================================
+// 📱 PANNEAU RÉPONSES INVITÉS (injecté une seule fois)
+// ======================================================
+function injecterPanneauInvites() {
+    if (document.getElementById('panneau-invites-quiz')) return;
+    const section = $('quiz');
+    if (!section) return;
 
-            console.log(`[QUIZ] 📚 ${questions.length} questions chargées pour ${partieId}`);
+    const panneau = document.createElement('div');
+    panneau.id = 'panneau-invites-quiz';
+    panneau.style.cssText = 'margin-top:20px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:14px;padding:14px 16px;';
+    panneau.innerHTML = '<div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(0,212,255,.7);margin-bottom:10px;font-weight:700;">📱 Réponses des joueurs</div>'
+        + '<div id="invites-reponses"><p style="font-size:.8rem;color:rgba(255,255,255,.4);text-align:center;">Aucune réponse pour l\'instant</p></div>';
+    section.appendChild(panneau);
 
-            s._autoStartPending = true;
-            setTimeout(() => {
-                const sNow = getSession(partieId);
-                if (sNow && sNow.phase === 'idle' && sNow.questions.length > 0 && sNow._autoStartPending) {
-                    sNow._autoStartPending = false;
-                    handleHostAction(wss, ws, partieId, 'quiz:next_question', {}, helpers);
+    if (!document.getElementById('style-invites')) {
+        const s = document.createElement('style');
+        s.id = 'style-invites';
+        s.textContent = '@keyframes btnPulse{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}';
+        document.head.appendChild(s);
+    }
+
+    setInterval(() => {
+        try {
+            if (typeof _afficherReponsesInvitesSurHote === 'function') {
+                _afficherReponsesInvitesSurHote('invites-reponses');
+            }
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur refresh panneau:', err.message);
+        }
+    }, 2000);
+}
+
+// ======================================================
+// 🎧 LISTENERS HÔTE → commandes WS serveur
+// ======================================================
+function attacherListenersQuiz(socket) {
+
+    // 🚀 BOUTON START — masqué
+    const btnStart = document.getElementById('btn-start-solo');
+    if (btnStart) btnStart.style.display = 'none';
+
+    // 👉 Question suivante
+    ['btn-next', 'btn-next-arrow'].forEach(id => {
+        const el = $(id);
+        if (el) {
+            el.onclick = () => {
+                try {
+                    socket.send('HOST_ACTION', { action: 'quiz:next_question', data: {} });
+                } catch (err) {
+                    console.error('[QUIZ] ⚠️ Erreur send next_question:', err.message);
                 }
-            }, 1000);
-            break;
+            };
         }
+    });
 
-        // ───────────────────────────────────────────────
-        // quiz:next_question
-        // ───────────────────────────────────────────────
-        case 'next_question': {
-            let s = getSession(partieId);
-            if (!s) s = creerSession(partieId);
+    // 👉 Bouton précédent désactivé
+    const prev = $('btn-prev');
+    if (prev) {
+        prev.disabled = true;
+        prev.style.opacity = '0.3';
+    }
 
-            if (s._autoStartPending) s._autoStartPending = false;
-
-            if (s.phase === 'question') return;
-            if (s.questions.length === 0) {
-                return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE', message: 'Chargez les questions avec quiz:load.' });
+    // 👉 Indices
+    const ind1 = $('btn-indice1');
+    if (ind1) {
+        ind1.onclick = () => {
+            try {
+                socket.send('HOST_ACTION', { action: 'quiz:reveal_indice', data: { num: 1 } });
+            } catch (err) {
+                console.error('[QUIZ] ⚠️ Erreur send indice1:', err.message);
             }
-            if (s.posees >= s.questions.length) {
-                _terminerQuiz(wss, partieId, s, helpers);
-                return;
+        };
+    }
+
+    const ind2 = $('btn-indice2');
+    if (ind2) {
+        ind2.onclick = () => {
+            try {
+                socket.send('HOST_ACTION', { action: 'quiz:reveal_indice', data: { num: 2 } });
+            } catch (err) {
+                console.error('[QUIZ] ⚠️ Erreur send indice2:', err.message);
             }
+        };
+    }
 
-            const q  = s.questions[s.posees];
-            s.posees++;
-            s.phase              = 'question';
-            s.questionEnCours    = q;
-            s.reponses           = {};
-            s.indicesBroadcast   = 0;
-            s.revelationEnCours  = false;
-            s._dernieresReponses = [];
-
-            const DUREE     = 60;
-            const T_INDICE1 = 40;
-            const T_INDICE2 = 50;
-            const tsDebut   = Date.now();
-
-            q._tsIndice1 = tsDebut + T_INDICE1 * 1000;
-            q._tsIndice2 = tsDebut + T_INDICE2 * 1000;
-            q._tsDebut   = tsDebut;
-
-            broadcastToGame(wss, partieId, 'QUIZ_QUESTION', _questionPayload(s, q));
-
-            // Timers
-            if (s.timerHandle)   clearTimeout(s.timerHandle);
-            if (s.timerIndice1)  clearTimeout(s.timerIndice1);
-            if (s.timerIndice2)  clearTimeout(s.timerIndice2);
-
-            const texte1 = q['Indice 1'] || q.indice1 || '';
-            if (texte1) {
-                s.timerIndice1 = setTimeout(() => {
-                    if (s.phase !== 'question') return;
-                    s.indicesBroadcast = Math.max(s.indicesBroadcast, 1);
-                    broadcastToGame(wss, partieId, 'QUIZ_INDICE', { num: 1, texte: texte1 });
-                }, T_INDICE1 * 1000);
+    // 👉 Révélation
+    const btnAff = document.getElementById('btn-afficher-reponse');
+    if (btnAff) {
+        btnAff.onclick = () => {
+            try {
+                _declencherAfficherReponse();
+            } catch (err) {
+                console.error('[QUIZ] ⚠️ Erreur declencherAfficherReponse:', err.message);
             }
+        };
+    }
 
-            const texte2 = q['Indice 2'] || q.indice2 || '';
-            if (texte2) {
-                s.timerIndice2 = setTimeout(() => {
-                    if (s.phase !== 'question') return;
-                    s.indicesBroadcast = Math.max(s.indicesBroadcast, 2);
-                    broadcastToGame(wss, partieId, 'QUIZ_INDICE', { num: 2, texte: texte2 });
-                }, T_INDICE2 * 1000);
+    // 👉 Réponse hôte (gérée en local — pas de PLAYER_ACTION WS)
+    // NOTE : attacherListenersQuiz est appelé APRÈS chargerModuleHote,
+    // donc _envoyerReponseHote est déjà la vraie fonction ici.
+    const btnEnv = document.getElementById('btn-valider-reponse');
+    if (btnEnv) {
+        btnEnv.onclick = () => {
+            try {
+                if (btnEnv._sent) return;
+                const inp = document.getElementById('quiz-reponse-input');
+                const rep = inp ? inp.value.trim() : '';
+                if (!rep) return;
+                window._quizReponseSaisieHote = rep;
+                // Appel via la variable module (déjà chargée à ce stade)
+                _envoyerReponseHote(rep);
+                console.log('[QUIZ] 📨 Réponse hôte envoyée:', rep);
+            } catch (err) {
+                console.error('[QUIZ] ⚠️ Erreur envoi réponse hôte:', err.message);
             }
-
-            s.timerHandle = setTimeout(() => {
-                if (s.phase !== 'question') return;
-
-                broadcastToHost(wss, partieId, 'QUIZ_TIMER_EXPIRED', {
-                    partieId,
-                    nbReponses : Object.keys(s.reponses).length,
-                    nbJoueurs  : (store.getPartie(partieId)?.joueurs || []).length + 1,  // +1 pour l'hôte
-                });
-
-                s.timerReveal = setTimeout(() => {
-                    if (s.phase === 'question' && !s.revelationEnCours) {
-                        _declencherRevelation(wss, partieId, s, helpers, 'timer');
-                    }
-                }, 5000);
-            }, DUREE * 1000);
-
-            break;
-        }
-
-        // ───────────────────────────────────────────────
-        // quiz:reveal
-        // ───────────────────────────────────────────────
-        case 'reveal': {
-            const s = getSession(partieId);
-            if (!s || s.phase !== 'question') {
-                return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE', message: 'Pas de question en cours.' });
-            }
-
-            // Add host's response if provided
-            const partie = store.getPartie(partieId);
-            const hostPseudo = partie?.hostPseudo;
-            if (hostPseudo && data.reponseHote) {
-                const ts = data.tsHote || Date.now();
-                s.reponses[hostPseudo] = {
-                    texte: (data.reponseHote || '').trim(),
-                    ts,
-                    indicesVus: 2, // host sees all indices
-                };
-            }
-
-            _declencherRevelation(wss, partieId, s, helpers, 'host');
-            break;
-        }
-
-        // ───────────────────────────────────────────────
-        // quiz:reveal_indice
-        // ───────────────────────────────────────────────
-        case 'reveal_indice': {
-            const s = getSession(partieId);
-            if (!s || s.phase !== 'question') {
-                return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE' });
-            }
-            const num = data.num;
-            if (num !== 1 && num !== 2) return;
-
-            const q   = s.questionEnCours;
-            const txt = num === 1 ? (q['Indice 1'] || q.indice1 || '') : (q['Indice 2'] || q.indice2 || '');
-
-            if (!txt) {
-                return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE', message: `Pas d'indice ${num}.` });
-            }
-
-            s.indicesBroadcast = Math.max(s.indicesBroadcast, num);
-            broadcastToGame(wss, partieId, 'QUIZ_INDICE', { num, texte: txt });
-            break;
-        }
-
-        // ───────────────────────────────────────────────
-        // quiz:skip
-        // ───────────────────────────────────────────────
-        case 'skip': {
-            const s = getSession(partieId);
-            if (!s || s.phase !== 'question') {
-                return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE' });
-            }
-            if (s.timerHandle) clearTimeout(s.timerHandle);
-
-            s.phase             = 'correction';
-            s.revelationEnCours = false;
-
-            broadcastToGame(wss, partieId, 'QUIZ_CORRECTION', _correctionPayload(s, s.questionEnCours, []));
-            break;
-        }
-
-        default:
-            console.warn(`[QUIZ] ⚠️ Action host inconnue: ${cmd}`);
+        };
     }
 }
 
-// ─────────────────────────────────────────────────────
-// Handlers d'actions JOUEUR
-// ─────────────────────────────────────────────────────
 
-export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, helpers) {
-    const { broadcastToHost, send } = helpers;
-    const cmd = action.split(':')[1];
+// ======================================================
+// 📡 ABONNEMENTS ÉVÉNEMENTS SERVEUR (côté hôte)
+// ======================================================
+function abonnerEvenementsServeur(socket) {
 
-    switch (cmd) {
-
-        case 'answer': {
-            const s = getSession(partieId);
-
-            if (!s || s.phase !== 'question') {
-                return send(ws, 'QUIZ_ANSWER_ACK', { status: 'too_late' });
-            }
-            if (s.reponses[pseudo] !== undefined) {
-                return send(ws, 'QUIZ_ANSWER_ACK', { status: 'already_answered' });
-            }
-
-            const texte = (data.texte || '').trim();
-            if (!texte) {
-                return send(ws, 'QUIZ_ANSWER_ACK', { status: 'invalid' });
-            }
-
-            const ts = Date.now();
-            const q  = s.questionEnCours;
-
-            let indicesVus = 0;
-            if (q._tsIndice1 && ts > q._tsIndice1) indicesVus++;
-            if (q._tsIndice2 && ts > q._tsIndice2) indicesVus++;
-
-            s.reponses[pseudo] = { texte, ts, indicesVus };
-
-            send(ws, 'QUIZ_ANSWER_ACK', { status: 'ok', texte });
-
-            const partie     = store.getPartie(partieId);
-            const nbInvites  = (partie?.joueurs || []).length;
-            // nbJoueurs envoyé = invités seulement.
-            // Le client ajoute +1 pour l'hôte dans _nbJoueursTotal().
-            const nbReponses = Object.keys(s.reponses).length;
-            const allAnswered = nbReponses >= nbInvites; // invités ont-ils tous répondu ?
-
-            broadcastToHost(wss, partieId, 'QUIZ_RESPONSE_IN', {
-                pseudo,
-                nbReponses,
-                nbJoueurs: nbInvites, // invités seulement
-                allAnswered,
-            });
-
-            break;
+    socket.on('QUIZ_READY', ({ total, message }) => {
+        try {
+            console.log('[QUIZ] 📚 ' + (message || total + ' questions chargées'));
+            const btnStart = document.getElementById('btn-start-solo');
+            if (btnStart) btnStart.style.display = 'none';
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur QUIZ_READY:', err.message);
         }
+    });
 
-        default:
-            console.warn(`[QUIZ] ⚠️ Action joueur inconnue: ${cmd}`);
+    socket.on('QUIZ_QUESTION',   payload => {
+        try {
+            _onQuizQuestion(payload);
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur QUIZ_QUESTION:', err.message);
+        }
+    });
+
+    socket.on('QUIZ_CORRECTION', payload => {
+        try {
+            _onQuizCorrection(payload);
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur QUIZ_CORRECTION:', err.message);
+        }
+    });
+
+    socket.on('QUIZ_END', payload => {
+        try {
+            _onQuizEnd(payload);
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur QUIZ_END:', err.message);
+        }
+    });
+
+    socket.on('QUIZ_INDICE', ({ num, texte }) => {
+        try {
+            const el = $('indice' + num);
+            if (el) el.textContent = texte;
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur QUIZ_INDICE:', err.message);
+        }
+    });
+
+    // Timer écoulé côté serveur
+    socket.on('QUIZ_TIMER_EXPIRED', ({ nbReponses, nbJoueurs }) => {
+        try {
+            console.log('[QUIZ] ⏱ Timer expiré — nbReponses=' + nbReponses + ', nbJoueurs=' + nbJoueurs);
+            _activerBoutonAfficherReponse();
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur QUIZ_TIMER_EXPIRED:', err.message);
+        }
+    });
+
+    socket.on('SCORES_UPDATE', ({ scores }) => {
+        try {
+            if (scores) {
+                GameState.scores = GameState.scores || {};
+                Object.assign(GameState.scores, scores);
+            }
+            _publierScores();
+            if (typeof window.afficherScoreboard === 'function')
+                window.afficherScoreboard();
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur SCORES_UPDATE:', err.message);
+        }
+    });
+
+    // Serveur confirme que la révélation est faite
+    socket.on('QUIZ_CAN_NEXT', ({ posees, total, remaining }) => {
+        try {
+            console.log('[QUIZ] ✅ QUIZ_CAN_NEXT — Q' + posees + '/' + total + ' — remaining:' + remaining);
+
+            const btnNext = $('btn-next');
+            if (btnNext) {
+                btnNext.disabled       = false;
+                btnNext.style.opacity  = '1';
+                btnNext.style.cursor   = 'pointer';
+                btnNext.title          = remaining > 0
+                    ? 'Passer à la question suivante (' + remaining + ' restante' + (remaining > 1 ? 's' : '') + ')'
+                    : 'Terminer le quiz';
+                btnNext.style.animation = 'btnPulse .4s ease';
+                setTimeout(() => { if (btnNext) btnNext.style.animation = ''; }, 450);
+            }
+
+            const btnAff = document.getElementById('btn-afficher-reponse');
+            if (btnAff) {
+                btnAff.disabled        = true;
+                btnAff.style.opacity   = '0.3';
+                btnAff.style.cursor    = 'not-allowed';
+                btnAff.style.animation = '';
+                btnAff.title           = 'Réponse révélée — cliquez sur Question suivante';
+            }
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur QUIZ_CAN_NEXT:', err.message);
+        }
+    });
+}
+
+// Active btn-afficher-reponse avec feedback visuel
+function _activerBoutonAfficherReponse() {
+    const btn = document.getElementById('btn-afficher-reponse');
+    if (!btn) return;
+    btn.disabled        = false;
+    btn.style.opacity   = '1';
+    btn.style.cursor    = 'pointer';
+    btn.style.animation = 'btnPulse .6s ease infinite alternate';
+    btn.title           = '⏱ Timer écoulé — Cliquez pour révéler la réponse';
+    if (!document.getElementById('style-btn-pulse')) {
+        const s = document.createElement('style');
+        s.id = 'style-btn-pulse';
+        s.textContent = '@keyframes btnPulse{0%{transform:scale(1)}100%{transform:scale(1.05)}}';
+        document.head.appendChild(s);
     }
 }
 
-// ─────────────────────────────────────────────────────
-// Révélation
-// ─────────────────────────────────────────────────────
 
-function _declencherRevelation(wss, partieId, s, helpers, source) {
-    if (s.revelationEnCours) return;
-    s.revelationEnCours = true;
-
-    if (s.timerHandle)  clearTimeout(s.timerHandle);
-    if (s.timerIndice1) clearTimeout(s.timerIndice1);
-    if (s.timerIndice2) clearTimeout(s.timerIndice2);
-    if (s.timerReveal)  clearTimeout(s.timerReveal);
-
-    const { broadcastToGame, broadcastToHost } = helpers;
-    const q            = s.questionEnCours;
-    const bonneReponse = _getBonneReponse(q);
-
-    const repTri = Object.entries(s.reponses)
-        .sort((a, b) => (a[1].ts || 0) - (b[1].ts || 0));
-
-    const resultats = [];
-    let premierCorrectPseudo = null;
-
-    repTri.forEach(([pseudo, data]) => {
-        const texte   = String(data.texte || '').trim();
-        const sim     = bonneReponse ? _similarite(texte, bonneReponse) : 0;
-        const correct = sim >= 0.85;
-
-        let points = correct ? 1 : 0;
-
-        resultats.push({
-            pseudo,
-            texte,
-            correct,
-            points,
-            estPremier: false,
-        });
-
-        if (correct && !premierCorrectPseudo) premierCorrectPseudo = pseudo;
-    });
-
-    if (premierCorrectPseudo) {
-        const res = resultats.find(r => r.pseudo === premierCorrectPseudo);
-        if (res) { res.points += 1; res.estPremier = true; }
+// ======================================================
+// 📥 INITIALISATION PRINCIPALE
+// ======================================================
+async function initialiserQuiz() {
+    const socket = window.jeuSocket;
+    if (!socket) {
+        console.error('[QUIZ] ❌ window.jeuSocket introuvable');
+        return;
     }
 
-    resultats.forEach(r => {
-        if (r.points > 0) store.modifierScore(partieId, r.pseudo, r.points);
-    });
+    // S'abonner aux événements serveur EN PREMIER (sans await)
+    abonnerEvenementsServeur(socket);
 
-    s._dernieresReponses = resultats;
-    s.phase = 'correction';
+    // Désactiver btn-next par défaut
+    const btnNext = $('btn-next');
+    if (btnNext) {
+        btnNext.disabled = true;
+        btnNext.style.opacity = '0.4';
+    }
 
-    broadcastToGame(wss, partieId, 'QUIZ_CORRECTION', _correctionPayload(s, q, resultats));
+    // Charger le module hôte AVANT d'attacher les listeners.
+    // CRITIQUE : attacherListenersQuiz doit être appelé APRÈS chargerModuleHote
+    // car le onclick de btn-valider-reponse appelle _envoyerReponseHote qui
+    // est un stub vide jusqu'à ce que le module soit chargé.
+    const hoteActif = await chargerModuleHote();
 
-    const scoresActuels = store.getScores(partieId);
-    broadcastToGame(wss, partieId, 'SCORES_UPDATE', { scores: scoresActuels });
+    // Attacher les listeners APRÈS le chargement du module
+    attacherListenersQuiz(socket);
 
-    broadcastToHost(wss, partieId, 'QUIZ_CAN_NEXT', {
-        posees   : s.posees,
-        total    : s.questions.length,
-        remaining: s.questions.length - s.posees,
-        scores   : scoresActuels,
-    });
+    if (hoteActif) {
+        try {
+            _publierEtat('en_cours');
+            _publierScores();
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur init scores:', err.message);
+        }
+    }
+
+    // Charger questions.json et les envoyer au serveur
+    try {
+        // Fetch relatif à /public (racine)
+        const res = await fetch('/data/questions.json');
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        const questions = await res.json();
+
+        // Mélanger côté client
+        const ordre = [...Array(questions.length).keys()];
+        for (let i = ordre.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [ordre[i], ordre[j]] = [ordre[j], ordre[i]];
+        }
+        const qMelangees = ordre.map(i => questions[i]);
+
+        // Envoyer au serveur
+        socket.send('HOST_ACTION', { action: 'quiz:load', data: { questions: qMelangees } });
+        console.log('[QUIZ] 📡 ' + qMelangees.length + ' questions envoyées au serveur');
+
+        if (hoteActif) injecterPanneauInvites();
+
+    } catch (err) {
+        console.error('[QUIZ] ❌ questions.json :', err.message);
+        alert('Impossible de charger les questions. Vérifiez la connexion.');
+    }
 }
 
-// ─────────────────────────────────────────────────────
-// Fin de quiz
-// ─────────────────────────────────────────────────────
+// ======================================================
+// EXPORTS WINDOW
+// ======================================================
+window.initialiserQuiz = initialiserQuiz;
 
-function _terminerQuiz(wss, partieId, s, helpers) {
-    const { broadcastToGame } = helpers;
-    if (s.timerHandle) clearTimeout(s.timerHandle);
+window._quizGetReponseCorrecte = function () {
+    if (!_questionEnCours) return '';
+    return _questionEnCours['Réponse'] || _questionEnCours.reponse || '';
+};
 
-    s.phase = 'ended';
+window._quizGetReponseHoteSaisie = function () {
+    return window._quizReponseSaisieHote || '';
+};
 
-    broadcastToGame(wss, partieId, 'QUIZ_END', {
-        scores: store.getScores(partieId),
-        total : s.posees,
-    });
-}
+window._quizNbJoueursInvites = function () {
+    try {
+        const snap = window.HostSession?._snapshot;
+        if (snap && snap.joueurs && snap.joueurs.length > 0) return snap.joueurs.length;
+        return Math.max(0, (GameState.joueurs || []).length - 1);
+    } catch (err) {
+        console.warn('[QUIZ] ⚠️ Erreur _quizNbJoueursInvites:', err.message);
+        return 0;
+    }
+};
 
-// ─────────────────────────────────────────────────────
-// Helpers payload
-// ─────────────────────────────────────────────────────
-
-function _questionPayload(s, q) {
-    return {
-        id        : s.posees,
-        question  : q['Question']  || q.question  || '',
-        theme     : q['Thème']     || q.theme     || '',
-        hasIndice1: Boolean(q['Indice 1'] || q.indice1),
-        hasIndice2: Boolean(q['Indice 2'] || q.indice2),
-        posees    : s.posees,
-        total     : s.questions.length,
-        ts        : q._tsDebut || Date.now(),
-    };
-}
-
-function _correctionPayload(s, q, resultats) {
-    return {
-        question : q['Question']  || q.question  || '',
-        theme    : q['Thème']     || q.theme     || '',
-        reponse  : _getBonneReponse(q),
-        reponses : resultats,
-        posees   : s.posees,
-        total    : s.questions.length,
-    };
-}
-
-function _getBonneReponse(q) {
-    return (q['Réponse'] || q.reponse || q.answer || '').trim();
-}
-
-// ─────────────────────────────────────────────────────
-// Similarité
-// ─────────────────────────────────────────────────────
-
-function _normaliser(str) {
-    return String(str || '').toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
-}
-
-function _bigrammes(str) {
-    const s = _normaliser(str);
-    const bg = new Set();
-    for (let i = 0; i < s.length - 1; i++) bg.add(s.slice(i, i + 2));
-    return bg;
-}
-
-function _similarite(a, b) {
-    if (!a || !b) return 0;
-    if (_normaliser(a) === _normaliser(b)) return 1;
-    const na = _normaliser(a), nb = _normaliser(b);
-    if (nb.includes(na) || na.includes(nb)) return 0.9;
-    const ba = _bigrammes(a), bb = _bigrammes(b);
-    if (ba.size === 0 || bb.size === 0) return 0;
-    let inter = 0;
-    ba.forEach(g => { if (bb.has(g)) inter++; });
-    return (2 * inter) / (ba.size + bb.size);
-}
+window._quizValiderAvecPoints = function (correct, points) {
+    try {
+        if (correct && points > 0) {
+            const p = GameState.mode === 'solo' ? GameState.joueurs[0] : GameState.equipes?.[0]?.nom;
+            if (p) {
+                ajouterPoints(p, points);
+                _publierScores();
+            }
+        }
+    } catch (err) {
+        console.warn('[QUIZ] ⚠️ Erreur _quizValiderAvecPoints:', err.message);
+    }
+};
