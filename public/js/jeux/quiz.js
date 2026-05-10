@@ -332,6 +332,8 @@ function attacherListenersQuiz(socket) {
     }
 
     // 👉 Réponse hôte (gérée en local — pas de PLAYER_ACTION WS)
+    // NOTE : attacherListenersQuiz est appelé APRÈS chargerModuleHote,
+    // donc _envoyerReponseHote est déjà la vraie fonction ici.
     const btnEnv = document.getElementById('btn-valider-reponse');
     if (btnEnv) {
         btnEnv.onclick = () => {
@@ -340,9 +342,10 @@ function attacherListenersQuiz(socket) {
                 const inp = document.getElementById('quiz-reponse-input');
                 const rep = inp ? inp.value.trim() : '';
                 if (!rep) return;
-                // Stocker pour que quiz_hote.js puisse évaluer
                 window._quizReponseSaisieHote = rep;
+                // Appel via la variable module (déjà chargée à ce stade)
                 _envoyerReponseHote(rep);
+                console.log('[QUIZ] 📨 Réponse hôte envoyée:', rep);
             } catch (err) {
                 console.error('[QUIZ] ⚠️ Erreur envoi réponse hôte:', err.message);
             }
@@ -482,9 +485,8 @@ async function initialiserQuiz() {
         return;
     }
 
-    // S'abonner aux événements serveur EN PREMIER
+    // S'abonner aux événements serveur EN PREMIER (sans await)
     abonnerEvenementsServeur(socket);
-    attacherListenersQuiz(socket);
 
     // Désactiver btn-next par défaut
     const btnNext = $('btn-next');
@@ -493,8 +495,14 @@ async function initialiserQuiz() {
         btnNext.style.opacity = '0.4';
     }
 
-    // Charger le module hôte en parallèle (async)
+    // Charger le module hôte AVANT d'attacher les listeners.
+    // CRITIQUE : attacherListenersQuiz doit être appelé APRÈS chargerModuleHote
+    // car le onclick de btn-valider-reponse appelle _envoyerReponseHote qui
+    // est un stub vide jusqu'à ce que le module soit chargé.
     const hoteActif = await chargerModuleHote();
+
+    // Attacher les listeners APRÈS le chargement du module
+    attacherListenersQuiz(socket);
 
     if (hoteActif) {
         try {
