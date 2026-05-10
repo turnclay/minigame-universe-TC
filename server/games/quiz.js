@@ -81,11 +81,14 @@ export function detruireSession(partieId) {
 // ─────────────────────────────────────────────────────
 
 export function handleHostAction(wss, ws, partieId, action, data, helpers) {
-    const { broadcastToGame, broadcastToPlayers, broadcastToHost, send } = helpers;
+    const { broadcastToGame, broadcastToHost, send } = helpers;
     const cmd = action.split(':')[1];
 
     switch (cmd) {
 
+        // ───────────────────────────────────────────────
+        // quiz:load
+        // ───────────────────────────────────────────────
         case 'load': {
             let s = getSession(partieId);
 
@@ -109,6 +112,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
                 total   : questions.length,
                 message : `${questions.length} question${questions.length > 1 ? 's' : ''} chargée${questions.length > 1 ? 's' : ''} !`,
             });
+
             console.log(`[QUIZ] 📚 ${questions.length} questions chargées pour ${partieId}`);
 
             s._autoStartPending = true;
@@ -122,18 +126,17 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             break;
         }
 
+        // ───────────────────────────────────────────────
+        // quiz:next_question
+        // ───────────────────────────────────────────────
         case 'next_question': {
             let s = getSession(partieId);
             if (!s) s = creerSession(partieId);
 
             if (s._autoStartPending) s._autoStartPending = false;
 
-            if (s.phase === 'question') {
-                console.warn('[QUIZ] ⚠️ next_question ignoré — question déjà en cours');
-                return;
-            }
+            if (s.phase === 'question') return;
             if (s.questions.length === 0) {
-                console.warn('[QUIZ] ⚠️ next_question ignoré — quiz:load pas encore reçu');
                 return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE', message: 'Chargez les questions avec quiz:load.' });
             }
             if (s.posees >= s.questions.length) {
@@ -158,15 +161,13 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             q._tsIndice1 = tsDebut + T_INDICE1 * 1000;
             q._tsIndice2 = tsDebut + T_INDICE2 * 1000;
             q._tsDebut   = tsDebut;
-            q._duree     = DUREE;
 
-            const payload = _questionPayload(s, q);
-            broadcastToGame(wss, partieId, 'QUIZ_QUESTION', payload);
-            console.log(`[QUIZ] ❓ Q${s.posees}/${s.questions.length}: ${q.Question || q.question}`);
+            broadcastToGame(wss, partieId, 'QUIZ_QUESTION', _questionPayload(s, q));
 
-            if (s.timerHandle)   { clearTimeout(s.timerHandle);   s.timerHandle   = null; }
-            if (s.timerIndice1)  { clearTimeout(s.timerIndice1);  s.timerIndice1  = null; }
-            if (s.timerIndice2)  { clearTimeout(s.timerIndice2);  s.timerIndice2  = null; }
+            // Timers
+            if (s.timerHandle)   clearTimeout(s.timerHandle);
+            if (s.timerIndice1)  clearTimeout(s.timerIndice1);
+            if (s.timerIndice2)  clearTimeout(s.timerIndice2);
 
             const texte1 = q['Indice 1'] || q.indice1 || '';
             if (texte1) {
@@ -174,7 +175,6 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
                     if (s.phase !== 'question') return;
                     s.indicesBroadcast = Math.max(s.indicesBroadcast, 1);
                     broadcastToGame(wss, partieId, 'QUIZ_INDICE', { num: 1, texte: texte1 });
-                    console.log(`[QUIZ] 💡 Indice 1 auto (40s) → ${partieId}`);
                 }, T_INDICE1 * 1000);
             }
 
@@ -184,13 +184,11 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
                     if (s.phase !== 'question') return;
                     s.indicesBroadcast = Math.max(s.indicesBroadcast, 2);
                     broadcastToGame(wss, partieId, 'QUIZ_INDICE', { num: 2, texte: texte2 });
-                    console.log(`[QUIZ] 💡 Indice 2 auto (50s) → ${partieId}`);
                 }, T_INDICE2 * 1000);
             }
 
             s.timerHandle = setTimeout(() => {
                 if (s.phase !== 'question') return;
-                console.log(`[QUIZ] ⏱ Timer écoulé (60s) → ${partieId}`);
 
                 broadcastToHost(wss, partieId, 'QUIZ_TIMER_EXPIRED', {
                     partieId,
@@ -200,14 +198,17 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
 
                 s.timerReveal = setTimeout(() => {
                     if (s.phase === 'question' && !s.revelationEnCours) {
-                        console.log(`[QUIZ] ⏱ Révélation auto (65s) → ${partieId}`);
                         _declencherRevelation(wss, partieId, s, helpers, 'timer');
                     }
                 }, 5000);
             }, DUREE * 1000);
+
             break;
         }
 
+        // ───────────────────────────────────────────────
+        // quiz:reveal
+        // ───────────────────────────────────────────────
         case 'reveal': {
             const s = getSession(partieId);
             if (!s || s.phase !== 'question') {
@@ -217,6 +218,9 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             break;
         }
 
+        // ───────────────────────────────────────────────
+        // quiz:reveal_indice
+        // ───────────────────────────────────────────────
         case 'reveal_indice': {
             const s = getSession(partieId);
             if (!s || s.phase !== 'question') {
@@ -224,10 +228,9 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             }
             const num = data.num;
             if (num !== 1 && num !== 2) return;
+
             const q   = s.questionEnCours;
-            const txt = num === 1
-                ? (q['Indice 1'] || q.indice1 || '')
-                : (q['Indice 2'] || q.indice2 || '');
+            const txt = num === 1 ? (q['Indice 1'] || q.indice1 || '') : (q['Indice 2'] || q.indice2 || '');
 
             if (!txt) {
                 return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE', message: `Pas d'indice ${num}.` });
@@ -235,22 +238,23 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
 
             s.indicesBroadcast = Math.max(s.indicesBroadcast, num);
             broadcastToGame(wss, partieId, 'QUIZ_INDICE', { num, texte: txt });
-            console.log(`[QUIZ] 💡 Indice ${num} révélé`);
             break;
         }
 
+        // ───────────────────────────────────────────────
+        // quiz:skip
+        // ───────────────────────────────────────────────
         case 'skip': {
             const s = getSession(partieId);
             if (!s || s.phase !== 'question') {
                 return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE' });
             }
             if (s.timerHandle) clearTimeout(s.timerHandle);
+
             s.phase             = 'correction';
             s.revelationEnCours = false;
 
-            const payload = _correctionPayload(s, s.questionEnCours, []);
-            broadcastToGame(wss, partieId, 'QUIZ_CORRECTION', payload);
-            console.log('[QUIZ] ⏭ Question passée');
+            broadcastToGame(wss, partieId, 'QUIZ_CORRECTION', _correctionPayload(s, s.questionEnCours, []));
             break;
         }
 
@@ -264,7 +268,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
 // ─────────────────────────────────────────────────────
 
 export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, helpers) {
-    const { broadcastToHost, broadcastToGame, send } = helpers;
+    const { broadcastToHost, send } = helpers;
     const cmd = action.split(':')[1];
 
     switch (cmd) {
@@ -278,6 +282,7 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
             if (s.reponses[pseudo] !== undefined) {
                 return send(ws, 'QUIZ_ANSWER_ACK', { status: 'already_answered' });
             }
+
             const texte = (data.texte || '').trim();
             if (!texte) {
                 return send(ws, 'QUIZ_ANSWER_ACK', { status: 'invalid' });
@@ -285,6 +290,7 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
 
             const ts = Date.now();
             const q  = s.questionEnCours;
+
             let indicesVus = 0;
             if (q._tsIndice1 && ts > q._tsIndice1) indicesVus++;
             if (q._tsIndice2 && ts > q._tsIndice2) indicesVus++;
@@ -293,19 +299,19 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
 
             send(ws, 'QUIZ_ANSWER_ACK', { status: 'ok', texte });
 
-            const partie      = store.getPartie(partieId);
-            const nbJoueurs   = (partie?.joueurs || []).length;
-            const nbJoueurs = (partie?.joueurs || []).length + 1;  // +1 pour l'hôte
-            const nbReponses = Object.keys(s.reponses).length;
-            const allAnswered = nbReponses >= nbJoueurs;
+            const partie        = store.getPartie(partieId);
+            const nbInvites     = (partie?.joueurs || []).length;
+            const nbJoueursTotal = nbInvites + 1; // invités + hôte
+            const nbReponses    = Object.keys(s.reponses).length;
+            const allAnswered   = nbReponses >= nbJoueursTotal;
 
             broadcastToHost(wss, partieId, 'QUIZ_RESPONSE_IN', {
-                pseudo, nbReponses, nbJoueurs, allAnswered,
+                pseudo,
+                nbReponses,
+                nbJoueurs: nbInvites,
+                allAnswered,
             });
 
-            if (allAnswered && !s.revelationEnCours) {
-                console.log('[QUIZ] ✅ Tous ont répondu — hôte peut révéler');
-            }
             break;
         }
 
@@ -322,17 +328,14 @@ function _declencherRevelation(wss, partieId, s, helpers, source) {
     if (s.revelationEnCours) return;
     s.revelationEnCours = true;
 
-    if (s.timerHandle)  { clearTimeout(s.timerHandle);  s.timerHandle  = null; }
-    if (s.timerIndice1) { clearTimeout(s.timerIndice1); s.timerIndice1 = null; }
-    if (s.timerIndice2) { clearTimeout(s.timerIndice2); s.timerIndice2 = null; }
-    if (s.timerReveal)  { clearTimeout(s.timerReveal);  s.timerReveal  = null; }
+    if (s.timerHandle)  clearTimeout(s.timerHandle);
+    if (s.timerIndice1) clearTimeout(s.timerIndice1);
+    if (s.timerIndice2) clearTimeout(s.timerIndice2);
+    if (s.timerReveal)  clearTimeout(s.timerReveal);
 
-    const { broadcastToGame, broadcastToHost, broadcastToPlayers } = helpers;
+    const { broadcastToGame, broadcastToHost } = helpers;
     const q            = s.questionEnCours;
     const bonneReponse = _getBonneReponse(q);
-
-    const tsIndice1 = q._tsIndice1 || Infinity;
-    const tsIndice2 = q._tsIndice2 || Infinity;
 
     const repTri = Object.entries(s.reponses)
         .sort((a, b) => (a[1].ts || 0) - (b[1].ts || 0));
@@ -342,7 +345,6 @@ function _declencherRevelation(wss, partieId, s, helpers, source) {
 
     repTri.forEach(([pseudo, data]) => {
         const texte   = String(data.texte || '').trim();
-        const tsRep   = data.ts || Date.now();
         const sim     = bonneReponse ? _similarite(texte, bonneReponse) : 0;
         const correct = sim >= 0.85;
 
@@ -361,20 +363,17 @@ function _declencherRevelation(wss, partieId, s, helpers, source) {
 
     if (premierCorrectPseudo) {
         const res = resultats.find(r => r.pseudo === premierCorrectPseudo);
-        if (res) { res.points = +(res.points + 1); res.estPremier = true; }
+        if (res) { res.points += 1; res.estPremier = true; }
     }
 
     resultats.forEach(r => {
-        if (r.points > 0) {
-            store.modifierScore(partieId, r.pseudo, r.points);
-        }
+        if (r.points > 0) store.modifierScore(partieId, r.pseudo, r.points);
     });
 
     s._dernieresReponses = resultats;
     s.phase = 'correction';
 
-    const payload = _correctionPayload(s, q, resultats);
-    broadcastToGame(wss, partieId, 'QUIZ_CORRECTION', payload);
+    broadcastToGame(wss, partieId, 'QUIZ_CORRECTION', _correctionPayload(s, q, resultats));
 
     const scoresActuels = store.getScores(partieId);
     broadcastToGame(wss, partieId, 'SCORES_UPDATE', { scores: scoresActuels });
@@ -385,8 +384,6 @@ function _declencherRevelation(wss, partieId, s, helpers, source) {
         remaining: s.questions.length - s.posees,
         scores   : scoresActuels,
     });
-
-    console.log(`[QUIZ] 📊 Révélation (${source}) — ${resultats.length} réponse(s), bonne: "${bonneReponse}"`);
 }
 
 // ─────────────────────────────────────────────────────
@@ -395,15 +392,14 @@ function _declencherRevelation(wss, partieId, s, helpers, source) {
 
 function _terminerQuiz(wss, partieId, s, helpers) {
     const { broadcastToGame } = helpers;
-    if (s.timerHandle) { clearTimeout(s.timerHandle); s.timerHandle = null; }
+    if (s.timerHandle) clearTimeout(s.timerHandle);
+
     s.phase = 'ended';
 
-    const scores = store.getScores(partieId);
     broadcastToGame(wss, partieId, 'QUIZ_END', {
-        scores,
-        total: s.posees,
+        scores: store.getScores(partieId),
+        total : s.posees,
     });
-    console.log(`[QUIZ] 🏁 Quiz terminé — ${s.posees} questions`);
 }
 
 // ─────────────────────────────────────────────────────
@@ -464,5 +460,4 @@ function _similarite(a, b) {
     if (ba.size === 0 || bb.size === 0) return 0;
     let inter = 0;
     ba.forEach(g => { if (bb.has(g)) inter++; });
-    return (2 * inter) / (ba.size + bb.size);
-}
+    return (2 *
