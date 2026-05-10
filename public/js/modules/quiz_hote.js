@@ -31,10 +31,7 @@ function _pseudoHote() {
 }
 
 function _nbJoueursTotal() {
-    const invites = _nbJoueursWS > 0
-        ? _nbJoueursWS
-        : (window.HostSession?._snapshot?.joueurs?.length ?? 0);
-    return invites + 1;
+    return _nbJoueursWS;  // _nbJoueursWS est désormais invites + 1 (harmonisé serveur)
 }
 
 // ──────────────────────────────────────────────────────
@@ -48,7 +45,7 @@ function _initWsListeners() {
     _wsListenersActifs = true;
 
     const snap = window.HostSession?._snapshot;
-    if (snap?.joueurs?.length > 0) _nbJoueursWS = snap.joueurs.length;
+    if (snap?.joueurs?.length > 0) _nbJoueursWS = snap.joueurs.length + 1;  // +1 pour l'hôte local
 
     s.on('QUIZ_QUESTION', () => {
         _reponsesRecues      = {};
@@ -65,7 +62,9 @@ function _initWsListeners() {
             _reponsesRecues[pseudo] = { reponse: '…', ts: Date.now() };
         }
 
-        if (nbJoueurs !== undefined) _nbJoueursWS = nbJoueurs;
+        if (nbJoueurs !== undefined) {
+            _nbJoueursWS = nbJoueurs;  // nbJoueurs du serveur = invites + 1
+        }
 
         _afficherPanneauAttenteWS();
 
@@ -78,10 +77,6 @@ function _initWsListeners() {
         } else {
             _mettreAJourBoutonAfficher(nbRecusLocal, nbTotal);
         }
-    });
-
-    s.on('QUIZ_TIMER_EXPIRED', () => {
-        _activerBoutonAfficher('⏱ Timer écoulé — Cliquez pour révéler');
     });
 
     s.on('QUIZ_CORRECTION', ({ reponses, reponse: bonneReponse }) => {
@@ -142,7 +137,7 @@ function _initWsListeners() {
     });
 
     s.on('PLAYER_JOINED', ({ joueurs }) => {
-        _nbJoueursWS = (joueurs || []).length;
+        _nbJoueursWS = (joueurs || []).length + 1;  // +1 pour l'hôte
     });
 
     s.on('QUIZ_INDICE', ({ num, texte }) => {
@@ -190,7 +185,7 @@ function _mettreAJourBoutonAfficher(nbRecus, nbAttendu) {
 
 function _afficherPanneauAttenteWS() {
     const container = document.getElementById('invites-reponses');
-    if (!container || _validationEnCours) return;
+    if (!container) return;  // Permet l'affichage même en validation
 
     const pseudoHote = _pseudoHote();
     const entries    = Object.entries(_reponsesRecues);
@@ -271,6 +266,16 @@ function _afficherPanneauResultats(resultats, bonneReponse) {
                 Réponse correcte : <strong style="color:#00d4ff;">${_esc(bonneReponse)}</strong>
             </div>`
             : '');
+}
+
+// ──────────────────────────────────────────────────────
+// ESCAPE HELPER
+// ──────────────────────────────────────────────────────
+
+function _esc(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
 }
 
 // ──────────────────────────────────────────────────────
@@ -366,7 +371,7 @@ export function envoyerReponseHote(rep) {
 function _similariteLocale(a, b) {
     if (!a || !b) return false;
     const norm = s => String(s).toLowerCase()
-        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9\s]/g, '')
         .replace(/\s+/g, ' ')
         .trim();
@@ -406,4 +411,8 @@ export function nettoyerPartieInvites() {
             'partie_question_', 'partie_reponses_', 'partie_validation_',
             'partie_scores_', 'partie_premier_correct_', 'partie_nav_',
             'partie_revelation_', 'partie_etat_'
-        ].for
+        ].forEach(key => {
+            localStorage.removeItem(key + pid);
+        });
+    }
+}

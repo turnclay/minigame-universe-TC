@@ -295,7 +295,8 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
 
             const partie      = store.getPartie(partieId);
             const nbJoueurs   = (partie?.joueurs || []).length;
-            const nbReponses  = Object.keys(s.reponses).length;
+            const nbJoueurs = (partie?.joueurs || []).length + 1;  // +1 pour l'hôte
+            const nbReponses = Object.keys(s.reponses).length;
             const allAnswered = nbReponses >= nbJoueurs;
 
             broadcastToHost(wss, partieId, 'QUIZ_RESPONSE_IN', {

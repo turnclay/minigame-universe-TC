@@ -206,6 +206,222 @@ function injecterPanneauInvites() {
     setInterval(() => _afficherReponsesInvitesSurHote('invites-reponses'), 2000);
 }
 
+// ============================================================
+// /js/jeux/quiz.js — v3.1 WS-server-driven (FIXED)
+// ============================================================
+// Le serveur (server/games/quiz.js) est l'unique séquenceur.
+// Ce fichier gère uniquement l'UI hôte :
+//   1. fetch questions.json + envoi quiz:load au serveur
+//   2. Mise à jour DOM sur réception QUIZ_* depuis le serveur
+//   3. Boutons hôte → commandes WS (quiz:next_question, quiz:reveal…)
+//   4. Panneau réponses invités
+//
+// IDs HTML utilisés (index.html) :
+//   timer, theme-display, question, indice1, indice2, reponse
+//   btn-next, btn-next-arrow, btn-prev (désactivé)
+//   btn-indice1, btn-indice2
+//   btn-afficher-reponse, btn-valider-reponse, quiz-reponse-input
+//   verif-resultat
+// ============================================================
+
+import { $ } from '../core/dom.js';
+import { GameState } from '../core/state.js';
+import { ajouterPoints } from '../modules/scoreboard.js';
+
+// ── État local (UI uniquement — plus de séquence locale) ──
+let _timerLocal     = null;
+let _tempsRestant   = 60;
+let _questionEnCours = null;  // payload de la dernière QUIZ_QUESTION reçue
+
+// ── Stubs module hôte (remplacés par chargerModuleHote) ──
+let _publierEtat                    = () => {};
+let _publierScores                  = () => {};
+let _afficherReponsesInvitesSurHote = () => {};
+let _viderReponses                  = () => {};
+let _declencherAfficherReponse      = () => {};
+let _envoyerReponseHote             = () => {};
+
+// ======================================================
+// 📡 CHARGEMENT DU MODULE HÔTE
+// ======================================================
+async function chargerModuleHote() {
+    try {
+        const m = await import('../modules/quiz_hote.js');
+        _publierEtat                    = m.publierEtat;
+        _publierScores                  = m.publierScores;
+        _afficherReponsesInvitesSurHote = m.afficherReponsesInvitesSurHote;
+        _viderReponses                  = m.viderReponses;
+        _declencherAfficherReponse      = m.declencherAfficherReponse || (() => {});
+        _envoyerReponseHote             = m.envoyerReponseHote        || (() => {});
+
+        window._quizEnvoyerReponseHote   = rep => _envoyerReponseHote(rep);
+        window._quizDeclencherAfficher   = ()  => _declencherAfficherReponse();
+        window._quizDeclencherValidation = ()  => _declencherAfficherReponse();
+
+        console.log('[QUIZ] ✅ Module hôte chargé');
+        return true;
+    } catch (e) {
+        console.warn('[QUIZ] ⚠️ quiz_hote.js indisponible :', e.message);
+        return false;
+    }
+}
+
+// ======================================================
+// 🖥️ HANDLERS ÉVÉNEMENTS WS SERVEUR
+// ======================================================
+
+function _onQuizQuestion(payload) {
+    const { question, theme, posees, total, ts, hasIndice1, hasIndice2 } = payload;
+    _questionEnCours = payload;
+    _viderReponses();
+
+    const tEl = $('theme-display'); if (tEl) tEl.textContent = theme || '—';
+    const qEl = $('question');      if (qEl) qEl.textContent = question || '';
+    const i1  = $('indice1');       if (i1) i1.textContent = '';
+    const i2  = $('indice2');       if (i2) i2.textContent = '';
+    const rp  = $('reponse');       if (rp) rp.textContent = '';
+
+    const inp = document.getElementById('quiz-reponse-input');
+    if (inp) { inp.value = ''; inp.disabled = false; }
+
+    const btnEnv = document.getElementById('btn-valider-reponse');
+    if (btnEnv) {
+        btnEnv.disabled      = false;
+        btnEnv._sent         = false;
+        btnEnv.style.opacity = '';
+        btnEnv.textContent   = '✅ Envoyer';
+    }
+
+    const btnAff = document.getElementById('btn-afficher-reponse');
+    if (btnAff) {
+        btnAff.disabled        = true;
+        btnAff.style.opacity   = '0.4';
+        btnAff.style.cursor    = 'not-allowed';
+        btnAff.title           = 'En attente des réponses de tous les joueurs…';
+        btnAff.style.animation = '';
+    }
+
+    const b1 = $('btn-indice1'); if (b1) b1.disabled = !hasIndice1;
+    const b2 = $('btn-indice2'); if (b2) b2.disabled = !hasIndice2;
+
+    const vEl = document.getElementById('verif-resultat');
+    if (vEl) vEl.hidden = true;
+
+    _demarrerTimerVisuel(ts);
+    setTimeout(() => {
+        if (typeof _afficherReponsesInvitesSurHote === 'function') {
+            _afficherReponsesInvitesSurHote('invites-reponses');
+        }
+    }, 500);
+
+    // Désactiver btn-next pendant la question (réactivé sur QUIZ_CORRECTION)
+    const btnNxt = $('btn-next');
+    if (btnNxt) {
+        btnNxt.disabled      = true;
+        btnNxt.style.opacity = '0.35';
+        btnNxt.title         = 'Révélez la réponse avant de passer à la suivante';
+        btnNxt.style.animation = '';
+    }
+    console.log('[QUIZ] ❓ Q' + posees + '/' + total + ': ' + question);
+}
+
+function _onQuizCorrection(payload) {
+    _arreterTimerVisuel();
+    const { reponse, posees, total } = payload;
+    const repEl = $('reponse');
+    if (repEl && reponse) repEl.textContent = reponse;
+
+    // Stocker la bonne réponse dans _questionEnCours pour quiz_hote.js
+    // (_quizGetReponseCorrecte() l'utilise pour évaluer la réponse hôte)
+    if (_questionEnCours) {
+        _questionEnCours.reponse         = reponse;
+        _questionEnCours['Réponse']      = reponse;
+    }
+
+    _publierScores();
+    if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
+    console.log('[QUIZ] ✅ Correction Q' + posees + '/' + total + ': "' + reponse + '"');
+
+    // Note : btn-next et btn-afficher sont gérés par QUIZ_CAN_NEXT
+}
+
+function _onQuizEnd({ scores, total }) {
+    _arreterTimerVisuel();
+    _publierEtat('fin');
+    if (scores) {
+        GameState.scores = GameState.scores || {};
+        Object.assign(GameState.scores, scores);
+        _publierScores();
+    }
+    if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
+    console.log('[QUIZ] 🏁 Fin — ' + total + ' questions');
+}
+
+// ======================================================
+// ⏱ TIMER VISUEL (affichage seulement — timer réel = serveur)
+// ======================================================
+function _demarrerTimerVisuel(tsDebut) {
+    _arreterTimerVisuel();
+    _tempsRestant = 60;
+    const t = $('timer');
+    if (!t) return;
+    t.textContent = '1:00';
+    t.classList.remove('clignote');
+
+    if (tsDebut) {
+        const ecoulees = Math.floor((Date.now() - tsDebut) / 1000);
+        _tempsRestant = Math.max(0, 60 - ecoulees);
+    }
+
+    _timerLocal = setInterval(() => {
+        _tempsRestant--;
+        if (t) {
+            const m = Math.floor(_tempsRestant / 60);
+            const s = (_tempsRestant % 60).toString().padStart(2, '0');
+            t.textContent = m + ':' + s;
+            if (_tempsRestant <= 5 && _tempsRestant > 0) t.classList.add('clignote');
+            if (_tempsRestant <= 0) {
+                _arreterTimerVisuel();
+                t.textContent = '0:00';
+                t.classList.remove('clignote');
+            }
+        }
+    }, 1000);
+}
+
+function _arreterTimerVisuel() {
+    if (_timerLocal) { clearInterval(_timerLocal); _timerLocal = null; }
+}
+
+// ======================================================
+// 📱 PANNEAU RÉPONSES INVITÉS (injecté une seule fois)
+// ======================================================
+function injecterPanneauInvites() {
+    if (document.getElementById('panneau-invites-quiz')) return;
+    const section = $('quiz');
+    if (!section) return;
+
+    const panneau = document.createElement('div');
+    panneau.id = 'panneau-invites-quiz';
+    panneau.style.cssText = 'margin-top:20px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:14px;padding:14px 16px;';
+    panneau.innerHTML = '<div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(0,212,255,.7);margin-bottom:10px;font-weight:700;">📱 Réponses des joueurs</div>'
+        + '<div id="invites-reponses"><p style="font-size:.8rem;color:rgba(255,255,255,.4);text-align:center;">Aucune réponse pour l\'instant</p></div>';
+    section.appendChild(panneau);
+
+    if (!document.getElementById('style-invites')) {
+        const s = document.createElement('style');
+        s.id = 'style-invites';
+        s.textContent = '@keyframes btnPulse{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}';
+        document.head.appendChild(s);
+    }
+
+    setInterval(() => {
+        if (typeof _afficherReponsesInvitesSurHote === 'function') {
+            _afficherReponsesInvitesSurHote('invites-reponses');
+        }
+    }, 2000);
+}
+
 // ======================================================
 // 🎧 LISTENERS HÔTE → commandes WS serveur
 // ======================================================
@@ -277,8 +493,9 @@ function abonnerEvenementsServeur(socket) {
     });
 
     // Timer écoulé côté serveur → activer btn-afficher-reponse
+    // NOTE: QUIZ_TIMER_EXPIRED est géré côté quiz_hote.js pour éviter les doublons
     socket.on('QUIZ_TIMER_EXPIRED', ({ nbReponses, nbJoueurs }) => {
-        console.log('[QUIZ] ⏱ Timer expiré — activation btn-afficher-reponse');
+        console.log('[QUIZ] ⏱ Timer expiré — nbReponses=' + nbReponses + ', nbJoueurs=' + nbJoueurs);
         _activerBoutonAfficherReponse();
     });
 
