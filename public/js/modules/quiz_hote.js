@@ -49,11 +49,15 @@ function _cleEtat()   {
 
 function _pseudoHote() { return (GameState?.joueurs?.[0]) || 'Hôte'; }
 
-// Nombre total de joueurs = invités WS + 1 (hôte)
-// _nbJoueursWS = nb d'invités connectés (reçu de QUIZ_RESPONSE_IN)
-// On force minimum 1 si pas encore de données WS
+// Nombre total de joueurs attendus dans le panneau
+// Le serveur envoie maintenant nbJoueurs = invités + 1 (hôte inclus)
+// _nbJoueursWS est mis à jour depuis QUIZ_RESPONSE_IN.nbJoueurs
+// Si pas encore reçu, on estime depuis le snapshot : invités + 1
 function _nbJoueursTotal() {
-    return Math.max(_nbJoueursWS, 0) + 1; // +1 pour l'hôte
+    if (_nbJoueursWS > 0) return _nbJoueursWS; // valeur serveur = invités+hôte
+    const snap = window.HostSession?._snapshot;
+    const invites = snap?.joueurs?.length ?? 0;
+    return invites + 1; // fallback : invités + hôte
 }
 
 // ──────────────────────────────────────────────────────
@@ -65,7 +69,18 @@ function _initWsListeners() {
     if (!s) return;
     _wsListenersActifs = true;
 
+    // Initialiser _nbJoueursWS depuis le snapshot existant
+    // (évite que _nbJoueursTotal() retourne 1 avant le 1er QUIZ_RESPONSE_IN)
+    const snap = window.HostSession?._snapshot;
+    if (snap?.joueurs?.length > 0) {
+        _nbJoueursWS = snap.joueurs.length;
+        console.log('[QUIZ_HOTE] 👥 nbJoueursWS initialisé depuis snapshot:', _nbJoueursWS);
+    }
+
     s.on('QUIZ_RESPONSE_IN', ({ pseudo, nbReponses, nbJoueurs, allAnswered }) => {
+        // Filtrer les pseudos invalides (null, undefined, 'null')
+        if (!pseudo || pseudo === 'null' || pseudo === 'undefined') return;
+
         // Enregistrer la réponse dans le panneau local
         if (!_reponsesRecues[pseudo]) {
             _reponsesRecues[pseudo] = { reponse: '…', ts: Date.now() };
@@ -185,7 +200,9 @@ function _afficherPanneauAttenteWS() {
         return;
     }
 
-    container.innerHTML = entries.map(([p, data]) => {
+    container.innerHTML = entries
+    .filter(([p]) => p && p !== 'null' && p !== 'undefined')
+    .map(([p, data]) => {
         const isHote = p === pseudoHote;
         return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;
             background:${isHote ? 'rgba(196,181,253,.07)' : 'rgba(0,212,255,.07)'};
@@ -306,35 +323,44 @@ export function declencherAfficherReponse() {
 export function envoyerReponseHote(rep) {
     if (!rep || _reponseHoteEnvoyee) return;
     _reponseHoteEnvoyee = true;
+
+    // Utiliser le pseudo hôte depuis GameState — cohérent avec le reste
     const pseudo = _pseudoHote();
 
     _initWsListeners();
 
     if (_wsOk()) {
+        // Envoyer la réponse — le serveur utilisera hostPseudo si pseudo WS manquant
         _ws().send('PLAYER_ACTION', { action: 'quiz:answer', data: { texte: rep } });
 
-        // Ajouter immédiatement la réponse de l'hôte dans le panneau local
+        // Ajouter immédiatement dans le panneau local (même pseudo que GameState)
         _reponsesRecues[pseudo] = { reponse: rep, ts: Date.now() };
         _afficherPanneauAttenteWS();
 
-        // Désactiver le champ et le bouton hôte
+        // Désactiver les contrôles hôte
         const btnEnv = document.getElementById('btn-valider-reponse');
         const inp    = document.getElementById('quiz-reponse-input');
-        if (btnEnv) { btnEnv.disabled = true; btnEnv.style.opacity = '0.45'; btnEnv.textContent = '✅ Envoyé'; }
-        if (inp)    { inp.disabled = true; }
+        if (btnEnv) {
+            btnEnv.disabled      = true;
+            btnEnv.style.opacity = '0.45';
+            btnEnv.textContent   = '✅ Envoyé';
+            btnEnv._sent         = true;
+        }
+        if (inp) { inp.disabled = true; }
 
-        // Vérifier si tous (hôte inclus) ont maintenant répondu
-        const nbTotalAvecHote    = _nbJoueursTotal();
-        const nbReponsesAvecHote = Object.keys(_reponsesRecues).length;
-        if (nbReponsesAvecHote >= nbTotalAvecHote) {
+        // Vérifier si tous ont répondu
+        const nbTotal    = _nbJoueursTotal();
+        const nbReponses = Object.keys(_reponsesRecues).length;
+        console.log(`[QUIZ_HOTE] 📨 Réponse hôte "${pseudo}": "${rep}" — ${nbReponses}/${nbTotal}`);
+
+        if (nbReponses >= nbTotal) {
             _activerBoutonAfficher('✅ Tous ont répondu — Cliquez pour révéler');
         } else {
-            _mettreAJourBoutonAfficher(nbReponsesAvecHote, nbTotalAvecHote);
+            _mettreAJourBoutonAfficher(nbReponses, nbTotal);
         }
-
-        console.log(`[QUIZ_HOTE] 📨 Réponse hôte: "${rep}" (${nbReponsesAvecHote}/${nbTotalAvecHote})`);
     } else {
-        console.warn('[QUIZ_HOTE] ⚠️ WS indisponible — réponse non envoyée');
+        _reponseHoteEnvoyee = false; // annuler si WS indisponible
+        console.warn('[QUIZ_HOTE] ⚠️ WS indisponible — réponse annulée');
     }
 }
 

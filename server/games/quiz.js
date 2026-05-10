@@ -58,6 +58,7 @@ function creerSession(partieId) {
         timerIndice2     : null,
         timerReveal      : null,
         _dernieresReponses: [],
+        _autoStartPending: false, // guard anti-double auto-start
     };
     sessions.set(partieId, session);
     return session;
@@ -146,15 +147,16 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             console.log(`[QUIZ] 📚 ${questions.length} questions chargées pour ${partieId}`);
 
             // ── Lancement automatique de la 1ère question ──────────────
-            // L'hôte n'a pas à cliquer sur btn-next pour démarrer.
-            // On délègue à next_question via un micro-délai pour laisser
-            // QUIZ_READY arriver sur les clients avant QUIZ_QUESTION.
+            // Guard _autoStartPending évite le double-lancement si btn-next
+            // est cliqué pendant le délai (causerait QUIZ_BAD_STATE).
+            s._autoStartPending = true;
             setTimeout(() => {
                 const sNow = getSession(partieId);
-                if (sNow && sNow.phase === 'idle' && sNow.questions.length > 0) {
+                if (sNow && sNow.phase === 'idle' && sNow.questions.length > 0 && sNow._autoStartPending) {
+                    sNow._autoStartPending = false;
                     handleHostAction(wss, ws, partieId, 'quiz:next_question', {}, helpers);
                 }
-            }, 800);
+            }, 1000);
             break;
         }
 
@@ -163,8 +165,13 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             let s = getSession(partieId);
             if (!s) s = creerSession(partieId);
 
+            // Annuler le lancement auto si l'hôte clique manuellement d'abord
+            if (s._autoStartPending) s._autoStartPending = false;
+
             if (s.phase === 'question') {
-                return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE', message: 'Une question est déjà en cours.' });
+                // Ignorer silencieusement (double-clic ou race condition)
+                console.warn('[QUIZ] ⚠️ next_question ignoré — question déjà en cours');
+                return; // pas d'erreur envoyée au client
             }
             // Si la session n'a pas encore de questions chargées (session résiduelle
             // ou quiz:load pas encore reçu), refuser silencieusement.
@@ -321,6 +328,14 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
         case 'answer': {
             const s = getSession(partieId);
 
+            // Si pseudo est null (l'hôte envoie PLAYER_ACTION sans pseudo WS),
+            // utiliser le hostPseudo de la partie comme fallback.
+            if (!pseudo) {
+                const partieObj = store.getPartie(partieId);
+                pseudo = partieObj?.hostPseudo || 'Hôte';
+                console.log('[QUIZ] ℹ️ Pseudo null → fallback hostPseudo:', pseudo);
+            }
+
             // Vérifications
             if (!s || s.phase !== 'question') {
                 return send(ws, 'QUIZ_ANSWER_ACK', { status: 'too_late' });
@@ -346,9 +361,11 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
             send(ws, 'QUIZ_ANSWER_ACK', { status: 'ok', texte });
 
             // Notifier l'host du nombre de réponses
-            const partie   = store.getPartie(partieId);
-            const nbJoueurs = (partie?.joueurs || []).length;
-            const nbReponses = Object.keys(s.reponses).length;
+            // nbJoueurs = invités + 1 (hôte joue aussi)
+            const partie      = store.getPartie(partieId);
+            const nbInvites   = (partie?.joueurs || []).length;
+            const nbJoueurs   = nbInvites + 1; // +1 pour l'hôte
+            const nbReponses  = Object.keys(s.reponses).length;
             const allAnswered = nbReponses >= nbJoueurs;
 
             broadcastToHost(wss, partieId, 'QUIZ_RESPONSE_IN', {
