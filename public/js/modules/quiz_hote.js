@@ -49,6 +49,13 @@ function _cleEtat()   {
 
 function _pseudoHote() { return (GameState?.joueurs?.[0]) || 'Hôte'; }
 
+// Nombre total de joueurs = invités WS + 1 (hôte)
+// _nbJoueursWS = nb d'invités connectés (reçu de QUIZ_RESPONSE_IN)
+// On force minimum 1 si pas encore de données WS
+function _nbJoueursTotal() {
+    return Math.max(_nbJoueursWS, 0) + 1; // +1 pour l'hôte
+}
+
 // ──────────────────────────────────────────────────────
 // Listeners WS entrants (initialisés une seule fois)
 // ──────────────────────────────────────────────────────
@@ -59,22 +66,28 @@ function _initWsListeners() {
     _wsListenersActifs = true;
 
     s.on('QUIZ_RESPONSE_IN', ({ pseudo, nbReponses, nbJoueurs, allAnswered }) => {
+        // Enregistrer la réponse dans le panneau local
         if (!_reponsesRecues[pseudo]) {
             _reponsesRecues[pseudo] = { reponse: '…', ts: Date.now() };
         }
-        if (nbJoueurs) _nbJoueursWS = nbJoueurs;
+        // Mettre à jour le nb d'invités (hôte exclu côté serveur)
+        if (nbJoueurs !== undefined) _nbJoueursWS = nbJoueurs;
         _afficherPanneauAttenteWS();
-        if (allAnswered) {
-            // Tous ont répondu → activer btn-afficher mais NE PAS révéler auto
-            // L'hôte décide quand cliquer sur "Afficher"
+
+        // Recalculer allAnswered en incluant l'hôte
+        const nbTotalAvecHote = _nbJoueursTotal();
+        const nbReponsesAvecHote = Object.keys(_reponsesRecues).length;
+        const tousOntRepondu = nbReponsesAvecHote >= nbTotalAvecHote;
+
+        if (tousOntRepondu) {
             _activerBoutonAfficher('✅ Tous ont répondu — Cliquez pour révéler');
         } else {
-            _mettreAJourBoutonAfficher(nbReponses, nbJoueurs);
+            _mettreAJourBoutonAfficher(nbReponsesAvecHote, nbTotalAvecHote);
         }
     });
 
     // Timer écoulé → activer btn-afficher même si pas tout le monde a répondu
-    s.on('QUIZ_TIMER_EXPIRED', ({ nbReponses, nbJoueurs }) => {
+    s.on('QUIZ_TIMER_EXPIRED', () => {
         _activerBoutonAfficher('⏱ Timer écoulé — Cliquez pour révéler');
     });
 
@@ -105,11 +118,9 @@ function _initWsListeners() {
     });
 
     s.on('QUIZ_ANSWER_ACK', ({ status }) => {
+        // L'UI est déjà mise à jour dans envoyerReponseHote() — pas de doublon
         if (status === 'ok') {
-            const btn = document.getElementById('btn-valider-reponse');
-            if (btn) { btn.disabled = true; btn.style.opacity = '0.45'; btn.textContent = '✅ Envoyé'; }
-            const inp = document.getElementById('quiz-reponse-input');
-            if (inp) inp.disabled = true;
+            console.log('[QUIZ_HOTE] ✅ Réponse hôte ACK ok');
         }
     });
 }
@@ -165,26 +176,36 @@ function _afficherPanneauAttenteWS() {
     if (!container || _validationEnCours) return;
     const pseudoHote = _pseudoHote();
     const entries    = Object.entries(_reponsesRecues);
-    const nbAttendu  = _nbJoueursWS;
+    const nbAttendu  = _nbJoueursTotal(); // hôte inclus
 
     if (entries.length === 0) {
-        container.innerHTML = `<p style="font-size:.8rem;color:rgba(255,255,255,.4);text-align:center;">En attente… (0 / ${nbAttendu || '?'})</p>`;
+        container.innerHTML = `<p style="font-size:.8rem;color:rgba(255,255,255,.4);text-align:center;">
+            En attente… (0 / ${nbAttendu})
+        </p>`;
         return;
     }
-    container.innerHTML = entries.map(([p]) => {
+
+    container.innerHTML = entries.map(([p, data]) => {
         const isHote = p === pseudoHote;
         return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;
             background:${isHote ? 'rgba(196,181,253,.07)' : 'rgba(0,212,255,.07)'};
             border:1px solid ${isHote ? 'rgba(196,181,253,.25)' : 'rgba(0,212,255,.2)'};
             border-radius:10px;margin-bottom:6px;">
-            <span style="font-weight:700;font-size:.85rem;color:${isHote ? '#c4b5fd' : '#00d4ff'};min-width:80px;">
-                ${isHote ? '🎮 ' : ''}${_esc(p)}
+            <span style="font-weight:700;font-size:.85rem;color:${isHote ? '#c4b5fd' : '#00d4ff'};min-width:90px;white-space:nowrap;">
+                ${isHote ? '🎮 ' : '👤 '}${_esc(p)}
             </span>
-            <span style="flex:1;font-size:.82rem;color:rgba(255,255,255,.35);font-style:italic;">✅ a répondu</span>
+            <span style="flex:1;font-size:.82rem;color:rgba(255,255,255,.55);font-style:italic;">
+                ✅ a répondu
+            </span>
         </div>`;
-    }).join('') + `<p style="font-size:.78rem;color:rgba(255,255,255,.35);text-align:center;margin-top:6px;">
-        ${entries.length} / ${nbAttendu || '?'} réponses
-    </p>`;
+    }).join('')
+    + `<div style="text-align:center;margin-top:8px;font-size:.78rem;color:rgba(255,255,255,.35);
+        padding-top:8px;border-top:1px solid rgba(255,255,255,.08);">
+        ${entries.length} / ${nbAttendu} réponse${entries.length > 1 ? 's' : ''}
+        ${entries.length < nbAttendu
+            ? `<span style="color:#f59e0b;"> — ${nbAttendu - entries.length} en attente</span>`
+            : '<span style="color:#4ade80;"> — Tous ont répondu ✅</span>'}
+    </div>`;
 }
 
 // ──────────────────────────────────────────────────────
@@ -246,7 +267,20 @@ export function afficherReponsesInvitesSurHote(containerId = 'invites-reponses')
 }
 
 export function viderReponses() {
-    _reponsesRecues = {};
+    _reponsesRecues      = {};
+    _validationEnCours   = false;   // reset pour permettre nouvelle révélation
+    _reponseHoteEnvoyee  = false;   // reset pour permettre réponse hôte à chaque question
+    // Réinitialiser les boutons hôte pour la nouvelle question
+    const btnEnv = document.getElementById('btn-valider-reponse');
+    const inp    = document.getElementById('quiz-reponse-input');
+    if (btnEnv) {
+        btnEnv.disabled      = false;
+        btnEnv._sent         = false;
+        btnEnv.style.opacity = '';
+        btnEnv.textContent   = '✅ Envoyer';
+    }
+    if (inp) { inp.value = ''; inp.disabled = false; }
+    console.log('[QUIZ_HOTE] 🔄 Réponses vidées — hôte peut répondre à nouveau');
 }
 
 export function declencherAfficherReponse() {
@@ -278,9 +312,27 @@ export function envoyerReponseHote(rep) {
 
     if (_wsOk()) {
         _ws().send('PLAYER_ACTION', { action: 'quiz:answer', data: { texte: rep } });
+
+        // Ajouter immédiatement la réponse de l'hôte dans le panneau local
         _reponsesRecues[pseudo] = { reponse: rep, ts: Date.now() };
         _afficherPanneauAttenteWS();
-        console.log(`[QUIZ_HOTE] 📨 Réponse hôte: "${rep}"`);
+
+        // Désactiver le champ et le bouton hôte
+        const btnEnv = document.getElementById('btn-valider-reponse');
+        const inp    = document.getElementById('quiz-reponse-input');
+        if (btnEnv) { btnEnv.disabled = true; btnEnv.style.opacity = '0.45'; btnEnv.textContent = '✅ Envoyé'; }
+        if (inp)    { inp.disabled = true; }
+
+        // Vérifier si tous (hôte inclus) ont maintenant répondu
+        const nbTotalAvecHote    = _nbJoueursTotal();
+        const nbReponsesAvecHote = Object.keys(_reponsesRecues).length;
+        if (nbReponsesAvecHote >= nbTotalAvecHote) {
+            _activerBoutonAfficher('✅ Tous ont répondu — Cliquez pour révéler');
+        } else {
+            _mettreAJourBoutonAfficher(nbReponsesAvecHote, nbTotalAvecHote);
+        }
+
+        console.log(`[QUIZ_HOTE] 📨 Réponse hôte: "${rep}" (${nbReponsesAvecHote}/${nbTotalAvecHote})`);
     } else {
         console.warn('[QUIZ_HOTE] ⚠️ WS indisponible — réponse non envoyée');
     }
