@@ -118,12 +118,19 @@ function _onQuizCorrection(payload) {
     const { reponse, posees, total } = payload;
     const repEl = $('reponse');
     if (repEl && reponse) repEl.textContent = reponse;
+
+    // Stocker la bonne réponse dans _questionEnCours pour quiz_hote.js
+    // (_quizGetReponseCorrecte() l'utilise pour évaluer la réponse hôte)
+    if (_questionEnCours) {
+        _questionEnCours.reponse         = reponse;
+        _questionEnCours['Réponse']      = reponse;
+    }
+
     _publierScores();
     if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
     console.log('[QUIZ] ✅ Correction Q' + posees + '/' + total + ': "' + reponse + '"');
 
     // Note : btn-next et btn-afficher sont gérés par QUIZ_CAN_NEXT
-    // (envoyé par le serveur juste après QUIZ_CORRECTION)
 }
 
 function _onQuizEnd({ scores, total }) {
@@ -232,7 +239,7 @@ function attacherListenersQuiz(socket) {
     const btnAff = document.getElementById('btn-afficher-reponse');
     if (btnAff) btnAff.onclick = () => _declencherAfficherReponse();
 
-    // 👉 Réponse hôte
+    // 👉 Réponse hôte (gérée en local — pas de PLAYER_ACTION WS)
     const btnEnv = document.getElementById('btn-valider-reponse');
     if (btnEnv) {
         btnEnv.onclick = () => {
@@ -240,6 +247,8 @@ function attacherListenersQuiz(socket) {
             const inp = document.getElementById('quiz-reponse-input');
             const rep = inp ? inp.value.trim() : '';
             if (!rep) return;
+            // Stocker pour que quiz_hote.js puisse évaluer lors de QUIZ_CORRECTION
+            window._quizReponseSaisieHote = rep;
             _envoyerReponseHote(rep);
         };
     }
@@ -393,6 +402,11 @@ window.initialiserQuiz = initialiserQuiz;
 window._quizGetReponseCorrecte = function () {
     if (!_questionEnCours) return '';
     return _questionEnCours['Réponse'] || _questionEnCours.reponse || '';
+};
+
+// Accès à la réponse hôte saisie (pour quiz_hote.js)
+window._quizGetReponseHoteSaisie = function () {
+    return window._quizReponseSaisieHote || '';
 };
 
 window._quizNbJoueursInvites = function () {

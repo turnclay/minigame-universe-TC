@@ -49,15 +49,12 @@ function _cleEtat()   {
 
 function _pseudoHote() { return (GameState?.joueurs?.[0]) || 'Hôte'; }
 
-// Nombre total de joueurs attendus dans le panneau
-// Le serveur envoie maintenant nbJoueurs = invités + 1 (hôte inclus)
-// _nbJoueursWS est mis à jour depuis QUIZ_RESPONSE_IN.nbJoueurs
-// Si pas encore reçu, on estime depuis le snapshot : invités + 1
+// Nombre total attendu = invités (nbJoueurs serveur) + 1 (hôte, local)
 function _nbJoueursTotal() {
-    if (_nbJoueursWS > 0) return _nbJoueursWS; // valeur serveur = invités+hôte
-    const snap = window.HostSession?._snapshot;
-    const invites = snap?.joueurs?.length ?? 0;
-    return invites + 1; // fallback : invités + hôte
+    const invites = _nbJoueursWS > 0
+        ? _nbJoueursWS
+        : (window.HostSession?._snapshot?.joueurs?.length ?? 0);
+    return invites + 1; // +1 pour l'hôte qui répond en local
 }
 
 // ──────────────────────────────────────────────────────
@@ -78,26 +75,27 @@ function _initWsListeners() {
     }
 
     s.on('QUIZ_RESPONSE_IN', ({ pseudo, nbReponses, nbJoueurs, allAnswered }) => {
-        // Filtrer les pseudos invalides (null, undefined, 'null')
+        // Filtrer les pseudos invalides
         if (!pseudo || pseudo === 'null' || pseudo === 'undefined') return;
 
-        // Enregistrer la réponse dans le panneau local
+        // Enregistrer la réponse de l'invité dans le panneau local
         if (!_reponsesRecues[pseudo]) {
             _reponsesRecues[pseudo] = { reponse: '…', ts: Date.now() };
         }
-        // Mettre à jour le nb d'invités (hôte exclu côté serveur)
+        // Mettre à jour le nb d'invités depuis le serveur
         if (nbJoueurs !== undefined) _nbJoueursWS = nbJoueurs;
+
         _afficherPanneauAttenteWS();
 
-        // Recalculer allAnswered en incluant l'hôte
-        const nbTotalAvecHote = _nbJoueursTotal();
-        const nbReponsesAvecHote = Object.keys(_reponsesRecues).length;
-        const tousOntRepondu = nbReponsesAvecHote >= nbTotalAvecHote;
+        // Recalculer avec la réponse hôte locale aussi
+        const nbTotal    = _nbJoueursTotal();           // invités + 1 hôte
+        const nbReponses = Object.keys(_reponsesRecues).length; // invités + hôte si déjà répondu
+        const tousOntRepondu = nbReponses >= nbTotal;
 
         if (tousOntRepondu) {
             _activerBoutonAfficher('✅ Tous ont répondu — Cliquez pour révéler');
         } else {
-            _mettreAJourBoutonAfficher(nbReponsesAvecHote, nbTotalAvecHote);
+            _mettreAJourBoutonAfficher(nbReponses, nbTotal);
         }
     });
 
@@ -110,7 +108,56 @@ function _initWsListeners() {
         _validationEnCours = false;
         const repEl = document.getElementById('reponse');
         if (repEl && bonneReponse) repEl.textContent = bonneReponse;
-        _afficherPanneauResultats(reponses || [], bonneReponse || '');
+
+        // Fusionner les résultats invités (serveur) avec la réponse hôte (local)
+        const pseudoHote  = _pseudoHote();
+        const repHoteData = _reponsesRecues[pseudoHote];
+        const resultats   = [...(reponses || [])];
+
+        // Ajouter le résultat hôte si absent des résultats serveur
+        const hoteDejaInclus = resultats.some(r => r.pseudo === pseudoHote);
+        if (!hoteDejaInclus) {
+            // Récupérer la réponse saisie par l'hôte
+            const texteHote = (window._quizReponseSaisieHote || '').trim();
+            if (texteHote) {
+                // Évaluer avec la même logique que le serveur
+                const correct = bonneReponse ? _similariteLocale(texteHote, bonneReponse) : false;
+                // Premier correct = avant tous les invités ?
+                const nbCorrectsInvites = resultats.filter(r => r.correct).length;
+                // L'hôte a répondu "en même temps" localement — on le met premier
+                // si aucun invité n'était correct avant lui
+                const estPremier = correct && nbCorrectsInvites === 0;
+                const points     = correct ? (estPremier ? 2 : 1) : 0;
+
+                resultats.unshift({ // mettre l'hôte en premier dans l'affichage
+                    pseudo    : pseudoHote,
+                    texte     : texteHote,
+                    correct,
+                    points,
+                    estPremier,
+                });
+
+                // Mettre à jour GameState.scores pour l'hôte
+                if (points > 0) {
+                    GameState.scores = GameState.scores || {};
+                    GameState.scores[pseudoHote] = (GameState.scores[pseudoHote] || 0) + points;
+                    // Notifier le scoreboard
+                    if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
+                }
+                console.log(`[QUIZ_HOTE] 🏅 Résultat hôte "${pseudoHote}": "${texteHote}" → ${correct ? '+'+points+'pt(s)' : '0pt'}`);
+            } else if (_reponseHoteEnvoyee === false) {
+                // L'hôte n'a pas répondu — ajouter quand même pour l'affichage
+                resultats.unshift({
+                    pseudo    : pseudoHote,
+                    texte     : '',
+                    correct   : false,
+                    points    : 0,
+                    estPremier: false,
+                });
+            }
+        }
+
+        _afficherPanneauResultats(resultats, bonneReponse || '');
         if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
     });
 
@@ -285,8 +332,12 @@ export function afficherReponsesInvitesSurHote(containerId = 'invites-reponses')
 
 export function viderReponses() {
     _reponsesRecues      = {};
-    _validationEnCours   = false;   // reset pour permettre nouvelle révélation
-    _reponseHoteEnvoyee  = false;   // reset pour permettre réponse hôte à chaque question
+    _validationEnCours   = false;
+    _reponseHoteEnvoyee  = false;
+
+    // Reset de la réponse saisie par l'hôte
+    if (typeof window !== 'undefined') window._quizReponseSaisieHote = '';
+
     // Réinitialiser les boutons hôte pour la nouvelle question
     const btnEnv = document.getElementById('btn-valider-reponse');
     const inp    = document.getElementById('quiz-reponse-input');
@@ -324,44 +375,62 @@ export function envoyerReponseHote(rep) {
     if (!rep || _reponseHoteEnvoyee) return;
     _reponseHoteEnvoyee = true;
 
-    // Utiliser le pseudo hôte depuis GameState — cohérent avec le reste
+    // Le pseudo hôte est GameState.joueurs[0] (ex: "Clay")
+    // Même logique que pour un invité mais 100% LOCAL — pas de PLAYER_ACTION WS.
+    // L'hôte est sur la même page, sa réponse est ajoutée directement
+    // dans _reponsesRecues et affichée dans le panneau.
     const pseudo = _pseudoHote();
 
-    _initWsListeners();
+    // Évaluation locale de la réponse (similarité avec la bonne réponse)
+    // Récupérer la bonne réponse depuis le payload de la question en cours
+    const bonneReponse = window._quizGetReponseCorrecte ? window._quizGetReponseCorrecte() : '';
+    const correct      = bonneReponse
+        ? _similariteLocale(rep.trim(), bonneReponse)
+        : false;
 
-    if (_wsOk()) {
-        // Envoyer la réponse — le serveur utilisera hostPseudo si pseudo WS manquant
-        _ws().send('PLAYER_ACTION', { action: 'quiz:answer', data: { texte: rep } });
+    console.log(`[QUIZ_HOTE] 📨 Réponse hôte "${pseudo}": "${rep}" → correct: ${correct}`);
 
-        // Ajouter immédiatement dans le panneau local (même pseudo que GameState)
-        _reponsesRecues[pseudo] = { reponse: rep, ts: Date.now() };
-        _afficherPanneauAttenteWS();
+    // Ajouter dans le panneau local
+    _reponsesRecues[pseudo] = { reponse: rep, ts: Date.now(), correct };
+    _afficherPanneauAttenteWS();
 
-        // Désactiver les contrôles hôte
-        const btnEnv = document.getElementById('btn-valider-reponse');
-        const inp    = document.getElementById('quiz-reponse-input');
-        if (btnEnv) {
-            btnEnv.disabled      = true;
-            btnEnv.style.opacity = '0.45';
-            btnEnv.textContent   = '✅ Envoyé';
-            btnEnv._sent         = true;
-        }
-        if (inp) { inp.disabled = true; }
-
-        // Vérifier si tous ont répondu
-        const nbTotal    = _nbJoueursTotal();
-        const nbReponses = Object.keys(_reponsesRecues).length;
-        console.log(`[QUIZ_HOTE] 📨 Réponse hôte "${pseudo}": "${rep}" — ${nbReponses}/${nbTotal}`);
-
-        if (nbReponses >= nbTotal) {
-            _activerBoutonAfficher('✅ Tous ont répondu — Cliquez pour révéler');
-        } else {
-            _mettreAJourBoutonAfficher(nbReponses, nbTotal);
-        }
-    } else {
-        _reponseHoteEnvoyee = false; // annuler si WS indisponible
-        console.warn('[QUIZ_HOTE] ⚠️ WS indisponible — réponse annulée');
+    // Désactiver les contrôles hôte
+    const btnEnv = document.getElementById('btn-valider-reponse');
+    const inp    = document.getElementById('quiz-reponse-input');
+    if (btnEnv) {
+        btnEnv.disabled      = true;
+        btnEnv.style.opacity = '0.45';
+        btnEnv.textContent   = '✅ Envoyé';
+        btnEnv._sent         = true;
     }
+    if (inp) { inp.disabled = true; }
+
+    // Vérifier si tous (invités + hôte) ont répondu
+    const nbTotal    = _nbJoueursTotal();
+    const nbReponses = Object.keys(_reponsesRecues).length;
+
+    if (nbReponses >= nbTotal) {
+        _activerBoutonAfficher('✅ Tous ont répondu — Cliquez pour révéler');
+    } else {
+        _mettreAJourBoutonAfficher(nbReponses, nbTotal);
+    }
+}
+
+// Similarité locale simplifiée (normalisation + inclusion)
+function _similariteLocale(a, b) {
+    if (!a || !b) return false;
+    const norm = s => String(s).toLowerCase()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+    const na = norm(a), nb = norm(b);
+    if (na === nb) return true;
+    if (nb.includes(na) || na.includes(nb)) return true;
+    // Bigrammes
+    const bg = s => { const set = new Set(); for (let i=0;i<s.length-1;i++) set.add(s.slice(i,i+2)); return set; };
+    const ba = bg(na), bb = bg(nb);
+    if (!ba.size || !bb.size) return false;
+    let inter = 0; ba.forEach(g => { if (bb.has(g)) inter++; });
+    return (2 * inter) / (ba.size + bb.size) >= 0.85;
 }
 
 export function lireReponsesInvites() {

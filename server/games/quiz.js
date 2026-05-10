@@ -328,14 +328,6 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
         case 'answer': {
             const s = getSession(partieId);
 
-            // Si pseudo est null (l'hôte envoie PLAYER_ACTION sans pseudo WS),
-            // utiliser le hostPseudo de la partie comme fallback.
-            if (!pseudo) {
-                const partieObj = store.getPartie(partieId);
-                pseudo = partieObj?.hostPseudo || 'Hôte';
-                console.log('[QUIZ] ℹ️ Pseudo null → fallback hostPseudo:', pseudo);
-            }
-
             // Vérifications
             if (!s || s.phase !== 'question') {
                 return send(ws, 'QUIZ_ANSWER_ACK', { status: 'too_late' });
@@ -363,8 +355,7 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
             // Notifier l'host du nombre de réponses
             // nbJoueurs = invités + 1 (hôte joue aussi)
             const partie      = store.getPartie(partieId);
-            const nbInvites   = (partie?.joueurs || []).length;
-            const nbJoueurs   = nbInvites + 1; // +1 pour l'hôte
+            const nbJoueurs   = (partie?.joueurs || []).length; // invités seulement
             const nbReponses  = Object.keys(s.reponses).length;
             const allAnswered = nbReponses >= nbJoueurs;
 
