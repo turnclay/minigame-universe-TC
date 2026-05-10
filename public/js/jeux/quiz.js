@@ -27,15 +27,7 @@ let _envoyerReponseHote             = () => {};
 // ======================================================
 async function chargerModuleHote() {
     try {
-        // Utiliser fetch + eval pour éviter les problèmes d'import dynamique en prod
-        const response = await fetch('/js/modules/quiz_hote.js?v=' + Date.now());
-        if (!response.ok) {
-            console.warn('[QUIZ] ⚠️ quiz_hote.js indisponible (HTTP ' + response.status + ')');
-            return false;
-        }
-
-        // Alternative : importer en tant que module
-        const m = await import('../modules/quiz_hote.js?v=' + Date.now());
+        const m = await import('../modules/quiz_hote.js');
 
         _publierEtat                    = m.publierEtat;
         _publierScores                  = m.publierScores;

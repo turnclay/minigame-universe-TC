@@ -354,7 +354,7 @@ class Store {
         this.parties.forEach((partie, id) => {
             const lastActivity = partie.lastActivity?.getTime() || partie.createdAt?.getTime() || 0;
             if (partie.statut === 'terminee' && (now - lastActivity > ageMax)) {
-                this.supies.delete(id);
+                this.parties.delete(id);
                 this.hostSockets.delete(id);
                 this.joueurSockets.delete(id);
                 supprimees++;
