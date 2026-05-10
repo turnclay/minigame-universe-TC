@@ -1,5 +1,5 @@
 // ======================================================
-// 🎮 server/games/quiz.js — v1.0 (port V2 → WS)
+// 🎮 server/games/quiz.js — v1.1 (FIXED — synchro WS)
 // ======================================================
 
 import store from '../store.js';
@@ -193,7 +193,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
                 broadcastToHost(wss, partieId, 'QUIZ_TIMER_EXPIRED', {
                     partieId,
                     nbReponses : Object.keys(s.reponses).length,
-                    nbJoueurs  : (store.getPartie(partieId)?.joueurs || []).length,
+                    nbJoueurs  : (store.getPartie(partieId)?.joueurs || []).length + 1,  // +1 pour l'hôte
                 });
 
                 s.timerReveal = setTimeout(() => {

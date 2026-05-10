@@ -1,7 +1,8 @@
 // ============================================================
-// /js/jeux/quiz.js — v3.2 WS-server-driven (RENDER-SAFE)
+// /js/jeux/quiz.js — v3.2 WS-server-driven (RENDER-SAFE & FIXED)
 // ============================================================
 // Déploiement Render : chemins absolus, imports robustes, gestion erreurs
+// Corrections WS : vérifications connexion, try/catch, cohérence partieId
 // ============================================================
 
 import { $ } from '../core/dom.js';

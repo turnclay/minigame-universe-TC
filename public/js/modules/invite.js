@@ -1,4 +1,4 @@
-// /js/modules/invite.js — v2.1 (bloc statique, ID serveur uniquement)
+// /js/modules/invite.js — v2.2 (FIXED — partieId synchronisé)
 // ============================================================
 // RÈGLE ABSOLUE : aucun ID n'est jamais généré localement.
 // Le seul partieId valide est celui reçu via GAME_CREATED.
@@ -32,7 +32,10 @@ export function getPartieSessionId() {
 
 /** Appelé par main.js sur GAME_CREATED — seul point d'écriture autorisé. */
 export function setPartieSessionId(id) {
-    if (!id) return;
+    if (!id) {
+        console.warn('[INVITE] ⚠️ setPartieSessionId appelé avec ID null');
+        return;
+    }
     _partieSessionId = id;
     localStorage.setItem(PARTIE_ID_KEY, id);
     console.log('[INVITE] ✅ partieId serveur enregistré :', id);
@@ -112,7 +115,10 @@ export function afficherBlocInvitation() {
 export function mettreAJourLienInvitation() {
     const lien     = construireLienInvitation();
     const partieId = getPartieSessionId();
-    if (!lien || !partieId) return;
+    if (!lien || !partieId) {
+        console.warn('[INVITE] ⚠️ Impossible de mettre à jour — pas de partieId');
+        return;
+    }
 
     _remplirBloc(lien, partieId);
 
@@ -130,7 +136,7 @@ function _remplirBloc(lien, partieId) {
     const jeuLabel = JEUX_LABELS[jeu.toLowerCase()] || jeu.toUpperCase() || '—';
     const d        = new Date();
     const dateStr  = d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' })
-                   + ' à ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+                    + ' à ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
 
     // Métadonnées
     _setText('invite-meta-hote',  hote || '—');

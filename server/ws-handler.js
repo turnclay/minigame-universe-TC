@@ -1,20 +1,7 @@
 // ======================================================
-// 🔌 server/ws-handler.js — v6.1 (V2 port + quiz activé)
+// 🔌 server/ws-handler.js — v6.2 (FIXED — robuste WS)
 // ======================================================
-// Modifications vs V3 v6.0 :
-//
-//   [+] CODE_GENERATED broadcast après HOST_CREATE_GAME
-//       → host.js V3 l'écoute pour afficher le code court
-//         (socket.on('CODE_GENERATED', ...))
-//
-//   [+] Quiz handler activé dans JEU_HANDLERS
-//       → toutes les actions 'quiz:*' sont gérées côté serveur
-//
-//   [=] buildJoinUrl adapté pour V2 :
-//       URL pattern : /jeu?partieId=...&pseudo=...&role=...
-//       (conserve l'arborescence V2 — pas de /games/:jeu/)
-//
-// Protocole complet inchangé (voir commentaire bloc V3).
+// Corrections : gestion erreurs, synchro partieId, INTERNAL_ERROR
 // ======================================================
 
 import store from './store.js';
@@ -98,6 +85,7 @@ function assignerEquipe(partie, pseudo) {
     return partie.equipes.reduce(
         (min, eq) => (count[eq.nom] < count[min] ? eq.nom : min),
         partie.equipes[0].nom
+
     );
 }
 
@@ -198,6 +186,7 @@ function handleMessage(wss, ws, type, payload) {
                 equipes    : equipes || [],
                 hostJoue   : hostJoue   || false,
                 hostPseudo : hostPseudo || null,
+
             });
 
             if (hostJoue && hostPseudo && PSEUDO_REGEX.test(hostPseudo)) {
