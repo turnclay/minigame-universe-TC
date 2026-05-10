@@ -213,7 +213,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             }
 
             const partie = store.getPartie(partieId);
-            const hostPseudo = partie?.hostPseudo || ws._pseudo;
+            const hostPseudo = partie?.hostPseudo;
 
             if (hostPseudo && (data.reponseHote || data.texte || data.reponse)) {
                 const ts = data.tsHote || Date.now();

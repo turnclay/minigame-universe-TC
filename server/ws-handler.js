@@ -163,63 +163,78 @@ function handleMessage(wss, ws, type, payload) {
             break;
         }
 
-        // ── HOST_CREATE_GAME ───────────────────────────
-        case 'HOST_CREATE_GAME': {
-            if (!ws._isHost) return send(ws, 'ERROR', { code: 'NOT_HOST' });
-            const { nom, jeu, mode, equipes, hostJoue, hostPseudo } = payload;
-            if (!nom || !jeu || !mode) return send(ws, 'ERROR', { code: 'MISSING_FIELDS' });
+// ── HOST_CREATE_GAME ───────────────────────────
+case 'HOST_CREATE_GAME': {
+    if (!ws._isHost) return send(ws, 'ERROR', { code: 'NOT_HOST' });
 
-            const existing = store.getAllParties().find(
-                p => p.nom.toLowerCase() === nom.toLowerCase() && !estStatutTerminal(p.statut)
-            );
-            if (existing) return send(ws, 'ERROR', { code: 'NAME_TAKEN', message: 'Ce nom est déjà pris.' });
+    // On récupère les données envoyées par le frontend
+    let { nom, jeu, mode, equipes, hostJoue, hostPseudo } = payload;
 
-            if (ws._partieId) {
-                const old = store.getPartie(ws._partieId);
-                if (old && !estStatutTerminal(old.statut)) {
-                    return send(ws, 'ERROR', { code: 'HOST_ALREADY_HAS_GAME' });
-                }
-            }
+    if (!nom || !jeu || !mode) {
+        return send(ws, 'ERROR', { code: 'MISSING_FIELDS' });
+    }
 
-            const partie = store.creerPartie({
-                nom, jeu, mode,
-                equipes    : equipes || [],
-                hostJoue   : hostJoue   || false,
-                hostPseudo : hostPseudo || null,
+    // Si le frontend n'a PAS envoyé hostPseudo → on utilise ws._pseudo
+    if (!hostPseudo || typeof hostPseudo !== 'string' || hostPseudo.trim() === '') {
+        hostPseudo = ws._pseudo || null;
+    }
 
-            });
+    // Vérifier si une partie du même nom existe déjà
+    const existing = store.getAllParties().find(
+        p => p.nom.toLowerCase() === nom.toLowerCase() && !estStatutTerminal(p.statut)
+    );
+    if (existing) {
+        return send(ws, 'ERROR', { code: 'NAME_TAKEN', message: 'Ce nom est déjà pris.' });
+    }
 
-            if (hostJoue && hostPseudo && PSEUDO_REGEX.test(hostPseudo)) {
-                const equipe = assignerEquipe(partie, hostPseudo);
-                store.ajouterJoueur(partie.id, {
-                    pseudo : hostPseudo,
-                    equipe : equipe || null,
-                    statut : 'host-player',
-                });
-            }
-
-            ws._partieId = partie.id;
-            store.setHostSocket(partie.id, ws);
-
-            // Générer le code court immédiatement
-            const code = store.genererCodeCourt(partie.id);
-
-            send(ws, 'GAME_CREATED', {
-                partieId : partie.id,
-                snapshot : store.snapshotPartie(partie.id),
-                joinUrl  : buildJoinUrl(partie),
-            });
-
-            // [v6.1] Broadcaster le code court séparément
-            // → host.js V3 écoute socket.on('CODE_GENERATED')
-            // → main.js V2 peut aussi l'écouter via HostSession
-            if (code) {
-                send(ws, 'CODE_GENERATED', { code, partieId: partie.id });
-            }
-
-            console.log(`[WS] ✅ GAME_CREATED "${partie.nom}" → ${partie.id} (code: ${code})`);
-            break;
+    // Vérifier si l'hôte a déjà une partie active
+    if (ws._partieId) {
+        const old = store.getPartie(ws._partieId);
+        if (old && !estStatutTerminal(old.statut)) {
+            return send(ws, 'ERROR', { code: 'HOST_ALREADY_HAS_GAME' });
         }
+    }
+
+    // Création de la partie
+    const partie = store.creerPartie({
+        nom,
+        jeu,
+        mode,
+        equipes    : equipes || [],
+        hostJoue   : hostJoue || false,
+        hostPseudo : hostPseudo || null,
+    });
+
+    // Si l'hôte joue → on l'ajoute comme joueur réel
+    if (hostJoue && hostPseudo && PSEUDO_REGEX.test(hostPseudo)) {
+        const equipe = assignerEquipe(partie, hostPseudo);
+        store.ajouterJoueur(partie.id, {
+            pseudo : hostPseudo,
+            equipe : equipe || null,
+            statut : 'host-player',
+        });
+    }
+
+    ws._partieId = partie.id;
+    store.setHostSocket(partie.id, ws);
+
+    // Générer le code court immédiatement
+    const code = store.genererCodeCourt(partie.id);
+
+    send(ws, 'GAME_CREATED', {
+        partieId : partie.id,
+        snapshot : store.snapshotPartie(partie.id),
+        joinUrl  : buildJoinUrl(partie),
+    });
+
+    if (code) {
+        send(ws, 'CODE_GENERATED', { code, partieId: partie.id });
+    }
+
+    console.log(`[WS] ✅ GAME_CREATED "${partie.nom}" → ${partie.id} (code: ${code})`);
+    break;
+}
+
 
         // ── HOST_START_GAME ────────────────────────────
         case 'HOST_START_GAME': {
