@@ -5,7 +5,6 @@
 // Corrections WS : vérifications connexion, try/catch, cohérence partieId
 // ============================================================
 
-import { $ } from '../core/dom.js';
 import { GameState } from '../core/state.js';
 import { ajouterPoints } from '../modules/scoreboard.js';
 
