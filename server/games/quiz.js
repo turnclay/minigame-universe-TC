@@ -460,4 +460,5 @@ function _similarite(a, b) {
     if (ba.size === 0 || bb.size === 0) return 0;
     let inter = 0;
     ba.forEach(g => { if (bb.has(g)) inter++; });
-    return (2 *
+    return (2 * inter) / (ba.size + bb.size);
+}
