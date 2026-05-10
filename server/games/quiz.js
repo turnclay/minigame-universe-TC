@@ -445,7 +445,6 @@ function _declencharRevelation(wss, partieId, s, helpers, source) {
     broadcastToGame(wss, partieId, 'SCORES_UPDATE', { scores: scoresActuels });
 
     // Notifier l'hôte qu'il peut passer à la question suivante
-    const { broadcastToHost } = helpers;
     broadcastToHost(wss, partieId, 'QUIZ_CAN_NEXT', {
         posees   : s.posees,
         total    : s.questions.length,
