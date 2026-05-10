@@ -1,19 +1,7 @@
 // ============================================================
-// /js/jeux/quiz.js — v3.0 WS-server-driven
+// /js/jeux/quiz.js — v3.2 WS-server-driven (RENDER-SAFE)
 // ============================================================
-// Le serveur (server/games/quiz.js) est l'unique séquenceur.
-// Ce fichier gère uniquement l'UI hôte :
-//   1. fetch questions.json + envoi quiz:load au serveur
-//   2. Mise à jour DOM sur réception QUIZ_* depuis le serveur
-//   3. Boutons hôte → commandes WS (quiz:next_question, quiz:reveal…)
-//   4. Panneau réponses invités
-//
-// IDs HTML utilisés (index.html) :
-//   timer, theme-display, question, indice1, indice2, reponse
-//   btn-next, btn-next-arrow, btn-prev (désactivé)
-//   btn-indice1, btn-indice2
-//   btn-afficher-reponse, btn-valider-reponse, quiz-reponse-input
-//   verif-resultat
+// Déploiement Render : chemins absolus, imports robustes, gestion erreurs
 // ============================================================
 
 import { $ } from '../core/dom.js';
@@ -34,219 +22,20 @@ let _declencherAfficherReponse      = () => {};
 let _envoyerReponseHote             = () => {};
 
 // ======================================================
-// 📡 CHARGEMENT DU MODULE HÔTE
+// 📡 CHARGEMENT DU MODULE HÔTE (robuste pour Render)
 // ======================================================
 async function chargerModuleHote() {
     try {
-        const m = await import('../modules/quiz_hote.js');
-        _publierEtat                    = m.publierEtat;
-        _publierScores                  = m.publierScores;
-        _afficherReponsesInvitesSurHote = m.afficherReponsesInvitesSurHote;
-        _viderReponses                  = m.viderReponses;
-        _declencherAfficherReponse      = m.declencherAfficherReponse || (() => {});
-        _envoyerReponseHote             = m.envoyerReponseHote        || (() => {});
-
-        window._quizEnvoyerReponseHote   = rep => _envoyerReponseHote(rep);
-        window._quizDeclencherAfficher   = ()  => _declencherAfficherReponse();
-        window._quizDeclencherValidation = ()  => _declencherAfficherReponse();
-
-        console.log('[QUIZ] ✅ Module hôte chargé');
-        return true;
-    } catch (e) {
-        console.warn('[QUIZ] ⚠️ quiz_hote.js indisponible :', e.message);
-        return false;
-    }
-}
-
-// ======================================================
-// 🖥️ HANDLERS ÉVÉNEMENTS WS SERVEUR
-// ======================================================
-
-function _onQuizQuestion(payload) {
-    const { question, theme, posees, total, ts, hasIndice1, hasIndice2 } = payload;
-    _questionEnCours = payload;
-    _viderReponses();
-
-    const tEl = $('theme-display'); if (tEl) tEl.textContent = theme || '—';
-    const qEl = $('question');      if (qEl) qEl.textContent = question || '';
-    const i1  = $('indice1');       if (i1) i1.textContent = '';
-    const i2  = $('indice2');       if (i2) i2.textContent = '';
-    const rp  = $('reponse');       if (rp) rp.textContent = '';
-
-    const inp = document.getElementById('quiz-reponse-input');
-    if (inp) { inp.value = ''; inp.disabled = false; }
-
-    const btnEnv = document.getElementById('btn-valider-reponse');
-    if (btnEnv) {
-        btnEnv.disabled      = false;
-        btnEnv._sent         = false;
-        btnEnv.style.opacity = '';
-        btnEnv.textContent   = '✅ Envoyer';
-    }
-
-    const btnAff = document.getElementById('btn-afficher-reponse');
-    if (btnAff) {
-        btnAff.disabled        = true;
-        btnAff.style.opacity   = '0.4';
-        btnAff.style.cursor    = 'not-allowed';
-        btnAff.title           = 'En attente des réponses de tous les joueurs…';
-        btnAff.style.animation = '';
-    }
-
-    const b1 = $('btn-indice1'); if (b1) b1.disabled = !hasIndice1;
-    const b2 = $('btn-indice2'); if (b2) b2.disabled = !hasIndice2;
-
-    const vEl = document.getElementById('verif-resultat');
-    if (vEl) vEl.hidden = true;
-
-    _demarrerTimerVisuel(ts);
-    setTimeout(() => _afficherReponsesInvitesSurHote('invites-reponses'), 500);
-
-    // Désactiver btn-next pendant la question (réactivé sur QUIZ_CORRECTION)
-    const btnNxt = $('btn-next');
-    if (btnNxt) {
-        btnNxt.disabled      = true;
-        btnNxt.style.opacity = '0.35';
-        btnNxt.title         = 'Révélez la réponse avant de passer à la suivante';
-        btnNxt.style.animation = '';
-    }
-    console.log('[QUIZ] ❓ Q' + posees + '/' + total + ': ' + question);
-}
-
-function _onQuizCorrection(payload) {
-    _arreterTimerVisuel();
-    const { reponse, posees, total } = payload;
-    const repEl = $('reponse');
-    if (repEl && reponse) repEl.textContent = reponse;
-
-    // Stocker la bonne réponse dans _questionEnCours pour quiz_hote.js
-    // (_quizGetReponseCorrecte() l'utilise pour évaluer la réponse hôte)
-    if (_questionEnCours) {
-        _questionEnCours.reponse         = reponse;
-        _questionEnCours['Réponse']      = reponse;
-    }
-
-    _publierScores();
-    if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
-    console.log('[QUIZ] ✅ Correction Q' + posees + '/' + total + ': "' + reponse + '"');
-
-    // Note : btn-next et btn-afficher sont gérés par QUIZ_CAN_NEXT
-}
-
-function _onQuizEnd({ scores, total }) {
-    _arreterTimerVisuel();
-    _publierEtat('fin');
-    if (scores) {
-        GameState.scores = GameState.scores || {};
-        Object.assign(GameState.scores, scores);
-        _publierScores();
-    }
-    if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
-    console.log('[QUIZ] 🏁 Fin — ' + total + ' questions');
-}
-
-// ======================================================
-// ⏱ TIMER VISUEL (affichage seulement — timer réel = serveur)
-// ======================================================
-function _demarrerTimerVisuel(tsDebut) {
-    _arreterTimerVisuel();
-    _tempsRestant = 60;
-    const t = $('timer');
-    if (!t) return;
-    t.textContent = '1:00';
-    t.classList.remove('clignote');
-
-    if (tsDebut) {
-        const ecoulees = Math.floor((Date.now() - tsDebut) / 1000);
-        _tempsRestant = Math.max(0, 60 - ecoulees);
-    }
-
-    _timerLocal = setInterval(() => {
-        _tempsRestant--;
-        if (t) {
-            const m = Math.floor(_tempsRestant / 60);
-            const s = (_tempsRestant % 60).toString().padStart(2, '0');
-            t.textContent = m + ':' + s;
-            if (_tempsRestant <= 5 && _tempsRestant > 0) t.classList.add('clignote');
-            if (_tempsRestant <= 0) {
-                _arreterTimerVisuel();
-                t.textContent = '0:00';
-                t.classList.remove('clignote');
-            }
+        // Utiliser fetch + eval pour éviter les problèmes d'import dynamique en prod
+        const response = await fetch('/js/modules/quiz_hote.js?v=' + Date.now());
+        if (!response.ok) {
+            console.warn('[QUIZ] ⚠️ quiz_hote.js indisponible (HTTP ' + response.status + ')');
+            return false;
         }
-    }, 1000);
-}
 
-function _arreterTimerVisuel() {
-    if (_timerLocal) { clearInterval(_timerLocal); _timerLocal = null; }
-}
+        // Alternative : importer en tant que module
+        const m = await import('../modules/quiz_hote.js?v=' + Date.now());
 
-// ======================================================
-// 📱 PANNEAU RÉPONSES INVITÉS (injecté une seule fois)
-// ======================================================
-function injecterPanneauInvites() {
-    if (document.getElementById('panneau-invites-quiz')) return;
-    const section = $('quiz');
-    if (!section) return;
-
-    const panneau = document.createElement('div');
-    panneau.id = 'panneau-invites-quiz';
-    panneau.style.cssText = 'margin-top:20px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:14px;padding:14px 16px;';
-    panneau.innerHTML = '<div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(0,212,255,.7);margin-bottom:10px;font-weight:700;">📱 Réponses des joueurs</div>'
-        + '<div id="invites-reponses"><p style="font-size:.8rem;color:rgba(255,255,255,.4);text-align:center;">Aucune réponse pour l\'instant</p></div>';
-    section.appendChild(panneau);
-
-    if (!document.getElementById('style-invites')) {
-        const s = document.createElement('style');
-        s.id = 'style-invites';
-        s.textContent = '@keyframes btnPulse{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}';
-        document.head.appendChild(s);
-    }
-
-    setInterval(() => _afficherReponsesInvitesSurHote('invites-reponses'), 2000);
-}
-
-// ============================================================
-// /js/jeux/quiz.js — v3.1 WS-server-driven (FIXED)
-// ============================================================
-// Le serveur (server/games/quiz.js) est l'unique séquenceur.
-// Ce fichier gère uniquement l'UI hôte :
-//   1. fetch questions.json + envoi quiz:load au serveur
-//   2. Mise à jour DOM sur réception QUIZ_* depuis le serveur
-//   3. Boutons hôte → commandes WS (quiz:next_question, quiz:reveal…)
-//   4. Panneau réponses invités
-//
-// IDs HTML utilisés (index.html) :
-//   timer, theme-display, question, indice1, indice2, reponse
-//   btn-next, btn-next-arrow, btn-prev (désactivé)
-//   btn-indice1, btn-indice2
-//   btn-afficher-reponse, btn-valider-reponse, quiz-reponse-input
-//   verif-resultat
-// ============================================================
-
-import { $ } from '../core/dom.js';
-import { GameState } from '../core/state.js';
-import { ajouterPoints } from '../modules/scoreboard.js';
-
-// ── État local (UI uniquement — plus de séquence locale) ──
-let _timerLocal     = null;
-let _tempsRestant   = 60;
-let _questionEnCours = null;  // payload de la dernière QUIZ_QUESTION reçue
-
-// ── Stubs module hôte (remplacés par chargerModuleHote) ──
-let _publierEtat                    = () => {};
-let _publierScores                  = () => {};
-let _afficherReponsesInvitesSurHote = () => {};
-let _viderReponses                  = () => {};
-let _declencherAfficherReponse      = () => {};
-let _envoyerReponseHote             = () => {};
-
-// ======================================================
-// 📡 CHARGEMENT DU MODULE HÔTE
-// ======================================================
-async function chargerModuleHote() {
-    try {
-        const m = await import('../modules/quiz_hote.js');
         _publierEtat                    = m.publierEtat;
         _publierScores                  = m.publierScores;
         _afficherReponsesInvitesSurHote = m.afficherReponsesInvitesSurHote;
@@ -254,14 +43,17 @@ async function chargerModuleHote() {
         _declencherAfficherReponse      = m.declencherAfficherReponse || (() => {});
         _envoyerReponseHote             = m.envoyerReponseHote        || (() => {});
 
-        window._quizEnvoyerReponseHote   = rep => _envoyerReponseHote(rep);
-        window._quizDeclencherAfficher   = ()  => _declencherAfficherReponse();
-        window._quizDeclencherValidation = ()  => _declencherAfficherReponse();
+        if (typeof window !== 'undefined') {
+            window._quizEnvoyerReponseHote   = rep => _envoyerReponseHote(rep);
+            window._quizDeclencherAfficher   = ()  => _declencherAfficherReponse();
+            window._quizDeclencherValidation = ()  => _declencherAfficherReponse();
+        }
 
         console.log('[QUIZ] ✅ Module hôte chargé');
         return true;
     } catch (e) {
         console.warn('[QUIZ] ⚠️ quiz_hote.js indisponible :', e.message);
+        console.error('[QUIZ] 📍 Stack:', e.stack);
         return false;
     }
 }
@@ -273,16 +65,33 @@ async function chargerModuleHote() {
 function _onQuizQuestion(payload) {
     const { question, theme, posees, total, ts, hasIndice1, hasIndice2 } = payload;
     _questionEnCours = payload;
-    _viderReponses();
 
-    const tEl = $('theme-display'); if (tEl) tEl.textContent = theme || '—';
-    const qEl = $('question');      if (qEl) qEl.textContent = question || '';
-    const i1  = $('indice1');       if (i1) i1.textContent = '';
-    const i2  = $('indice2');       if (i2) i2.textContent = '';
-    const rp  = $('reponse');       if (rp) rp.textContent = '';
+    try {
+        _viderReponses();
+    } catch (err) {
+        console.warn('[QUIZ] ⚠️ Erreur _viderReponses:', err.message);
+    }
+
+    const tEl = $('theme-display');
+    if (tEl) tEl.textContent = theme || '—';
+
+    const qEl = $('question');
+    if (qEl) qEl.textContent = question || '';
+
+    const i1  = $('indice1');
+    if (i1) i1.textContent = '';
+
+    const i2  = $('indice2');
+    if (i2) i2.textContent = '';
+
+    const rp  = $('reponse');
+    if (rp) rp.textContent = '';
 
     const inp = document.getElementById('quiz-reponse-input');
-    if (inp) { inp.value = ''; inp.disabled = false; }
+    if (inp) {
+        inp.value = '';
+        inp.disabled = false;
+    }
 
     const btnEnv = document.getElementById('btn-valider-reponse');
     if (btnEnv) {
@@ -301,16 +110,24 @@ function _onQuizQuestion(payload) {
         btnAff.style.animation = '';
     }
 
-    const b1 = $('btn-indice1'); if (b1) b1.disabled = !hasIndice1;
-    const b2 = $('btn-indice2'); if (b2) b2.disabled = !hasIndice2;
+    const b1 = $('btn-indice1');
+    if (b1) b1.disabled = !hasIndice1;
+
+    const b2 = $('btn-indice2');
+    if (b2) b2.disabled = !hasIndice2;
 
     const vEl = document.getElementById('verif-resultat');
     if (vEl) vEl.hidden = true;
 
     _demarrerTimerVisuel(ts);
+
     setTimeout(() => {
-        if (typeof _afficherReponsesInvitesSurHote === 'function') {
-            _afficherReponsesInvitesSurHote('invites-reponses');
+        try {
+            if (typeof _afficherReponsesInvitesSurHote === 'function') {
+                _afficherReponsesInvitesSurHote('invites-reponses');
+            }
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur affichage panneau:', err.message);
         }
     }, 500);
 
@@ -332,28 +149,55 @@ function _onQuizCorrection(payload) {
     if (repEl && reponse) repEl.textContent = reponse;
 
     // Stocker la bonne réponse dans _questionEnCours pour quiz_hote.js
-    // (_quizGetReponseCorrecte() l'utilise pour évaluer la réponse hôte)
     if (_questionEnCours) {
         _questionEnCours.reponse         = reponse;
         _questionEnCours['Réponse']      = reponse;
     }
 
-    _publierScores();
-    if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
-    console.log('[QUIZ] ✅ Correction Q' + posees + '/' + total + ': "' + reponse + '"');
+    try {
+        _publierScores();
+    } catch (err) {
+        console.warn('[QUIZ] ⚠️ Erreur publierScores:', err.message);
+    }
 
-    // Note : btn-next et btn-afficher sont gérés par QUIZ_CAN_NEXT
+    if (typeof window.afficherScoreboard === 'function') {
+        try {
+            window.afficherScoreboard();
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur afficherScoreboard:', err.message);
+        }
+    }
+
+    console.log('[QUIZ] ✅ Correction Q' + posees + '/' + total + ': "' + reponse + '"');
 }
 
 function _onQuizEnd({ scores, total }) {
     _arreterTimerVisuel();
-    _publierEtat('fin');
+
+    try {
+        _publierEtat('fin');
+    } catch (err) {
+        console.warn('[QUIZ] ⚠️ Erreur publierEtat:', err.message);
+    }
+
     if (scores) {
         GameState.scores = GameState.scores || {};
         Object.assign(GameState.scores, scores);
-        _publierScores();
+        try {
+            _publierScores();
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur publierScores fin:', err.message);
+        }
     }
-    if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
+
+    if (typeof window.afficherScoreboard === 'function') {
+        try {
+            window.afficherScoreboard();
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur afficherScoreboard fin:', err.message);
+        }
+    }
+
     console.log('[QUIZ] 🏁 Fin — ' + total + ' questions');
 }
 
@@ -390,7 +234,10 @@ function _demarrerTimerVisuel(tsDebut) {
 }
 
 function _arreterTimerVisuel() {
-    if (_timerLocal) { clearInterval(_timerLocal); _timerLocal = null; }
+    if (_timerLocal) {
+        clearInterval(_timerLocal);
+        _timerLocal = null;
+    }
 }
 
 // ======================================================
@@ -416,8 +263,12 @@ function injecterPanneauInvites() {
     }
 
     setInterval(() => {
-        if (typeof _afficherReponsesInvitesSurHote === 'function') {
-            _afficherReponsesInvitesSurHote('invites-reponses');
+        try {
+            if (typeof _afficherReponsesInvitesSurHote === 'function') {
+                _afficherReponsesInvitesSurHote('invites-reponses');
+            }
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur refresh panneau:', err.message);
         }
     }, 2000);
 }
@@ -427,45 +278,81 @@ function injecterPanneauInvites() {
 // ======================================================
 function attacherListenersQuiz(socket) {
 
-    // 🚀 BOUTON START — masqué (le démarrage est automatique après quiz:load)
+    // 🚀 BOUTON START — masqué
     const btnStart = document.getElementById('btn-start-solo');
     if (btnStart) btnStart.style.display = 'none';
 
     // 👉 Question suivante
     ['btn-next', 'btn-next-arrow'].forEach(id => {
         const el = $(id);
-        if (el) el.onclick = () =>
-            socket.send('HOST_ACTION', { action: 'quiz:next_question', data: {} });
+        if (el) {
+            el.onclick = () => {
+                try {
+                    socket.send('HOST_ACTION', { action: 'quiz:next_question', data: {} });
+                } catch (err) {
+                    console.error('[QUIZ] ⚠️ Erreur send next_question:', err.message);
+                }
+            };
+        }
     });
 
     // 👉 Bouton précédent désactivé
     const prev = $('btn-prev');
-    if (prev) { prev.disabled = true; prev.style.opacity = '0.3'; }
+    if (prev) {
+        prev.disabled = true;
+        prev.style.opacity = '0.3';
+    }
 
     // 👉 Indices
     const ind1 = $('btn-indice1');
-    if (ind1) ind1.onclick = () =>
-        socket.send('HOST_ACTION', { action: 'quiz:reveal_indice', data: { num: 1 } });
+    if (ind1) {
+        ind1.onclick = () => {
+            try {
+                socket.send('HOST_ACTION', { action: 'quiz:reveal_indice', data: { num: 1 } });
+            } catch (err) {
+                console.error('[QUIZ] ⚠️ Erreur send indice1:', err.message);
+            }
+        };
+    }
 
     const ind2 = $('btn-indice2');
-    if (ind2) ind2.onclick = () =>
-        socket.send('HOST_ACTION', { action: 'quiz:reveal_indice', data: { num: 2 } });
+    if (ind2) {
+        ind2.onclick = () => {
+            try {
+                socket.send('HOST_ACTION', { action: 'quiz:reveal_indice', data: { num: 2 } });
+            } catch (err) {
+                console.error('[QUIZ] ⚠️ Erreur send indice2:', err.message);
+            }
+        };
+    }
 
     // 👉 Révélation
     const btnAff = document.getElementById('btn-afficher-reponse');
-    if (btnAff) btnAff.onclick = () => _declencherAfficherReponse();
+    if (btnAff) {
+        btnAff.onclick = () => {
+            try {
+                _declencherAfficherReponse();
+            } catch (err) {
+                console.error('[QUIZ] ⚠️ Erreur declencherAfficherReponse:', err.message);
+            }
+        };
+    }
 
     // 👉 Réponse hôte (gérée en local — pas de PLAYER_ACTION WS)
     const btnEnv = document.getElementById('btn-valider-reponse');
     if (btnEnv) {
         btnEnv.onclick = () => {
-            if (btnEnv._sent) return;
-            const inp = document.getElementById('quiz-reponse-input');
-            const rep = inp ? inp.value.trim() : '';
-            if (!rep) return;
-            // Stocker pour que quiz_hote.js puisse évaluer lors de QUIZ_CORRECTION
-            window._quizReponseSaisieHote = rep;
-            _envoyerReponseHote(rep);
+            try {
+                if (btnEnv._sent) return;
+                const inp = document.getElementById('quiz-reponse-input');
+                const rep = inp ? inp.value.trim() : '';
+                if (!rep) return;
+                // Stocker pour que quiz_hote.js puisse évaluer
+                window._quizReponseSaisieHote = rep;
+                _envoyerReponseHote(rep);
+            } catch (err) {
+                console.error('[QUIZ] ⚠️ Erreur envoi réponse hôte:', err.message);
+            }
         };
     }
 }
@@ -477,63 +364,99 @@ function attacherListenersQuiz(socket) {
 function abonnerEvenementsServeur(socket) {
 
     socket.on('QUIZ_READY', ({ total, message }) => {
-        console.log('[QUIZ] 📚 ' + (message || total + ' questions chargées'));
-        // QUIZ_READY suivi du lancement auto — btn-start-solo n'est plus nécessaire
-        const btnStart = document.getElementById('btn-start-solo');
-        if (btnStart) btnStart.style.display = 'none';
+        try {
+            console.log('[QUIZ] 📚 ' + (message || total + ' questions chargées'));
+            const btnStart = document.getElementById('btn-start-solo');
+            if (btnStart) btnStart.style.display = 'none';
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur QUIZ_READY:', err.message);
+        }
     });
 
-    socket.on('QUIZ_QUESTION',   payload => _onQuizQuestion(payload));
-    socket.on('QUIZ_CORRECTION', payload => _onQuizCorrection(payload));
-    socket.on('QUIZ_END',        payload => _onQuizEnd(payload));
+    socket.on('QUIZ_QUESTION',   payload => {
+        try {
+            _onQuizQuestion(payload);
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur QUIZ_QUESTION:', err.message);
+        }
+    });
+
+    socket.on('QUIZ_CORRECTION', payload => {
+        try {
+            _onQuizCorrection(payload);
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur QUIZ_CORRECTION:', err.message);
+        }
+    });
+
+    socket.on('QUIZ_END', payload => {
+        try {
+            _onQuizEnd(payload);
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur QUIZ_END:', err.message);
+        }
+    });
 
     socket.on('QUIZ_INDICE', ({ num, texte }) => {
-        const el = $('indice' + num);
-        if (el) el.textContent = texte;
+        try {
+            const el = $('indice' + num);
+            if (el) el.textContent = texte;
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur QUIZ_INDICE:', err.message);
+        }
     });
 
-    // Timer écoulé côté serveur → activer btn-afficher-reponse
-    // NOTE: QUIZ_TIMER_EXPIRED est géré côté quiz_hote.js pour éviter les doublons
+    // Timer écoulé côté serveur
     socket.on('QUIZ_TIMER_EXPIRED', ({ nbReponses, nbJoueurs }) => {
-        console.log('[QUIZ] ⏱ Timer expiré — nbReponses=' + nbReponses + ', nbJoueurs=' + nbJoueurs);
-        _activerBoutonAfficherReponse();
+        try {
+            console.log('[QUIZ] ⏱ Timer expiré — nbReponses=' + nbReponses + ', nbJoueurs=' + nbJoueurs);
+            _activerBoutonAfficherReponse();
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur QUIZ_TIMER_EXPIRED:', err.message);
+        }
     });
 
     socket.on('SCORES_UPDATE', ({ scores }) => {
-        if (scores) {
-            GameState.scores = GameState.scores || {};
-            Object.assign(GameState.scores, scores);
+        try {
+            if (scores) {
+                GameState.scores = GameState.scores || {};
+                Object.assign(GameState.scores, scores);
+            }
+            _publierScores();
+            if (typeof window.afficherScoreboard === 'function')
+                window.afficherScoreboard();
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur SCORES_UPDATE:', err.message);
         }
-        _publierScores();
-        if (typeof window.afficherScoreboard === 'function')
-            window.afficherScoreboard();
     });
 
-    // Serveur confirme que la révélation est faite → activer btn-next
+    // Serveur confirme que la révélation est faite
     socket.on('QUIZ_CAN_NEXT', ({ posees, total, remaining }) => {
-        console.log('[QUIZ] ✅ QUIZ_CAN_NEXT — Q' + posees + '/' + total + ' — remaining:' + remaining);
+        try {
+            console.log('[QUIZ] ✅ QUIZ_CAN_NEXT — Q' + posees + '/' + total + ' — remaining:' + remaining);
 
-        const btnNext = $('btn-next');
-        if (btnNext) {
-            btnNext.disabled       = false;
-            btnNext.style.opacity  = '1';
-            btnNext.style.cursor   = 'pointer';
-            btnNext.title          = remaining > 0
-                ? 'Passer à la question suivante (' + remaining + ' restante' + (remaining > 1 ? 's' : '') + ')'
-                : 'Terminer le quiz';
-            // Petit pulse pour signaler que c'est cliquable
-            btnNext.style.animation = 'btnPulse .4s ease';
-            setTimeout(() => { if (btnNext) btnNext.style.animation = ''; }, 450);
-        }
+            const btnNext = $('btn-next');
+            if (btnNext) {
+                btnNext.disabled       = false;
+                btnNext.style.opacity  = '1';
+                btnNext.style.cursor   = 'pointer';
+                btnNext.title          = remaining > 0
+                    ? 'Passer à la question suivante (' + remaining + ' restante' + (remaining > 1 ? 's' : '') + ')'
+                    : 'Terminer le quiz';
+                btnNext.style.animation = 'btnPulse .4s ease';
+                setTimeout(() => { if (btnNext) btnNext.style.animation = ''; }, 450);
+            }
 
-        // Désactiver btn-afficher (révélation déjà faite)
-        const btnAff = document.getElementById('btn-afficher-reponse');
-        if (btnAff) {
-            btnAff.disabled        = true;
-            btnAff.style.opacity   = '0.3';
-            btnAff.style.cursor    = 'not-allowed';
-            btnAff.style.animation = '';
-            btnAff.title           = 'Réponse révélée — cliquez sur Question suivante';
+            const btnAff = document.getElementById('btn-afficher-reponse');
+            if (btnAff) {
+                btnAff.disabled        = true;
+                btnAff.style.opacity   = '0.3';
+                btnAff.style.cursor    = 'not-allowed';
+                btnAff.style.animation = '';
+                btnAff.title           = 'Réponse révélée — cliquez sur Question suivante';
+            }
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur QUIZ_CAN_NEXT:', err.message);
         }
     });
 }
@@ -547,9 +470,9 @@ function _activerBoutonAfficherReponse() {
     btn.style.cursor    = 'pointer';
     btn.style.animation = 'btnPulse .6s ease infinite alternate';
     btn.title           = '⏱ Timer écoulé — Cliquez pour révéler la réponse';
-    // Injecter l'animation si absente
     if (!document.getElementById('style-btn-pulse')) {
-        const s = document.createElement('style'); s.id = 'style-btn-pulse';
+        const s = document.createElement('style');
+        s.id = 'style-btn-pulse';
         s.textContent = '@keyframes btnPulse{0%{transform:scale(1)}100%{transform:scale(1.05)}}';
         document.head.appendChild(s);
     }
@@ -560,38 +483,45 @@ function _activerBoutonAfficherReponse() {
 // 📥 INITIALISATION PRINCIPALE
 // ======================================================
 async function initialiserQuiz() {
-    // Récupérer le socket AVANT tout await — évite la race condition où
-    // QUIZ_READY arrive avant que les listeners soient enregistrés.
     const socket = window.jeuSocket;
     if (!socket) {
         console.error('[QUIZ] ❌ window.jeuSocket introuvable');
         return;
     }
 
-    // S'abonner aux événements serveur EN PREMIER — avant tout envoi réseau.
-    // Si quiz:load → QUIZ_READY arrive pendant le await chargerModuleHote(),
-    // les listeners sont déjà en place.
+    // S'abonner aux événements serveur EN PREMIER
     abonnerEvenementsServeur(socket);
     attacherListenersQuiz(socket);
 
-    // Désactiver btn-next par défaut — sera réactivé sur QUIZ_READY
+    // Désactiver btn-next par défaut
     const btnNext = $('btn-next');
-    if (btnNext) { btnNext.disabled = true; btnNext.style.opacity = '0.4'; }
+    if (btnNext) {
+        btnNext.disabled = true;
+        btnNext.style.opacity = '0.4';
+    }
 
     // Charger le module hôte en parallèle (async)
     const hoteActif = await chargerModuleHote();
 
     if (hoteActif) {
-        _publierEtat('en_cours');
-        _publierScores();
+        try {
+            _publierEtat('en_cours');
+            _publierScores();
+        } catch (err) {
+            console.warn('[QUIZ] ⚠️ Erreur init scores:', err.message);
+        }
     }
 
     // Charger questions.json et les envoyer au serveur
     try {
-        const res       = await fetch('data/questions.json');
+        // Fetch relatif à /public (racine)
+        const res = await fetch('/data/questions.json');
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
         const questions = await res.json();
 
-        // Mélanger côté client (ordre unique par partie)
+        // Mélanger côté client
         const ordre = [...Array(questions.length).keys()];
         for (let i = ordre.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -599,15 +529,15 @@ async function initialiserQuiz() {
         }
         const qMelangees = ordre.map(i => questions[i]);
 
-        // Envoyer au serveur — séquence entièrement gérée côté serveur
+        // Envoyer au serveur
         socket.send('HOST_ACTION', { action: 'quiz:load', data: { questions: qMelangees } });
         console.log('[QUIZ] 📡 ' + qMelangees.length + ' questions envoyées au serveur');
 
         if (hoteActif) injecterPanneauInvites();
 
     } catch (err) {
-        console.error('[QUIZ] ❌ questions.json :', err);
-        alert('Impossible de charger les questions.');
+        console.error('[QUIZ] ❌ questions.json :', err.message);
+        alert('Impossible de charger les questions. Vérifiez la connexion.');
     }
 }
 
@@ -621,20 +551,31 @@ window._quizGetReponseCorrecte = function () {
     return _questionEnCours['Réponse'] || _questionEnCours.reponse || '';
 };
 
-// Accès à la réponse hôte saisie (pour quiz_hote.js)
 window._quizGetReponseHoteSaisie = function () {
     return window._quizReponseSaisieHote || '';
 };
 
 window._quizNbJoueursInvites = function () {
-    const snap = window.HostSession?._snapshot;
-    if (snap && snap.joueurs && snap.joueurs.length > 0) return snap.joueurs.length;
-    return Math.max(0, (GameState.joueurs || []).length - 1);
+    try {
+        const snap = window.HostSession?._snapshot;
+        if (snap && snap.joueurs && snap.joueurs.length > 0) return snap.joueurs.length;
+        return Math.max(0, (GameState.joueurs || []).length - 1);
+    } catch (err) {
+        console.warn('[QUIZ] ⚠️ Erreur _quizNbJoueursInvites:', err.message);
+        return 0;
+    }
 };
 
 window._quizValiderAvecPoints = function (correct, points) {
-    if (correct && points > 0) {
-        const p = GameState.mode === 'solo' ? GameState.joueurs[0] : GameState.equipes?.[0]?.nom;
-        if (p) { ajouterPoints(p, points); _publierScores(); }
+    try {
+        if (correct && points > 0) {
+            const p = GameState.mode === 'solo' ? GameState.joueurs[0] : GameState.equipes?.[0]?.nom;
+            if (p) {
+                ajouterPoints(p, points);
+                _publierScores();
+            }
+        }
+    } catch (err) {
+        console.warn('[QUIZ] ⚠️ Erreur _quizValiderAvecPoints:', err.message);
     }
 };

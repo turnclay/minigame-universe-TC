@@ -308,7 +308,7 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
             broadcastToHost(wss, partieId, 'QUIZ_RESPONSE_IN', {
                 pseudo,
                 nbReponses,
-                nbJoueurs: nbInvites,
+                nbJoueurs: nbJoueursTotal,
                 allAnswered,
             });
 
