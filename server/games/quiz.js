@@ -1,5 +1,5 @@
 // ======================================================
-// 🎮 server/games/quiz.js — v1.1 (FIXED — synchro WS)
+// 🎮 server/games/quiz.js — v2.0 (FIXED — synchro WS + host answers)
 // ======================================================
 
 import store from '../store.js';
@@ -113,8 +113,6 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
                 message : `${questions.length} question${questions.length > 1 ? 's' : ''} chargée${questions.length > 1 ? 's' : ''} !`,
             });
 
-            console.log(`[QUIZ] 📚 ${questions.length} questions chargées pour ${partieId}`);
-
             s._autoStartPending = true;
             setTimeout(() => {
                 const sNow = getSession(partieId);
@@ -164,7 +162,6 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
 
             broadcastToGame(wss, partieId, 'QUIZ_QUESTION', _questionPayload(s, q));
 
-            // Timers
             if (s.timerHandle)   clearTimeout(s.timerHandle);
             if (s.timerIndice1)  clearTimeout(s.timerIndice1);
             if (s.timerIndice2)  clearTimeout(s.timerIndice2);
@@ -193,7 +190,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
                 broadcastToHost(wss, partieId, 'QUIZ_TIMER_EXPIRED', {
                     partieId,
                     nbReponses : Object.keys(s.reponses).length,
-                    nbJoueurs  : (store.getPartie(partieId)?.joueurs || []).length + 1,  // +1 pour l'hôte
+                    nbJoueurs  : (store.getPartie(partieId)?.joueurs || []).length + 1,
                 });
 
                 s.timerReveal = setTimeout(() => {
@@ -215,16 +212,17 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
                 return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE', message: 'Pas de question en cours.' });
             }
 
-            // Add host's response if provided
             const partie = store.getPartie(partieId);
             const hostPseudo = partie?.hostPseudo;
-            if (hostPseudo && data.reponseHote) {
+
+            if (hostPseudo && (data.reponseHote || data.texte || data.reponse)) {
                 const ts = data.tsHote || Date.now();
-s.reponses[hostPseudo] = {
-    texte: (data.reponseHote || data.texte || data.reponse || '').trim(),
-    ts,
-    indicesVus: 2,
-};
+                s.reponses[hostPseudo] = {
+                    texte: (data.reponseHote || data.texte || data.reponse || '').trim(),
+                    ts,
+                    indicesVus: 2,
+                };
+            }
 
             _declencherRevelation(wss, partieId, s, helpers, 'host');
             break;
@@ -311,21 +309,18 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
 
             send(ws, 'QUIZ_ANSWER_ACK', { status: 'ok', texte });
 
+            const partie = store.getPartie(partieId);
             const nbInvites = (partie?.joueurs || []).length;
             const hostPseudo = partie?.hostPseudo;
             const totalAttendus = hostPseudo ? nbInvites + 1 : nbInvites;
+
             const nbReponses = Object.keys(s.reponses).length;
             const allAnswered = nbReponses >= totalAttendus;
-
-            // nbJoueurs envoyé = invités seulement.
-            // Le client ajoute +1 pour l'hôte dans _nbJoueursTotal().
-            const nbReponses = Object.keys(s.reponses).length;
-            const allAnswered = nbReponses >= nbInvites; // invités ont-ils tous répondu ?
 
             broadcastToHost(wss, partieId, 'QUIZ_RESPONSE_IN', {
                 pseudo,
                 nbReponses,
-                nbJoueurs: nbInvites, // invités seulement
+                nbJoueurs: totalAttendus,
                 allAnswered,
             });
 
