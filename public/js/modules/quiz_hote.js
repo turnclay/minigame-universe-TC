@@ -306,10 +306,20 @@ export function viderReponses() {
     _validationEnCours   = false;
     _reponseHoteEnvoyee  = false;
     window._quizReponseSaisieHote = '';
+
     const btnEnv = document.getElementById('btn-valider-reponse');
     const inp    = document.getElementById('quiz-reponse-input');
-    if (btnEnv) { btnEnv.disabled = false; btnEnv._sent = false; btnEnv.style.opacity = ''; btnEnv.textContent = '✅ Envoyer'; }
-    if (inp)    { inp.value = ''; inp.disabled = false; }
+
+    if (btnEnv) {
+        btnEnv.disabled = false;
+        btnEnv._sent = false;
+        btnEnv.style.opacity = '';
+        btnEnv.textContent = '✅ Envoyer';
+    }
+    if (inp) {
+        inp.value = '';
+        inp.disabled = false;
+    }
 }
 
 export function declencherAfficherReponse() {
@@ -318,31 +328,61 @@ export function declencherAfficherReponse() {
 
     const btnEnvoyer  = document.getElementById('btn-valider-reponse');
     const btnAfficher = document.getElementById('btn-afficher-reponse');
+
     if (btnEnvoyer)  { btnEnvoyer.disabled  = true; btnEnvoyer.style.opacity  = '0.45'; }
     if (btnAfficher) { btnAfficher.disabled = true; btnAfficher.style.opacity = '0.45'; btnAfficher.style.animation = ''; }
 
     if (_wsOk()) {
-        const data     = {};
-        const repHote  = (window._quizReponseSaisieHote || '').trim();
-        if (repHote) { data.reponseHote = repHote; data.tsHote = Date.now(); }
+        const data = {};
+        const repHote = (window._quizReponseSaisieHote || '').trim();
+
+        if (repHote) {
+            data.reponseHote = repHote;
+            data.tsHote = Date.now();
+        }
+
         _ws().send('HOST_ACTION', { action: 'quiz:reveal', data });
     } else {
         _validationEnCours = false;
     }
 }
 
+// 🔥 VERSION CORRIGÉE : ENVOIE ENFIN LA RÉPONSE AU SERVEUR
 export function envoyerReponseHote(rep) {
     if (!rep || _reponseHoteEnvoyee) return;
     _reponseHoteEnvoyee = true;
 
     const pseudo = _pseudoHote();
-    _reponsesRecues[pseudo] = { reponse: rep, ts: Date.now() };
-    _afficherPanneauAttenteWS();
+    const ts = Date.now();
+
+    // 🔥 ENVOI AU SERVEUR (manquait dans ta version)
+    if (_wsOk()) {
+        _ws().send("PLAYER_ACTION", {
+            action: "quiz:answer",
+            data: {
+                pseudo,
+                reponse: rep,
+                ts
+            }
+        });
+        console.log("[QUIZ] 📨 Réponse hôte envoyée au serveur :", rep);
+    } else {
+        console.warn("[QUIZ] ⚠️ Pas de WebSocket pour envoyer la réponse hôte");
+    }
+
+    // Mise à jour locale (UI)
+    _reponsesRecues[pseudo] = { reponse: rep, ts };
 
     const btnEnv = document.getElementById('btn-valider-reponse');
     const inp    = document.getElementById('quiz-reponse-input');
-    if (btnEnv) { btnEnv.disabled = true; btnEnv.style.opacity = '0.45'; btnEnv.textContent = '✅ Envoyé'; btnEnv._sent = true; }
-    if (inp)    { inp.disabled = true; }
+
+    if (btnEnv) {
+        btnEnv.disabled = true;
+        btnEnv.style.opacity = '0.45';
+        btnEnv.textContent = '✅ Envoyé';
+        btnEnv._sent = true;
+    }
+    if (inp) inp.disabled = true;
 
     // Vérifier si le bouton Afficher doit s'activer
     _recalculerBoutonAfficher();
@@ -358,12 +398,16 @@ export function nettoyerPartieInvites() {
     _reponseHoteEnvoyee  = false;
     _wsListenersActifs   = false;
     window._quizReponseSaisieHote = '';
+
     const pid = _pid();
     if (pid) {
-        ['partie_question_','partie_reponses_','partie_validation_','partie_scores_',
-         'partie_premier_correct_','partie_nav_','partie_revelation_','partie_etat_']
-            .forEach(k => localStorage.removeItem(k + pid));
+        [
+            'partie_question_','partie_reponses_','partie_validation_','partie_scores_',
+            'partie_premier_correct_','partie_nav_','partie_revelation_','partie_etat_'
+        ].forEach(k => localStorage.removeItem(k + pid));
     }
+
     publierEtat('fin');
+
     if (_wsOk()) _ws().send('HOST_END_GAME', {});
 }
