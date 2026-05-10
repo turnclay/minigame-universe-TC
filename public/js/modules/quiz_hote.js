@@ -67,69 +67,71 @@ function _initWsListeners() {
     _wsListenersActifs = true;
 
     // Initialiser _nbJoueursWS depuis le snapshot existant
-    // (évite que _nbJoueursTotal() retourne 1 avant le 1er QUIZ_RESPONSE_IN)
     const snap = window.HostSession?._snapshot;
     if (snap?.joueurs?.length > 0) {
         _nbJoueursWS = snap.joueurs.length;
         console.log('[QUIZ_HOTE] 👥 nbJoueursWS initialisé depuis snapshot:', _nbJoueursWS);
     }
 
+    // 🔥 AJOUT CRUCIAL : reset complet à chaque nouvelle question
+    s.on('QUIZ_QUESTION', () => {
+        _reponsesRecues      = {};
+        _validationEnCours   = false;
+        _reponseHoteEnvoyee  = false;
+
+        // Reset de la réponse locale de l’hôte
+        if (typeof window !== 'undefined') window._quizReponseSaisieHote = '';
+
+        console.log('[QUIZ_HOTE] 🔄 Nouvelle question — reset des réponses');
+        _afficherPanneauAttenteWS();
+    });
+
     s.on('QUIZ_RESPONSE_IN', ({ pseudo, nbReponses, nbJoueurs, allAnswered }) => {
-        // Filtrer les pseudos invalides
         if (!pseudo || pseudo === 'null' || pseudo === 'undefined') return;
 
-        // Enregistrer la réponse de l'invité dans le panneau local
         if (!_reponsesRecues[pseudo]) {
             _reponsesRecues[pseudo] = { reponse: '…', ts: Date.now() };
         }
-        // Mettre à jour le nb d'invités depuis le serveur
+
         if (nbJoueurs !== undefined) _nbJoueursWS = nbJoueurs;
 
         _afficherPanneauAttenteWS();
 
-        // Recalculer avec la réponse hôte locale aussi
-        const nbTotal    = _nbJoueursTotal();           // invités + 1 hôte
-        const nbReponses = Object.keys(_reponsesRecues).length; // invités + hôte si déjà répondu
-        const tousOntRepondu = nbReponses >= nbTotal;
+        const nbTotal    = _nbJoueursTotal();
+        const nbRecus    = Object.keys(_reponsesRecues).length;
+        const tousOntRepondu = nbRecus >= nbTotal;
 
         if (tousOntRepondu) {
             _activerBoutonAfficher('✅ Tous ont répondu — Cliquez pour révéler');
         } else {
-            _mettreAJourBoutonAfficher(nbReponses, nbTotal);
+            _mettreAJourBoutonAfficher(nbRecus, nbTotal);
         }
     });
 
-    // Timer écoulé → activer btn-afficher même si pas tout le monde a répondu
+    // Timer écoulé → activer btn-afficher
     s.on('QUIZ_TIMER_EXPIRED', () => {
         _activerBoutonAfficher('⏱ Timer écoulé — Cliquez pour révéler');
     });
 
     s.on('QUIZ_CORRECTION', ({ reponses, reponse: bonneReponse }) => {
         _validationEnCours = false;
+
         const repEl = document.getElementById('reponse');
         if (repEl && bonneReponse) repEl.textContent = bonneReponse;
 
-        // Fusionner les résultats invités (serveur) avec la réponse hôte (local)
         const pseudoHote  = _pseudoHote();
-        const repHoteData = _reponsesRecues[pseudoHote];
         const resultats   = [...(reponses || [])];
 
-        // Ajouter le résultat hôte si absent des résultats serveur
         const hoteDejaInclus = resultats.some(r => r.pseudo === pseudoHote);
         if (!hoteDejaInclus) {
-            // Récupérer la réponse saisie par l'hôte
             const texteHote = (window._quizReponseSaisieHote || '').trim();
             if (texteHote) {
-                // Évaluer avec la même logique que le serveur
                 const correct = bonneReponse ? _similariteLocale(texteHote, bonneReponse) : false;
-                // Premier correct = avant tous les invités ?
                 const nbCorrectsInvites = resultats.filter(r => r.correct).length;
-                // L'hôte a répondu "en même temps" localement — on le met premier
-                // si aucun invité n'était correct avant lui
                 const estPremier = correct && nbCorrectsInvites === 0;
                 const points     = correct ? (estPremier ? 2 : 1) : 0;
 
-                resultats.unshift({ // mettre l'hôte en premier dans l'affichage
+                resultats.unshift({
                     pseudo    : pseudoHote,
                     texte     : texteHote,
                     correct,
@@ -137,16 +139,14 @@ function _initWsListeners() {
                     estPremier,
                 });
 
-                // Mettre à jour GameState.scores pour l'hôte
                 if (points > 0) {
                     GameState.scores = GameState.scores || {};
                     GameState.scores[pseudoHote] = (GameState.scores[pseudoHote] || 0) + points;
-                    // Notifier le scoreboard
                     if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
                 }
+
                 console.log(`[QUIZ_HOTE] 🏅 Résultat hôte "${pseudoHote}": "${texteHote}" → ${correct ? '+'+points+'pt(s)' : '0pt'}`);
             } else if (_reponseHoteEnvoyee === false) {
-                // L'hôte n'a pas répondu — ajouter quand même pour l'affichage
                 resultats.unshift({
                     pseudo    : pseudoHote,
                     texte     : '',
@@ -180,12 +180,12 @@ function _initWsListeners() {
     });
 
     s.on('QUIZ_ANSWER_ACK', ({ status }) => {
-        // L'UI est déjà mise à jour dans envoyerReponseHote() — pas de doublon
         if (status === 'ok') {
             console.log('[QUIZ_HOTE] ✅ Réponse hôte ACK ok');
         }
     });
 }
+
 
 // ──────────────────────────────────────────────────────
 // Boutons hôte
