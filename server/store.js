@@ -147,6 +147,10 @@ class Store {
             lastActivity : maintenant,
         };
 
+        if (partie.hostPseudo) {
+            partie.scores[partie.hostPseudo] = 0;
+        }
+
         this.parties.set(partie.id, partie);
         this.joueurSockets.set(partie.id, new Map());
 
@@ -350,7 +354,7 @@ class Store {
         this.parties.forEach((partie, id) => {
             const lastActivity = partie.lastActivity?.getTime() || partie.createdAt?.getTime() || 0;
             if (partie.statut === 'terminee' && (now - lastActivity > ageMax)) {
-                this.parties.delete(id);
+                this.supies.delete(id);
                 this.hostSockets.delete(id);
                 this.joueurSockets.delete(id);
                 supprimees++;

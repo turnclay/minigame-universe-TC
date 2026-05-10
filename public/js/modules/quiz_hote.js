@@ -88,41 +88,6 @@ function _initWsListeners() {
         const pseudoHote  = _pseudoHote();
         const resultats   = [...(reponses || [])];
 
-        const hoteDejaInclus = resultats.some(r => r.pseudo === pseudoHote);
-
-        if (!hoteDejaInclus) {
-            const texteHote = (window._quizReponseSaisieHote || '').trim();
-
-            if (texteHote) {
-                const correct = bonneReponse ? _similariteLocale(texteHote, bonneReponse) : false;
-                const nbCorrectsInvites = resultats.filter(r => r.correct).length;
-                const estPremier = correct && nbCorrectsInvites === 0;
-                const points     = correct ? (estPremier ? 2 : 1) : 0;
-
-                resultats.unshift({
-                    pseudo    : pseudoHote,
-                    texte     : texteHote,
-                    correct,
-                    points,
-                    estPremier,
-                });
-
-                if (points > 0) {
-                    GameState.scores = GameState.scores || {};
-                    GameState.scores[pseudoHote] = (GameState.scores[pseudoHote] || 0) + points;
-                    if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
-                }
-            } else if (_reponseHoteEnvoyee === false) {
-                resultats.unshift({
-                    pseudo    : pseudoHote,
-                    texte     : '',
-                    correct   : false,
-                    points    : 0,
-                    estPremier: false,
-                });
-            }
-        }
-
         _afficherPanneauResultats(resultats, bonneReponse || '');
         if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
     });
@@ -182,7 +147,6 @@ function _mettreAJourBoutonAfficher(nbRecus, nbAttendu) {
 // ──────────────────────────────────────────────────────
 // PANNEAU ATTENTE
 // ──────────────────────────────────────────────────────
-
 function _afficherPanneauAttenteWS() {
     const container = document.getElementById('invites-reponses');
     if (!container) return;  // Permet l'affichage même en validation
@@ -227,7 +191,6 @@ function _afficherPanneauAttenteWS() {
 // ──────────────────────────────────────────────────────
 // PANNEAU RÉSULTATS
 // ──────────────────────────────────────────────────────
-
 function _afficherPanneauResultats(resultats, bonneReponse) {
     const container = document.getElementById('invites-reponses');
     if (!container) return;
@@ -329,7 +292,13 @@ export function declencherAfficherReponse() {
     if (btnAfficher) { btnAfficher.disabled = true; btnAfficher.style.opacity = '0.45'; btnAfficher.style.animation = ''; }
 
     if (_wsOk()) {
-        _ws().send('HOST_ACTION', { action: 'quiz:reveal', data: {} });
+        const data = {};
+        const repHote = window._quizReponseSaisieHote;
+        if (repHote && repHote.trim()) {
+            data.reponseHote = repHote.trim();
+            data.tsHote = Date.now();
+        }
+        _ws().send('HOST_ACTION', { action: 'quiz:reveal', data });
     } else {
         _validationEnCours = false;
     }

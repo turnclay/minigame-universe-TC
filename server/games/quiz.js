@@ -214,6 +214,19 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             if (!s || s.phase !== 'question') {
                 return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE', message: 'Pas de question en cours.' });
             }
+
+            // Add host's response if provided
+            const partie = store.getPartie(partieId);
+            const hostPseudo = partie?.hostPseudo;
+            if (hostPseudo && data.reponseHote) {
+                const ts = data.tsHote || Date.now();
+                s.reponses[hostPseudo] = {
+                    texte: (data.reponseHote || '').trim(),
+                    ts,
+                    indicesVus: 2, // host sees all indices
+                };
+            }
+
             _declencherRevelation(wss, partieId, s, helpers, 'host');
             break;
         }
