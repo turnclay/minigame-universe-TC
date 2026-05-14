@@ -1,16 +1,29 @@
 /**
  * ============================================
- * 🎮 MAIN.JS - Gestionnaire principal du jeu
+ * 🎮 MAIN.JS — Gestionnaire principal du jeu
  * ============================================
- * Version: 3.5 — FIX hôte joueur (hostJoue + hostPseudo)
+ * Version: 3.6 — Nettoyage complet entre les parties
  *
- * MODIFICATIONS v3.5 :
+ * CORRECTIONS v3.6 :
  * ─────────────────────────────────────────────
- * [FIX 1] HostSession.creerPartie() — transmet maintenant
- *   hostJoue: true  et  hostPseudo: GameState.joueurs[0]
- *   afin que l'hôte soit enregistré comme joueur côté serveur.
- *   Sans ça, ws._pseudo reste null pour le socket hôte et
- *   toute réponse PLAYER_ACTION est stockée sous "null".
+ * [FIX A] lancerJeu() ne restaure plus minigame_partie_id après
+ *   nettoyerSession(). Avant, le vieux ID était réinjecté dans
+ *   localStorage → quiz_hote._pid() lisait l'ancien jeu → croyait
+ *   avoir des invités fantômes de la partie précédente.
+ *   L'ID valide est UNIQUEMENT celui reçu dans GAME_CREATED.
+ *
+ * [FIX B] HostSession.reset() : méthode dédiée qui remet tous les
+ *   champs internes à zéro avant toute création de partie.
+ *   Appelée dans initStartSolo() et dans le handler GAME_ENDED.
+ *
+ * [FIX C] resetEtatQuizHote() depuis cleanup.js appelé à chaque
+ *   nouvelle partie (avant creerPartie) pour purger quiz_hote.js
+ *   (_nbInvites, _reponsesRecues, handlers WS).
+ *
+ * [FIX D] HOST_END_GAME envoyé UNE seule fois (dans HostSession.terminer),
+ *   pas dans nettoyerPartieInvites() de quiz_hote.js.
+ *
+ * [FIX 1] (conservé) : hostJoue:true + hostPseudo = GameState.joueurs[0]
  */
 
 import { $, $$, show, hide } from "./core/dom.js";
@@ -34,7 +47,11 @@ import {
 } from "./modules/scoreboard.js";
 import { naviguerVers } from "./navigation.js";
 import { signalDemarrage } from "./core/signal.js";
-import { nettoyerSession, nettoyerParasites } from "./core/cleanup.js";
+import {
+    nettoyerSession,
+    nettoyerParasites,
+    resetEtatQuizHote   // [FIX C]
+} from "./core/cleanup.js";
 
 import {
     bindBoutonDemarrer as ucBindBouton,
@@ -47,7 +64,6 @@ import { initialiserPuissance4 } from "./jeux/puissance4.js";
 import { initialiserMimer }      from "./jeux/mimedessine.js";
 import { initialiserPetitBac }   from "./jeux/petitbac.js";
 
-// ── Nouveau : import socket ────────────────────────────────────
 import { socket } from "./core/socket.js";
 
 // ============================================
@@ -78,7 +94,6 @@ const GAME_INITIALIZERS = {
     blindtest:"initialiserBlindTest", pendu:"initialiserPendu",
     memoire:"initialiserMemoire", petitbac:"initialiserPetitBac",
     morpion:"initialiserMorpion", puissance4:"initialiserPuissance4"
-    // ⚠️ "undercover" absent : flow géré séparément
 };
 
 const REGLES_JEUX = {
@@ -174,14 +189,12 @@ function initHomeHub() {
             el.textContent =
                 `${sauvegarde.nomPartie || "(Sans nom)"} • ${String(sauvegarde.jeu || "").toUpperCase()} • ${sauvegarde.mode}`;
         }
-
         if (btnC) {
             btnC.classList.remove("btn-disabled");
             btnC.style.pointerEvents = "auto";
             btnC.style.opacity = "1";
             btnC.onclick = () => afficherListeParties();
         }
-
     } else {
         if (btnC) {
             btnC.classList.add("btn-disabled");
@@ -189,7 +202,6 @@ function initHomeHub() {
             btnC.style.opacity = "0.4";
             btnC.onclick = null;
         }
-
         const el = $("resume-partie");
         if (el) el.textContent = "Aucune partie enregistrée";
     }
@@ -205,33 +217,26 @@ export function afficherAccueilJeux() {
 
 export function masquerModules() { hideAll(ALL_MODULES); }
 
-
 // ============================================
 // SÉLECTION JEU
 // ============================================
 function initGameButtons() {
     $$(".game-btn").forEach(btn => {
-
         btn.addEventListener("mouseenter", () => {
             const jeu = btn.dataset.game;
             if (REGLES_JEUX[jeu]) afficherRegles(jeu, btn);
         });
-
         btn.addEventListener("mouseleave", cacherRegles);
 
         btn.onclick = () => {
             cacherRegles();
-
             GameState.jeu = GameState.jeuActuel = btn.dataset.game;
-
             naviguerVers("choix-mode", "choix-jeu");
-
             GameState.joueurs = [];
             GameState.equipes = [];
 
             const c = $("joueurs-selectionnes-container");
             if (c) c.innerHTML = "";
-
             const n = $("nom-partie");
             if (n) n.value = "";
 
@@ -251,7 +256,6 @@ function initGameButtons() {
         };
     });
 }
-
 
 // ============================================
 // CHOIX DU MODE
@@ -289,7 +293,12 @@ function initStartSolo() {
             alert("Sélectionne au moins un joueur."); return;
         }
         GameState.mode = "solo";
-        // ── Créer la partie côté serveur WS ──────────────────────
+
+        // [FIX B+C] Réinitialiser l'état de la partie précédente AVANT de créer la nouvelle
+        HostSession.reset();
+        resetEtatQuizHote();
+
+        // Créer la partie côté serveur WS
         HostSession.creerPartie();
 
         if (GameState.jeu === "morpion") {
@@ -310,7 +319,6 @@ function initStartSolo() {
             if (GameState.joueurs.length < 3) {
                 alert("Undercover : il faut au moins 3 joueurs."); return;
             }
-
             if (!GameState.partieEnCoursChargee) creerNouvellePartie();
 
             const spanNb = $("uc-nb-joueurs");
@@ -318,9 +326,9 @@ function initStartSolo() {
 
             hide("form-solo");
             show("container");
-            const ucConfig = document.getElementById("undercover-config");
+            const ucConfig  = document.getElementById("undercover-config");
             const ucDistrib = document.getElementById("undercover-distribution");
-            const ucGame   = document.getElementById("undercover");
+            const ucGame    = document.getElementById("undercover");
             if (ucConfig)  { ucConfig.hidden = false; ucConfig.style.display = "block"; }
             if (ucDistrib) { ucDistrib.hidden = true; ucDistrib.style.display = "none"; }
             if (ucGame)    { ucGame.hidden    = true; ucGame.style.display    = "none"; }
@@ -332,7 +340,6 @@ function initStartSolo() {
                 show("scoreboard");
                 afficherScoreboard();
             });
-
             return;
         }
 
@@ -350,14 +357,13 @@ export function lancerJeu(game, options = {}) {
     if (game.toLowerCase() === "undercover") return;
 
     if (!fromLoad) {
-        // Sauvegarder les clés WS de la partie courante AVANT nettoyerSession()
-        // car nettoyerSession() les supprime (elles sont dans CLES_EXACTES).
-        // On les restaure immédiatement après pour que les *_hote.js puissent les lire.
-        const _wsId   = localStorage.getItem('minigame_partie_id');
-        const _mgsId  = localStorage.getItem('minigame_partie_session_id');
-        nettoyerSession();
-        if (_wsId)  localStorage.setItem('minigame_partie_id', _wsId);
-        if (_mgsId) localStorage.setItem('minigame_partie_session_id', _mgsId);
+        // [FIX A] nettoyerSession() supprime maintenant minigame_partie_id (ajouté
+        // dans cleanup.js v2.0). On NE restaure plus l'ancien ID après le nettoyage.
+        // Le seul ID valide est celui qui sera reçu dans GAME_CREATED.
+        // Sauvegarder uniquement minigame_partie_session_id si nécessaire pour les
+        // modules qui le lisent encore (invite.js utilise aussi minigame_partie_id
+        // en fallback, mais on veut qu'il lise le nouvel ID après GAME_CREATED).
+        nettoyerSession(); // supprime minigame_partie_id ET minigame_partie_session_id
 
         if (!GameState.partieEnCoursChargee) {
             const p = loadGame();
@@ -365,7 +371,6 @@ export function lancerJeu(game, options = {}) {
         }
     }
 
-    // Lire l'ID WS (seule source de vérité) pour signalDemarrage (canal localStorage fallback)
     const pid = localStorage.getItem('minigame_partie_id') || '';
     hideAll(["home","choix-mode","form-solo","form-equipes","choix-jeu","liste-parties"]);
     masquerUndercoverComplet();
@@ -388,9 +393,6 @@ export function lancerJeu(game, options = {}) {
         signalDemarrage(pid, game);
     }
 
-    // ── Notifier le backend que la partie démarre ──────────────
-    // Appel non bloquant : si le socket n'est pas connecté,
-    // le jeu local fonctionne normalement quand même.
     HostSession.notifierDemarrage();
 
     if (key === 'petitbac' && typeof window._petitbacPublierManche === 'function') {
@@ -416,7 +418,7 @@ function _countdown(onEnd) {
             .cd-l{font-size:1rem;color:rgba(255,255,255,.75);font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-family:"Segoe UI",sans-serif}`;
         document.head.appendChild(s);
     }
-    const ov = document.createElement('div'); ov.id = 'hote-countdown';
+    const ov  = document.createElement('div'); ov.id = 'hote-countdown';
     const nEl = document.createElement('div'); nEl.className = 'cd-n'; nEl.textContent = '3';
     const lEl = document.createElement('div'); lEl.className = 'cd-l'; lEl.textContent = 'La partie commence…';
     ov.append(nEl, lEl); document.body.appendChild(ov);
@@ -438,7 +440,6 @@ function _countdown(onEnd) {
 window.lancerJeu   = lancerJeu;
 window.initHomeHub = initHomeHub;
 
-// ── Exposer tous les initialiseurs de jeu sur window ──────────────
 window.initialiserPendu      = initialiserPendu;
 window.initialiserMemoire    = initialiserMemoire;
 window.initialiserPuissance4 = initialiserPuissance4;
@@ -475,7 +476,6 @@ function init() {
     initModeCards();
     initStartSolo();
     masquerUndercoverComplet();
-
     HostSession.init();
 }
 
@@ -492,7 +492,17 @@ const HostSession = {
     _authenticated : false,
     _pendingStart  : false,
 
-    // ── Connexion initiale ─────────────────────────────────────
+    // ── [FIX B] reset() — remet l'état à zéro avant une nouvelle partie ──
+    // Appelé dans initStartSolo() avant chaque creerPartie().
+    // Ne touche pas à _authenticated (la connexion WS reste active).
+    reset() {
+        this._partieId    = null;
+        this._snapshot    = null;
+        this._pendingStart = false;
+        console.log('[HOST] 🔄 HostSession reset (nouvelle partie)');
+    },
+
+    // ── Connexion initiale ──────────────────────────────────────
     init() {
         try {
             socket.connect();
@@ -512,7 +522,6 @@ const HostSession = {
                     socket.send('HOST_REJOIN', { partieId: savedId });
                     return;
                 }
-
                 console.log('[HOST] ℹ️ Pas de partie sauvegardée — prêt à créer');
             });
 
@@ -566,11 +575,21 @@ const HostSession = {
 
             socket.on('GAME_ENDED', ({ snapshot }) => {
                 console.log('[HOST] 🏁 Partie terminée (WS)');
-                this._partieId = null;
-                this._snapshot = null;
+
+                // [FIX B+C] Réinitialiser TOUT l'état de la partie terminée
+                this._partieId    = null;
+                this._snapshot    = null;
+                this._pendingStart = false;
+
                 localStorage.removeItem('minigame_partie_id');
                 localStorage.removeItem('minigame_partie_session_id');
-                import('./modules/invite.js').then(m => m.resetPartieSessionId()).catch(err => console.warn('[HOST] ⚠️ Erreur reset invite.js:', err.message));
+
+                // Réinitialiser quiz_hote
+                resetEtatQuizHote();
+
+                import('./modules/invite.js')
+                    .then(m => m.resetPartieSessionId())
+                    .catch(err => console.warn('[HOST] ⚠️ Erreur reset invite.js:', err.message));
             });
 
             socket.on('ERROR', ({ code, message }) => {
@@ -581,7 +600,10 @@ const HostSession = {
                     localStorage.removeItem('minigame_partie_id');
                     localStorage.removeItem('minigame_partie_session_id');
                     this._partieId = null;
-                    import('./modules/invite.js').then(m => m.resetPartieSessionId()).catch(err => console.warn('[HOST] ⚠️ Erreur reset invite.js:', err.message));
+                    this._snapshot = null;
+                    import('./modules/invite.js')
+                        .then(m => m.resetPartieSessionId())
+                        .catch(err => console.warn('[HOST] ⚠️ Erreur reset invite.js:', err.message));
                     if (GameState.joueurs && GameState.joueurs.length > 0 && GameState.jeu) {
                         this.creerPartie();
                     }
@@ -608,25 +630,21 @@ const HostSession = {
         }
     },
 
-    // ── Créer la partie côté serveur ───────────────────────────
-    // [FIX 1] : transmet hostJoue:true et hostPseudo = GameState.joueurs[0]
-    // afin que l'hôte soit inscrit comme joueur réel dans store.js.
-    // Sans ça, ws._pseudo reste null sur le socket hôte et toute réponse
-    // PLAYER_ACTION reçue côté serveur est indexée sous "null".
+    // ── Créer la partie côté serveur ────────────────────────────
+    // [FIX 1] : hostJoue:true + hostPseudo = GameState.joueurs[0]
     creerPartie() {
         if (!this._authenticated) {
             console.warn('[HOST] creerPartie() ignoré — pas authentifié');
             return;
         }
         if (this._partieId) {
-            console.log('[HOST] creerPartie() ignoré — partie déjà créée');
+            console.log('[HOST] creerPartie() ignoré — partie déjà créée:', this._partieId);
             return;
         }
 
         const nom        = GameState.partieNom || 'Partie';
         const jeu        = GameState.jeu       || 'quiz';
         const mode       = GameState.mode      || 'solo';
-        // [FIX 1] — l'hôte = premier joueur sélectionné (GameState.joueurs[0])
         const hostPseudo = (GameState.joueurs && GameState.joueurs.length > 0)
             ? String(GameState.joueurs[0]).trim()
             : null;
@@ -637,11 +655,9 @@ const HostSession = {
                 jeu,
                 mode,
                 equipes    : [],
-                // [FIX 1] — hostJoue:true inscrit l'hôte comme joueur côté serveur
                 hostJoue   : !!hostPseudo,
                 hostPseudo : hostPseudo || null,
             });
-
             console.log(`[HOST] 📤 HOST_CREATE_GAME — ${nom} / ${jeu} / ${mode} / hostPseudo: ${hostPseudo}`);
         } catch (err) {
             console.error('[HOST] ❌ Erreur send HOST_CREATE_GAME:', err.message);
@@ -649,7 +665,7 @@ const HostSession = {
         }
     },
 
-    // ── Notifier le démarrage ──────────────────────────────────
+    // ── Notifier le démarrage ────────────────────────────────────
     notifierDemarrage() {
         if (!this._authenticated) {
             console.warn('[HOST] notifierDemarrage() ignoré — pas authentifié');
@@ -671,7 +687,9 @@ const HostSession = {
         }
     },
 
-    // ── Terminer la partie ─────────────────────────────────────
+    // ── Terminer la partie ───────────────────────────────────────
+    // [FIX D] C'est ici et ICI SEULEMENT qu'on envoie HOST_END_GAME.
+    // nettoyerPartieInvites() ne l'envoie plus pour éviter les doubles.
     terminer() {
         if (!this._authenticated || !this._partieId) return;
         try {
@@ -682,10 +700,9 @@ const HostSession = {
         }
     },
 
-    // ── Synchroniser un joueur WS dans GameState + DOM hôte ────
+    // ── Sync joueur dans GameState + DOM ────────────────────────
     _syncJoueurRejoint(pseudo) {
         if (!pseudo) return;
-
         if (!GameState.joueurs.includes(pseudo)) {
             GameState.joueurs.push(pseudo);
             GameState.scores[pseudo] = GameState.scores[pseudo] ?? 0;
@@ -693,7 +710,6 @@ const HostSession = {
 
         const container = document.getElementById('joueurs-selectionnes-container');
         if (!container) return;
-
         if (container.querySelector(`[data-joueur="${CSS.escape(pseudo)}"]`)) return;
 
         const div = document.createElement('div');
@@ -705,11 +721,8 @@ const HostSession = {
 
         div.querySelector('.remove').addEventListener('click', () => {
             if (HostSession._partieId) {
-                try {
-                    socket.send('HOST_KICK_PLAYER', { pseudo });
-                } catch (err) {
-                    console.error('[HOST] ❌ Erreur send HOST_KICK_PLAYER:', err.message);
-                }
+                try { socket.send('HOST_KICK_PLAYER', { pseudo }); }
+                catch (err) { console.error('[HOST] ❌ Erreur send HOST_KICK_PLAYER:', err.message); }
             }
             HostSession._syncJoueurParti(pseudo);
         });
@@ -720,7 +733,6 @@ const HostSession = {
 
     _syncJoueurParti(pseudo) {
         if (!pseudo) return;
-
         GameState.joueurs = (GameState.joueurs || []).filter(j => j !== pseudo);
         delete GameState.scores[pseudo];
 
@@ -731,7 +743,7 @@ const HostSession = {
         console.log(`[HOST] ✅ Joueur retiré du lobby: ${pseudo}`);
     },
 
-    // ── Toast visible côté hôte ───────────────────────────────
+    // ── Toast hôte ───────────────────────────────────────────────
     _toastHote(msg, type = 'info') {
         const COLORS = { success: '#22c55e', error: '#ef4444', warning: '#f59e0b', info: '#00d4ff' };
         const ICONS  = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
@@ -759,11 +771,10 @@ const HostSession = {
         }, 4000);
     },
 
-    // ── Afficher le lien / QR de rejointe ─────────────────────
+    // ── Lien / QR ────────────────────────────────────────────────
     _afficherLienJoin(joinUrl, code) {
         const el = document.getElementById('ws-join-info');
         if (!el || !joinUrl) return;
-
         const url = `${location.origin}${joinUrl}`;
         el.innerHTML = `
             <div style="margin-top:12px;padding:10px 14px;background:rgba(0,212,255,.08);
@@ -777,7 +788,6 @@ const HostSession = {
         el.style.display = 'block';
     },
 
-    // ── Afficher le compteur de joueurs ───────────────────────
     _afficherCompteurJoueurs(count) {
         const el = document.getElementById('ws-joueurs-count');
         if (!el) return;
@@ -785,12 +795,10 @@ const HostSession = {
     },
 };
 
-// Helper escapeHtml
 function _escHtml(s) {
     return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// Exposer pour les modules hote
 window.HostSession = HostSession;
 window.jeuSocket   = socket;
 

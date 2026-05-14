@@ -1,14 +1,27 @@
-// /js/modules/quiz_hote.js — v4.2
+// /js/modules/quiz_hote.js — v4.3
 // ============================================================
 // Architecture hôte LOCAL + invités WS.
 // _nbInvites  = nb d'invités réels (depuis serveur, SANS hôte)
 // _nbJoueursTotal() = _nbInvites + 1 (hôte inclus)
-// Le serveur envoie nbJoueurs = invités + hôte (total réel).
 //
-// [FIX 2] envoyerReponseHote() utilise HOST_ACTION quiz:host_answer
-// au lieu de PLAYER_ACTION. En effet le socket hôte a ws._isHost=true
-// et ws._pseudo=null : toute PLAYER_ACTION serait indexée sous "null"
-// côté serveur. HOST_ACTION lit hostPseudo depuis la partie en store.
+// CORRECTIONS v4.3 :
+// [FIX A] _nbInvites réinitialisé à 0 dans nettoyerPartieInvites()
+//         ET dans viderReponses() ET sur QUIZ_QUESTION.
+//         Avant : _nbInvites gardait la valeur de la partie précédente
+//         → le bouton "Afficher" attendait un joueur fantôme.
+//
+// [FIX B] Accumulation de listeners socket.on() supprimée.
+//         Les handlers WS sont désormais stockés et enlevés proprement
+//         via socket.off() dans nettoyerPartieInvites().
+//         Avant : _wsListenersActifs = false + socket.on() à nouveau
+//         créait des doublons de handlers à chaque nouvelle partie.
+//
+// [FIX C] _nbJoueursTotal() lit le snapshot HostSession de façon
+//         défensive : si _snapshot est null (après reset), renvoie 1
+//         (hôte seul) au lieu d'une valeur résiduelle.
+//
+// [FIX D] ERROR handler : réinitialise _validationEnCours si une
+//         erreur serveur survient pendant la révélation.
 // ============================================================
 
 import { GameState } from '../core/state.js';
@@ -18,6 +31,17 @@ let _reponseHoteEnvoyee  = false;
 let _reponsesRecues      = {};
 let _nbInvites           = 0;   // nb d'invités réels (sans l'hôte)
 let _wsListenersActifs   = false;
+
+// Références des handlers WS pour pouvoir les retirer avec socket.off()
+// [FIX B] — stockés pour cleanup propre
+let _handleQuizQuestion   = null;
+let _handleResponseIn     = null;
+let _handleTimerExpired   = null;
+let _handleCorrection     = null;
+let _handleScoresUpdate   = null;
+let _handlePlayerJoined   = null;
+let _handleQuizIndice     = null;
+let _handleError          = null;
 
 function _ws()   { return window.jeuSocket || null; }
 function _wsOk() { const s = _ws(); return !!(s && s.connected); }
@@ -32,16 +56,17 @@ function _cleScores() { const p = _pid(); return p ? `partie_scores_${p}` : null
 function _cleEtat()   { const p = _pid(); return p ? `partie_etat_${p}` : null; }
 function _pseudoHote() { return (GameState?.joueurs?.[0]) || 'Hôte'; }
 
-// Nombre total = invités + hôte
+// [FIX C] — défensif : si snapshot null ou vide → 0 invités (hôte seul)
 function _nbJoueursTotal() {
-    const inv = _nbInvites > 0
-        ? _nbInvites
-        : (window.HostSession?._snapshot?.joueurs?.length ?? 0);
-    return inv + 1; // +1 pour l'hôte
+    if (_nbInvites > 0) return _nbInvites + 1;
+    const snapJoueurs = window.HostSession?._snapshot?.joueurs;
+    const fromSnap    = Array.isArray(snapJoueurs) ? snapJoueurs.length : 0;
+    return fromSnap + 1; // +1 pour l'hôte
 }
 
 // ────────────────────────────────────────────────────────────
 // LISTENERS WS
+// [FIX B] — handlers stockés + off() propre dans nettoyerPartieInvites
 // ────────────────────────────────────────────────────────────
 function _initWsListeners() {
     if (_wsListenersActifs) return;
@@ -49,34 +74,55 @@ function _initWsListeners() {
     if (!s) return;
     _wsListenersActifs = true;
 
-    // Initialiser depuis le snapshot
+    // Initialiser _nbInvites depuis le snapshot courant (non résiduel)
+    // [FIX A] — on ne prend le snapshot QUE si la partie est active (partieId non null)
     const snap = window.HostSession?._snapshot;
-    if (snap?.joueurs?.length > 0) _nbInvites = snap.joueurs.length;
+    if (snap?.joueurs?.length > 0 && window.HostSession?._partieId) {
+        _nbInvites = snap.joueurs.length;
+    } else {
+        _nbInvites = 0; // [FIX A] — hôte seul par défaut
+    }
 
-    s.on('QUIZ_QUESTION', () => {
-        _reponsesRecues      = {};
-        _validationEnCours   = false;
-        _reponseHoteEnvoyee  = false;
+    // ── Définir chaque handler et le stocker pour cleanup ─────
+
+    _handleQuizQuestion = () => {
+        _reponsesRecues     = {};
+        _validationEnCours  = false;
+        _reponseHoteEnvoyee = false;
         window._quizReponseSaisieHote = '';
-        _afficherPanneauAttenteWS();
-    });
 
-    s.on('QUIZ_RESPONSE_IN', ({ pseudo, nbJoueurs }) => {
+        // [FIX A] Recalculer _nbInvites depuis le snapshot actif
+        // (peut avoir changé si un joueur a rejoint/quitté entre deux questions)
+        const snapNow = window.HostSession?._snapshot;
+        if (window.HostSession?._partieId && Array.isArray(snapNow?.joueurs)) {
+            // Snapshot joueurs inclut l'hôte si hostJoue:true → soustraire 1
+            const total = snapNow.joueurs.length;
+            _nbInvites = Math.max(0, total - 1); // -1 pour l'hôte
+        } else {
+            _nbInvites = 0;
+        }
+
+        _afficherPanneauAttenteWS();
+    };
+
+    _handleResponseIn = ({ pseudo, nbJoueurs }) => {
         if (!pseudo || pseudo === 'null' || pseudo === 'undefined') return;
         if (!_reponsesRecues[pseudo]) {
             _reponsesRecues[pseudo] = { reponse: '…', ts: Date.now() };
         }
-        // nbJoueurs du serveur = total (invités + hôte)
-        if (typeof nbJoueurs === 'number') _nbInvites = Math.max(0, nbJoueurs - 1);
+        // nbJoueurs du serveur = total réel (hôte + invités)
+        if (typeof nbJoueurs === 'number') {
+            _nbInvites = Math.max(0, nbJoueurs - 1);
+        }
         _afficherPanneauAttenteWS();
         _recalculerBoutonAfficher();
-    });
+    };
 
-    s.on('QUIZ_TIMER_EXPIRED', () => {
+    _handleTimerExpired = () => {
         _activerBoutonAfficher('⏱ Timer écoulé — Cliquez pour révéler');
-    });
+    };
 
-    s.on('QUIZ_CORRECTION', ({ reponses, reponse: bonneReponse }) => {
+    _handleCorrection = ({ reponses, reponse: bonneReponse }) => {
         _validationEnCours = false;
         const repEl = document.getElementById('reponse');
         if (repEl && bonneReponse) repEl.textContent = bonneReponse;
@@ -85,7 +131,6 @@ function _initWsListeners() {
         const resultats  = [...(reponses || [])];
 
         // Intégrer la réponse de l'hôte si absente des résultats serveur
-        // (cas où le serveur ne l'a pas reçue via HOST_ACTION quiz:host_answer)
         if (!resultats.some(r => r.pseudo === pseudoHote)) {
             const texteHote = (window._quizReponseSaisieHote || '').trim();
             const correct   = texteHote && bonneReponse
@@ -107,42 +152,38 @@ function _initWsListeners() {
 
         _afficherPanneauResultats(resultats, bonneReponse || '');
         if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
-    });
+    };
 
-    s.on('SCORES_UPDATE', ({ scores }) => {
+    _handleScoresUpdate = ({ scores }) => {
         if (!scores) return;
         const pseudoHote     = _pseudoHote();
         const scoreHoteLocal = GameState.scores?.[pseudoHote] ?? 0;
         GameState.scores     = GameState.scores || {};
         Object.assign(GameState.scores, scores);
-        // Restaurer le score hôte si le serveur l'a déjà — préférer le serveur
-        if (scores[pseudoHote] !== undefined) {
-            GameState.scores[pseudoHote] = scores[pseudoHote];
-        } else if (scoreHoteLocal > 0) {
+        // Préférer le score serveur s'il est disponible, sinon garder le local
+        if (scores[pseudoHote] === undefined && scoreHoteLocal > 0) {
             GameState.scores[pseudoHote] = scoreHoteLocal;
         }
         const cle = _cleScores();
         if (cle) localStorage.setItem(cle, JSON.stringify(GameState.scores));
         if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
-    });
+    };
 
-    s.on('PLAYER_JOINED', ({ joueurs }) => {
-        _nbInvites = (joueurs || []).length; // invités seulement
-    });
+    _handlePlayerJoined = ({ joueurs }) => {
+        // joueurs = liste des invités (sans l'hôte côté serveur)
+        _nbInvites = (joueurs || []).length;
+    };
 
-    s.on('QUIZ_INDICE', ({ num, texte }) => {
+    _handleQuizIndice = ({ num, texte }) => {
         const el = document.getElementById(`indice${num}`);
         if (el) el.textContent = texte;
-    });
+    };
 
-    // [FIX D] Si le serveur renvoie une erreur (ex: INTERNAL_ERROR),
-    // réinitialiser _validationEnCours pour que le bouton "Afficher"
-    // soit réactivable et que l'hôte puisse réessayer.
-    s.on('ERROR', ({ code }) => {
+    // [FIX D] Réinitialiser _validationEnCours si erreur serveur pendant révélation
+    _handleError = ({ code }) => {
         if (_validationEnCours) {
-            console.warn('[QUIZ_HOTE] ⚠️ ERROR reçu pendant validation (' + code + ') — reset _validationEnCours');
+            console.warn('[QUIZ_HOTE] ⚠️ ERROR reçu pendant validation (' + code + ') — reset');
             _validationEnCours = false;
-            // Réactiver le bouton "Afficher" pour pouvoir réessayer
             const btnAff = document.getElementById('btn-afficher-reponse');
             if (btnAff && btnAff.disabled) {
                 btnAff.disabled        = false;
@@ -151,13 +192,18 @@ function _initWsListeners() {
                 btnAff.title           = '⚠️ Erreur serveur — Cliquez pour réessayer';
                 btnAff.style.animation = 'btnPulse .5s ease';
             }
-            const btnEnv = document.getElementById('btn-valider-reponse');
-            if (btnEnv && btnEnv.disabled) {
-                btnEnv.disabled      = false;
-                btnEnv.style.opacity = '';
-            }
         }
-    });
+    };
+
+    // Enregistrer tous les handlers
+    s.on('QUIZ_QUESTION',    _handleQuizQuestion);
+    s.on('QUIZ_RESPONSE_IN', _handleResponseIn);
+    s.on('QUIZ_TIMER_EXPIRED', _handleTimerExpired);
+    s.on('QUIZ_CORRECTION',  _handleCorrection);
+    s.on('SCORES_UPDATE',    _handleScoresUpdate);
+    s.on('PLAYER_JOINED',    _handlePlayerJoined);
+    s.on('QUIZ_INDICE',      _handleQuizIndice);
+    s.on('ERROR',            _handleError);
 }
 
 // ────────────────────────────────────────────────────────────
@@ -165,8 +211,8 @@ function _initWsListeners() {
 // ────────────────────────────────────────────────────────────
 
 function _recalculerBoutonAfficher() {
-    const nbTotal  = _nbJoueursTotal();
-    const nbRecus  = Object.keys(_reponsesRecues).length;
+    const nbTotal = _nbJoueursTotal();
+    const nbRecus = Object.keys(_reponsesRecues).length;
     if (nbRecus >= nbTotal) {
         _activerBoutonAfficher('✅ Tous ont répondu — Cliquez pour révéler');
     } else {
@@ -333,19 +379,22 @@ export function viderReponses() {
     _reponsesRecues      = {};
     _validationEnCours   = false;
     _reponseHoteEnvoyee  = false;
+    // [FIX A] Remettre _nbInvites à 0 : sera recalculé sur QUIZ_QUESTION
+    // via le snapshot actif. Évite les joueurs fantômes de la partie précédente.
+    _nbInvites           = 0;
     window._quizReponseSaisieHote = '';
 
     const btnEnv = document.getElementById('btn-valider-reponse');
     const inp    = document.getElementById('quiz-reponse-input');
 
     if (btnEnv) {
-        btnEnv.disabled = false;
-        btnEnv._sent = false;
+        btnEnv.disabled      = false;
+        btnEnv._sent         = false;
         btnEnv.style.opacity = '';
-        btnEnv.textContent = '✅ Envoyer';
+        btnEnv.textContent   = '✅ Envoyer';
     }
     if (inp) {
-        inp.value = '';
+        inp.value    = '';
         inp.disabled = false;
     }
 }
@@ -361,32 +410,19 @@ export function declencherAfficherReponse() {
     if (btnAfficher) { btnAfficher.disabled = true; btnAfficher.style.opacity = '0.45'; btnAfficher.style.animation = ''; }
 
     if (_wsOk()) {
-        const data = {};
+        const data    = {};
         const repHote = (window._quizReponseSaisieHote || '').trim();
-
-        if (repHote) {
-            data.reponseHote = repHote;
-            data.tsHote = Date.now();
-        }
-
+        if (repHote) { data.reponseHote = repHote; data.tsHote = Date.now(); }
         _ws().send('HOST_ACTION', { action: 'quiz:reveal', data });
     } else {
         _validationEnCours = false;
     }
 }
 
-// ════════════════════════════════════════════════════════════
-// [FIX 2] envoyerReponseHote — utilise HOST_ACTION quiz:host_answer
-// ════════════════════════════════════════════════════════════
-// POURQUOI : le socket hôte est authentifié avec ws._isHost = true
-// et ws._pseudo = null. Toute PLAYER_ACTION reçue côté serveur
-// passerait pseudo = ws._pseudo = null → score crédité à "null".
-//
-// SOLUTION : on envoie HOST_ACTION avec action:"quiz:host_answer"
-// et on inclut explicitement le pseudo dans data.pseudo.
-// Le serveur (server/games/quiz.js handleHostAction) lit
-// data.pseudo ou partie.hostPseudo — jamais ws._pseudo.
-// ════════════════════════════════════════════════════════════
+/**
+ * [FIX 2] Envoie la réponse de l'hôte via HOST_ACTION quiz:host_answer
+ * au lieu de PLAYER_ACTION (ws._pseudo est null pour le socket hôte).
+ */
 export function envoyerReponseHote(rep) {
     if (!rep || _reponseHoteEnvoyee) return;
     _reponseHoteEnvoyee = true;
@@ -394,22 +430,16 @@ export function envoyerReponseHote(rep) {
     const pseudo = _pseudoHote();
     const ts     = Date.now();
 
-    // [FIX 2] — HOST_ACTION au lieu de PLAYER_ACTION
     if (_wsOk()) {
         _ws().send('HOST_ACTION', {
             action : 'quiz:host_answer',
-            data   : {
-                pseudo,       // explicitement transmis — le serveur le lit depuis data
-                reponse : rep,
-                ts,
-            },
+            data   : { pseudo, reponse: rep, ts },
         });
         console.log('[QUIZ] 📨 Réponse hôte envoyée (HOST_ACTION quiz:host_answer):', rep, '→', pseudo);
     } else {
         console.warn('[QUIZ] ⚠️ Pas de WebSocket pour envoyer la réponse hôte');
     }
 
-    // Mise à jour locale (UI) — reflète immédiatement dans le panneau
     _reponsesRecues[pseudo] = { reponse: rep, ts };
 
     const btnEnv = document.getElementById('btn-valider-reponse');
@@ -430,10 +460,42 @@ export function lireReponsesInvites() {
     return { ..._reponsesRecues };
 }
 
+/**
+ * Nettoyage complet entre deux parties.
+ * [FIX A] _nbInvites remis à 0
+ * [FIX B] Les handlers WS sont retirés proprement via socket.off()
+ *         avant que _wsListenersActifs soit remis à false,
+ *         pour éviter l'accumulation de doublons sur la nouvelle partie.
+ */
 export function nettoyerPartieInvites() {
+    // [FIX B] Retirer tous les handlers WS de la partie précédente
+    const s = _ws();
+    if (s && _wsListenersActifs) {
+        if (_handleQuizQuestion)   s.off('QUIZ_QUESTION',     _handleQuizQuestion);
+        if (_handleResponseIn)     s.off('QUIZ_RESPONSE_IN',  _handleResponseIn);
+        if (_handleTimerExpired)   s.off('QUIZ_TIMER_EXPIRED',_handleTimerExpired);
+        if (_handleCorrection)     s.off('QUIZ_CORRECTION',   _handleCorrection);
+        if (_handleScoresUpdate)   s.off('SCORES_UPDATE',     _handleScoresUpdate);
+        if (_handlePlayerJoined)   s.off('PLAYER_JOINED',     _handlePlayerJoined);
+        if (_handleQuizIndice)     s.off('QUIZ_INDICE',       _handleQuizIndice);
+        if (_handleError)          s.off('ERROR',             _handleError);
+        console.log('[QUIZ_HOTE] ✅ Handlers WS retirés');
+    }
+
+    // Réinitialiser toutes les références de handlers
+    _handleQuizQuestion  = null;
+    _handleResponseIn    = null;
+    _handleTimerExpired  = null;
+    _handleCorrection    = null;
+    _handleScoresUpdate  = null;
+    _handlePlayerJoined  = null;
+    _handleQuizIndice    = null;
+    _handleError         = null;
+
     _reponsesRecues      = {};
     _validationEnCours   = false;
     _reponseHoteEnvoyee  = false;
+    _nbInvites           = 0;       // [FIX A] — CRITIQUE
     _wsListenersActifs   = false;
     window._quizReponseSaisieHote = '';
 
@@ -447,5 +509,7 @@ export function nettoyerPartieInvites() {
 
     publierEtat('fin');
 
-    if (_wsOk()) _ws().send('HOST_END_GAME', {});
+    // Ne pas envoyer HOST_END_GAME ici : c'est la responsabilité de HostSession.terminer()
+    // pour éviter les doubles envois.
+    console.log('[QUIZ_HOTE] ✅ État nettoyé pour nouvelle partie');
 }

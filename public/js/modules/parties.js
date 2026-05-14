@@ -14,6 +14,20 @@ import {
 } from "../core/storage.js";
 
 // ======================================================
+// 🧹 Suivi des intervalles et listeners créés par afficherListeParties()
+// Ils sont nettoyés à chaque nouvel appel pour éviter les fuites.
+// ======================================================
+let _intervalsListeParties  = [];   // IDs setInterval
+let _listenersListeParties  = [];   // { key, fn } pour window.removeEventListener
+
+function _nettoyerListenersParties() {
+    _intervalsListeParties.forEach(id => clearInterval(id));
+    _intervalsListeParties = [];
+    _listenersListeParties.forEach(({ fn }) => window.removeEventListener('storage', fn));
+    _listenersListeParties = [];
+}
+
+// ======================================================
 // 🎮 Bouton "Continuer"
 // ======================================================
 export function initContinueButton() {
@@ -90,6 +104,9 @@ function getBestScorePartie(p) {
 // 📜 Afficher la liste des parties
 // ======================================================
 export function afficherListeParties() {
+    // Nettoyer les intervalles et listeners de l'appel précédent
+    _nettoyerListenersParties();
+
     const zone = ensureContainer();
     const parties = getAllParties();
 
@@ -236,7 +253,11 @@ export function afficherListeParties() {
             }
             majCpt();
             const _iv = setInterval(majCpt, 800);
-            window.addEventListener('storage', e => { if(e.key==='invite_pret_'+_sidP) majCpt(); });
+            _intervalsListeParties.push(_iv);   // suivi pour cleanup
+
+            const _storageFn = e => { if (e.key === 'invite_pret_' + _sidP) majCpt(); };
+            window.addEventListener('storage', _storageFn);
+            _listenersListeParties.push({ fn: _storageFn }); // suivi pour cleanup
         }
         const btnLoad = document.createElement("button");
         btnLoad.className = "btn-load disabled";
