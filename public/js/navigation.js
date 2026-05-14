@@ -54,6 +54,7 @@ export function initBoutonReset() {
 // 🏠 BOUTON ACCUEIL PERMANENT
 // ======================================================
 import { nettoyerSession, resetEtatQuizHote } from "./core/cleanup.js";
+import { HostSession } from "./core/host-session.js";
 
 export function initBoutonAccueil() {
     const btnHome = $("btn-home-permanent");
@@ -68,11 +69,12 @@ export function initBoutonAccueil() {
             if (!demanderQuitterPartie()) return;
         }
 
-        // 🧹 Nettoyage complet de l'état client AVANT reload
-        resetEtatQuizHote();   // Réinitialise quiz_hote + HostSession
-        nettoyerSession();     // Supprime les clés parasites de localStorage
+        // 🧹 Reset complet AVANT reload
+        try { HostSession.reset(); } catch {}
+        try { resetEtatQuizHote(); } catch {}
+        try { nettoyerSession(); } catch {}
 
-        // 🔄 Équivalent exact de FN+Ctrl+R
+        // 🔄 Recharge la page (équivalent logique d’un hard reload)
         location.reload();
     });
 }
@@ -88,6 +90,8 @@ export function initBoutonRetour() {
     btnRetour.addEventListener("click", () => retourArriere());
 }
 
+
+
 // ======================================================
 // 🎯 NAVIGATION VERS UNE SECTION
 // ======================================================
@@ -101,12 +105,15 @@ export function naviguerVers(section, depuis = null) {
         "pendu", "petitbac", "memoire", "morpion", "puissance4",
         "stats-dashboard", "gestion-joueurs-panel", "gestion-equipes-panel"
     ];
+
     tousLesEcrans.forEach(id => hide(id));
     show(section);
 
     const btnRetour = $("btn-retour-permanent");
     if (btnRetour) btnRetour.hidden = section === "home";
 }
+
+
 
 // ======================================================
 // 🏠 NAVIGATION VERS L'ACCUEIL
@@ -126,28 +133,29 @@ export function naviguerVersAccueil() {
     masquerScoreboard();
     show("home");
 
-    // Nettoyage session au retour à l'accueil
-    // Supprime ws_partie_id, minigame_partie_session_id et toutes les clés de jeu.
-    // GameState et HostSession sont réinitialisés via resetSession().
+    // Reset complet de la session
     _resetSessionComplete();
 
-    // Import dynamique pour éviter la dépendance circulaire navigation ↔ main
-    import('./main.js').then(m => {
-        if (typeof m.initHomeHub === 'function') m.initHomeHub();
-    }).catch(() => {
-        if (typeof window.initHomeHub === 'function') window.initHomeHub();
-    });
+    // Recharger le hub d'accueil
+    import('./main.js')
+        .then(m => { if (typeof m.initHomeHub === 'function') m.initHomeHub(); })
+        .catch(() => { if (typeof window.initHomeHub === 'function') window.initHomeHub(); });
 
     const btnRetour = $("btn-retour-permanent");
     if (btnRetour) btnRetour.hidden = true;
 }
 
-// ── Reset complet de la session (nettoyage localStorage + WS + GameState) ──
-function _resetSessionComplete() {
-    // 1. Nettoyer localStorage
-    nettoyerSession();
 
-    // 2. Réinitialiser HostSession WS (fermer la partie serveur + reset état)
+
+// ======================================================
+// 🔄 RESET COMPLET DE LA SESSION
+// ======================================================
+function _resetSessionComplete() {
+
+    // 1. Nettoyer localStorage
+    try { nettoyerSession(); } catch {}
+
+    // 2. Réinitialiser HostSession
     try {
         if (window.HostSession) {
             if (typeof window.HostSession.terminer === 'function') {
@@ -155,30 +163,32 @@ function _resetSessionComplete() {
             }
             window.HostSession._partieId = null;
             window.HostSession._snapshot = null;
+            window.HostSession._pendingStart = false;
         }
     } catch {}
 
-    // 3. Réinitialiser invite.js (masquer le bloc, effacer l'ID en mémoire)
-    import('./modules/invite.js').then(m => {
-        if (typeof m.resetPartieSessionId === 'function') m.resetPartieSessionId();
-    }).catch(() => {});
+    // 3. Réinitialiser invite.js
+    import('./modules/invite.js')
+        .then(m => { if (typeof m.resetPartieSessionId === 'function') m.resetPartieSessionId(); })
+        .catch(() => {});
 
     // 4. Réinitialiser GameState
     try {
         if (window.GameState) {
-            window.GameState.mode               = null;
-            window.GameState.jeu                = null;
-            window.GameState.jeuActuel          = null;
-            window.GameState.partieNom          = '';
-            window.GameState.joueurs            = [];
-            window.GameState.equipes            = [];
-            window.GameState.scores             = {};
+            window.GameState.mode                 = null;
+            window.GameState.jeu                  = null;
+            window.GameState.jeuActuel            = null;
+            window.GameState.partieNom            = '';
+            window.GameState.joueurs              = [];
+            window.GameState.equipes              = [];
+            window.GameState.scores               = {};
             window.GameState.partieEnCoursChargee = false;
         }
     } catch {}
 
     console.log('[NAV] 🧹 Session réinitialisée — prêt pour une nouvelle partie');
 }
+
 
 // ======================================================
 // ⬅️ RETOUR ARRIÈRE
