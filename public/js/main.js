@@ -1,17 +1,28 @@
-// /js/main.js — v3.9 (FIX: Re-bind btn-start-solo at every form-solo entrance)
+// /js/main.js — v4.0
+// ============================================================
+// CORRECTIONS v4.0 :
+//
+// [FIX 1] Suppression du bloc `const HostSession = {...}` en double.
+//   La seule source est désormais host_session.js via l'import ligne 15.
+//   Ce bug causait un SyntaxError fatal qui empêchait tout le code de s'exécuter.
+//
+// [FIX 2] Ajout de initStartSolo() qui était appelée mais jamais définie.
+//
+// [FIX 3] lancerJeu() ne fait PLUS appel à HostSession.notifierDemarrage().
+//   Avant : notifierDemarrage() était appelé alors que _partieId = null
+//   (GAME_CREATED pas encore reçu) → creerPartie() déclenchée une 2e fois
+//   → NAME_TAKEN sur le serveur.
+//   Maintenant : HOST_START_GAME est envoyé depuis le handler GAME_CREATED
+//   dans host_session.js, après que _partieId soit garanti.
+//
+// [FIX 4] lancerJeu() ne fait PLUS appel à nettoyerSession() directement.
+//   Le nettoyage est délégué à host_session.js juste avant le lancement.
+//   Sinon minigame_partie_id était supprimé avant que GAME_CREATED puisse l'écrire.
+//
+// [FIX 5] initStartSolo() stocke GameState.jeu dans HostSession._pendingGame
+//   pour que le handler GAME_CREATED sache quel jeu lancer.
+// ============================================================
 
-/**
- * ============================================
- * 🎮 MAIN.JS — Gestionnaire principal du jeu
- * ============================================
- * Version: 3.9 — Fix re-bind btn-start-solo pour chaque création de partie
- *
- * CORRECTIONS v3.9:
- * ✅ initStartSolo() rappelée à chaque entrée sur form-solo
- * ✅ Clonage + listener réassocié SANS accumulation WS
- * ✅ HostSession.reset() AVANT creerPartie()
- * ✅ resetEtatQuizHote() EN MÊME TEMPS que reset()
- */
 import HostSession from './core/host_session.js';
 
 import { $, $$, show, hide } from "./core/dom.js";
@@ -251,7 +262,8 @@ function initGameButtons() {
 function validerNomPartie(nom) {
     if (!nom) { alert("Merci d'indiquer un nom de partie"); return false; }
     if (getAllParties().some(p => (p.nomPartie || "").toLowerCase() === nom.toLowerCase())) {
-        alert("Ce nom existe déjà."); return false; }
+        alert("Ce nom existe déjà."); return false;
+    }
     return true;
 }
 
@@ -266,10 +278,7 @@ function initModeCards() {
 
             if (GameState.mode === "solo") {
                 initFormSolo();
-
-                // Re-bind systématique du bouton start
-                initStartSolo();
-
+                initStartSolo(); // [FIX 2] Re-bind à chaque entrée sur form-solo
                 naviguerVers("form-solo", "choix-mode");
             } else {
                 initFormEquipes();
@@ -279,19 +288,159 @@ function initModeCards() {
     });
 }
 
+// ============================================
+// 🚀 DÉMARRAGE MODE SOLO
+// ============================================
+// [FIX 2] initStartSolo() était appelée mais jamais définie dans v3.9.
+// [FIX 3] Ne PAS appeler lancerJeu() directement ici.
+//   → lancerJeu() est désormais appelé par host_session.js dans le handler
+//     GAME_CREATED, après que _partieId soit garanti.
+//   → Pour les jeux locaux (morpion, undercover), on lance directement
+//     car ils ne dépendent pas d'un partieId serveur.
+// [FIX 5] On stocke le jeu à lancer dans HostSession._pendingGame pour que
+//   le handler GAME_CREATED sache quoi démarrer.
+function initStartSolo() {
+    const btnStart = $("btn-start-solo");
+    if (!btnStart) return;
+
+    // Toujours visible et actif
+    btnStart.hidden        = false;
+    btnStart.disabled      = false;
+    btnStart.style.display = 'block';
+
+    // Cloner pour supprimer les anciens listeners et éviter l'accumulation
+    const clone = btnStart.cloneNode(true);
+    btnStart.parentNode.replaceChild(clone, btnStart);
+    const btn = $("btn-start-solo");
+
+    btn.addEventListener("click", () => {
+        if (!GameState.joueurs || GameState.joueurs.length === 0) {
+            alert("Sélectionne au moins un joueur."); return;
+        }
+        GameState.mode = "solo";
+
+        // Terminer proprement la partie en cours si elle existe
+        if (HostSession._partieId) {
+            HostSession.terminer();
+        }
+
+        // Réinitialiser l'état de la partie précédente
+        HostSession.reset();
+        resetEtatQuizHote();
+
+        // Jeux locaux (pas de serveur WS nécessaire pour démarrer)
+        if (GameState.jeu === "morpion") {
+            if (GameState.joueurs.length < 2 || GameState.joueurs.length > 3) {
+                alert("Le Morpion : 2 à 3 joueurs."); return;
+            }
+            lancerJeuLocal("morpion"); return;
+        }
+
+        if (GameState.jeu === "puissance4") {
+            if (GameState.joueurs.length !== 2) {
+                alert("Puissance 4 : exactement 2 joueurs."); return;
+            }
+            lancerJeuLocal("puissance4"); return;
+        }
+
+        if (GameState.jeu === "undercover") {
+            if (GameState.joueurs.length < 3) {
+                alert("Undercover : il faut au moins 3 joueurs."); return;
+            }
+            if (!GameState.partieEnCoursChargee) creerNouvellePartie();
+
+            const spanNb = $("uc-nb-joueurs");
+            if (spanNb) spanNb.textContent = GameState.joueurs.length;
+
+            hide("form-solo");
+            show("container");
+            const ucConfig  = document.getElementById("undercover-config");
+            const ucDistrib = document.getElementById("undercover-distribution");
+            const ucGame    = document.getElementById("undercover");
+            if (ucConfig)  { ucConfig.hidden = false; ucConfig.style.display = "block"; }
+            if (ucDistrib) { ucDistrib.hidden = true; ucDistrib.style.display = "none"; }
+            if (ucGame)    { ucGame.hidden    = true; ucGame.style.display    = "none"; }
+
+            ucBindBouton(() => {
+                const jeu = document.getElementById("undercover");
+                if (jeu) { jeu.hidden = false; jeu.style.display = "block"; }
+                show("scoreboard");
+                afficherScoreboard();
+            });
+            return;
+        }
+
+        // [FIX 5] Jeux WS : stocker le jeu à lancer, créer la partie côté serveur.
+        // lancerJeu() sera appelé depuis le handler GAME_CREATED dans host_session.js.
+        HostSession._pendingGame = GameState.jeu;
+        HostSession.creerPartie();
+
+        // UX : montrer un état "création en cours" pendant l'attente du serveur
+        _afficherEtatCreation();
+    });
+}
+
+// Affiche un indicateur pendant la création de partie côté serveur
+function _afficherEtatCreation() {
+    const btnStart = $("btn-start-solo");
+    if (btnStart) {
+        btnStart.disabled      = true;
+        btnStart.style.opacity = '0.5';
+        btnStart.textContent   = '⏳ Création en cours…';
+    }
+}
+
+// Restaure le bouton après erreur de création
+export function _restaurerBoutonStart() {
+    const btnStart = $("btn-start-solo");
+    if (btnStart) {
+        btnStart.disabled      = false;
+        btnStart.style.opacity = '';
+        btnStart.textContent   = '🚀 Commencer la partie';
+    }
+}
 
 // ============================================
-// LANCEMENT DES AUTRES JEUX
+// Jeux locaux (sans dépendance WS pour démarrer)
 // ============================================
+function lancerJeuLocal(game) {
+    GameState.jeuActuel = game;
+    nettoyerSession();
+    if (!GameState.partieEnCoursChargee) {
+        const p = loadGame();
+        if (!p || p.nomPartie !== GameState.partieNom) creerNouvellePartie();
+    }
+    hideAll(["home","choix-mode","form-solo","form-equipes","choix-jeu","liste-parties"]);
+    masquerUndercoverComplet();
+    masquerModules();
+    show("container");
+    show("scoreboard");
+    afficherScoreboard();
+    const init = GAME_INITIALIZERS[game.toLowerCase()];
+    if (init && typeof window[init] === "function") window[init]();
+    show(game);
+}
+
+// ============================================
+// LANCEMENT DES JEUX WS
+// ============================================
+// [FIX 3] lancerJeu() ne fait PLUS appel à HostSession.notifierDemarrage().
+//   HOST_START_GAME est envoyé depuis le handler GAME_CREATED dans host_session.js.
+//   Cela garantit que _partieId est disponible avant l'envoi.
+//
+// [FIX 4] lancerJeu() ne fait PLUS appel à nettoyerSession().
+//   Le nettoyage est fait dans host_session.js AVANT d'appeler lancerJeu(),
+//   ce qui évite que minigame_partie_id soit supprimé trop tôt.
 export function lancerJeu(game, options = {}) {
     const fromLoad = options.fromLoad === true;
     GameState.jeuActuel = game;
 
     if (game.toLowerCase() === "undercover") return;
 
-    if (!fromLoad) {
+    // [FIX 4] nettoyerSession() est désormais appelé dans host_session.js
+    // juste avant lancerJeu(), pas ici. Sauf si fromLoad (chargement d'une partie sauvegardée).
+    if (fromLoad) {
         nettoyerSession();
-
         if (!GameState.partieEnCoursChargee) {
             const p = loadGame();
             if (!p || p.nomPartie !== GameState.partieNom) creerNouvellePartie();
@@ -320,7 +469,8 @@ export function lancerJeu(game, options = {}) {
         signalDemarrage(pid, game);
     }
 
-    HostSession.notifierDemarrage();
+    // [FIX 3] Plus d'appel à notifierDemarrage() ici.
+    // HOST_START_GAME est géré dans host_session.js handler GAME_CREATED.
 
     if (key === 'petitbac' && typeof window._petitbacPublierManche === 'function') {
         window._petitbacPublierManche();
@@ -364,9 +514,9 @@ function _countdown(onEnd) {
     }, 1000);
 }
 
-window.lancerJeu    = lancerJeu;
-window.initHomeHub  = initHomeHub;
-window.initStartSolo = initStartSolo; // [FIX v3.9] Appelé depuis initModeCards à chaque création de partie
+window.lancerJeu     = lancerJeu;
+window.initHomeHub   = initHomeHub;
+window.initStartSolo = initStartSolo;
 
 window.initialiserPendu      = initialiserPendu;
 window.initialiserMemoire    = initialiserMemoire;
@@ -402,333 +552,20 @@ function init() {
     initNavigationButtons();
     initGameButtons();
     initModeCards();
-    initStartSolo();  // Appelé UNE FOIS au démarrage (sans effet à ce stade)
+    initStartSolo();
     masquerUndercoverComplet();
-    initNavigation();  // Initialiser navigation UNE SEULE FOIS
+    initNavigation();
     HostSession.init();
 }
 
 window.addEventListener("DOMContentLoaded", init);
 
-
-// ============================================
-// 🔌 HostSession — couche WebSocket host
-// ============================================
-const HostSession = {
-
-    _partieId      : null,
-    _snapshot      : null,
-    _authenticated : false,
-    _pendingStart  : false,
-
-    // Réinitialiser avant une nouvelle partie
-    // Appelé dans initStartSolo() avant chaque creerPartie().
-    reset() {
-        this._partieId    = null;
-        this._snapshot    = null;
-        this._pendingStart = false;
-        console.log('[HOST] 🔄 HostSession reset (nouvelle partie)');
-    },
-
-    // Connexion initiale
-    init() {
-        try {
-            socket.connect();
-
-            socket.once('__connected__', () => {
-                console.log('[HOST] Socket connecté — authentification...');
-                socket.send('HOST_AUTH');
-            });
-
-            socket.on('AUTH_OK', () => {
-                console.log('[HOST] ✅ Authentifié');
-                this._authenticated = true;
-
-                const savedId = localStorage.getItem('minigame_partie_id');
-                if (savedId) {
-                    console.log('[HOST] 🔄 HOST_REJOIN —', savedId);
-                    socket.send('HOST_REJOIN', { partieId: savedId });
-                    return;
-                }
-                console.log('[HOST] ℹ️ Pas de partie sauvegardée — prêt à créer');
-            });
-
-            socket.on('HOST_REJOINED', ({ partieId, snapshot, joinUrl }) => {
-                console.log('[HOST] ✅ Rejoin host OK —', partieId);
-                this._partieId = partieId;
-                this._snapshot = snapshot;
-                this._afficherLienJoin(joinUrl, snapshot?.codeCourt);
-            });
-
-            socket.on('GAME_CREATED', ({ partieId, snapshot, joinUrl }) => {
-                console.log('[HOST] ✅ Partie créée —', partieId);
-                this._partieId = partieId;
-                this._snapshot = snapshot;
-
-                localStorage.setItem('minigame_partie_id', partieId);
-
-                import('./modules/invite.js').then(m => {
-                    m.setPartieSessionId(partieId);
-                    m.mettreAJourLienInvitation();
-                }).catch(err => console.warn('[HOST] ⚠️ Erreur import invite.js:', err.message));
-
-                this._afficherLienJoin(joinUrl, snapshot?.codeCourt);
-
-                if (this._pendingStart) {
-                    this._pendingStart = false;
-                    socket.send('HOST_START_GAME', { partieId });
-                    console.log('[HOST] 📤 HOST_START_GAME différé —', partieId);
-                }
-            });
-
-            socket.on('PLAYER_JOINED', ({ pseudo, joueurs }) => {
-                console.log(`[HOST] 👤 Joueur rejoint: ${pseudo} (${joueurs.length} total)`);
-                this._afficherCompteurJoueurs(joueurs.length);
-                HostSession._syncJoueurRejoint(pseudo);
-                HostSession._toastHote(`🎉 ${pseudo} a rejoint la partie !`, 'success');
-                this._snapshot = { ...(this._snapshot || {}), joueurs };
-            });
-
-            socket.on('PLAYER_LEFT', ({ pseudo, joueurs }) => {
-                console.log(`[HOST] 👤 Joueur parti: ${pseudo}`);
-                this._afficherCompteurJoueurs(joueurs.length);
-                HostSession._syncJoueurParti(pseudo);
-                HostSession._toastHote(`${pseudo} a quitté la partie`, 'warning');
-                this._snapshot = { ...(this._snapshot || {}), joueurs };
-            });
-
-            socket.on('SCORES_UPDATE', ({ scores }) => {
-                console.log('[HOST] 📊 Scores mis à jour:', scores);
-            });
-
-            socket.on('GAME_ENDED', ({ snapshot }) => {
-                console.log('[HOST] 🏁 Partie terminée (WS)');
-
-                // Réinitialiser TOUT l'état de la partie terminée
-                this._partieId    = null;
-                this._snapshot    = null;
-                this._pendingStart = false;
-
-                localStorage.removeItem('minigame_partie_id');
-                localStorage.removeItem('minigame_partie_session_id');
-
-                // Réinitialiser quiz_hote
-                resetEtatQuizHote();
-
-                import('./modules/invite.js')
-                    .then(m => m.resetPartieSessionId())
-                    .catch(err => console.warn('[HOST] ⚠️ Erreur reset invite.js:', err.message));
-            });
-
-            socket.on('ERROR', ({ code, message }) => {
-                console.warn('[HOST] ⚠️ Erreur WS:', code, message || '');
-
-                if (code === 'GAME_NOT_FOUND') {
-                    console.log('[HOST] 🧹 ID périmé supprimé — prêt pour une nouvelle partie');
-                    localStorage.removeItem('minigame_partie_id');
-                    localStorage.removeItem('minigame_partie_session_id');
-                    this._partieId = null;
-                    this._snapshot = null;
-                    import('./modules/invite.js')
-                        .then(m => m.resetPartieSessionId())
-                        .catch(err => console.warn('[HOST] ⚠️ Erreur reset invite.js:', err.message));
-                    if (GameState.joueurs && GameState.joueurs.length > 0 && GameState.jeu) {
-                        this.creerPartie();
-                    }
-                }
-
-                if (code === 'HOST_ALREADY_HAS_GAME') {
-                    console.log('[HOST] ℹ️ Partie déjà active côté serveur — attente HOST_REJOINED');
-                }
-
-                if (code === 'NAME_TAKEN') {
-                    console.warn('[HOST] ⚠️ Nom de partie déjà pris :', GameState.partieNom);
-                    this._partieId = null;
-                    this._toastHote('Ce nom de partie est déjà utilisé. Change le nom et réessaie.', 'error');
-                }
-
-                if (code === 'INTERNAL_ERROR') {
-                    console.error('[HOST] ❌ INTERNAL_ERROR — vérifier logs serveur');
-                    this._toastHote('Erreur serveur temporaire. Réessaie dans quelques secondes.', 'error');
-                }
-            });
-
-        } catch (err) {
-            console.warn('[HOST] Socket non disponible — mode local uniquement:', err.message);
-        }
-    },
-
-    // Créer la partie côté serveur
-    creerPartie() {
-        if (!this._authenticated) {
-            console.warn('[HOST] creerPartie() ignoré — pas authentifié');
-            return;
-        }
-        if (this._partieId) {
-            console.log('[HOST] creerPartie() ignoré — partie déjà créée:', this._partieId);
-            return;
-        }
-
-        const nom        = GameState.partieNom || 'Partie';
-        const jeu        = GameState.jeu       || 'quiz';
-        const mode       = GameState.mode      || 'solo';
-        const hostPseudo = (GameState.joueurs && GameState.joueurs.length > 0)
-            ? String(GameState.joueurs[0]).trim()
-            : null;
-
-        try {
-            socket.send('HOST_CREATE_GAME', {
-                nom,
-                jeu,
-                mode,
-                equipes    : [],
-                hostJoue   : !!hostPseudo,
-                hostPseudo : hostPseudo || null,
-            });
-            console.log(`[HOST] 📤 HOST_CREATE_GAME — ${nom} / ${jeu} / ${mode} / hostPseudo: ${hostPseudo}`);
-        } catch (err) {
-            console.error('[HOST] ❌ Erreur send HOST_CREATE_GAME:', err.message);
-            this._toastHote('Erreur de connexion. Vérifie ta connexion internet.', 'error');
-        }
-    },
-
-    // Notifier le démarrage
-    notifierDemarrage() {
-        if (!this._authenticated) {
-            console.warn('[HOST] notifierDemarrage() ignoré — pas authentifié');
-            return;
-        }
-        if (this._partieId) {
-            try {
-                socket.send('HOST_START_GAME', { partieId: this._partieId });
-                console.log('[HOST] 📤 HOST_START_GAME —', this._partieId);
-            } catch (err) {
-                console.error('[HOST] ❌ Erreur send HOST_START_GAME:', err.message);
-            }
-        } else {
-            console.warn('[HOST] ⏳ Pas de partieId — attente de GAME_CREATED pour démarrer');
-            this._pendingStart = true;
-            if (this._authenticated && !this._partieId) {
-                this.creerPartie();
-            }
-        }
-    },
-
-    // Terminer la partie
-    terminer() {
-        if (!this._authenticated || !this._partieId) return;
-        try {
-            socket.send('HOST_END_GAME');
-            console.log('[HOST] 📤 HOST_END_GAME');
-        } catch (err) {
-            console.error('[HOST] ❌ Erreur send HOST_END_GAME:', err.message);
-        }
-    },
-
-    // Sync joueur dans GameState + DOM
-    _syncJoueurRejoint(pseudo) {
-        if (!pseudo) return;
-        if (!GameState.joueurs.includes(pseudo)) {
-            GameState.joueurs.push(pseudo);
-            GameState.scores[pseudo] = GameState.scores[pseudo] ?? 0;
-        }
-
-        const container = document.getElementById('joueurs-selectionnes-container');
-        if (!container) return;
-        if (container.querySelector(`[data-joueur="${CSS.escape(pseudo)}"]`)) return;
-
-        const div = document.createElement('div');
-        div.className = 'joueur-tag';
-        div.dataset.joueurWs = pseudo;
-        div.innerHTML = `
-            <span class="nom">${_escHtml(pseudo)}</span>
-            <span class="remove" data-joueur="${_escHtml(pseudo)}">✖</span>`;
-
-        div.querySelector('.remove').addEventListener('click', () => {
-            if (HostSession._partieId) {
-                try { socket.send('HOST_KICK_PLAYER', { pseudo }); }
-                catch (err) { console.error('[HOST] ❌ Erreur send HOST_KICK_PLAYER:', err.message); }
-            }
-            HostSession._syncJoueurParti(pseudo);
-        });
-
-        container.appendChild(div);
-        console.log(`[HOST] ✅ Joueur affiché dans le lobby: ${pseudo}`);
-    },
-
-    _syncJoueurParti(pseudo) {
-        if (!pseudo) return;
-        GameState.joueurs = (GameState.joueurs || []).filter(j => j !== pseudo);
-        delete GameState.scores[pseudo];
-
-        const container = document.getElementById('joueurs-selectionnes-container');
-        if (!container) return;
-        const tag = container.querySelector(`[data-joueur="${CSS.escape(pseudo)}"]`);
-        tag?.closest('.joueur-tag')?.remove();
-        console.log(`[HOST] ✅ Joueur retiré du lobby: ${pseudo}`);
-    },
-
-    // Toast hôte
-    _toastHote(msg, type = 'info') {
-        const COLORS = { success: '#22c55e', error: '#ef4444', warning: '#f59e0b', info: '#00d4ff' };
-        const ICONS  = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
-        let c = document.getElementById('host-toast-container');
-        if (!c) {
-            c = document.createElement('div');
-            c.id = 'host-toast-container';
-            c.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:.4rem;max-width:320px;pointer-events:none;';
-            document.body.appendChild(c);
-        }
-        const el = document.createElement('div');
-        el.style.cssText = [
-            'display:flex;gap:.5rem;align-items:center;padding:.65rem .9rem;border-radius:10px',
-            `background:#1e1e2e;color:#fff;border-left:3px solid ${COLORS[type] || COLORS.info}`,
-            'box-shadow:0 4px 16px rgba(0,0,0,.5)',
-            'opacity:0;transition:opacity .25s,transform .25s;transform:translateY(6px)',
-            'font-size:.88rem;font-weight:600;pointer-events:auto',
-        ].join(';');
-        el.innerHTML = `<span>${ICONS[type] || 'ℹ️'}</span><span>${msg}</span>`;
-        c.appendChild(el);
-        requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
-        setTimeout(() => {
-            el.style.opacity = '0'; el.style.transform = 'translateY(6px)';
-            setTimeout(() => el.remove(), 260);
-        }, 4000);
-    },
-
-    // Lien / QR
-    _afficherLienJoin(joinUrl, code) {
-        const el = document.getElementById('ws-join-info');
-        if (!el || !joinUrl) return;
-        const url = `${location.origin}${joinUrl}`;
-        el.innerHTML = `
-            <div style="margin-top:12px;padding:10px 14px;background:rgba(0,212,255,.08);
-                border:1px solid rgba(0,212,255,.25);border-radius:10px;font-size:.82rem;
-                color:rgba(255,255,255,.85);text-align:center;">
-                🔗 Lien invités :
-                <a href="${url}" target="_blank"
-                    style="color:#00d4ff;word-break:break-all;">${url}</a>
-                ${code ? `<br><strong style="font-size:1.1rem;letter-spacing:.15em;color:#fff;">${code}</strong>` : ''}
-            </div>`;
-        el.style.display = 'block';
-    },
-
-    _afficherCompteurJoueurs(count) {
-        const el = document.getElementById('ws-joueurs-count');
-        if (!el) return;
-        el.textContent = `${count} joueur${count > 1 ? 's' : ''} connecté${count > 1 ? 's' : ''}`;
-    },
-};
-
-function _escHtml(s) {
-    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
+// Exposer HostSession sur window pour navigation.js et quiz_hote.js
 window.HostSession = HostSession;
 window.jeuSocket   = socket;
 
+// Utilisé par joueurs.js pour déclencher la création de partie quand le 1er joueur est ajouté
 window._hostCreerPartieQuandPret = function() {
-    if (HostSession._authenticated && !HostSession._partieId) {
-        HostSession.creerPartie();
-    }
+    // Ne rien faire ici — la création est déclenchée au clic sur btn-start-solo
+    // pour éviter les doubles créations.
 };
