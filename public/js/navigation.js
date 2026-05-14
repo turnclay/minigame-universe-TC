@@ -10,12 +10,17 @@ import {
     getAllPerformances,
     getPlayers
 } from "./core/storage.js";
-import { nettoyerSession } from "./core/cleanup.js";
+
+// 🔥 Import unique et correct
+import { nettoyerSession, resetEtatQuizHote } from "./core/cleanup.js";
+import { HostSession } from "./core/host-session.js";
+
 
 // ======================================================
 // 🗺️ HISTORIQUE DE NAVIGATION
 // ======================================================
 let navigationStack = [];
+
 
 // ======================================================
 // 🛑 CONFIRMATION AVANT DE QUITTER UN JEU
@@ -31,31 +36,30 @@ function estEcranJeu(ecran) {
     ].includes(ecran);
 }
 
+
 // ======================================================
 // 🔄 BOUTON RESET PERMANENT (entre ⬅️ et 🏠)
 // ======================================================
-// Nettoie la session et ramène à l'accueil sans demander de confirmation.
-// Utilisé pour démarrer une nouvelle partie proprement.
 export function initBoutonReset() {
     const btnReset = $("btn-reset-permanent");
     if (!btnReset) return;
+
     btnReset.addEventListener("click", () => {
         fermerMenu();
-        // Confirmation uniquement si une partie de jeu est en cours
+
         const ecranActuel = getEcranActuel();
         if (estEcranJeu(ecranActuel)) {
             if (!confirm("Réinitialiser la session et revenir à l'accueil ?")) return;
         }
+
         naviguerVersAccueil();
     });
 }
 
+
 // ======================================================
 // 🏠 BOUTON ACCUEIL PERMANENT
 // ======================================================
-import { nettoyerSession, resetEtatQuizHote } from "./core/cleanup.js";
-import { HostSession } from "./core/host-session.js";
-
 export function initBoutonAccueil() {
     const btnHome = $("btn-home-permanent");
     if (!btnHome) return;
@@ -63,7 +67,6 @@ export function initBoutonAccueil() {
     btnHome.addEventListener("click", () => {
         fermerMenu();
 
-        // Confirmation si une partie est en cours
         const ecranActuel = getEcranActuel();
         if (estEcranJeu(ecranActuel)) {
             if (!demanderQuitterPartie()) return;
@@ -79,8 +82,6 @@ export function initBoutonAccueil() {
     });
 }
 
-
-
 // ======================================================
 // ⬅️ BOUTON RETOUR PERMANENT
 // ======================================================
@@ -89,8 +90,6 @@ export function initBoutonRetour() {
     if (!btnRetour) return;
     btnRetour.addEventListener("click", () => retourArriere());
 }
-
-
 
 // ======================================================
 // 🎯 NAVIGATION VERS UNE SECTION
@@ -112,8 +111,6 @@ export function naviguerVers(section, depuis = null) {
     const btnRetour = $("btn-retour-permanent");
     if (btnRetour) btnRetour.hidden = section === "home";
 }
-
-
 
 // ======================================================
 // 🏠 NAVIGATION VERS L'ACCUEIL
@@ -144,8 +141,6 @@ export function naviguerVersAccueil() {
     const btnRetour = $("btn-retour-permanent");
     if (btnRetour) btnRetour.hidden = true;
 }
-
-
 
 // ======================================================
 // 🔄 RESET COMPLET DE LA SESSION
@@ -188,8 +183,6 @@ function _resetSessionComplete() {
 
     console.log('[NAV] 🧹 Session réinitialisée — prêt pour une nouvelle partie');
 }
-
-
 
 // ======================================================
 // ⬅️ RETOUR ARRIÈRE
