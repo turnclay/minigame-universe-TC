@@ -116,21 +116,25 @@ export function afficherJoueursSelectionnes(containerId) {
     //   - La liste est vide → supprimer le bloc
     // Utilise un import dynamique pour éviter la dépendance circulaire
     // (joueurs.js ← invite.js ← joueurs.js).
+        // Mettre à jour le bloc invitation uniquement si un partieId serveur existe déjà.
+    // Dans le nouveau flux (v4.0), la partie est créée au clic sur btn-start-solo,
+    // pas au moment de l'ajout d'un joueur. Avant ce clic, aucun partieId n'est
+    // disponible → on ne tente pas de générer un lien (évite les warnings console).
     import('../modules/invite.js').then(m => {
         if (GameState.joueurs.length > 0) {
-            // Si le bloc existe déjà (UUID serveur disponible) → juste mettre à jour le lien.
-            // Sinon → afficher le bloc (qui affichera le lien dès qu'UUID disponible).
-            if (document.getElementById('bloc-invitation')) {
+            // Vérifier si un partieId existe avant de tenter la mise à jour du lien
+            const partieIdDisponible = typeof m.getPartieSessionId === 'function'
+                ? m.getPartieSessionId()
+                : null;
+
+            if (partieIdDisponible) {
+                // UUID serveur connu → mettre à jour le lien directement
                 m.mettreAJourLienInvitation();
-            } else {
-                m.afficherBlocInvitation();
             }
-            // Créer la partie WS dès qu'un joueur est sélectionné.
-            if (typeof window._hostCreerPartieQuandPret === 'function') {
-                window._hostCreerPartieQuandPret();
-            }
+            // Si pas de partieId : ne rien faire, pas de warning.
+            // Le lien sera mis à jour par host_session.js dans le handler GAME_CREATED.
         } else {
-            // Masquer le bloc statique (ne pas le supprimer — il est dans le HTML)
+            // Liste vide → masquer le bloc invitation
             const bloc = document.getElementById('bloc-invitation');
             if (bloc) bloc.hidden = true;
         }
