@@ -1,4 +1,4 @@
-// /js/navigation.js
+// /js/navigation.js — v1.1 (Fix initialisation unique)
 import { afficherReglages, initThemeSauvegarde } from './modules/reglages.js';
 
 import { $, show, hide } from "./core/dom.js";
@@ -11,6 +11,9 @@ import {
     getPlayers
 } from "./core/storage.js";
 import { nettoyerSession } from "./core/cleanup.js";
+
+// Flag pour éviter l'initialisation multiple
+let navigationInitialized = false;
 
 // ======================================================
 // 🗺️ HISTORIQUE DE NAVIGATION
@@ -225,7 +228,7 @@ export function initBoutonMenu() {
 }
 
 // ======================================================
-// 📊 ACTIONS DU MENU
+// 📋 ACTIONS DU MENU
 // ======================================================
 export function initMenuActions() {
 
@@ -968,7 +971,7 @@ function escapeHtml(str) {
 // 🚀 INITIALISATION COMPLÈTE
 // ======================================================
 
-// ── Auto-affichage du thème pendu (remplace le bouton toggle supprimé) ──
+// ── Auto-afficher le thème pendu (remplace le bouton toggle supprimé) ──
 // Lit data.theme depuis partie_question_* et l'affiche directement dans #pendu-theme-display
 function _initPenduThemeAuto() {
     const display = document.getElementById('pendu-theme-display');
@@ -1002,7 +1005,13 @@ function _initPenduThemeAuto() {
 }
 
 export function initNavigation() {
-    // Auto-afficher le thème du pendu dès qu'il est disponible (bouton supprimé)
+    // Éviter la double initialisation
+    if (navigationInitialized) {
+        console.log('[NAV] ⚠️ Navigation déjà initialisée');
+        return;
+    }
+    navigationInitialized = true;
+
     _initPenduThemeAuto();
     initThemeSauvegarde();
     initBoutonReset();
@@ -1010,69 +1019,7 @@ export function initNavigation() {
     initBoutonRetour();
     initBoutonMenu();
     initMenuActions();
-    // reset joueurs géré dans reglages.js
-}
-
-// ======================================================
-// 📱 BARRE DE NAVIGATION PERMANENTE — INVITÉ (jeu.html)
-// ======================================================
-
-/**
- * Initialise la navbar invité dans jeu.html.
- * Appelée par jeu.js après que #phase-jeu devient visible.
- */
-
-
-export function initNavbarInvite() {
-    const navbar = document.getElementById('invite-navbar');
-    if (!navbar) return;
-
-    // Rendre la navbar visible
-    navbar.classList.add('visible');
-
-    // ── Bouton Accueil ─────────────────────────────────
-    const btnHome = document.getElementById('btn-home-permanent');
-    if (btnHome) {
-        btnHome.addEventListener('click', () => {
-            const ok = confirm('Quitter la partie et retourner à l\'accueil ?');
-            if (!ok) return;
-            window.location.href = 'index.html';
-        });
-    }
-
-    // ── Bouton Musique ─────────────────────────────────
-    const btnMusic = document.getElementById('toggle-music');
-    const audio    = document.getElementById('bg-music');
-
-    if (btnMusic && audio) {
-        // Tenter lecture automatique (peut échouer sans interaction)
-        audio.volume = 0.35;
-        audio.play().catch(() => {
-            // Silencieux — l'utilisateur peut l'activer manuellement
-            audio.muted = true;
-            btnMusic.textContent = '🔇';
-            btnMusic.classList.add('muted');
-        });
-
-        btnMusic.addEventListener('click', () => {
-            if (audio.paused) {
-                audio.muted = false;
-                audio.play().catch(() => {});
-                btnMusic.textContent = '🔊';
-                btnMusic.classList.remove('muted');
-            } else {
-                audio.muted = !audio.muted;
-                btnMusic.textContent = audio.muted ? '🔇' : '🔊';
-                btnMusic.classList.toggle('muted', audio.muted);
-            }
-        });
-    }
-
-    // ── Bouton Menu ────────────────────────────────────
-    const btnMenu = document.getElementById('btn-menu-permanent');
-    if (btnMenu) {
-        btnMenu.addEventListener('click', () => _ouvrirMenuInvite());
-    }
+    console.log('[NAV] ✅ Navigation initialisée (une fois)');
 }
 
 // ── Construire et ouvrir le menu invité ────────────────
@@ -1167,7 +1114,7 @@ function _ouvrirReglagesInvite() {
                     <span class="reglages-row-label" style="text-decoration:line-through;">Musique</span>
                     <button class="toggle-switch" disabled
                         style="cursor:not-allowed;pointer-events:none;">
-                        <span class="toggle-knob"></span>
+                        <span class="toggle-switch-knob"></span>
                     </button>
                 </div>
                 <p style="font-size:.75rem;color:rgba(255,255,255,.35);margin-top:4px;">

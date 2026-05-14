@@ -2,28 +2,13 @@
  * ============================================
  * 🎮 MAIN.JS — Gestionnaire principal du jeu
  * ============================================
- * Version: 3.6 — Nettoyage complet entre les parties
+ * Version: 3.8 — Fix navigation initNavigation() une seule fois
  *
- * CORRECTIONS v3.6 :
- * ─────────────────────────────────────────────
- * [FIX A] lancerJeu() ne restaure plus minigame_partie_id après
- *   nettoyerSession(). Avant, le vieux ID était réinjecté dans
- *   localStorage → quiz_hote._pid() lisait l'ancien jeu → croyait
- *   avoir des invités fantômes de la partie précédente.
- *   L'ID valide est UNIQUEMENT celui reçu dans GAME_CREATED.
- *
- * [FIX B] HostSession.reset() : méthode dédiée qui remet tous les
- *   champs internes à zéro avant toute création de partie.
- *   Appelée dans initStartSolo() et dans le handler GAME_ENDED.
- *
- * [FIX C] resetEtatQuizHote() depuis cleanup.js appelé à chaque
- *   nouvelle partie (avant creerPartie) pour purger quiz_hote.js
- *   (_nbInvites, _reponsesRecues, handlers WS).
- *
- * [FIX D] HOST_END_GAME envoyé UNE seule fois (dans HostSession.terminer),
- *   pas dans nettoyerPartieInvites() de quiz_hote.js.
- *
- * [FIX 1] (conservé) : hostJoue:true + hostPseudo = GameState.joueurs[0]
+ * CORRECTIONS v3.8:
+ * ✅ initNavigation() appelé UNE SEULE fois dans init()
+ * ✅ Import de initNavigation depuis navigation.js
+ * ✅ #btn-start-solo jamais masqué
+ * ✅ HostSession.reset() + resetEtatQuizHote() coordonnés
  */
 
 import { $, $$, show, hide } from "./core/dom.js";
@@ -45,12 +30,12 @@ import {
     initScoreButtons,
     initToggleScoreboard
 } from "./modules/scoreboard.js";
-import { naviguerVers } from "./navigation.js";
+import { naviguerVers, initNavigation } from "./navigation.js";
 import { signalDemarrage } from "./core/signal.js";
 import {
     nettoyerSession,
     nettoyerParasites,
-    resetEtatQuizHote   // [FIX C]
+    resetEtatQuizHote
 } from "./core/cleanup.js";
 
 import {
@@ -263,8 +248,7 @@ function initGameButtons() {
 function validerNomPartie(nom) {
     if (!nom) { alert("Merci d'indiquer un nom de partie"); return false; }
     if (getAllParties().some(p => (p.nomPartie || "").toLowerCase() === nom.toLowerCase())) {
-        alert("Ce nom existe déjà."); return false;
-    }
+        alert("Ce nom existe déjà."); return false; }
     return true;
 }
 
@@ -294,7 +278,7 @@ function initStartSolo() {
         }
         GameState.mode = "solo";
 
-        // [FIX B+C] Réinitialiser l'état de la partie précédente AVANT de créer la nouvelle
+        // Réinitialiser l'état de la partie précédente AVANT de créer la nouvelle
         HostSession.reset();
         resetEtatQuizHote();
 
@@ -357,13 +341,7 @@ export function lancerJeu(game, options = {}) {
     if (game.toLowerCase() === "undercover") return;
 
     if (!fromLoad) {
-        // [FIX A] nettoyerSession() supprime maintenant minigame_partie_id (ajouté
-        // dans cleanup.js v2.0). On NE restaure plus l'ancien ID après le nettoyage.
-        // Le seul ID valide est celui qui sera reçu dans GAME_CREATED.
-        // Sauvegarder uniquement minigame_partie_session_id si nécessaire pour les
-        // modules qui le lisent encore (invite.js utilise aussi minigame_partie_id
-        // en fallback, mais on veut qu'il lise le nouvel ID après GAME_CREATED).
-        nettoyerSession(); // supprime minigame_partie_id ET minigame_partie_session_id
+        nettoyerSession();
 
         if (!GameState.partieEnCoursChargee) {
             const p = loadGame();
@@ -476,6 +454,7 @@ function init() {
     initModeCards();
     initStartSolo();
     masquerUndercoverComplet();
+    initNavigation();  // Initialiser navigation UNE SEULE FOIS
     HostSession.init();
 }
 
@@ -492,9 +471,8 @@ const HostSession = {
     _authenticated : false,
     _pendingStart  : false,
 
-    // ── [FIX B] reset() — remet l'état à zéro avant une nouvelle partie ──
+    // Réinitialiser avant une nouvelle partie
     // Appelé dans initStartSolo() avant chaque creerPartie().
-    // Ne touche pas à _authenticated (la connexion WS reste active).
     reset() {
         this._partieId    = null;
         this._snapshot    = null;
@@ -502,7 +480,7 @@ const HostSession = {
         console.log('[HOST] 🔄 HostSession reset (nouvelle partie)');
     },
 
-    // ── Connexion initiale ──────────────────────────────────────
+    // Connexion initiale
     init() {
         try {
             socket.connect();
@@ -576,7 +554,7 @@ const HostSession = {
             socket.on('GAME_ENDED', ({ snapshot }) => {
                 console.log('[HOST] 🏁 Partie terminée (WS)');
 
-                // [FIX B+C] Réinitialiser TOUT l'état de la partie terminée
+                // Réinitialiser TOUT l'état de la partie terminée
                 this._partieId    = null;
                 this._snapshot    = null;
                 this._pendingStart = false;
@@ -630,8 +608,7 @@ const HostSession = {
         }
     },
 
-    // ── Créer la partie côté serveur ────────────────────────────
-    // [FIX 1] : hostJoue:true + hostPseudo = GameState.joueurs[0]
+    // Créer la partie côté serveur
     creerPartie() {
         if (!this._authenticated) {
             console.warn('[HOST] creerPartie() ignoré — pas authentifié');
@@ -665,7 +642,7 @@ const HostSession = {
         }
     },
 
-    // ── Notifier le démarrage ────────────────────────────────────
+    // Notifier le démarrage
     notifierDemarrage() {
         if (!this._authenticated) {
             console.warn('[HOST] notifierDemarrage() ignoré — pas authentifié');
@@ -687,9 +664,7 @@ const HostSession = {
         }
     },
 
-    // ── Terminer la partie ───────────────────────────────────────
-    // [FIX D] C'est ici et ICI SEULEMENT qu'on envoie HOST_END_GAME.
-    // nettoyerPartieInvites() ne l'envoie plus pour éviter les doubles.
+    // Terminer la partie
     terminer() {
         if (!this._authenticated || !this._partieId) return;
         try {
@@ -700,7 +675,7 @@ const HostSession = {
         }
     },
 
-    // ── Sync joueur dans GameState + DOM ────────────────────────
+    // Sync joueur dans GameState + DOM
     _syncJoueurRejoint(pseudo) {
         if (!pseudo) return;
         if (!GameState.joueurs.includes(pseudo)) {
@@ -743,7 +718,7 @@ const HostSession = {
         console.log(`[HOST] ✅ Joueur retiré du lobby: ${pseudo}`);
     },
 
-    // ── Toast hôte ───────────────────────────────────────────────
+    // Toast hôte
     _toastHote(msg, type = 'info') {
         const COLORS = { success: '#22c55e', error: '#ef4444', warning: '#f59e0b', info: '#00d4ff' };
         const ICONS  = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
@@ -771,7 +746,7 @@ const HostSession = {
         }, 4000);
     },
 
-    // ── Lien / QR ────────────────────────────────────────────────
+    // Lien / QR
     _afficherLienJoin(joinUrl, code) {
         const el = document.getElementById('ws-join-info');
         if (!el || !joinUrl) return;
