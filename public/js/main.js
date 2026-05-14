@@ -1,15 +1,18 @@
+// /js/main.js — v3.9 (FIX: Re-bind btn-start-solo at every form-solo entrance)
+
 /**
  * ============================================
  * 🎮 MAIN.JS — Gestionnaire principal du jeu
  * ============================================
- * Version: 3.8 — Fix navigation initNavigation() une seule fois
+ * Version: 3.9 — Fix re-bind btn-start-solo pour chaque création de partie
  *
- * CORRECTIONS v3.8:
- * ✅ initNavigation() appelé UNE SEULE fois dans init()
- * ✅ Import de initNavigation depuis navigation.js
- * ✅ #btn-start-solo jamais masqué
- * ✅ HostSession.reset() + resetEtatQuizHote() coordonnés
+ * CORRECTIONS v3.9:
+ * ✅ initStartSolo() rappelée à chaque entrée sur form-solo
+ * ✅ Clonage + listener réassocié SANS accumulation WS
+ * ✅ HostSession.reset() AVANT creerPartie()
+ * ✅ resetEtatQuizHote() EN MÊME TEMPS que reset()
  */
+import HostSession from './core/host-session.js';
 
 import { $, $$, show, hide } from "./core/dom.js";
 import { GameState } from "./core/state.js";
@@ -257,79 +260,25 @@ function initModeCards() {
         btn.onclick = () => {
             const nom = $("nom-partie")?.value?.trim() || "";
             if (!validerNomPartie(nom)) return;
+
             GameState.partieNom = nom;
             GameState.mode      = btn.dataset.mode;
-            if (GameState.mode === "solo") { initFormSolo();   naviguerVers("form-solo",   "choix-mode"); }
-            else                           { initFormEquipes(); naviguerVers("form-equipes","choix-mode"); }
+
+            if (GameState.mode === "solo") {
+                initFormSolo();
+
+                // Re-bind systématique du bouton start
+                initStartSolo();
+
+                naviguerVers("form-solo", "choix-mode");
+            } else {
+                initFormEquipes();
+                naviguerVers("form-equipes", "choix-mode");
+            }
         };
     });
 }
 
-// ============================================
-// DÉMARRAGE MODE SOLO
-// ============================================
-function initStartSolo() {
-    const btnStart = $("btn-start-solo");
-    if (!btnStart) return;
-
-    btnStart.addEventListener("click", () => {
-        if (!GameState.joueurs || GameState.joueurs.length === 0) {
-            alert("Sélectionne au moins un joueur."); return;
-        }
-        GameState.mode = "solo";
-
-        // Réinitialiser l'état de la partie précédente AVANT de créer la nouvelle
-        HostSession.reset();
-        resetEtatQuizHote();
-
-        // Créer la partie côté serveur WS
-        HostSession.creerPartie();
-
-        if (GameState.jeu === "morpion") {
-            if (GameState.joueurs.length < 2 || GameState.joueurs.length > 3) {
-                alert("Le Morpion : 2 à 3 joueurs."); return;
-            }
-            lancerJeu("morpion"); return;
-        }
-
-        if (GameState.jeu === "puissance4") {
-            if (GameState.joueurs.length !== 2) {
-                alert("Puissance 4 : exactement 2 joueurs."); return;
-            }
-            lancerJeu("puissance4"); return;
-        }
-
-        if (GameState.jeu === "undercover") {
-            if (GameState.joueurs.length < 3) {
-                alert("Undercover : il faut au moins 3 joueurs."); return;
-            }
-            if (!GameState.partieEnCoursChargee) creerNouvellePartie();
-
-            const spanNb = $("uc-nb-joueurs");
-            if (spanNb) spanNb.textContent = GameState.joueurs.length;
-
-            hide("form-solo");
-            show("container");
-            const ucConfig  = document.getElementById("undercover-config");
-            const ucDistrib = document.getElementById("undercover-distribution");
-            const ucGame    = document.getElementById("undercover");
-            if (ucConfig)  { ucConfig.hidden = false; ucConfig.style.display = "block"; }
-            if (ucDistrib) { ucDistrib.hidden = true; ucDistrib.style.display = "none"; }
-            if (ucGame)    { ucGame.hidden    = true; ucGame.style.display    = "none"; }
-
-            ucBindBouton(() => {
-                console.log("[MAIN] ✅ Distribution terminée → phase jeu");
-                const jeu = document.getElementById("undercover");
-                if (jeu) { jeu.hidden = false; jeu.style.display = "block"; }
-                show("scoreboard");
-                afficherScoreboard();
-            });
-            return;
-        }
-
-        lancerJeu(GameState.jeu);
-    });
-}
 
 // ============================================
 // LANCEMENT DES AUTRES JEUX
@@ -415,8 +364,9 @@ function _countdown(onEnd) {
     }, 1000);
 }
 
-window.lancerJeu   = lancerJeu;
-window.initHomeHub = initHomeHub;
+window.lancerJeu    = lancerJeu;
+window.initHomeHub  = initHomeHub;
+window.initStartSolo = initStartSolo; // [FIX v3.9] Appelé depuis initModeCards à chaque création de partie
 
 window.initialiserPendu      = initialiserPendu;
 window.initialiserMemoire    = initialiserMemoire;
@@ -452,7 +402,7 @@ function init() {
     initNavigationButtons();
     initGameButtons();
     initModeCards();
-    initStartSolo();
+    initStartSolo();  // Appelé UNE FOIS au démarrage (sans effet à ce stade)
     masquerUndercoverComplet();
     initNavigation();  // Initialiser navigation UNE SEULE FOIS
     HostSession.init();

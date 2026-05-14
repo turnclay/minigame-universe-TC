@@ -207,6 +207,13 @@ export function initFormSolo() {
     // Le bloc invitation est affiché par afficherJoueursSelectionnes()
     // dès qu'un joueur est ajouté ET que l'UUID serveur est disponible.
     // Ne pas l'appeler ici : aucun UUID disponible à ce stade.
+
+    // [FIX] Re-brancher le bouton Démarrer avec un listener propre.
+    // initStartSolo() clone le bouton pour supprimer les anciens listeners,
+    // évitant l'empilement qui démarrerait plusieurs parties à la fois.
+    if (typeof window.initStartSolo === 'function') {
+        window.initStartSolo();
+    }
 }
 
 

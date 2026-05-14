@@ -114,7 +114,7 @@ export function resetEtatQuizHote() {
     // 1. Réinitialiser quiz_hote.js via son export nettoyerPartieInvites()
     //    Import dynamique pour éviter la dépendance circulaire et les
     //    erreurs si le module n'est pas encore chargé.
-    import('../jeux/quiz_hote.js')
+    import('../modules/quiz_hote.js')
         .then(m => {
             if (typeof m.nettoyerPartieInvites === 'function') {
                 m.nettoyerPartieInvites();
