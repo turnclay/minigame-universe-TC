@@ -1,5 +1,20 @@
 // ======================================================
-// 🎮 server/games/quiz.js — v2.0 (FIXED — synchro WS + host answers)
+// 🎮 server/games/quiz.js — v2.1 (FIX — host_answer)
+// ======================================================
+// [FIX 3] Ajout du handler quiz:host_answer dans handleHostAction.
+//
+// POURQUOI :
+//   L'hôte envoie HOST_ACTION { action:'quiz:host_answer', data:{pseudo,reponse,ts} }.
+//   Le socket hôte a ws._isHost=true et ws._pseudo=null.
+//   Si on routait via PLAYER_ACTION, le serveur lirait ws._pseudo=null
+//   et la réponse serait indexée sous "null" dans s.reponses.
+//
+//   quiz:host_answer lit data.pseudo (envoyé explicitement par quiz_hote.js)
+//   ou en fallback partie.hostPseudo — jamais ws._pseudo.
+//
+// AUSSI dans quiz:reveal :
+//   La réponse de l'hôte est intégrée dans s.reponses[hostPseudo]
+//   avant _declencherRevelation(), cohérent avec quiz:host_answer.
 // ======================================================
 
 import store from '../store.js';
@@ -187,10 +202,14 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             s.timerHandle = setTimeout(() => {
                 if (s.phase !== 'question') return;
 
+                const partie       = store.getPartie(partieId);
+                const nbJoueursReel = (partie?.joueurs || []).length;
+
                 broadcastToHost(wss, partieId, 'QUIZ_TIMER_EXPIRED', {
                     partieId,
                     nbReponses : Object.keys(s.reponses).length,
-                    nbJoueurs  : (store.getPartie(partieId)?.joueurs || []).length + 1,
+                    // [FIX 3] nbJoueurs = total réel depuis store (hôte inclus si hostJoue:true)
+                    nbJoueurs  : nbJoueursReel,
                 });
 
                 s.timerReveal = setTimeout(() => {
@@ -204,6 +223,68 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
         }
 
         // ───────────────────────────────────────────────
+        // quiz:host_answer
+        // ───────────────────────────────────────────────
+        // [FIX 3] Nouveau handler : enregistre la réponse de l'hôte
+        // dans s.reponses en utilisant data.pseudo (explicitement transmis
+        // par quiz_hote.js) ou en fallback partie.hostPseudo.
+        // N'utilise JAMAIS ws._pseudo qui est null pour le socket hôte.
+        case 'host_answer': {
+            const s = getSession(partieId);
+
+            if (!s || s.phase !== 'question') {
+                return send(ws, 'QUIZ_ANSWER_ACK', { status: 'too_late' });
+            }
+
+            const partie     = store.getPartie(partieId);
+            // [FIX 3] pseudo : data.pseudo en priorité, sinon partie.hostPseudo
+            const pseudo     = (data.pseudo && String(data.pseudo).trim())
+                || partie?.hostPseudo
+                || null;
+
+            if (!pseudo) {
+                console.warn('[QUIZ] ⚠️ quiz:host_answer — pseudo introuvable (data.pseudo et hostPseudo null)');
+                return send(ws, 'QUIZ_ANSWER_ACK', { status: 'invalid' });
+            }
+
+            if (s.reponses[pseudo] !== undefined) {
+                return send(ws, 'QUIZ_ANSWER_ACK', { status: 'already_answered' });
+            }
+
+            const texte = (data.reponse || data.texte || '').trim();
+            if (!texte) {
+                return send(ws, 'QUIZ_ANSWER_ACK', { status: 'invalid' });
+            }
+
+            const ts  = data.ts || Date.now();
+            const q   = s.questionEnCours;
+
+            let indicesVus = 0;
+            if (q._tsIndice1 && ts > q._tsIndice1) indicesVus++;
+            if (q._tsIndice2 && ts > q._tsIndice2) indicesVus++;
+
+            s.reponses[pseudo] = { texte, ts, indicesVus };
+
+            send(ws, 'QUIZ_ANSWER_ACK', { status: 'ok', texte });
+
+            const nbReponses    = Object.keys(s.reponses).length;
+            const nbJoueursReel = (partie?.joueurs || []).length;
+            const allAnswered   = nbReponses >= nbJoueursReel;
+
+            // Notifier l'hôte que SA réponse est enregistrée
+            // (QUIZ_RESPONSE_IN avec son propre pseudo pour MAJ du panneau)
+            send(ws, 'QUIZ_RESPONSE_IN', {
+                pseudo,
+                nbReponses,
+                nbJoueurs  : nbJoueursReel,
+                allAnswered,
+            });
+
+            console.log(`[QUIZ] 🎮 Réponse hôte enregistrée: ${pseudo} → "${texte}" (${nbReponses}/${nbJoueursReel})`);
+            break;
+        }
+
+        // ───────────────────────────────────────────────
         // quiz:reveal
         // ───────────────────────────────────────────────
         case 'reveal': {
@@ -212,16 +293,22 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
                 return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE', message: 'Pas de question en cours.' });
             }
 
-            const partie = store.getPartie(partieId);
+            const partie     = store.getPartie(partieId);
             const hostPseudo = partie?.hostPseudo;
 
+            // Intégrer la réponse hôte si elle n'est pas déjà dans s.reponses
+            // (cas fallback : hôte n'a pas envoyé quiz:host_answer mais a
+            // quand même saisi une réponse et cliqué "Afficher")
             if (hostPseudo && (data.reponseHote || data.texte || data.reponse)) {
-                const ts = data.tsHote || Date.now();
-                s.reponses[hostPseudo] = {
-                    texte: (data.reponseHote || data.texte || data.reponse || '').trim(),
-                    ts,
-                    indicesVus: 2,
-                };
+                if (s.reponses[hostPseudo] === undefined) {
+                    const ts = data.tsHote || Date.now();
+                    s.reponses[hostPseudo] = {
+                        texte      : (data.reponseHote || data.texte || data.reponse || '').trim(),
+                        ts,
+                        indicesVus : 2,
+                    };
+                    console.log(`[QUIZ] 🎮 Réponse hôte intégrée via quiz:reveal (fallback): ${hostPseudo}`);
+                }
             }
 
             _declencherRevelation(wss, partieId, s, helpers, 'host');
@@ -274,7 +361,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
 }
 
 // ─────────────────────────────────────────────────────
-// Handlers d'actions JOUEUR
+// Handlers d'actions JOUEUR (invités uniquement)
 // ─────────────────────────────────────────────────────
 
 export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, helpers) {
@@ -289,6 +376,13 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
             if (!s || s.phase !== 'question') {
                 return send(ws, 'QUIZ_ANSWER_ACK', { status: 'too_late' });
             }
+
+            // [FIX 3] Guard : pseudo ne doit jamais être null ici
+            if (!pseudo || pseudo === 'null' || pseudo === 'undefined') {
+                console.warn('[QUIZ] ⚠️ quiz:answer reçu avec pseudo null — rejeté');
+                return send(ws, 'QUIZ_ANSWER_ACK', { status: 'invalid' });
+            }
+
             if (s.reponses[pseudo] !== undefined) {
                 return send(ws, 'QUIZ_ANSWER_ACK', { status: 'already_answered' });
             }
@@ -309,18 +403,16 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
 
             send(ws, 'QUIZ_ANSWER_ACK', { status: 'ok', texte });
 
-            const partie = store.getPartie(partieId);
-            const nbInvites = (partie?.joueurs || []).length;
-            const hostPseudo = partie?.hostPseudo;
-            const totalAttendus = hostPseudo ? nbInvites + 1 : nbInvites;
-
-            const nbReponses = Object.keys(s.reponses).length;
-            const allAnswered = nbReponses >= totalAttendus;
+            const partie        = store.getPartie(partieId);
+            // [FIX 3] nbJoueurs = total réel depuis store
+            const nbJoueursReel = (partie?.joueurs || []).length;
+            const nbReponses    = Object.keys(s.reponses).length;
+            const allAnswered   = nbReponses >= nbJoueursReel;
 
             broadcastToHost(wss, partieId, 'QUIZ_RESPONSE_IN', {
                 pseudo,
                 nbReponses,
-                nbJoueurs: totalAttendus,
+                nbJoueurs : nbJoueursReel,
                 allAnswered,
             });
 
@@ -356,6 +448,9 @@ function _declencherRevelation(wss, partieId, s, helpers, source) {
     let premierCorrectPseudo = null;
 
     repTri.forEach(([pseudo, data]) => {
+        // [FIX 3] Guard : ignorer les entrées null parasites
+        if (!pseudo || pseudo === 'null' || pseudo === 'undefined') return;
+
         const texte   = String(data.texte || '').trim();
         const sim     = bonneReponse ? _similarite(texte, bonneReponse) : 0;
         const correct = sim >= 0.85;

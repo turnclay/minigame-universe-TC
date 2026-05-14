@@ -1,9 +1,14 @@
-// /js/modules/quiz_hote.js — v4.1
+// /js/modules/quiz_hote.js — v4.2
 // ============================================================
 // Architecture hôte LOCAL + invités WS.
 // _nbInvites  = nb d'invités réels (depuis serveur, SANS hôte)
 // _nbJoueursTotal() = _nbInvites + 1 (hôte inclus)
-// Le serveur envoie nbJoueurs = invités seulement.
+// Le serveur envoie nbJoueurs = invités + hôte (total réel).
+//
+// [FIX 2] envoyerReponseHote() utilise HOST_ACTION quiz:host_answer
+// au lieu de PLAYER_ACTION. En effet le socket hôte a ws._isHost=true
+// et ws._pseudo=null : toute PLAYER_ACTION serait indexée sous "null"
+// côté serveur. HOST_ACTION lit hostPseudo depuis la partie en store.
 // ============================================================
 
 import { GameState } from '../core/state.js';
@@ -28,7 +33,6 @@ function _cleEtat()   { const p = _pid(); return p ? `partie_etat_${p}` : null; 
 function _pseudoHote() { return (GameState?.joueurs?.[0]) || 'Hôte'; }
 
 // Nombre total = invités + hôte
-// _nbInvites vient du serveur (QUIZ_RESPONSE_IN.nbJoueurs = invités seulement)
 function _nbJoueursTotal() {
     const inv = _nbInvites > 0
         ? _nbInvites
@@ -62,14 +66,13 @@ function _initWsListeners() {
         if (!_reponsesRecues[pseudo]) {
             _reponsesRecues[pseudo] = { reponse: '…', ts: Date.now() };
         }
-        // nbJoueurs du serveur = invités seulement
-        if (typeof nbJoueurs === 'number') _nbInvites = nbJoueurs;
+        // nbJoueurs du serveur = total (invités + hôte)
+        if (typeof nbJoueurs === 'number') _nbInvites = Math.max(0, nbJoueurs - 1);
         _afficherPanneauAttenteWS();
         _recalculerBoutonAfficher();
     });
 
     s.on('QUIZ_TIMER_EXPIRED', () => {
-        // Timer écoulé : activer btn-afficher quoi qu'il arrive
         _activerBoutonAfficher('⏱ Timer écoulé — Cliquez pour révéler');
     });
 
@@ -82,19 +85,18 @@ function _initWsListeners() {
         const resultats  = [...(reponses || [])];
 
         // Intégrer la réponse de l'hôte si absente des résultats serveur
+        // (cas où le serveur ne l'a pas reçue via HOST_ACTION quiz:host_answer)
         if (!resultats.some(r => r.pseudo === pseudoHote)) {
             const texteHote = (window._quizReponseSaisieHote || '').trim();
             const correct   = texteHote && bonneReponse
                 ? _similariteLocale(texteHote, bonneReponse)
                 : false;
-            // Premier correct : l'hôte est-il le seul correct jusqu'ici ?
             const nbCorrectsInvites = resultats.filter(r => r.correct).length;
             const estPremier        = correct && nbCorrectsInvites === 0;
             const points            = correct ? (estPremier ? 2 : 1) : 0;
 
             resultats.unshift({ pseudo: pseudoHote, texte: texteHote, correct, points, estPremier });
 
-            // Mettre à jour le score local de l'hôte
             if (points > 0) {
                 GameState.scores = GameState.scores || {};
                 GameState.scores[pseudoHote] = (GameState.scores[pseudoHote] || 0) + points;
@@ -113,8 +115,12 @@ function _initWsListeners() {
         const scoreHoteLocal = GameState.scores?.[pseudoHote] ?? 0;
         GameState.scores     = GameState.scores || {};
         Object.assign(GameState.scores, scores);
-        // Restaurer le score hôte (le serveur ne le connaît pas)
-        if (scoreHoteLocal > 0) GameState.scores[pseudoHote] = scoreHoteLocal;
+        // Restaurer le score hôte si le serveur l'a déjà — préférer le serveur
+        if (scores[pseudoHote] !== undefined) {
+            GameState.scores[pseudoHote] = scores[pseudoHote];
+        } else if (scoreHoteLocal > 0) {
+            GameState.scores[pseudoHote] = scoreHoteLocal;
+        }
         const cle = _cleScores();
         if (cle) localStorage.setItem(cle, JSON.stringify(GameState.scores));
         if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
@@ -134,8 +140,6 @@ function _initWsListeners() {
 // BOUTON AFFICHER
 // ────────────────────────────────────────────────────────────
 
-// Recalcule si le bouton "Afficher" doit être actif.
-// Critères : TOUS les joueurs réels (invités + hôte) ont répondu.
 function _recalculerBoutonAfficher() {
     const nbTotal  = _nbJoueursTotal();
     const nbRecus  = Object.keys(_reponsesRecues).length;
@@ -185,7 +189,7 @@ function _afficherPanneauAttenteWS() {
     const pseudoHote = _pseudoHote();
     const entries    = Object.entries(_reponsesRecues)
         .filter(([p]) => p && p !== 'null' && p !== 'undefined');
-    const nbAttendu  = _nbJoueursTotal(); // invités + hôte
+    const nbAttendu  = _nbJoueursTotal();
 
     if (entries.length === 0) {
         container.innerHTML = `<p style="font-size:.8rem;color:rgba(255,255,255,.4);text-align:center;">
@@ -347,44 +351,54 @@ export function declencherAfficherReponse() {
     }
 }
 
-// 🔥 VERSION CORRIGÉE : ENVOIE ENFIN LA RÉPONSE AU SERVEUR
+// ════════════════════════════════════════════════════════════
+// [FIX 2] envoyerReponseHote — utilise HOST_ACTION quiz:host_answer
+// ════════════════════════════════════════════════════════════
+// POURQUOI : le socket hôte est authentifié avec ws._isHost = true
+// et ws._pseudo = null. Toute PLAYER_ACTION reçue côté serveur
+// passerait pseudo = ws._pseudo = null → score crédité à "null".
+//
+// SOLUTION : on envoie HOST_ACTION avec action:"quiz:host_answer"
+// et on inclut explicitement le pseudo dans data.pseudo.
+// Le serveur (server/games/quiz.js handleHostAction) lit
+// data.pseudo ou partie.hostPseudo — jamais ws._pseudo.
+// ════════════════════════════════════════════════════════════
 export function envoyerReponseHote(rep) {
     if (!rep || _reponseHoteEnvoyee) return;
     _reponseHoteEnvoyee = true;
 
     const pseudo = _pseudoHote();
-    const ts = Date.now();
+    const ts     = Date.now();
 
-    // 🔥 ENVOI AU SERVEUR (manquait dans ta version)
+    // [FIX 2] — HOST_ACTION au lieu de PLAYER_ACTION
     if (_wsOk()) {
-        _ws().send("PLAYER_ACTION", {
-            action: "quiz:answer",
-            data: {
-                pseudo,
-                reponse: rep,
-                ts
-            }
+        _ws().send('HOST_ACTION', {
+            action : 'quiz:host_answer',
+            data   : {
+                pseudo,       // explicitement transmis — le serveur le lit depuis data
+                reponse : rep,
+                ts,
+            },
         });
-        console.log("[QUIZ] 📨 Réponse hôte envoyée au serveur :", rep);
+        console.log('[QUIZ] 📨 Réponse hôte envoyée (HOST_ACTION quiz:host_answer):', rep, '→', pseudo);
     } else {
-        console.warn("[QUIZ] ⚠️ Pas de WebSocket pour envoyer la réponse hôte");
+        console.warn('[QUIZ] ⚠️ Pas de WebSocket pour envoyer la réponse hôte');
     }
 
-    // Mise à jour locale (UI)
+    // Mise à jour locale (UI) — reflète immédiatement dans le panneau
     _reponsesRecues[pseudo] = { reponse: rep, ts };
 
     const btnEnv = document.getElementById('btn-valider-reponse');
     const inp    = document.getElementById('quiz-reponse-input');
 
     if (btnEnv) {
-        btnEnv.disabled = true;
+        btnEnv.disabled      = true;
         btnEnv.style.opacity = '0.45';
-        btnEnv.textContent = '✅ Envoyé';
-        btnEnv._sent = true;
+        btnEnv.textContent   = '✅ Envoyé';
+        btnEnv._sent         = true;
     }
     if (inp) inp.disabled = true;
 
-    // Vérifier si le bouton Afficher doit s'activer
     _recalculerBoutonAfficher();
 }
 

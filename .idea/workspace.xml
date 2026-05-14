@@ -6,7 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="73d891ed-7cb8-4a2e-b43e-d24a9aad95e0" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/games/quiz.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/games/quiz.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/main.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -16,7 +16,7 @@
   <component name="CopilotChats">
     <option name="panelChat">
       <chat>
-        <option name="activeSessionId" value="2deec38d-bdc6-46b7-9ede-90bf72327f36" />
+        <option name="activeSessionId" value="87f5db9c-8b92-4481-896e-0a7a2a984fb6" />
         <option name="sessions">
           <session>
             <option name="chatType" value="PANEL" />
