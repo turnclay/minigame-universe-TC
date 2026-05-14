@@ -53,19 +53,31 @@ export function initBoutonReset() {
 // ======================================================
 // 🏠 BOUTON ACCUEIL PERMANENT
 // ======================================================
+import { nettoyerSession, resetEtatQuizHote } from "./core/cleanup.js";
+
 export function initBoutonAccueil() {
     const btnHome = $("btn-home-permanent");
     if (!btnHome) return;
+
     btnHome.addEventListener("click", () => {
         fermerMenu();
-        // Confirmation si partie de jeu en cours
+
+        // Confirmation si une partie est en cours
         const ecranActuel = getEcranActuel();
         if (estEcranJeu(ecranActuel)) {
             if (!demanderQuitterPartie()) return;
         }
-        naviguerVersAccueil();
+
+        // 🧹 Nettoyage complet de l'état client AVANT reload
+        resetEtatQuizHote();   // Réinitialise quiz_hote + HostSession
+        nettoyerSession();     // Supprime les clés parasites de localStorage
+
+        // 🔄 Équivalent exact de FN+Ctrl+R
+        location.reload();
     });
 }
+
+
 
 // ======================================================
 // ⬅️ BOUTON RETOUR PERMANENT
