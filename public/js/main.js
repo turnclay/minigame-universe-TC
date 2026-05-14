@@ -12,7 +12,7 @@
  * ✅ HostSession.reset() AVANT creerPartie()
  * ✅ resetEtatQuizHote() EN MÊME TEMPS que reset()
  */
-import HostSession from './core/host-session.js';
+import HostSession from './core/host_session.js';
 
 import { $, $$, show, hide } from "./core/dom.js";
 import { GameState } from "./core/state.js";
@@ -410,318 +410,89 @@ function init() {
 
 window.addEventListener("DOMContentLoaded", init);
 
-
 // ============================================
-// 🔌 HostSession — couche WebSocket host
+// 🚀 DÉMARRAGE MODE SOLO
 // ============================================
-const HostSession = {
+// [FIX] initStartSolo() est rappelée à chaque entrée sur form-solo
+// via initModeCards() et window.initStartSolo() depuis joueurs.js.
+// Elle clone le bouton pour supprimer les anciens listeners,
+// évitant l'empilement qui démarrerait plusieurs parties à la fois.
+function initStartSolo() {
+    const btnStart = $("btn-start-solo");
+    if (!btnStart) return;
 
-    _partieId      : null,
-    _snapshot      : null,
-    _authenticated : false,
-    _pendingStart  : false,
+    // Toujours s'assurer que le bouton est visible et actif
+    btnStart.hidden        = false;
+    btnStart.disabled      = false;
+    btnStart.style.display = 'block';
 
-    // Réinitialiser avant une nouvelle partie
-    // Appelé dans initStartSolo() avant chaque creerPartie().
-    reset() {
-        this._partieId    = null;
-        this._snapshot    = null;
-        this._pendingStart = false;
-        console.log('[HOST] 🔄 HostSession reset (nouvelle partie)');
-    },
+    // Cloner pour supprimer TOUS les anciens listeners
+    const clone = btnStart.cloneNode(true);
+    btnStart.parentNode.replaceChild(clone, btnStart);
+    const btn = $("btn-start-solo");
 
-    // Connexion initiale
-    init() {
-        try {
-            socket.connect();
-
-            socket.once('__connected__', () => {
-                console.log('[HOST] Socket connecté — authentification...');
-                socket.send('HOST_AUTH');
-            });
-
-            socket.on('AUTH_OK', () => {
-                console.log('[HOST] ✅ Authentifié');
-                this._authenticated = true;
-
-                const savedId = localStorage.getItem('minigame_partie_id');
-                if (savedId) {
-                    console.log('[HOST] 🔄 HOST_REJOIN —', savedId);
-                    socket.send('HOST_REJOIN', { partieId: savedId });
-                    return;
-                }
-                console.log('[HOST] ℹ️ Pas de partie sauvegardée — prêt à créer');
-            });
-
-            socket.on('HOST_REJOINED', ({ partieId, snapshot, joinUrl }) => {
-                console.log('[HOST] ✅ Rejoin host OK —', partieId);
-                this._partieId = partieId;
-                this._snapshot = snapshot;
-                this._afficherLienJoin(joinUrl, snapshot?.codeCourt);
-            });
-
-            socket.on('GAME_CREATED', ({ partieId, snapshot, joinUrl }) => {
-                console.log('[HOST] ✅ Partie créée —', partieId);
-                this._partieId = partieId;
-                this._snapshot = snapshot;
-
-                localStorage.setItem('minigame_partie_id', partieId);
-
-                import('./modules/invite.js').then(m => {
-                    m.setPartieSessionId(partieId);
-                    m.mettreAJourLienInvitation();
-                }).catch(err => console.warn('[HOST] ⚠️ Erreur import invite.js:', err.message));
-
-                this._afficherLienJoin(joinUrl, snapshot?.codeCourt);
-
-                if (this._pendingStart) {
-                    this._pendingStart = false;
-                    socket.send('HOST_START_GAME', { partieId });
-                    console.log('[HOST] 📤 HOST_START_GAME différé —', partieId);
-                }
-            });
-
-            socket.on('PLAYER_JOINED', ({ pseudo, joueurs }) => {
-                console.log(`[HOST] 👤 Joueur rejoint: ${pseudo} (${joueurs.length} total)`);
-                this._afficherCompteurJoueurs(joueurs.length);
-                HostSession._syncJoueurRejoint(pseudo);
-                HostSession._toastHote(`🎉 ${pseudo} a rejoint la partie !`, 'success');
-                this._snapshot = { ...(this._snapshot || {}), joueurs };
-            });
-
-            socket.on('PLAYER_LEFT', ({ pseudo, joueurs }) => {
-                console.log(`[HOST] 👤 Joueur parti: ${pseudo}`);
-                this._afficherCompteurJoueurs(joueurs.length);
-                HostSession._syncJoueurParti(pseudo);
-                HostSession._toastHote(`${pseudo} a quitté la partie`, 'warning');
-                this._snapshot = { ...(this._snapshot || {}), joueurs };
-            });
-
-            socket.on('SCORES_UPDATE', ({ scores }) => {
-                console.log('[HOST] 📊 Scores mis à jour:', scores);
-            });
-
-            socket.on('GAME_ENDED', ({ snapshot }) => {
-                console.log('[HOST] 🏁 Partie terminée (WS)');
-
-                // Réinitialiser TOUT l'état de la partie terminée
-                this._partieId    = null;
-                this._snapshot    = null;
-                this._pendingStart = false;
-
-                localStorage.removeItem('minigame_partie_id');
-                localStorage.removeItem('minigame_partie_session_id');
-
-                // Réinitialiser quiz_hote
-                resetEtatQuizHote();
-
-                import('./modules/invite.js')
-                    .then(m => m.resetPartieSessionId())
-                    .catch(err => console.warn('[HOST] ⚠️ Erreur reset invite.js:', err.message));
-            });
-
-            socket.on('ERROR', ({ code, message }) => {
-                console.warn('[HOST] ⚠️ Erreur WS:', code, message || '');
-
-                if (code === 'GAME_NOT_FOUND') {
-                    console.log('[HOST] 🧹 ID périmé supprimé — prêt pour une nouvelle partie');
-                    localStorage.removeItem('minigame_partie_id');
-                    localStorage.removeItem('minigame_partie_session_id');
-                    this._partieId = null;
-                    this._snapshot = null;
-                    import('./modules/invite.js')
-                        .then(m => m.resetPartieSessionId())
-                        .catch(err => console.warn('[HOST] ⚠️ Erreur reset invite.js:', err.message));
-                    if (GameState.joueurs && GameState.joueurs.length > 0 && GameState.jeu) {
-                        this.creerPartie();
-                    }
-                }
-
-                if (code === 'HOST_ALREADY_HAS_GAME') {
-                    console.log('[HOST] ℹ️ Partie déjà active côté serveur — attente HOST_REJOINED');
-                }
-
-                if (code === 'NAME_TAKEN') {
-                    console.warn('[HOST] ⚠️ Nom de partie déjà pris :', GameState.partieNom);
-                    this._partieId = null;
-                    this._toastHote('Ce nom de partie est déjà utilisé. Change le nom et réessaie.', 'error');
-                }
-
-                if (code === 'INTERNAL_ERROR') {
-                    console.error('[HOST] ❌ INTERNAL_ERROR — vérifier logs serveur');
-                    this._toastHote('Erreur serveur temporaire. Réessaie dans quelques secondes.', 'error');
-                }
-            });
-
-        } catch (err) {
-            console.warn('[HOST] Socket non disponible — mode local uniquement:', err.message);
+    btn.addEventListener("click", () => {
+        if (!GameState.joueurs || GameState.joueurs.length === 0) {
+            alert("Sélectionne au moins un joueur."); return;
         }
-    },
+        GameState.mode = "solo";
 
-    // Créer la partie côté serveur
-    creerPartie() {
-        if (!this._authenticated) {
-            console.warn('[HOST] creerPartie() ignoré — pas authentifié');
-            return;
+        // Terminer la partie serveur en cours AVANT de reset
+        if (HostSession._partieId) {
+            HostSession.terminer();
         }
-        if (this._partieId) {
-            console.log('[HOST] creerPartie() ignoré — partie déjà créée:', this._partieId);
+
+        // Réinitialiser l'état de la partie précédente AVANT de créer la nouvelle
+        HostSession.reset();
+        resetEtatQuizHote();
+
+        // Créer la partie côté serveur WS
+        HostSession.creerPartie();
+
+        if (GameState.jeu === "morpion") {
+            if (GameState.joueurs.length < 2 || GameState.joueurs.length > 3) {
+                alert("Le Morpion : 2 à 3 joueurs."); return;
+            }
+            lancerJeu("morpion"); return;
+        }
+
+        if (GameState.jeu === "puissance4") {
+            if (GameState.joueurs.length !== 2) {
+                alert("Puissance 4 : exactement 2 joueurs."); return;
+            }
+            lancerJeu("puissance4"); return;
+        }
+
+        if (GameState.jeu === "undercover") {
+            if (GameState.joueurs.length < 3) {
+                alert("Undercover : il faut au moins 3 joueurs."); return;
+            }
+            if (!GameState.partieEnCoursChargee) creerNouvellePartie();
+
+            const spanNb = $("uc-nb-joueurs");
+            if (spanNb) spanNb.textContent = GameState.joueurs.length;
+
+            hide("form-solo");
+            show("container");
+            const ucConfig  = document.getElementById("undercover-config");
+            const ucDistrib = document.getElementById("undercover-distribution");
+            const ucGame    = document.getElementById("undercover");
+            if (ucConfig)  { ucConfig.hidden = false; ucConfig.style.display = "block"; }
+            if (ucDistrib) { ucDistrib.hidden = true; ucDistrib.style.display = "none"; }
+            if (ucGame)    { ucGame.hidden    = true; ucGame.style.display    = "none"; }
+
+            ucBindBouton(() => {
+                console.log("[MAIN] ✅ Distribution terminée → phase jeu");
+                const jeu = document.getElementById("undercover");
+                if (jeu) { jeu.hidden = false; jeu.style.display = "block"; }
+                show("scoreboard");
+                afficherScoreboard();
+            });
             return;
         }
 
-        const nom        = GameState.partieNom || 'Partie';
-        const jeu        = GameState.jeu       || 'quiz';
-        const mode       = GameState.mode      || 'solo';
-        const hostPseudo = (GameState.joueurs && GameState.joueurs.length > 0)
-            ? String(GameState.joueurs[0]).trim()
-            : null;
-
-        try {
-            socket.send('HOST_CREATE_GAME', {
-                nom,
-                jeu,
-                mode,
-                equipes    : [],
-                hostJoue   : !!hostPseudo,
-                hostPseudo : hostPseudo || null,
-            });
-            console.log(`[HOST] 📤 HOST_CREATE_GAME — ${nom} / ${jeu} / ${mode} / hostPseudo: ${hostPseudo}`);
-        } catch (err) {
-            console.error('[HOST] ❌ Erreur send HOST_CREATE_GAME:', err.message);
-            this._toastHote('Erreur de connexion. Vérifie ta connexion internet.', 'error');
-        }
-    },
-
-    // Notifier le démarrage
-    notifierDemarrage() {
-        if (!this._authenticated) {
-            console.warn('[HOST] notifierDemarrage() ignoré — pas authentifié');
-            return;
-        }
-        if (this._partieId) {
-            try {
-                socket.send('HOST_START_GAME', { partieId: this._partieId });
-                console.log('[HOST] 📤 HOST_START_GAME —', this._partieId);
-            } catch (err) {
-                console.error('[HOST] ❌ Erreur send HOST_START_GAME:', err.message);
-            }
-        } else {
-            console.warn('[HOST] ⏳ Pas de partieId — attente de GAME_CREATED pour démarrer');
-            this._pendingStart = true;
-            if (this._authenticated && !this._partieId) {
-                this.creerPartie();
-            }
-        }
-    },
-
-    // Terminer la partie
-    terminer() {
-        if (!this._authenticated || !this._partieId) return;
-        try {
-            socket.send('HOST_END_GAME');
-            console.log('[HOST] 📤 HOST_END_GAME');
-        } catch (err) {
-            console.error('[HOST] ❌ Erreur send HOST_END_GAME:', err.message);
-        }
-    },
-
-    // Sync joueur dans GameState + DOM
-    _syncJoueurRejoint(pseudo) {
-        if (!pseudo) return;
-        if (!GameState.joueurs.includes(pseudo)) {
-            GameState.joueurs.push(pseudo);
-            GameState.scores[pseudo] = GameState.scores[pseudo] ?? 0;
-        }
-
-        const container = document.getElementById('joueurs-selectionnes-container');
-        if (!container) return;
-        if (container.querySelector(`[data-joueur="${CSS.escape(pseudo)}"]`)) return;
-
-        const div = document.createElement('div');
-        div.className = 'joueur-tag';
-        div.dataset.joueurWs = pseudo;
-        div.innerHTML = `
-            <span class="nom">${_escHtml(pseudo)}</span>
-            <span class="remove" data-joueur="${_escHtml(pseudo)}">✖</span>`;
-
-        div.querySelector('.remove').addEventListener('click', () => {
-            if (HostSession._partieId) {
-                try { socket.send('HOST_KICK_PLAYER', { pseudo }); }
-                catch (err) { console.error('[HOST] ❌ Erreur send HOST_KICK_PLAYER:', err.message); }
-            }
-            HostSession._syncJoueurParti(pseudo);
-        });
-
-        container.appendChild(div);
-        console.log(`[HOST] ✅ Joueur affiché dans le lobby: ${pseudo}`);
-    },
-
-    _syncJoueurParti(pseudo) {
-        if (!pseudo) return;
-        GameState.joueurs = (GameState.joueurs || []).filter(j => j !== pseudo);
-        delete GameState.scores[pseudo];
-
-        const container = document.getElementById('joueurs-selectionnes-container');
-        if (!container) return;
-        const tag = container.querySelector(`[data-joueur="${CSS.escape(pseudo)}"]`);
-        tag?.closest('.joueur-tag')?.remove();
-        console.log(`[HOST] ✅ Joueur retiré du lobby: ${pseudo}`);
-    },
-
-    // Toast hôte
-    _toastHote(msg, type = 'info') {
-        const COLORS = { success: '#22c55e', error: '#ef4444', warning: '#f59e0b', info: '#00d4ff' };
-        const ICONS  = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
-        let c = document.getElementById('host-toast-container');
-        if (!c) {
-            c = document.createElement('div');
-            c.id = 'host-toast-container';
-            c.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:.4rem;max-width:320px;pointer-events:none;';
-            document.body.appendChild(c);
-        }
-        const el = document.createElement('div');
-        el.style.cssText = [
-            'display:flex;gap:.5rem;align-items:center;padding:.65rem .9rem;border-radius:10px',
-            `background:#1e1e2e;color:#fff;border-left:3px solid ${COLORS[type] || COLORS.info}`,
-            'box-shadow:0 4px 16px rgba(0,0,0,.5)',
-            'opacity:0;transition:opacity .25s,transform .25s;transform:translateY(6px)',
-            'font-size:.88rem;font-weight:600;pointer-events:auto',
-        ].join(';');
-        el.innerHTML = `<span>${ICONS[type] || 'ℹ️'}</span><span>${msg}</span>`;
-        c.appendChild(el);
-        requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
-        setTimeout(() => {
-            el.style.opacity = '0'; el.style.transform = 'translateY(6px)';
-            setTimeout(() => el.remove(), 260);
-        }, 4000);
-    },
-
-    // Lien / QR
-    _afficherLienJoin(joinUrl, code) {
-        const el = document.getElementById('ws-join-info');
-        if (!el || !joinUrl) return;
-        const url = `${location.origin}${joinUrl}`;
-        el.innerHTML = `
-            <div style="margin-top:12px;padding:10px 14px;background:rgba(0,212,255,.08);
-                border:1px solid rgba(0,212,255,.25);border-radius:10px;font-size:.82rem;
-                color:rgba(255,255,255,.85);text-align:center;">
-                🔗 Lien invités :
-                <a href="${url}" target="_blank"
-                    style="color:#00d4ff;word-break:break-all;">${url}</a>
-                ${code ? `<br><strong style="font-size:1.1rem;letter-spacing:.15em;color:#fff;">${code}</strong>` : ''}
-            </div>`;
-        el.style.display = 'block';
-    },
-
-    _afficherCompteurJoueurs(count) {
-        const el = document.getElementById('ws-joueurs-count');
-        if (!el) return;
-        el.textContent = `${count} joueur${count > 1 ? 's' : ''} connecté${count > 1 ? 's' : ''}`;
-    },
-};
-
-function _escHtml(s) {
-    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        lancerJeu(GameState.jeu);
+    });
 }
 
 window.HostSession = HostSession;

@@ -1,4 +1,4 @@
-// /js/core/host-session.js
+// /js/core/host_session.js
 // ============================================================
 // HostSession — Gestion centralisée de la session WebSocket
 // ============================================================
