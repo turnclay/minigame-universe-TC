@@ -125,9 +125,13 @@ export function afficherJoueursSelectionnes(containerId) {
             if (partieIdDisponible) {
                 // UUID serveur connu → mettre à jour le lien directement
                 m.mettreAJourLienInvitation();
+            } else {
+                // Pas encore de partieId → déclencher la création de partie (silencieux).
+                // GAME_CREATED appellera setPartieSessionId() puis mettreAJourLienInvitation().
+                if (typeof window._hostCreerPartieQuandPret === 'function') {
+                    window._hostCreerPartieQuandPret();
+                }
             }
-            // Si pas de partieId : ne rien faire, pas de warning.
-            // Le lien sera mis à jour par host_session.js dans le handler GAME_CREATED.
         } else {
             // Liste vide → masquer le bloc invitation
             const bloc = document.getElementById('bloc-invitation');

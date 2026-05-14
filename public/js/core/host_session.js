@@ -37,9 +37,10 @@ const HostSession = {
     _partieId        : null,
     _snapshot        : null,
     _authenticated   : false,
-    _pendingStart    : false,  // HOST_START_GAME en attente de GAME_CREATED
-    _pendingGame     : null,   // [FIX D] nom du jeu à lancer après GAME_CREATED
-    _creationEnCours : false,  // [FIX F] verrou anti-double-create
+    _pendingStart    : false,
+    _pendingGame     : null,
+    _creationEnCours : false,
+    _partieStarted   : false,  // true dès que lancerJeu() est appelé
 
     // ── Reset complet avant une nouvelle partie ──────────
     reset() {
@@ -48,6 +49,7 @@ const HostSession = {
         this._pendingStart    = false;
         this._pendingGame     = null;
         this._creationEnCours = false;
+        this._partieStarted   = false;
         console.log('[HOST] 🔄 HostSession reset (nouvelle partie)');
     },
 
@@ -112,33 +114,32 @@ const HostSession = {
 
                 this._afficherLienJoin(joinUrl, snapshot?.codeCourt);
 
-                // 3. [FIX A] Envoyer HOST_START_GAME maintenant que _partieId est défini
-                try {
-                    socket.send('HOST_START_GAME', { partieId });
-                    console.log('[HOST] 📤 HOST_START_GAME envoyé après GAME_CREATED —', partieId);
-                } catch (err) {
-                    console.error('[HOST] ❌ Erreur HOST_START_GAME:', err.message);
-                }
-
-                // 4. Le nettoyage des anciennes clés est effectué dans initStartSolo()
-                // AVANT creerPartie(), de façon synchrone et sans race condition.
-
-                // 5. [FIX D] Lancer le jeu si un jeu était en attente
+                // 3. Lancer le jeu si un jeu était en attente (edge case: créé depuis initStartSolo)
+                // Cas normal : _pendingGame est null (partie créée dès l'ajout du premier joueur)
+                // → le bloc invitation s'affiche, l'hôte partage le lien, puis clique Démarrer.
                 const gameALancer = this._pendingGame;
                 this._pendingGame = null;
 
                 if (gameALancer) {
-                    // Restaurer le bouton start
+                    // Edge case : creerPartie() appelée depuis initStartSolo directement
+                    // → envoyer HOST_START_GAME et lancer le jeu
+                    try {
+                        socket.send('HOST_START_GAME', { partieId });
+                        console.log('[HOST] 📤 HOST_START_GAME (pendingGame) —', partieId);
+                    } catch (err) {
+                        console.error('[HOST] ❌ Erreur HOST_START_GAME:', err.message);
+                    }
                     if (typeof window._restaurerBoutonStart === 'function') {
                         window._restaurerBoutonStart();
                     }
-                    // Lancer le jeu (window.lancerJeu exposé par main.js)
-                    // fromServer:true → lance le jeu sans nettoyerSession ni notifierDemarrage
                     if (typeof window.lancerJeu === 'function') {
                         console.log('[HOST] 🎮 Lancement du jeu —', gameALancer);
+                        this._partieStarted = true;
                         window.lancerJeu(gameALancer, { fromServer: true });
                     }
                 }
+                // Cas normal : afficher le bloc invitation (GAME_CREATED vient de _hostCreerPartieQuandPret)
+                // mettreAJourLienInvitation() ci-dessus a déjà mis hidden=false sur le bloc.
             });
 
             socket.on('PLAYER_JOINED', ({ pseudo, joueurs }) => {

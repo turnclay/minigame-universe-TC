@@ -320,14 +320,15 @@ function initStartSolo() {
         }
         GameState.mode = "solo";
 
-        // Terminer proprement la partie en cours si elle existe
-        if (HostSession._partieId) {
-            HostSession.terminer();
+        // Si une partie a déjà été jouée (pas juste créée pour le lobby),
+        // la terminer et réinitialiser avant d'en créer une nouvelle.
+        // Si _partieId existe mais que le jeu n'a pas encore démarré (lobby en cours),
+        // on garde la partie et on lance directement.
+        if (HostSession._partieStarted) {
+            if (HostSession._partieId) HostSession.terminer();
+            HostSession.reset();
+            resetEtatQuizHote();
         }
-
-        // Réinitialiser l'état de la partie précédente
-        HostSession.reset();
-        resetEtatQuizHote();
 
         // Jeux locaux (pas de serveur WS nécessaire pour démarrer)
         if (GameState.jeu === "morpion") {
@@ -371,15 +372,22 @@ function initStartSolo() {
             return;
         }
 
-        // [FIX 5] Jeux WS : nettoyer l'ancienne session (synchrone, sans race condition),
-        // stocker le jeu à lancer, créer la partie côté serveur.
-        // lancerJeu() sera appelé depuis le handler GAME_CREATED dans host_session.js.
-        nettoyerSession(); // supprime les anciennes clés AVANT que GAME_CREATED écrive les nouvelles
-        HostSession._pendingGame = GameState.jeu;
-        HostSession.creerPartie();
-
-        // UX : montrer un état "création en cours" pendant l'attente du serveur
-        _afficherEtatCreation();
+        // La partie a déjà été créée dès que le premier joueur a été ajouté
+        // (via _hostCreerPartieQuandPret → creerPartie → GAME_CREATED).
+        // Si _partieId est déjà défini : lancer le jeu directement.
+        // Sinon (edge case) : créer la partie et attendre GAME_CREATED.
+        if (HostSession._partieId) {
+            // Partie déjà créée (lobby) → envoyer HOST_START_GAME et lancer le jeu
+            HostSession._partieStarted = true;
+            HostSession.notifierDemarrage();
+            lancerJeu(GameState.jeu, { fromServer: true });
+        } else {
+            // Pas encore de partieId → stocker le jeu et créer la partie
+            nettoyerSession();
+            HostSession._pendingGame = GameState.jeu;
+            HostSession.creerPartie();
+            _afficherEtatCreation();
+        }
     });
 }
 
@@ -575,8 +583,11 @@ window.addEventListener("DOMContentLoaded", init);
 window.HostSession = HostSession;
 window.jeuSocket   = socket;
 
-// Utilisé par joueurs.js pour déclencher la création de partie quand le 1er joueur est ajouté
+// Utilisé par joueurs.js pour déclencher la création de partie quand le 1er joueur est ajouté.
+// La partie est créée DÈS QU'UN JOUEUR est sélectionné pour que GAME_CREATED puisse
+// retourner le partieId et afficher le bloc d'invitation avec le lien à partager.
 window._hostCreerPartieQuandPret = function() {
-    // Ne rien faire ici — la création est déclenchée au clic sur btn-start-solo
-    // pour éviter les doubles créations.
+    if (HostSession._authenticated && !HostSession._partieId && !HostSession._creationEnCours) {
+        HostSession.creerPartie();
+    }
 };
