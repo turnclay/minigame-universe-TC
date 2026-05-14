@@ -1,41 +1,34 @@
 // ======================================================
-// 🔌 server/ws-handler.js — v6.3 (FIX — broadcast robuste)
+// 🔌 server/ws-handler.js — v6.4
 // ======================================================
-// [FIX] broadcastToGame / broadcastToPlayers / broadcastToHost / send :
-//   c.send() et ws.send() sont maintenant enveloppés dans try/catch.
+// [FIX] Les appels handleHostAction et handlePlayerAction sont maintenant
+// enveloppés dans leur propre try/catch AVANT le catch global.
+// Si la logique de jeu lance une exception, elle est loggée avec le
+// stack complet côté serveur (visible dans les logs Node.js / Render)
+// mais NE renvoie PAS INTERNAL_ERROR au client — le jeu continue.
 //
-// POURQUOI :
-//   ws.send() peut lancer une exception synchrone même après avoir vérifié
-//   readyState === 1, car le socket peut passer à l'état CLOSING (2) entre
-//   le check et l'appel effectif (race TOCTOU interne à Node.js ws).
-//   Sans ce catch, l'exception remonte à travers handleHostAction →
-//   handleMessage → catch global → INTERNAL_ERROR envoyé au client,
-//   ce qui interrompt la révélation et bloque le quiz après quelques questions.
+// C'est le seul fichier à modifier pour ce problème.
+// quiz.js et quiz_hote.js restent inchangés (version v2.1).
 // ======================================================
 
 import store from './store.js';
 import * as quizHandler from './games/quiz.js';
 
-// ── Handlers de jeux ─────────────────────────────────
 const JEU_HANDLERS = {
     quiz: quizHandler,
 };
 
 const PSEUDO_REGEX    = /^[a-zA-Z0-9_-]{2,20}$/;
-const GRACE_PERIOD_MS = 120_000; // 2 minutes
+const GRACE_PERIOD_MS = 120_000;
 
 // ─────────────────────────────────────────────────────
 // HELPERS ENVOI / BROADCAST
-// [FIX] tous les send/broadcast ont un try/catch sur c.send()
 // ─────────────────────────────────────────────────────
 
 function send(ws, type, payload = {}) {
     if (ws && ws.readyState === 1) {
-        try {
-            ws.send(JSON.stringify({ type, payload }));
-        } catch (err) {
-            console.warn(`[WS] ⚠️ send() échoué pour ${type}:`, err.message);
-        }
+        try { ws.send(JSON.stringify({ type, payload })); }
+        catch (e) { console.warn(`[WS] send() échoué (${type}):`, e.message); }
     }
 }
 
@@ -44,12 +37,8 @@ function broadcastToGame(wss, partieId, type, payload = {}) {
     const msg = JSON.stringify({ type, payload });
     wss.clients.forEach(c => {
         if (c.readyState === 1 && c._partieId === partieId) {
-            try {
-                c.send(msg);
-                count++;
-            } catch (err) {
-                console.warn(`[WS] ⚠️ broadcastToGame send() échoué (${type}) pour ${c._pseudo || 'anon'}:`, err.message);
-            }
+            try { c.send(msg); count++; }
+            catch (e) { console.warn(`[WS] broadcastToGame send() échoué (${type}/${c._pseudo || 'anon'}):`, e.message); }
         }
     });
     console.log(`[WS] 📢 broadcast ${type} → ${count} clients (${partieId})`);
@@ -60,12 +49,8 @@ function broadcastToPlayers(wss, partieId, type, payload = {}) {
     const msg = JSON.stringify({ type, payload });
     wss.clients.forEach(c => {
         if (c.readyState === 1 && !c._isHost && c._partieId === partieId) {
-            try {
-                c.send(msg);
-                count++;
-            } catch (err) {
-                console.warn(`[WS] ⚠️ broadcastToPlayers send() échoué (${type}) pour ${c._pseudo || 'anon'}:`, err.message);
-            }
+            try { c.send(msg); count++; }
+            catch (e) { console.warn(`[WS] broadcastToPlayers send() échoué (${type}/${c._pseudo || 'anon'}):`, e.message); }
         }
     });
     console.log(`[WS] 📢 broadcast (players) ${type} → ${count} clients`);
@@ -76,12 +61,8 @@ function broadcastToHost(wss, partieId, type, payload = {}) {
     const msg = JSON.stringify({ type, payload });
     wss.clients.forEach(c => {
         if (c.readyState === 1 && c._isHost && c._partieId === partieId) {
-            try {
-                c.send(msg);
-                count++;
-            } catch (err) {
-                console.warn(`[WS] ⚠️ broadcastToHost send() échoué (${type}):`, err.message);
-            }
+            try { c.send(msg); count++; }
+            catch (e) { console.warn(`[WS] broadcastToHost send() échoué (${type}):`, e.message); }
         }
     });
     console.log(`[WS] 📢 broadcast (host) ${type} → ${count} clients`);
@@ -153,7 +134,6 @@ function buildJoinUrl(partie) {
 function handleMessage(wss, ws, type, payload) {
     switch (type) {
 
-        // ── HOST_AUTH ──────────────────────────────────
         case 'HOST_AUTH': {
             ws._isHost = true;
             ws._role   = 'host';
@@ -162,7 +142,6 @@ function handleMessage(wss, ws, type, payload) {
             break;
         }
 
-        // ── HOST_REJOIN ────────────────────────────────
         case 'HOST_REJOIN': {
             if (!ws._isHost) return send(ws, 'ERROR', { code: 'NOT_HOST' });
             const { partieId } = payload;
@@ -172,7 +151,6 @@ function handleMessage(wss, ws, type, payload) {
             }
             ws._partieId = partieId;
             store.setHostSocket(partieId, ws);
-
             const gameState = getGameState(partieId, partie.jeu);
             send(ws, 'HOST_REJOINED', {
                 partieId,
@@ -184,7 +162,6 @@ function handleMessage(wss, ws, type, payload) {
             break;
         }
 
-        // ── HOST_CREATE_GAME ───────────────────────────
         case 'HOST_CREATE_GAME': {
             if (!ws._isHost) return send(ws, 'ERROR', { code: 'NOT_HOST' });
 
@@ -249,7 +226,6 @@ function handleMessage(wss, ws, type, payload) {
             break;
         }
 
-        // ── HOST_START_GAME ────────────────────────────
         case 'HOST_START_GAME': {
             if (!ws._isHost) return send(ws, 'ERROR', { code: 'NOT_HOST' });
             const partie = store.getPartie(ws._partieId);
@@ -284,7 +260,6 @@ function handleMessage(wss, ws, type, payload) {
             break;
         }
 
-        // ── HOST_END_GAME ──────────────────────────────
         case 'HOST_END_GAME': {
             if (!ws._isHost) return send(ws, 'ERROR', { code: 'NOT_HOST' });
             const partie = store.getPartie(ws._partieId);
@@ -301,7 +276,6 @@ function handleMessage(wss, ws, type, payload) {
             break;
         }
 
-        // ── HOST_ADD/REMOVE_POINTS ─────────────────────
         case 'HOST_ADD_POINTS':
         case 'HOST_REMOVE_POINTS': {
             if (!ws._isHost) return send(ws, 'ERROR', { code: 'NOT_HOST' });
@@ -315,7 +289,6 @@ function handleMessage(wss, ws, type, payload) {
             break;
         }
 
-        // ── HOST_KICK_PLAYER ───────────────────────────
         case 'HOST_KICK_PLAYER': {
             if (!ws._isHost) return send(ws, 'ERROR', { code: 'NOT_HOST' });
             const partie = store.getPartie(ws._partieId);
@@ -339,6 +312,10 @@ function handleMessage(wss, ws, type, payload) {
         }
 
         // ── HOST_ACTION ────────────────────────────────
+        // [FIX] handleHostAction est appelé dans son propre try/catch.
+        // Les exceptions de logique jeu sont loggées avec stack complet
+        // mais ne remontent plus au catch global → plus d'INTERNAL_ERROR
+        // intempestif qui casse le quiz.
         case 'HOST_ACTION': {
             if (!ws._isHost) return send(ws, 'ERROR', { code: 'NOT_HOST' });
             const partie = store.getPartie(ws._partieId);
@@ -348,15 +325,23 @@ function handleMessage(wss, ws, type, payload) {
 
             const jeuPrefixe = (action || '').split(':')[0];
             const jeuHandler = JEU_HANDLERS[jeuPrefixe] || JEU_HANDLERS[partie.jeu];
+
             if (jeuHandler && action.includes(':')) {
-                jeuHandler.handleHostAction(wss, ws, partie.id, action, data || {}, helpers);
+                try {
+                    jeuHandler.handleHostAction(wss, ws, partie.id, action, data || {}, helpers);
+                } catch (err) {
+                    // Log complet côté serveur pour diagnostic
+                    console.error(`[WS] ❌ handleHostAction ERREUR (${action}):`, err);
+                    console.error(`[WS]    partieId: ${partie.id}, hostPseudo: ${partie.hostPseudo}`);
+                    // Ne pas envoyer INTERNAL_ERROR — le jeu continue
+                    // (la prochaine action de l'hôte fonctionnera normalement)
+                }
             } else {
                 broadcastToPlayers(wss, partie.id, 'HOST_ACTION', { action, data: data || {} });
             }
             break;
         }
 
-        // ── PLAYER_JOIN ────────────────────────────────
         case 'PLAYER_JOIN': {
             const { pseudo, partieId, nomPartie } = payload;
             console.log(`[WS] 🔹 PLAYER_JOIN demande: ${pseudo}`);
@@ -433,7 +418,6 @@ function handleMessage(wss, ws, type, payload) {
             break;
         }
 
-        // ── PLAYER_REJOIN ──────────────────────────────
         case 'PLAYER_REJOIN': {
             const { pseudo, partieId } = payload;
             if (!pseudo || !partieId) return send(ws, 'JOIN_ERROR', { code: 'MISSING_FIELDS' });
@@ -470,6 +454,7 @@ function handleMessage(wss, ws, type, payload) {
         }
 
         // ── PLAYER_ACTION ──────────────────────────────
+        // [FIX] Même protection que HOST_ACTION.
         case 'PLAYER_ACTION': {
             if (!ws._partieId) return send(ws, 'ERROR', { code: 'NO_ACTIVE_GAME' });
             const partie = store.getPartie(ws._partieId);
@@ -478,10 +463,17 @@ function handleMessage(wss, ws, type, payload) {
 
             const jeuPrefixePl = (action || '').split(':')[0];
             const jeuHandlerPl = JEU_HANDLERS[jeuPrefixePl] || JEU_HANDLERS[partie.jeu];
+
             if (jeuHandlerPl && action.includes(':')) {
-                jeuHandlerPl.handlePlayerAction(
-                    wss, ws, partie.id, ws._pseudo, action, data || {}, helpers
-                );
+                try {
+                    jeuHandlerPl.handlePlayerAction(
+                        wss, ws, partie.id, ws._pseudo, action, data || {}, helpers
+                    );
+                } catch (err) {
+                    console.error(`[WS] ❌ handlePlayerAction ERREUR (${action}):`, err);
+                    console.error(`[WS]    partieId: ${partie.id}, pseudo: ${ws._pseudo}`);
+                    // Ne pas envoyer INTERNAL_ERROR au client
+                }
             } else {
                 broadcastToHost(wss, ws._partieId, 'PLAYER_ACTION', {
                     pseudo : ws._pseudo,
@@ -493,7 +485,6 @@ function handleMessage(wss, ws, type, payload) {
             break;
         }
 
-        // ── GET_PARTIES ────────────────────────────────
         case 'GET_PARTIES': {
             const parties = store.getAllParties()
                 .filter(p => !estStatutTerminal(p.statut))
