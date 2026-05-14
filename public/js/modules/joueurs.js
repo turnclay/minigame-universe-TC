@@ -111,12 +111,7 @@ export function afficherJoueursSelectionnes(containerId) {
         container.appendChild(div);
     });
 
-    // ✅ Mettre à jour le bloc invitation à chaque changement de la liste :
-    //   - Un joueur vient d'être ajouté → afficher/rafraîchir le bloc
-    //   - La liste est vide → supprimer le bloc
-    // Utilise un import dynamique pour éviter la dépendance circulaire
-    // (joueurs.js ← invite.js ← joueurs.js).
-        // Mettre à jour le bloc invitation uniquement si un partieId serveur existe déjà.
+    // Mettre à jour le bloc invitation uniquement si un partieId serveur existe déjà.
     // Dans le nouveau flux (v4.0), la partie est créée au clic sur btn-start-solo,
     // pas au moment de l'ajout d'un joueur. Avant ce clic, aucun partieId n'est
     // disponible → on ne tente pas de générer un lien (évite les warnings console).
