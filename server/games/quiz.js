@@ -1,20 +1,21 @@
 // ======================================================
-// 🎮 server/games/quiz.js — v2.1 (FIX — host_answer)
+// 🎮 server/games/quiz.js — v2.2
 // ======================================================
-// [FIX 3] Ajout du handler quiz:host_answer dans handleHostAction.
+// [FIX A] next_question : clearTimeout appelés AVANT la réinitialisation
+//   de l'état (s.reponses, s.revelationEnCours…).
+//   Avant, les clearTimeout étaient après broadcastToGame QUIZ_QUESTION,
+//   laissant une fenêtre où un vieux timerReveal pouvait tirer sur l'état
+//   déjà réinitialisé pour la nouvelle question.
+//   Ajout de _annulerTimers() centralisé pour ne jamais oublier timerReveal.
 //
-// POURQUOI :
-//   L'hôte envoie HOST_ACTION { action:'quiz:host_answer', data:{pseudo,reponse,ts} }.
-//   Le socket hôte a ws._isHost=true et ws._pseudo=null.
-//   Si on routait via PLAYER_ACTION, le serveur lirait ws._pseudo=null
-//   et la réponse serait indexée sous "null" dans s.reponses.
+// [FIX B] Callbacks des timers : utilisent getSession() + vérification
+//   sNow.questionEnCours === q pour s'assurer d'opérer sur la BONNE question.
+//   Empêche un timer résiduel de tirer sur une question différente.
 //
-//   quiz:host_answer lit data.pseudo (envoyé explicitement par quiz_hote.js)
-//   ou en fallback partie.hostPseudo — jamais ws._pseudo.
+// [FIX C] _declencherRevelation : null-safe sur questionEnCours.
+//   Guard explicite + try/catch sur store.modifierScore et store.getScores.
 //
-// AUSSI dans quiz:reveal :
-//   La réponse de l'hôte est intégrée dans s.reponses[hostPseudo]
-//   avant _declencherRevelation(), cohérent avec quiz:host_answer.
+// (Conserve le handler quiz:host_answer de la v2.1)
 // ======================================================
 
 import store from '../store.js';
@@ -49,6 +50,15 @@ function creerSession(partieId) {
     return session;
 }
 
+// [FIX A] Annulation centralisée de TOUS les timers
+// Empêche l'oubli de timerReveal (cause historique du crash)
+function _annulerTimers(s) {
+    if (s.timerHandle)  { clearTimeout(s.timerHandle);  s.timerHandle  = null; }
+    if (s.timerIndice1) { clearTimeout(s.timerIndice1); s.timerIndice1 = null; }
+    if (s.timerIndice2) { clearTimeout(s.timerIndice2); s.timerIndice2 = null; }
+    if (s.timerReveal)  { clearTimeout(s.timerReveal);  s.timerReveal  = null; }
+}
+
 // ─────────────────────────────────────────────────────
 // API publique
 // ─────────────────────────────────────────────────────
@@ -81,12 +91,7 @@ export function getSessionState(partieId) {
 
 export function detruireSession(partieId) {
     const s = getSession(partieId);
-    if (s) {
-        if (s.timerHandle)  clearTimeout(s.timerHandle);
-        if (s.timerIndice1) clearTimeout(s.timerIndice1);
-        if (s.timerIndice2) clearTimeout(s.timerIndice2);
-        if (s.timerReveal)  clearTimeout(s.timerReveal);
-    }
+    if (s) _annulerTimers(s);
     sessions.delete(partieId);
     console.log(`[QUIZ] 🗑️ Session détruite: ${partieId}`);
 }
@@ -108,7 +113,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             let s = getSession(partieId);
 
             if (s && (s.phase === 'ended' || s.questions.length === 0)) {
-                if (s.timerHandle) clearTimeout(s.timerHandle);
+                _annulerTimers(s);
                 sessions.delete(partieId);
                 s = null;
             }
@@ -157,6 +162,10 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
                 return;
             }
 
+            // [FIX A] Annuler TOUS les timers EN PREMIER, AVANT de modifier l'état.
+            // timerReveal (le plus dangereux) est inclus dans _annulerTimers.
+            _annulerTimers(s);
+
             const q  = s.questions[s.posees];
             s.posees++;
             s.phase              = 'question';
@@ -177,15 +186,13 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
 
             broadcastToGame(wss, partieId, 'QUIZ_QUESTION', _questionPayload(s, q));
 
-            if (s.timerHandle)   clearTimeout(s.timerHandle);
-            if (s.timerIndice1)  clearTimeout(s.timerIndice1);
-            if (s.timerIndice2)  clearTimeout(s.timerIndice2);
-
             const texte1 = q['Indice 1'] || q.indice1 || '';
             if (texte1) {
                 s.timerIndice1 = setTimeout(() => {
-                    if (s.phase !== 'question') return;
-                    s.indicesBroadcast = Math.max(s.indicesBroadcast, 1);
+                    // [FIX B] Vérifier que c'est toujours la même question active
+                    const sNow = getSession(partieId);
+                    if (!sNow || sNow.phase !== 'question' || sNow.questionEnCours !== q) return;
+                    sNow.indicesBroadcast = Math.max(sNow.indicesBroadcast, 1);
                     broadcastToGame(wss, partieId, 'QUIZ_INDICE', { num: 1, texte: texte1 });
                 }, T_INDICE1 * 1000);
             }
@@ -193,28 +200,32 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             const texte2 = q['Indice 2'] || q.indice2 || '';
             if (texte2) {
                 s.timerIndice2 = setTimeout(() => {
-                    if (s.phase !== 'question') return;
-                    s.indicesBroadcast = Math.max(s.indicesBroadcast, 2);
+                    const sNow = getSession(partieId);
+                    if (!sNow || sNow.phase !== 'question' || sNow.questionEnCours !== q) return;
+                    sNow.indicesBroadcast = Math.max(sNow.indicesBroadcast, 2);
                     broadcastToGame(wss, partieId, 'QUIZ_INDICE', { num: 2, texte: texte2 });
                 }, T_INDICE2 * 1000);
             }
 
             s.timerHandle = setTimeout(() => {
-                if (s.phase !== 'question') return;
+                // [FIX B] Vérifier que c'est toujours la même question active
+                const sNow = getSession(partieId);
+                if (!sNow || sNow.phase !== 'question' || sNow.questionEnCours !== q) return;
 
-                const partie       = store.getPartie(partieId);
+                const partie        = store.getPartie(partieId);
                 const nbJoueursReel = (partie?.joueurs || []).length;
 
                 broadcastToHost(wss, partieId, 'QUIZ_TIMER_EXPIRED', {
                     partieId,
-                    nbReponses : Object.keys(s.reponses).length,
-                    // [FIX 3] nbJoueurs = total réel depuis store (hôte inclus si hostJoue:true)
+                    nbReponses : Object.keys(sNow.reponses).length,
                     nbJoueurs  : nbJoueursReel,
                 });
 
-                s.timerReveal = setTimeout(() => {
-                    if (s.phase === 'question' && !s.revelationEnCours) {
-                        _declencherRevelation(wss, partieId, s, helpers, 'timer');
+                sNow.timerReveal = setTimeout(() => {
+                    const sCheck = getSession(partieId);
+                    // [FIX B] Triple vérification : session existe, même question, pas encore en révélation
+                    if (sCheck && sCheck.phase === 'question' && !sCheck.revelationEnCours && sCheck.questionEnCours === q) {
+                        _declencherRevelation(wss, partieId, sCheck, helpers, 'timer');
                     }
                 }, 5000);
             }, DUREE * 1000);
@@ -224,11 +235,8 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
 
         // ───────────────────────────────────────────────
         // quiz:host_answer
+        // Enregistre la réponse de l'hôte sans passer par ws._pseudo (null)
         // ───────────────────────────────────────────────
-        // [FIX 3] Nouveau handler : enregistre la réponse de l'hôte
-        // dans s.reponses en utilisant data.pseudo (explicitement transmis
-        // par quiz_hote.js) ou en fallback partie.hostPseudo.
-        // N'utilise JAMAIS ws._pseudo qui est null pour le socket hôte.
         case 'host_answer': {
             const s = getSession(partieId);
 
@@ -237,13 +245,12 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             }
 
             const partie     = store.getPartie(partieId);
-            // [FIX 3] pseudo : data.pseudo en priorité, sinon partie.hostPseudo
             const pseudo     = (data.pseudo && String(data.pseudo).trim())
                 || partie?.hostPseudo
                 || null;
 
             if (!pseudo) {
-                console.warn('[QUIZ] ⚠️ quiz:host_answer — pseudo introuvable (data.pseudo et hostPseudo null)');
+                console.warn('[QUIZ] ⚠️ quiz:host_answer — pseudo introuvable');
                 return send(ws, 'QUIZ_ANSWER_ACK', { status: 'invalid' });
             }
 
@@ -256,8 +263,8 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
                 return send(ws, 'QUIZ_ANSWER_ACK', { status: 'invalid' });
             }
 
-            const ts  = data.ts || Date.now();
-            const q   = s.questionEnCours;
+            const ts = data.ts || Date.now();
+            const q  = s.questionEnCours;
 
             let indicesVus = 0;
             if (q._tsIndice1 && ts > q._tsIndice1) indicesVus++;
@@ -271,8 +278,6 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             const nbJoueursReel = (partie?.joueurs || []).length;
             const allAnswered   = nbReponses >= nbJoueursReel;
 
-            // Notifier l'hôte que SA réponse est enregistrée
-            // (QUIZ_RESPONSE_IN avec son propre pseudo pour MAJ du panneau)
             send(ws, 'QUIZ_RESPONSE_IN', {
                 pseudo,
                 nbReponses,
@@ -296,9 +301,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             const partie     = store.getPartie(partieId);
             const hostPseudo = partie?.hostPseudo;
 
-            // Intégrer la réponse hôte si elle n'est pas déjà dans s.reponses
-            // (cas fallback : hôte n'a pas envoyé quiz:host_answer mais a
-            // quand même saisi une réponse et cliqué "Afficher")
+            // Fallback : intégrer la réponse hôte si absente (n'écrase pas si déjà enregistrée)
             if (hostPseudo && (data.reponseHote || data.texte || data.reponse)) {
                 if (s.reponses[hostPseudo] === undefined) {
                     const ts = data.tsHote || Date.now();
@@ -307,7 +310,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
                         ts,
                         indicesVus : 2,
                     };
-                    console.log(`[QUIZ] 🎮 Réponse hôte intégrée via quiz:reveal (fallback): ${hostPseudo}`);
+                    console.log(`[QUIZ] 🎮 Réponse hôte via quiz:reveal (fallback): ${hostPseudo}`);
                 }
             }
 
@@ -346,12 +349,12 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             if (!s || s.phase !== 'question') {
                 return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE' });
             }
-            if (s.timerHandle) clearTimeout(s.timerHandle);
-
+            _annulerTimers(s);
             s.phase             = 'correction';
             s.revelationEnCours = false;
 
-            broadcastToGame(wss, partieId, 'QUIZ_CORRECTION', _correctionPayload(s, s.questionEnCours, []));
+            const q = s.questionEnCours;
+            if (q) broadcastToGame(wss, partieId, 'QUIZ_CORRECTION', _correctionPayload(s, q, []));
             break;
         }
 
@@ -377,9 +380,8 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
                 return send(ws, 'QUIZ_ANSWER_ACK', { status: 'too_late' });
             }
 
-            // [FIX 3] Guard : pseudo ne doit jamais être null ici
             if (!pseudo || pseudo === 'null' || pseudo === 'undefined') {
-                console.warn('[QUIZ] ⚠️ quiz:answer reçu avec pseudo null — rejeté');
+                console.warn('[QUIZ] ⚠️ quiz:answer — pseudo null rejeté');
                 return send(ws, 'QUIZ_ANSWER_ACK', { status: 'invalid' });
             }
 
@@ -404,7 +406,6 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
             send(ws, 'QUIZ_ANSWER_ACK', { status: 'ok', texte });
 
             const partie        = store.getPartie(partieId);
-            // [FIX 3] nbJoueurs = total réel depuis store
             const nbJoueursReel = (partie?.joueurs || []).length;
             const nbReponses    = Object.keys(s.reponses).length;
             const allAnswered   = nbReponses >= nbJoueursReel;
@@ -426,45 +427,42 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
 
 // ─────────────────────────────────────────────────────
 // Révélation
+// [FIX C] null-safe + try/catch sur les appels store
 // ─────────────────────────────────────────────────────
 
 function _declencherRevelation(wss, partieId, s, helpers, source) {
     if (s.revelationEnCours) return;
     s.revelationEnCours = true;
 
-    if (s.timerHandle)  clearTimeout(s.timerHandle);
-    if (s.timerIndice1) clearTimeout(s.timerIndice1);
-    if (s.timerIndice2) clearTimeout(s.timerIndice2);
-    if (s.timerReveal)  clearTimeout(s.timerReveal);
+    // [FIX A] Annuler tous les timers via la fonction centralisée
+    _annulerTimers(s);
 
     const { broadcastToGame, broadcastToHost } = helpers;
-    const q            = s.questionEnCours;
+
+    // [FIX C] Guard null sur questionEnCours
+    const q = s.questionEnCours;
+    if (!q) {
+        console.error(`[QUIZ] ❌ _declencherRevelation — questionEnCours null (source: ${source})`);
+        s.revelationEnCours = false;
+        return;
+    }
+
     const bonneReponse = _getBonneReponse(q);
 
     const repTri = Object.entries(s.reponses)
+        .filter(([p]) => p && p !== 'null' && p !== 'undefined')
         .sort((a, b) => (a[1].ts || 0) - (b[1].ts || 0));
 
     const resultats = [];
     let premierCorrectPseudo = null;
 
-    repTri.forEach(([pseudo, data]) => {
-        // [FIX 3] Guard : ignorer les entrées null parasites
-        if (!pseudo || pseudo === 'null' || pseudo === 'undefined') return;
-
-        const texte   = String(data.texte || '').trim();
+    repTri.forEach(([pseudo, rep]) => {
+        const texte   = String(rep.texte || '').trim();
         const sim     = bonneReponse ? _similarite(texte, bonneReponse) : 0;
         const correct = sim >= 0.85;
+        const points  = correct ? 1 : 0;
 
-        let points = correct ? 1 : 0;
-
-        resultats.push({
-            pseudo,
-            texte,
-            correct,
-            points,
-            estPremier: false,
-        });
-
+        resultats.push({ pseudo, texte, correct, points, estPremier: false });
         if (correct && !premierCorrectPseudo) premierCorrectPseudo = pseudo;
     });
 
@@ -474,7 +472,13 @@ function _declencherRevelation(wss, partieId, s, helpers, source) {
     }
 
     resultats.forEach(r => {
-        if (r.points > 0) store.modifierScore(partieId, r.pseudo, r.points);
+        if (r.points > 0) {
+            try {
+                store.modifierScore(partieId, r.pseudo, r.points);
+            } catch (err) {
+                console.error(`[QUIZ] ❌ modifierScore (${r.pseudo}):`, err.message);
+            }
+        }
     });
 
     s._dernieresReponses = resultats;
@@ -482,7 +486,13 @@ function _declencherRevelation(wss, partieId, s, helpers, source) {
 
     broadcastToGame(wss, partieId, 'QUIZ_CORRECTION', _correctionPayload(s, q, resultats));
 
-    const scoresActuels = store.getScores(partieId);
+    let scoresActuels = {};
+    try {
+        scoresActuels = store.getScores(partieId) || {};
+    } catch (err) {
+        console.error('[QUIZ] ❌ getScores:', err.message);
+    }
+
     broadcastToGame(wss, partieId, 'SCORES_UPDATE', { scores: scoresActuels });
 
     broadcastToHost(wss, partieId, 'QUIZ_CAN_NEXT', {
@@ -499,12 +509,14 @@ function _declencherRevelation(wss, partieId, s, helpers, source) {
 
 function _terminerQuiz(wss, partieId, s, helpers) {
     const { broadcastToGame } = helpers;
-    if (s.timerHandle) clearTimeout(s.timerHandle);
-
+    _annulerTimers(s);
     s.phase = 'ended';
 
+    let scores = {};
+    try { scores = store.getScores(partieId) || {}; } catch (e) {}
+
     broadcastToGame(wss, partieId, 'QUIZ_END', {
-        scores: store.getScores(partieId),
+        scores,
         total : s.posees,
     });
 }
@@ -538,6 +550,7 @@ function _correctionPayload(s, q, resultats) {
 }
 
 function _getBonneReponse(q) {
+    if (!q) return '';
     return (q['Réponse'] || q.reponse || q.answer || '').trim();
 }
 

@@ -134,6 +134,30 @@ function _initWsListeners() {
         const el = document.getElementById(`indice${num}`);
         if (el) el.textContent = texte;
     });
+
+    // [FIX D] Si le serveur renvoie une erreur (ex: INTERNAL_ERROR),
+    // réinitialiser _validationEnCours pour que le bouton "Afficher"
+    // soit réactivable et que l'hôte puisse réessayer.
+    s.on('ERROR', ({ code }) => {
+        if (_validationEnCours) {
+            console.warn('[QUIZ_HOTE] ⚠️ ERROR reçu pendant validation (' + code + ') — reset _validationEnCours');
+            _validationEnCours = false;
+            // Réactiver le bouton "Afficher" pour pouvoir réessayer
+            const btnAff = document.getElementById('btn-afficher-reponse');
+            if (btnAff && btnAff.disabled) {
+                btnAff.disabled        = false;
+                btnAff.style.opacity   = '1';
+                btnAff.style.cursor    = 'pointer';
+                btnAff.title           = '⚠️ Erreur serveur — Cliquez pour réessayer';
+                btnAff.style.animation = 'btnPulse .5s ease';
+            }
+            const btnEnv = document.getElementById('btn-valider-reponse');
+            if (btnEnv && btnEnv.disabled) {
+                btnEnv.disabled      = false;
+                btnEnv.style.opacity = '';
+            }
+        }
+    });
 }
 
 // ────────────────────────────────────────────────────────────
