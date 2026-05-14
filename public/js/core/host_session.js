@@ -32,6 +32,7 @@
 
 import { GameState } from './state.js';
 import { socket } from './socket.js';
+import { setPartieSessionId, resetPartieSessionId, mettreAJourLienInvitation } from '../modules/invite.js';
 
 const HostSession = {
     _partieId        : null,
@@ -102,15 +103,9 @@ const HostSession = {
                 // 1. Persister l'ID (source de vérité pour quiz_hote._pid())
                 localStorage.setItem('minigame_partie_id', partieId);
 
-                // 2. Mettre à jour invite.js — APRÈS avoir écrit l'ID
-                import('../modules/invite.js').then(m => {
-                    if (typeof m.setPartieSessionId === 'function') {
-                        m.setPartieSessionId(partieId);
-                    }
-                    if (typeof m.mettreAJourLienInvitation === 'function') {
-                        m.mettreAJourLienInvitation();
-                    }
-                }).catch(err => console.warn('[HOST] ⚠️ invite.js:', err.message));
+                // 2. Mettre à jour invite.js — synchrone, import statique (pas de race condition)
+                setPartieSessionId(partieId);
+                mettreAJourLienInvitation();
 
                 this._afficherLienJoin(joinUrl, snapshot?.codeCourt);
 
@@ -178,9 +173,7 @@ const HostSession = {
                     if (typeof m.resetEtatQuizHote === 'function') m.resetEtatQuizHote();
                 }).catch(() => {});
 
-                import('../modules/invite.js').then(m => {
-                    if (typeof m.resetPartieSessionId === 'function') m.resetPartieSessionId();
-                }).catch(() => {});
+                resetPartieSessionId();
             });
 
             socket.on('ERROR', ({ code, message }) => {
@@ -195,9 +188,7 @@ const HostSession = {
                     this._snapshot    = null;
                     this._pendingGame = null;
 
-                    import('../modules/invite.js').then(m => {
-                        if (typeof m.resetPartieSessionId === 'function') m.resetPartieSessionId();
-                    }).catch(() => {});
+                    resetPartieSessionId();
 
                     // Restaurer le bouton start
                     if (typeof window._restaurerBoutonStart === 'function') {
