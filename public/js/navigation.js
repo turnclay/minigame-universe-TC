@@ -74,7 +74,7 @@ export function initBoutonAccueil() {
         try { resetEtatQuizHote(); } catch {}
         try { nettoyerSession(); } catch {}
 
-        // 🔄 Recharge la page (équivalent logique d’un hard reload)
+        // 🔄 Recharge la page
         location.reload();
     });
 }
@@ -133,7 +133,7 @@ export function naviguerVersAccueil() {
     masquerScoreboard();
     show("home");
 
-    // Reset complet de la session
+    // Reset complet
     _resetSessionComplete();
 
     // Recharger le hub d'accueil
@@ -159,7 +159,7 @@ function _resetSessionComplete() {
     try {
         if (window.HostSession) {
             if (typeof window.HostSession.terminer === 'function') {
-                window.HostSession.terminer(); // HOST_END_GAME si partie active
+                window.HostSession.terminer();
             }
             window.HostSession._partieId = null;
             window.HostSession._snapshot = null;
@@ -188,6 +188,7 @@ function _resetSessionComplete() {
 
     console.log('[NAV] 🧹 Session réinitialisée — prêt pour une nouvelle partie');
 }
+
 
 
 // ======================================================
