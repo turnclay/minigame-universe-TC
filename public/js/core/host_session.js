@@ -120,43 +120,24 @@ const HostSession = {
                     console.error('[HOST] ❌ Erreur HOST_START_GAME:', err.message);
                 }
 
-                // 4. [FIX C] Nettoyer les ANCIENNES clés de session MAINTENANT
-                // (après avoir écrit le nouvel ID, avant de lancer le jeu)
-                import('../core/cleanup.js').then(m => {
-                    if (typeof m.nettoyerSession === 'function') {
-                        m.nettoyerSession();
-                        // Réécrire le nouvel ID (nettoyerSession l'aurait supprimé)
-                        localStorage.setItem('minigame_partie_id', partieId);
-                    }
-                }).catch(() => {});
+                // 4. Le nettoyage des anciennes clés est effectué dans initStartSolo()
+                // AVANT creerPartie(), de façon synchrone et sans race condition.
 
                 // 5. [FIX D] Lancer le jeu si un jeu était en attente
                 const gameALancer = this._pendingGame;
                 this._pendingGame = null;
 
                 if (gameALancer) {
-                    // Créer la partie locale (localStorage)
-                    import('../modules/parties.js').then(m => {
-                        if (typeof m.creerNouvellePartie === 'function') {
-                            m.creerNouvellePartie();
-                        }
-                    }).catch(() => {});
-
                     // Restaurer le bouton start
-                    import('../main.js').then(m => {
-                        if (typeof m._restaurerBoutonStart === 'function') {
-                            m._restaurerBoutonStart();
-                        }
-                    }).catch(() => {});
-
-                    // Lancer le jeu via window.lancerJeu (exposé par main.js)
-                    // Délai court pour laisser le DOM se stabiliser
-                    setTimeout(() => {
-                        if (typeof window.lancerJeu === 'function') {
-                            console.log('[HOST] 🎮 Lancement du jeu —', gameALancer);
-                            window.lancerJeu(gameALancer, { fromServer: true });
-                        }
-                    }, 50);
+                    if (typeof window._restaurerBoutonStart === 'function') {
+                        window._restaurerBoutonStart();
+                    }
+                    // Lancer le jeu (window.lancerJeu exposé par main.js)
+                    // fromServer:true → lance le jeu sans nettoyerSession ni notifierDemarrage
+                    if (typeof window.lancerJeu === 'function') {
+                        console.log('[HOST] 🎮 Lancement du jeu —', gameALancer);
+                        window.lancerJeu(gameALancer, { fromServer: true });
+                    }
                 }
             });
 
@@ -218,9 +199,9 @@ const HostSession = {
                     }).catch(() => {});
 
                     // Restaurer le bouton start
-                    import('../main.js').then(m => {
-                        if (typeof m._restaurerBoutonStart === 'function') m._restaurerBoutonStart();
-                    }).catch(() => {});
+                    if (typeof window._restaurerBoutonStart === 'function') {
+                        window._restaurerBoutonStart();
+                    }
                 }
 
                 if (code === 'HOST_ALREADY_HAS_GAME') {
@@ -233,9 +214,9 @@ const HostSession = {
                     this._pendingGame = null;
 
                     // [FIX E] Restaurer le bouton et avertir l'utilisateur
-                    import('../main.js').then(m => {
-                        if (typeof m._restaurerBoutonStart === 'function') m._restaurerBoutonStart();
-                    }).catch(() => {});
+                    if (typeof window._restaurerBoutonStart === 'function') {
+                        window._restaurerBoutonStart();
+                    }
 
                     this._toastHote(
                         'Ce nom de partie est déjà utilisé. Choisissez un autre nom.',
@@ -246,9 +227,9 @@ const HostSession = {
                 if (code === 'INTERNAL_ERROR') {
                     console.error('[HOST] ❌ INTERNAL_ERROR — vérifier logs serveur');
                     this._pendingGame = null;
-                    import('../main.js').then(m => {
-                        if (typeof m._restaurerBoutonStart === 'function') m._restaurerBoutonStart();
-                    }).catch(() => {});
+                    if (typeof window._restaurerBoutonStart === 'function') {
+                        window._restaurerBoutonStart();
+                    }
                     this._toastHote('Erreur serveur temporaire. Réessaie dans quelques secondes.', 'error');
                 }
             });

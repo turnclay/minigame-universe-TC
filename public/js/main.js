@@ -62,6 +62,7 @@ import { initialiserMemoire }    from "./jeux/memoire.js";
 import { initialiserPuissance4 } from "./jeux/puissance4.js";
 import { initialiserMimer }      from "./jeux/mimedessine.js";
 import { initialiserPetitBac }   from "./jeux/petitbac.js";
+import "./jeux/quiz.js"; // charge quiz.js et expose window.initialiserQuiz
 
 import { socket } from "./core/socket.js";
 
@@ -370,8 +371,10 @@ function initStartSolo() {
             return;
         }
 
-        // [FIX 5] Jeux WS : stocker le jeu à lancer, créer la partie côté serveur.
+        // [FIX 5] Jeux WS : nettoyer l'ancienne session (synchrone, sans race condition),
+        // stocker le jeu à lancer, créer la partie côté serveur.
         // lancerJeu() sera appelé depuis le handler GAME_CREATED dans host_session.js.
+        nettoyerSession(); // supprime les anciennes clés AVANT que GAME_CREATED écrive les nouvelles
         HostSession._pendingGame = GameState.jeu;
         HostSession.creerPartie();
 
@@ -432,15 +435,22 @@ function lancerJeuLocal(game) {
 //   Le nettoyage est fait dans host_session.js AVANT d'appeler lancerJeu(),
 //   ce qui évite que minigame_partie_id soit supprimé trop tôt.
 export function lancerJeu(game, options = {}) {
-    const fromLoad = options.fromLoad === true;
+    const fromLoad   = options.fromLoad   === true;
+    const fromServer = options.fromServer === true; // appelé depuis GAME_CREATED handler
     GameState.jeuActuel = game;
 
     if (game.toLowerCase() === "undercover") return;
 
-    // [FIX 4] nettoyerSession() est désormais appelé dans host_session.js
-    // juste avant lancerJeu(), pas ici. Sauf si fromLoad (chargement d'une partie sauvegardée).
     if (fromLoad) {
+        // Chargement d'une partie sauvegardée depuis la liste
         nettoyerSession();
+        if (!GameState.partieEnCoursChargee) {
+            const p = loadGame();
+            if (!p || p.nomPartie !== GameState.partieNom) creerNouvellePartie();
+        }
+    } else if (fromServer) {
+        // Appelé depuis GAME_CREATED : nettoyerSession() déjà fait dans initStartSolo().
+        // Créer la partie locale (localStorage) maintenant.
         if (!GameState.partieEnCoursChargee) {
             const p = loadGame();
             if (!p || p.nomPartie !== GameState.partieNom) creerNouvellePartie();
@@ -514,9 +524,10 @@ function _countdown(onEnd) {
     }, 1000);
 }
 
-window.lancerJeu     = lancerJeu;
-window.initHomeHub   = initHomeHub;
-window.initStartSolo = initStartSolo;
+window.lancerJeu            = lancerJeu;
+window.initHomeHub          = initHomeHub;
+window.initStartSolo        = initStartSolo;
+window._restaurerBoutonStart = _restaurerBoutonStart;
 
 window.initialiserPendu      = initialiserPendu;
 window.initialiserMemoire    = initialiserMemoire;
