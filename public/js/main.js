@@ -411,12 +411,13 @@ function init() {
 window.addEventListener("DOMContentLoaded", init);
 
 // ============================================
-// 🚀 DÉMARRAGE MODE SOLO
+// 🚀 DÉMARRAGE MODE SOLO (VERSION CORRIGÉE)
 // ============================================
-// [FIX] initStartSolo() est rappelée à chaque entrée sur form-solo
-// via initModeCards() et window.initStartSolo() depuis joueurs.js.
-// Elle clone le bouton pour supprimer les anciens listeners,
-// évitant l'empilement qui démarrerait plusieurs parties à la fois.
+// Empêche toute double création de partie WS.
+// Attend réellement la fin de la partie précédente.
+// Supprime les listeners doublons.
+// ============================================
+
 function initStartSolo() {
     const btnStart = $("btn-start-solo");
     if (!btnStart) return;
@@ -432,69 +433,96 @@ function initStartSolo() {
     const btn = $("btn-start-solo");
 
     btn.addEventListener("click", () => {
+
+        // Vérification joueurs
         if (!GameState.joueurs || GameState.joueurs.length === 0) {
-            alert("Sélectionne au moins un joueur."); return;
+            alert("Sélectionne au moins un joueur.");
+            return;
         }
+
         GameState.mode = "solo";
 
-        // Terminer la partie serveur en cours AVANT de reset
+        // 1️⃣ Si une partie existe → demander la fin
         if (HostSession._partieId) {
             HostSession.terminer();
         }
 
-        // Réinitialiser l'état de la partie précédente AVANT de créer la nouvelle
-        HostSession.reset();
-        resetEtatQuizHote();
+        // 2️⃣ Attendre réellement la fin de la partie précédente
+        const attendreFin = () => {
+            if (HostSession._partieId === null) {
 
-        // Créer la partie côté serveur WS
-        HostSession.creerPartie();
+                // 3️⃣ Reset complet AVANT création
+                HostSession.reset();
+                resetEtatQuizHote();
 
-        if (GameState.jeu === "morpion") {
-            if (GameState.joueurs.length < 2 || GameState.joueurs.length > 3) {
-                alert("Le Morpion : 2 à 3 joueurs."); return;
+                // 4️⃣ Créer la nouvelle partie WS
+                HostSession.creerPartie();
+
+                // 5️⃣ Gestion des jeux spéciaux
+                if (GameState.jeu === "morpion") {
+                    if (GameState.joueurs.length < 2 || GameState.joueurs.length > 3) {
+                        alert("Le Morpion : 2 à 3 joueurs.");
+                        return;
+                    }
+                    lancerJeu("morpion");
+                    return;
+                }
+
+                if (GameState.jeu === "puissance4") {
+                    if (GameState.joueurs.length !== 2) {
+                        alert("Puissance 4 : exactement 2 joueurs.");
+                        return;
+                    }
+                    lancerJeu("puissance4");
+                    return;
+                }
+
+                if (GameState.jeu === "undercover") {
+                    if (GameState.joueurs.length < 3) {
+                        alert("Undercover : il faut au moins 3 joueurs.");
+                        return;
+                    }
+                    if (!GameState.partieEnCoursChargee) creerNouvellePartie();
+
+                    const spanNb = $("uc-nb-joueurs");
+                    if (spanNb) spanNb.textContent = GameState.joueurs.length;
+
+                    hide("form-solo");
+                    show("container");
+
+                    const ucConfig  = document.getElementById("undercover-config");
+                    const ucDistrib = document.getElementById("undercover-distribution");
+                    const ucGame    = document.getElementById("undercover");
+
+                    if (ucConfig)  { ucConfig.hidden = false; ucConfig.style.display = "block"; }
+                    if (ucDistrib) { ucDistrib.hidden = true;  ucDistrib.style.display = "none"; }
+                    if (ucGame)    { ucGame.hidden    = true;  ucGame.style.display    = "none"; }
+
+                    ucBindBouton(() => {
+                        console.log("[MAIN] ✅ Distribution terminée → phase jeu");
+                        const jeu = document.getElementById("undercover");
+                        if (jeu) { jeu.hidden = false; jeu.style.display = "block"; }
+                        show("scoreboard");
+                        afficherScoreboard();
+                    });
+
+                    return;
+                }
+
+                // 6️⃣ Lancer le jeu normal
+                lancerJeu(GameState.jeu);
+
+            } else {
+                // Attendre la fin réelle (GAME_ENDED)
+                requestAnimationFrame(attendreFin);
             }
-            lancerJeu("morpion"); return;
-        }
+        };
 
-        if (GameState.jeu === "puissance4") {
-            if (GameState.joueurs.length !== 2) {
-                alert("Puissance 4 : exactement 2 joueurs."); return;
-            }
-            lancerJeu("puissance4"); return;
-        }
-
-        if (GameState.jeu === "undercover") {
-            if (GameState.joueurs.length < 3) {
-                alert("Undercover : il faut au moins 3 joueurs."); return;
-            }
-            if (!GameState.partieEnCoursChargee) creerNouvellePartie();
-
-            const spanNb = $("uc-nb-joueurs");
-            if (spanNb) spanNb.textContent = GameState.joueurs.length;
-
-            hide("form-solo");
-            show("container");
-            const ucConfig  = document.getElementById("undercover-config");
-            const ucDistrib = document.getElementById("undercover-distribution");
-            const ucGame    = document.getElementById("undercover");
-            if (ucConfig)  { ucConfig.hidden = false; ucConfig.style.display = "block"; }
-            if (ucDistrib) { ucDistrib.hidden = true; ucDistrib.style.display = "none"; }
-            if (ucGame)    { ucGame.hidden    = true; ucGame.style.display    = "none"; }
-
-            ucBindBouton(() => {
-                console.log("[MAIN] ✅ Distribution terminée → phase jeu");
-                const jeu = document.getElementById("undercover");
-                if (jeu) { jeu.hidden = false; jeu.style.display = "block"; }
-                show("scoreboard");
-                afficherScoreboard();
-            });
-            return;
-        }
-
-        lancerJeu(GameState.jeu);
+        attendreFin();
     });
 }
 
+// Exposition globale
 window.HostSession = HostSession;
 window.jeuSocket   = socket;
 
