@@ -71,12 +71,5 @@ export function resetEtatQuizHote() {
         })
         .catch(() => {});
 
-    if (window.HostSession) {
-        window.HostSession._snapshot     = null;
-        window.HostSession._partieId     = null;
-        window.HostSession._pendingStart = false;
-        console.log('[CLEANUP] ✅ HostSession snapshot réinitialisé');
-    }
-
-    window._quizReponseSaisieHote = '';
+    // HostSession est réinitialisé depuis main.js qui le détient
 }

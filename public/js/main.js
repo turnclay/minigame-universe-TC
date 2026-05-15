@@ -39,7 +39,7 @@ import { initialiserMemoire }    from "./jeux/memoire.js";
 import { initialiserPuissance4 } from "./jeux/puissance4.js";
 import { initialiserMimer }      from "./jeux/mimedessine.js";
 import { initialiserPetitBac }   from "./jeux/petitbac.js";
-import "./jeux/quiz.js";
+import { initialiserQuiz } from "./jeux/quiz.js";
 
 import { socket } from "./core/socket.js";
 
@@ -258,6 +258,29 @@ function initModeCards() {
     });
 }
 
+// Registry des initialiseurs de jeux (sans window)
+const GAME_INIT_FNS = {
+    quiz       : (sock) => initialiserQuiz(sock),
+    quizz      : (sock) => initialiserQuiz(sock),
+    pendu      : ()     => initialiserPendu(),
+    memoire    : ()     => initialiserMemoire(),
+    puissance4 : ()     => initialiserPuissance4(),
+    mimer      : ()     => initialiserMimer(),
+    mimedessine: ()     => initialiserMimer(),
+    petitbac   : ()     => initialiserPetitBac(),
+    morpion    : ()     => { /* handled separately */ },
+};
+
+function _callGameInit(key) {
+    const fn = GAME_INIT_FNS[key];
+    if (!fn) return;
+    if (key === 'quiz' || key === 'quizz') {
+        fn(socket).catch(err => console.error('[MAIN] ❌ initialiserQuiz:', err));
+    } else {
+        try { fn(); } catch(err) { console.error('[MAIN] ❌ init', key, err); }
+    }
+}
+
 function lancerJeuLocal(game) {
     GameState.jeuActuel = game;
 
@@ -271,20 +294,17 @@ function lancerJeuLocal(game) {
     afficherScoreboard();
 
     const key  = game.toLowerCase();
-    const gameInitName = GAME_INITIALIZERS[key];
-    if (!gameInitName) { afficherAccueilJeux(); return; }
+    if (!GAME_INITIALIZERS[key]) { afficherAccueilJeux(); return; }
 
     if (key === "morpion") {
-        if (typeof window[gameInitName] === "function") window[gameInitName]();
+        _callGameInit(key);
         show("morpion"); return;
     }
 
     _countdown(() => {
-    show(key.replace(/\s+/g,""));
-    if (key !== "quiz" && typeof window[gameInitName] === "function") {
-        window[gameInitName]();
-    }
-});
+        show(key.replace(/\s+/g,""));
+        _callGameInit(key);
+    });
 }
 
 function _afficherEtatCreation() {
@@ -409,7 +429,7 @@ function lancerJeu(game, options = {}) {
     if (!gameInitName) { afficherAccueilJeux(); return; }
 
     if (key === "morpion") {
-        if (typeof window[gameInitName] === "function") window[gameInitName]();
+        _callGameInit(key);
         show("morpion");
         return;
     }
@@ -420,11 +440,8 @@ function lancerJeu(game, options = {}) {
     }
 
     _countdown(() => {
-
         show(key.replace(/\s+/g,""));
-        if (key !== "quiz" && typeof window[gameInitName] === "function") {
-            window[gameInitName]();
-        }
+        _callGameInit(key);
     });
 }
 
@@ -478,11 +495,13 @@ function initAppliqueGlobale() {
 
 window.addEventListener("DOMContentLoaded", initAppliqueGlobale);
 
-window.HostSession           = HostSession;
-window.jeuSocket             = socket;
-window._restaurerBoutonStart = _restaurerBoutonStart;
-window.lancerJeu             = lancerJeu;
+// Injecter les callbacks dans HostSession (évite window.xxx dans host_session.js)
+HostSession.setCallbacks({
+    restaurerBouton : _restaurerBoutonStart,
+    lancerJeu       : lancerJeu,
+});
 
+// Exposer _hostCreerPartieQuandPret pour joueurs.js (sera supprimé quand joueurs.js sera migré)
 window._hostCreerPartieQuandPret = function() {
     if (HostSession._authenticated && !HostSession._partieId && !HostSession._creationEnCours) {
         HostSession.creerPartie();

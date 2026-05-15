@@ -3,6 +3,10 @@
 import { GameState } from './state.js';
 import { socket } from './socket.js';
 
+// Callbacks injectés par main.js pour éviter les dépendances circulaires
+let _cbRestaurerBouton = null;
+let _cbLancerJeu       = null;
+
 const HostSession = {
     _partieId        : null,
     _snapshot        : null,
@@ -22,6 +26,11 @@ const HostSession = {
         this._partieStarted   = false;
         this._wsHandlersAdded = false;
         console.log('[HOST] 🔄 HostSession reset (nouvelle partie)');
+    },
+
+    setCallbacks({ restaurerBouton, lancerJeu }) {
+        _cbRestaurerBouton = restaurerBouton || null;
+        _cbLancerJeu       = lancerJeu       || null;
     },
 
     init() {
@@ -91,13 +100,11 @@ const HostSession = {
                     } catch (err) {
                         console.error('[HOST] ❌ HOST_START_GAME:', err.message);
                     }
-                    if (typeof window._restaurerBoutonStart === 'function') {
-                        window._restaurerBoutonStart();
-                    }
-                    if (typeof window.lancerJeu === 'function') {
+                    if (_cbRestaurerBouton) _cbRestaurerBouton();
+                    if (_cbLancerJeu) {
                         console.log('[HOST] 🎮 Lancement du jeu —', gameALancer);
                         this._partieStarted = true;
-                        window.lancerJeu(gameALancer, { fromServer: true });
+                        _cbLancerJeu(gameALancer, { fromServer: true });
                     }
                 }
             });
@@ -159,9 +166,7 @@ const HostSession = {
                         if (typeof m.resetPartieSessionId === 'function') m.resetPartieSessionId();
                     }).catch(() => {});
 
-                    if (typeof window._restaurerBoutonStart === 'function') {
-                        window._restaurerBoutonStart();
-                    }
+                    if (_cbRestaurerBouton) _cbRestaurerBouton();
                 }
 
                 if (code === 'HOST_ALREADY_HAS_GAME') {
@@ -173,9 +178,7 @@ const HostSession = {
                     this._partieId    = null;
                     this._pendingGame = null;
 
-                    if (typeof window._restaurerBoutonStart === 'function') {
-                        window._restaurerBoutonStart();
-                    }
+                    if (_cbRestaurerBouton) _cbRestaurerBouton();
 
                     this._toastHote(
                         'Ce nom de partie est déjà utilisé. Choisissez un autre nom.',
@@ -186,9 +189,7 @@ const HostSession = {
                 if (code === 'INTERNAL_ERROR') {
                     console.error('[HOST] ❌ INTERNAL_ERROR — vérifier logs serveur');
                     this._pendingGame = null;
-                    if (typeof window._restaurerBoutonStart === 'function') {
-                        window._restaurerBoutonStart();
-                    }
+                    if (_cbRestaurerBouton) _cbRestaurerBouton();
                     this._toastHote('Erreur serveur temporaire. Réessaie dans quelques secondes.', 'error');
                 }
             });

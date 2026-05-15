@@ -7,9 +7,12 @@
 
 import { $ } from '../core/dom.js';
 import { GameState } from '../core/state.js';
-import { ajouterPoints } from '../modules/scoreboard.js';
+import { ajouterPoints, afficherScoreboard } from '../modules/scoreboard.js';
+import { socket } from '../core/socket.js';
+import HostSession from '../core/host_session.js';
 
-// ── État local (UI uniquement — plus de séquence locale) ──
+// ── État local quiz ──────────────────────────────────────
+let _quizReponseSaisieHote = '';
 let _timerLocal     = null;
 let _tempsRestant   = 60;
 let _questionEnCours = null;  // payload de la dernière QUIZ_QUESTION reçue
@@ -35,12 +38,6 @@ async function chargerModuleHote() {
         _viderReponses                  = m.viderReponses;
         _declencherAfficherReponse      = m.declencherAfficherReponse || (() => {});
         _envoyerReponseHote             = m.envoyerReponseHote        || (() => {});
-
-        if (typeof window !== 'undefined') {
-            window._quizEnvoyerReponseHote   = rep => _envoyerReponseHote(rep);
-            window._quizDeclencherAfficher   = ()  => _declencherAfficherReponse();
-            window._quizDeclencherValidation = ()  => _declencherAfficherReponse();
-        }
 
         console.log('[QUIZ] ✅ Module hôte chargé');
         return true;
@@ -159,13 +156,7 @@ function _onQuizCorrection(payload) {
         console.warn('[QUIZ] ⚠️ Erreur publierScores:', err.message);
     }
 
-    if (typeof window.afficherScoreboard === 'function') {
-        try {
-            window.afficherScoreboard();
-        } catch (err) {
-            console.warn('[QUIZ] ⚠️ Erreur afficherScoreboard:', err.message);
-        }
-    }
+    try { afficherScoreboard(); } catch(err) { console.warn('[QUIZ] ⚠️ afficherScoreboard:', err.message); }
 
     console.log('[QUIZ] ✅ Correction Q' + posees + '/' + total + ': "' + reponse + '"');
 }
@@ -189,13 +180,7 @@ function _onQuizEnd({ scores, total }) {
         }
     }
 
-    if (typeof window.afficherScoreboard === 'function') {
-        try {
-            window.afficherScoreboard();
-        } catch (err) {
-            console.warn('[QUIZ] ⚠️ Erreur afficherScoreboard fin:', err.message);
-        }
-    }
+    try { afficherScoreboard(); } catch(err) { console.warn('[QUIZ] ⚠️ afficherScoreboard fin:', err.message); }
 
     console.log('[QUIZ] 🏁 Fin — ' + total + ' questions');
 }
@@ -348,8 +333,7 @@ function attacherListenersQuiz(socket) {
                 const inp = document.getElementById('quiz-reponse-input');
                 const rep = inp ? inp.value.trim() : '';
                 if (!rep) return;
-                window._quizReponseSaisieHote = rep;
-                // Appel via la variable module (déjà chargée à ce stade)
+                _quizReponseSaisieHote = rep;
                 _envoyerReponseHote(rep);
                 console.log('[QUIZ] 📨 Réponse hôte envoyée:', rep);
             } catch (err) {
@@ -425,8 +409,7 @@ function abonnerEvenementsServeur(socket) {
                 Object.assign(GameState.scores, scores);
             }
             _publierScores();
-            if (typeof window.afficherScoreboard === 'function')
-                window.afficherScoreboard();
+            try { afficherScoreboard(); } catch(err) {}
         } catch (err) {
             console.warn('[QUIZ] ⚠️ Erreur SCORES_UPDATE:', err.message);
         }
@@ -490,10 +473,9 @@ function _activerBoutonAfficherReponse() {
 // ======================================================
 // 📥 INITIALISATION PRINCIPALE
 // ======================================================
-async function initialiserQuiz() {
-    const socket = window.jeuSocket;
+export async function initialiserQuiz(socket) {
     if (!socket) {
-        console.error('[QUIZ] ❌ window.jeuSocket introuvable');
+        console.error('[QUIZ] ❌ socket non fourni à initialiserQuiz()');
         return;
     }
 
@@ -562,59 +544,32 @@ async function initialiserQuiz() {
 // ======================================================
 // EXPORTS WINDOW
 // ======================================================
-window.initialiserQuiz = initialiserQuiz;
 
-window._quizGetReponseCorrecte = function () {
+
+export function getReponseCorrecte() {
     if (!_questionEnCours) return '';
-    return _questionEnCours['Réponse'] || _questionEnCours.reponse || '';
-};
+    return _questionEnCours['Éponse'] || _questionEnCours['Réponse'] || _questionEnCours.reponse || '';
+}
 
-window._quizGetReponseHoteSaisie = function () {
-    return window._quizReponseSaisieHote || '';
-};
+export function getReponseHoteSaisie() {
+    return _quizReponseSaisieHote || '';
+}
 
-window._quizNbJoueursInvites = function () {
+export function getNbJoueursInvites() {
     try {
-        const snap = window.HostSession?._snapshot;
+        const snap = HostSession?._snapshot;
         if (snap && snap.joueurs && snap.joueurs.length > 0) return snap.joueurs.length;
         return Math.max(0, (GameState.joueurs || []).length - 1);
     } catch (err) {
-        console.warn('[QUIZ] ⚠️ Erreur _quizNbJoueursInvites:', err.message);
         return 0;
     }
-};
+}
 
-window._quizValiderAvecPoints = function (correct, points) {
+export function validerAvecPoints(correct, points) {
     try {
         if (correct && points > 0) {
             const p = GameState.mode === 'solo' ? GameState.joueurs[0] : GameState.equipes?.[0]?.nom;
-            if (p) {
-                ajouterPoints(p, points);
-                _publierScores();
-            }
+            if (p) { ajouterPoints(p, points); _publierScores(); }
         }
-    } catch (err) {
-        console.warn('[QUIZ] ⚠️ Erreur _quizValiderAvecPoints:', err.message);
-    }
-};
-// ======================================================
-// AUTO-INIT QUIZ QUAND LA SECTION APPARAÎT
-// ======================================================
-document.addEventListener("DOMContentLoaded", () => {
-    const sectionQuiz = document.getElementById("quiz");
-    if (!sectionQuiz) return;
-
-    const observer = new MutationObserver(() => {
-        const visible = sectionQuiz.style.display !== "none" && !sectionQuiz.hidden;
-        if (visible) {
-            console.log("[QUIZ] Section affichée → initialiserQuiz()");
-            initialiserQuiz();
-            observer.disconnect();
-        }
-    });
-
-    observer.observe(sectionQuiz, {
-        attributes: true,
-        attributeFilter: ["style", "hidden"]
-    });
-});
+    } catch (err) {}
+}

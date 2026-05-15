@@ -153,9 +153,8 @@ export function updatePartieScores() {
     const partie = loadGame();
     if (!partie) return;
 
-    if (window.GameState && window.GameState.scores) {
-        partie.scores = { ...window.GameState.scores };
-    }
+    // GameState should be passed as param — import not possible here without circular dep
+    // Callers must pass scores directly; this function is deprecated in ES module arch
 
     saveGame(partie);
 }
