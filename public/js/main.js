@@ -360,7 +360,7 @@ function initStartSolo() {
     });
 }
 
-export function lancerJeu(game, options = {}) {
+function lancerJeu(game, options = {}) {
     const fromLoad = options.fromLoad === true;
     GameState.jeuActuel = game;
 
@@ -387,7 +387,8 @@ export function lancerJeu(game, options = {}) {
 
     if (key === "morpion") {
         if (typeof window[init] === "function") window[init]();
-        show("morpion"); return;
+        show("morpion");
+        return;
     }
 
     if (pid) {
@@ -396,7 +397,10 @@ export function lancerJeu(game, options = {}) {
     }
 
     _countdown(() => {
-        if (typeof window[init] === "function") window[init]();
+        // ⚠️ NE PAS initialiser le quiz ici
+        if (key !== "quiz" && typeof window[init] === "function") {
+            window[init]();
+        }
         show(key.replace(/\s+/g,""));
     });
 }
@@ -463,6 +467,7 @@ function init() {
 
 window.addEventListener("DOMContentLoaded", init);
 
+// 🔌 EXPORTS GLOBAUX (remplace le export ES6)
 window.HostSession           = HostSession;
 window.jeuSocket             = socket;
 window._restaurerBoutonStart = _restaurerBoutonStart;
