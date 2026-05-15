@@ -1,4 +1,4 @@
-#Cmd : powershell -ExecutionPolicy Bypass -File .\auto-push.ps1
+﻿#Cmd : powershell -ExecutionPolicy Bypass -File .\auto-push.ps1
 
 # --- CONFIGURATION ---
 $projectPath = "C:\Users\clayt\PycharmProjects\MiniGameV2"
