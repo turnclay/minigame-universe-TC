@@ -98,112 +98,135 @@ function lancerMusique() {
     const audio = document.getElementById("bg-music");
     if (!audio) return;
     audio.volume = 0.4;
-    audio.play().catch(() => {});
+
+    const toggle = document.getElementById("toggle-music");
+    if (!toggle) return;
+    toggle.onclick = function() {
+        if (audio.paused) { audio.play(); toggle.textContent = "🔊"; }
+        else { audio.pause(); toggle.textContent = "🔇"; }
+    };
 }
-document.addEventListener("DOMContentLoaded", () => {
-    const toggleBtn = document.getElementById("toggle-music");
-    const audio     = document.getElementById("bg-music");
-    if (toggleBtn && audio) {
-        toggleBtn.onclick = () => {
-            audio.muted = !audio.muted;
-            toggleBtn.textContent = audio.muted ? "🔇" : "🔊";
-        };
-    }
-});
-document.addEventListener("click", lancerMusique, { once: true });
 
 function initSplashScreen() {
-    const splash = $("splash-screen");
-    const loader = $("loader");
-    setTimeout(() => fadeOutAndRemove(splash), SPLASH_DURATION.SCREEN);
-    setTimeout(() => fadeOutAndRemove(loader),  SPLASH_DURATION.LOADER);
-    setTimeout(() => { lancerMusique(); initHomeHub(); show("home"); }, SPLASH_DURATION.INIT);
+    const splash = document.getElementById("splash-screen");
+    if (!splash) return;
+    setTimeout(() => {
+        splash.classList.add("fade-out");
+        setTimeout(() => splash.style.display = "none", FADE_DURATION);
+    }, SPLASH_DURATION.SCREEN);
+}
+
+function afficherAccueilJeux() {
+    naviguerVers("home", "choix-jeu");
+}
+
+function masquerModules() {
+    const modules = [
+        "quiz","justeprix","undercover","lml","mimer","pendu",
+        "petitbac","memoire","morpion","puissance4","blindtest"
+    ];
+    modules.forEach(m => hide(m));
+}
+
+function initGameButtons() {
+    const btns = $$(".game-btn");
+    btns.forEach(btn => {
+        btn.onclick = () => {
+            const game = btn.dataset.game;
+            if (!game) return;
+
+            GameState.jeu = game;
+            GameState.jeuActuel = game;
+            naviguerVers("choix-mode", "choix-jeu");
+
+            const input = $("nom-partie");
+            if (input) {
+                const defaultName = `${game.charAt(0).toUpperCase() + game.slice(1)}${Date.now() % 1000}`;
+                input.value = defaultName;
+                GameState.partieNom = defaultName;
+            }
+        };
+    });
 }
 
 function initNavigationButtons() {
-    const btn = $("btn-nouveau-jeu");
-    if (btn) btn.onclick = () => { naviguerVers("choix-jeu", "home"); masquerUndercoverComplet(); };
-}
+    const btnHome = $("btn-home-permanent");
+    const btnMenu = $("btn-menu-permanent");
+    const btnRetour = $("btn-retour-permanent");
+    const btnCloseMenu = $("btn-close-menu");
+    const menuOverlay = $("menu-overlay");
+    const menuPanel = $("menu-panel");
 
-function initHomeHub() {
-    const sauvegarde = loadGame();
-    show("hub-accueil");
-    hide("choix-jeu");
-    masquerUndercoverComplet();
+    if (btnHome) btnHome.addEventListener("click", afficherAccueilJeux);
 
-    const cb = $("continue-block");
-    if (cb) cb.hidden = false;
-
-    const btnC = $("btn-continuer");
-
-    if (sauvegarde) {
-        const el = $("resume-partie");
-        if (el) {
-            el.textContent =
-                `${sauvegarde.nomPartie || "(Sans nom)"} • ${String(sauvegarde.jeu || "").toUpperCase()} • ${sauvegarde.mode}`;
-        }
-        if (btnC) {
-            btnC.classList.remove("btn-disabled");
-            btnC.style.pointerEvents = "auto";
-            btnC.style.opacity = "1";
-            btnC.onclick = () => afficherListeParties();
-        }
-    } else {
-        if (btnC) {
-            btnC.classList.add("btn-disabled");
-            btnC.style.pointerEvents = "none";
-            btnC.style.opacity = "0.4";
-            btnC.onclick = null;
-        }
-        const el = $("resume-partie");
-        if (el) el.textContent = "Aucune partie enregistrée";
-    }
-}
-
-export function afficherAccueilJeux() {
-    hideAll(["form-solo","form-equipes","choix-mode","container","choix-jeu","liste-parties"]);
-    masquerModules();
-    masquerUndercoverComplet();
-    show("home");
-    initHomeHub();
-}
-
-export function masquerModules() { hideAll(ALL_MODULES); }
-
-function initGameButtons() {
-    $$(".game-btn").forEach(btn => {
-        btn.addEventListener("mouseenter", () => {
-            const jeu = btn.dataset.game;
-            if (REGLES_JEUX[jeu]) afficherRegles(jeu, btn);
+    if (btnMenu) {
+        btnMenu.addEventListener("click", () => {
+            if (menuPanel) menuPanel.hidden = false;
+            if (menuOverlay) menuOverlay.hidden = false;
         });
-        btn.addEventListener("mouseleave", cacherRegles);
+    }
 
-        btn.onclick = () => {
-            cacherRegles();
-            GameState.jeu = GameState.jeuActuel = btn.dataset.game;
-            naviguerVers("choix-mode", "choix-jeu");
-            GameState.joueurs = [];
-            GameState.equipes = [];
+    if (btnCloseMenu) {
+        btnCloseMenu.addEventListener("click", () => {
+            if (menuPanel) menuPanel.hidden = true;
+            if (menuOverlay) menuOverlay.hidden = true;
+        });
+    }
 
-            const c = $("joueurs-selectionnes-container");
-            if (c) c.innerHTML = "";
-            const n = $("nom-partie");
-            if (n) n.value = "";
+    if (menuOverlay) {
+        menuOverlay.addEventListener("click", () => {
+            menuPanel.hidden = true;
+            menuOverlay.hidden = true;
+        });
+    }
 
-            masquerUndercoverComplet();
-            initModeCards();
+    const menuItems = $$(".menu-item");
+    const menuMap = {
+        "menu-reglages": { screen: "home", special: null },
+        "menu-parties": { screen: "liste-parties", special: null },
+        "menu-joueurs": { screen: "home", special: null },
+        "menu-equipes": { special: null },
+        "menu-home": { screen: "home", special: null }
+    };
 
-            const t = $("titre-mode-jeu");
-            if (t) t.textContent = btn.textContent.trim();
-
-            const cardTeam = document.querySelector('.mode-card[data-mode="team"]');
-            if (cardTeam) {
-                cardTeam.classList.add("mode-card--disabled");
-                cardTeam.style.pointerEvents = "none";
-                cardTeam.style.opacity = "0.4";
-                cardTeam.style.filter = "grayscale(100%)";
+    menuItems.forEach(item => {
+        const action = menuMap[item.id];
+        if (!action) return;
+        item.addEventListener("click", () => {
+            if (menuPanel) menuPanel.hidden = true;
+            if (menuOverlay) menuOverlay.hidden = true;
+            if (action.screen) {
+                naviguerVers(action.screen, "home");
             }
-        };
+        });
+    });
+
+    const btnNouveau = $("btn-nouveau-jeu");
+    if (btnNouveau) {
+        btnNouveau.addEventListener("click", () => {
+            naviguerVers("choix-jeu", "home");
+        });
+    }
+
+    if (btnRetour) {
+        btnRetour.addEventListener("click", () => {
+            history.back();
+        });
+    }
+
+    const modeCards = $$(".mode-card");
+    modeCards.forEach(card => {
+        card.addEventListener("click", (e) => {
+            const cardTeam = $$(".mode-card")[1];
+            if (e.target.closest(".mode-card") === cardTeam) {
+                if (cardTeam) {
+                    cardTeam.classList.add("mode-card--disabled");
+                    cardTeam.style.pointerEvents = "none";
+                    cardTeam.style.opacity = "0.4";
+                    cardTeam.style.filter = "grayscale(100%)";
+                }
+            }
+        });
     });
 }
 
@@ -248,21 +271,21 @@ function lancerJeuLocal(game) {
     afficherScoreboard();
 
     const key  = game.toLowerCase();
-    const init = GAME_INITIALIZERS[key];
-    if (!init) { afficherAccueilJeux(); return; }
+    const gameInitName = GAME_INITIALIZERS[key];
+    if (!gameInitName) { afficherAccueilJeux(); return; }
 
     if (key === "morpion") {
-        if (typeof window[init] === "function") window[init]();
+        if (typeof window[gameInitName] === "function") window[gameInitName]();
         show("morpion"); return;
     }
 
     _countdown(() => {
     show(key.replace(/\s+/g,""));
-    if (key !== "quiz" && typeof window[init] === "function") {
-        window[init]();
+    if (key !== "quiz" && typeof window[gameInitName] === "function") {
+        window[gameInitName]();
     }
 });
-
+}
 
 function _afficherEtatCreation() {
     const btnStart = $("btn-start-solo");
@@ -382,11 +405,11 @@ function lancerJeu(game, options = {}) {
     afficherScoreboard();
 
     const key  = game.toLowerCase();
-    const init = GAME_INITIALIZERS[key];
-    if (!init) { afficherAccueilJeux(); return; }
+    const gameInitName = GAME_INITIALIZERS[key];
+    if (!gameInitName) { afficherAccueilJeux(); return; }
 
     if (key === "morpion") {
-        if (typeof window[init] === "function") window[init]();
+        if (typeof window[gameInitName] === "function") window[gameInitName]();
         show("morpion");
         return;
     }
@@ -397,42 +420,30 @@ function lancerJeu(game, options = {}) {
     }
 
     _countdown(() => {
-        // ⚠️ NE PAS initialiser le quiz ici
-        if (key !== "quiz" && typeof window[init] === "function") {
-            window[init]();
-        }
+
         show(key.replace(/\s+/g,""));
+        if (key !== "quiz" && typeof window[gameInitName] === "function") {
+            window[gameInitName]();
+        }
     });
 }
 
-function _countdown(onEnd) {
-    document.getElementById('hote-countdown')?.remove();
-    if (!document.getElementById('style-cd')) {
-        const s = document.createElement('style');
-        s.id = 'style-cd';
-        s.textContent = `
-            @keyframes cdFI{from{opacity:0}to{opacity:1}}
-            @keyframes cdPop{0%{transform:scale(1.5);opacity:0}60%{transform:scale(.92)}100%{transform:scale(1);opacity:1}}
-            #hote-countdown{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;background:rgba(0,0,0,.78);backdrop-filter:blur(10px);animation:cdFI .3s}
-            .cd-n{font-size:6rem;font-weight:900;color:white;text-shadow:0 0 50px rgba(0,212,255,.9);font-family:"Segoe UI",sans-serif;animation:cdPop .45s cubic-bezier(.4,0,.2,1)}
-            .cd-l{font-size:1rem;color:rgba(255,255,255,.75);font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-family:"Segoe UI",sans-serif}`;
-        document.head.appendChild(s);
+function _countdown(callback) {
+    const overlay = document.querySelector(".compte-a-rebours-overlay");
+    if (!overlay) {
+        callback();
+        return;
     }
-    const ov  = document.createElement('div'); ov.id = 'hote-countdown';
-    const nEl = document.createElement('div'); nEl.className = 'cd-n'; nEl.textContent = '3';
-    const lEl = document.createElement('div'); lEl.className = 'cd-l'; lEl.textContent = 'La partie commence…';
-    ov.append(nEl, lEl); document.body.appendChild(ov);
-    let n = 3;
-    const iv = setInterval(() => {
-        n--;
-        if (n > 0) {
-            nEl.style.animation = 'none';
-            nEl.textContent = String(n);
-            requestAnimationFrame(() => nEl.style.animation = 'cdPop .45s cubic-bezier(.4,0,.2,1)');
-        } else {
-            clearInterval(iv);
-            ov.style.transition = 'opacity .3s'; ov.style.opacity = '0';
-            setTimeout(() => { ov.remove(); onEnd(); }, 300);
+    overlay.style.display = "flex";
+    let count = 3;
+    const countEl = overlay.querySelector(".countdown-number");
+    const interval = setInterval(() => {
+        count--;
+        if (countEl) countEl.textContent = count;
+        if (count === 0) {
+            clearInterval(interval);
+            overlay.style.display = "none";
+            callback();
         }
     }, 1000);
 }
@@ -453,7 +464,7 @@ function cacherRegles() {
     if (tooltipActif) { tooltipActif.remove(); tooltipActif = null; }
 }
 
-function init() {
+function initAppliqueGlobale() {
     nettoyerParasites();
     initSplashScreen();
     initNavigationButtons();
@@ -465,9 +476,8 @@ function init() {
     HostSession.init();
 }
 
-window.addEventListener("DOMContentLoaded", init);
+window.addEventListener("DOMContentLoaded", initAppliqueGlobale);
 
-// 🔌 EXPORTS GLOBAUX (remplace le export ES6)
 window.HostSession           = HostSession;
 window.jeuSocket             = socket;
 window._restaurerBoutonStart = _restaurerBoutonStart;
