@@ -12,6 +12,7 @@ MiniGameV2/
 │   │   ├── core/
 │   │   │   ├── cleanup.js
 │   │   │   ├── dom.js
+│   │   │   ├── host_session.js
 │   │   │   ├── signal.js
 │   │   │   ├── socket.js
 │   │   │   ├── state.js
