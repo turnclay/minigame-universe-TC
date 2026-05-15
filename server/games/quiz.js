@@ -414,8 +414,10 @@ function _correctionPayload(s, q, resultats) {
 
 function _getBonneReponse(q) {
     if (!q) return '';
-    return (q['Réponse'] || q.reponse || q.answer || '').trim();
+    let r = q['Réponse'] ?? q.reponse ?? q.answer ?? '';
+    return String(r).trim();
 }
+
 
 // ─────────────────────────────────────────────────────
 // Similarité
