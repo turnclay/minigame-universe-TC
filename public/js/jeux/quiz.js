@@ -515,12 +515,19 @@ async function initialiserQuiz() {
 
     // Charger questions.json et les envoyer au serveur
     try {
-        // Fetch relatif à /public (racine)
-        const res = await fetch('/data/questions.json');
+        // questions.json doit être dans /public/ pour être accessible en HTTP
+        const res = await fetch('/questions.json');
         if (!res.ok) {
             throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         }
-        const questions = await res.json();
+        const texte = await res.text();
+        let questions;
+        try {
+            questions = JSON.parse(texte);
+        } catch (jsonErr) {
+            console.error('[QUIZ] ❌ questions.json contenu reçu:', texte.slice(0, 200));
+            throw new Error('JSON invalide : ' + jsonErr.message);
+        }
 
         // Mélanger côté client
         const ordre = [...Array(questions.length).keys()];
