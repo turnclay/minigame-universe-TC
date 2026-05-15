@@ -1,5 +1,5 @@
 // ============================================================
-// /js/jeux/quiz.js — v3.2 WS-server-driven (RENDER-SAFE & FIXED)
+// /js/jeux/quiz.js — v3.3 WS-server-driven (RENDER-SAFE & FIXED)
 // ============================================================
 // Déploiement Render : chemins absolus, imports robustes, gestion erreurs
 // Corrections WS : vérifications connexion, try/catch, cohérence partieId
@@ -137,7 +137,7 @@ function _onQuizQuestion(payload) {
 
 function _onQuizCorrection(payload) {
     _arreterTimerVisuel();
-    const { reponse, posees, total } = payload;
+    const { reponse, posees, total, scores } = payload;
     const repEl = $('reponse');
     if (repEl && reponse) repEl.textContent = reponse;
 
@@ -145,6 +145,12 @@ function _onQuizCorrection(payload) {
     if (_questionEnCours) {
         _questionEnCours.reponse         = reponse;
         _questionEnCours['Réponse']      = reponse;
+    }
+
+    // [FIX] Mise à jour des scores depuis QUIZ_CORRECTION si fournis
+    if (scores && typeof scores === 'object') {
+        GameState.scores = GameState.scores || {};
+        Object.assign(GameState.scores, scores);
     }
 
     try {
@@ -427,9 +433,15 @@ function abonnerEvenementsServeur(socket) {
     });
 
     // Serveur confirme que la révélation est faite
-    socket.on('QUIZ_CAN_NEXT', ({ posees, total, remaining }) => {
+    socket.on('QUIZ_CAN_NEXT', ({ posees, total, remaining, scores }) => {
         try {
             console.log('[QUIZ] ✅ QUIZ_CAN_NEXT — Q' + posees + '/' + total + ' — remaining:' + remaining);
+
+            // [FIX] Mise à jour des scores depuis QUIZ_CAN_NEXT
+            if (scores && typeof scores === 'object') {
+                GameState.scores = GameState.scores || {};
+                Object.assign(GameState.scores, scores);
+            }
 
             const btnNext = $('btn-next');
             if (btnNext) {

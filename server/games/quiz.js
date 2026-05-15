@@ -1,11 +1,14 @@
 // ======================================================
-// 🎮 server/games/quiz.js — v2.1 (stable)
+// 🎮 server/games/quiz.js — v2.2 (stable + fixes points)
 // ======================================================
 // Corrections appliquées (depuis v2.0 original) :
 //   - handler quiz:host_answer : enregistre la réponse hôte sans ws._pseudo
 //   - _annulerTimers() centralisé : clearTimeout appelé EN PREMIER dans
 //     next_question, AVANT la réinitialisation de l'état
 //   - Guards pseudo null dans handlePlayerAction et _declencherRevelation
+//   - [FIX v2.2] Scores du hôte comptabilisés dans resultats AVANT modifierScore
+//   - [FIX v2.2] QUIZ_CORRECTION inclut les scores dans le payload
+//   - [FIX v2.2] QUIZ_CAN_NEXT inclut les scores pour mise à jour client
 // ======================================================
 
 import store from '../store.js';
@@ -356,6 +359,7 @@ function _declencherRevelation(wss, partieId, s, helpers, source) {
         if (res) { res.points += 1; res.estPremier = true; }
     }
 
+    // [FIX v2.2] Comptabiliser les points AVANT le broadcast
     resultats.forEach(r => {
         if (r.points > 0) store.modifierScore(partieId, r.pseudo, r.points);
     });
@@ -363,10 +367,16 @@ function _declencherRevelation(wss, partieId, s, helpers, source) {
     s._dernieresReponses = resultats;
     s.phase = 'correction';
 
-    broadcastToGame(wss, partieId, 'QUIZ_CORRECTION', _correctionPayload(s, q, resultats));
-
+    // [FIX v2.2] Inclure les scores dans le payload QUIZ_CORRECTION
     const scores = store.getScores(partieId) || {};
+    const correctionPayload = _correctionPayload(s, q, resultats);
+    correctionPayload.scores = scores;
+
+    broadcastToGame(wss, partieId, 'QUIZ_CORRECTION', correctionPayload);
+
     broadcastToGame(wss, partieId, 'SCORES_UPDATE', { scores });
+
+    // [FIX v2.2] Inclure les scores dans QUIZ_CAN_NEXT également
     broadcastToHost(wss, partieId, 'QUIZ_CAN_NEXT', {
         posees   : s.posees,
         total    : s.questions.length,
