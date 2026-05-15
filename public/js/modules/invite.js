@@ -1,26 +1,12 @@
-// /js/modules/invite.js — v2.2 (FIXED — partieId synchronisé)
-// ============================================================
-// RÈGLE ABSOLUE : aucun ID n'est jamais généré localement.
-// Le seul partieId valide est celui reçu via GAME_CREATED.
-// Le bloc #bloc-invitation est défini statiquement dans index.html.
-// Ce fichier ne crée aucun élément DOM — il met à jour les champs.
-// ============================================================
+// /js/modules/invite.js — v2.3 (FIXED — bloc-invitation apparaît correctement)
 
 import { GameState } from '../core/state.js';
 import { ouvrirModaleQR, _injecterModaleQR } from './parties.js';
 
 const PARTIE_ID_KEY = 'minigame_partie_session_id';
 
-let _partieSessionId = null;  // mémoire module — UUID reçu de GAME_CREATED
+let _partieSessionId = null;
 
-// ══════════════════════════════════════════════════════════════
-// ID DE PARTIE — source de vérité : serveur uniquement
-// ══════════════════════════════════════════════════════════════
-
-/** Retourne l'UUID serveur ou null — jamais ne génère localement.
- *  Fallback : lit ws_partie_id si minigame_partie_session_id absent
- *  (cas où GAME_CREATED a écrit ws_partie_id mais l'import dynamique
- *  de setPartieSessionId() n'est pas encore résolu). */
 export function getPartieSessionId() {
     if (_partieSessionId) return _partieSessionId;
     const stored = localStorage.getItem(PARTIE_ID_KEY)
@@ -30,7 +16,6 @@ export function getPartieSessionId() {
     return null;
 }
 
-/** Appelé par main.js sur GAME_CREATED — seul point d'écriture autorisé. */
 export function setPartieSessionId(id) {
     if (!id) {
         console.warn('[INVITE] ⚠️ setPartieSessionId appelé avec ID null');
@@ -41,7 +26,6 @@ export function setPartieSessionId(id) {
     console.log('[INVITE] ✅ partieId serveur enregistré :', id);
 }
 
-/** Appelé sur GAME_ENDED / ERROR GAME_NOT_FOUND / retour accueil. */
 export function resetPartieSessionId() {
     _partieSessionId = null;
     localStorage.removeItem(PARTIE_ID_KEY);
@@ -49,12 +33,6 @@ export function resetPartieSessionId() {
     console.log('[INVITE] 🧹 partieSessionId réinitialisé');
 }
 
-// ══════════════════════════════════════════════════════════════
-// CONSTRUCTION DU LIEN
-// ══════════════════════════════════════════════════════════════
-
-/** Construit le lien /jeu.html avec les paramètres de la partie.
- *  Retourne null si aucun UUID serveur n'est disponible. */
 export function construireLienInvitation() {
     const id = getPartieSessionId();
     if (!id) {
@@ -71,12 +49,6 @@ export function construireLienInvitation() {
     return `${window.location.origin}/jeu.html?${params.toString()}`;
 }
 
-// ══════════════════════════════════════════════════════════════
-// BLOC INVITATION STATIQUE — mise à jour des champs HTML
-// Le bloc #bloc-invitation est déclaré dans index.html.
-// Ces fonctions ne créent aucun élément DOM.
-// ══════════════════════════════════════════════════════════════
-
 const JEUX_LABELS = {
     quiz:'❓ Quiz', justeprix:'💰 Juste Prix', undercover:'🕵️ Undercover',
     lml:'📖 Maxi Lettres', mimer:'🎭 Mimer', mimedessine:'🎭 Mimer',
@@ -84,22 +56,19 @@ const JEUX_LABELS = {
     morpion:'⭕ Morpion', puissance4:'🔴 Puissance 4'
 };
 
-/**
- * Remplit les champs du bloc statique et le rend visible.
- * Appelé par joueurs.js dès qu'un joueur est sélectionné
- * ET que l'UUID serveur est disponible.
- * Sans UUID → bloc masqué, pas d'affichage.
- */
 export function afficherBlocInvitation() {
     const bloc = document.getElementById('bloc-invitation');
-    if (!bloc) return;
+    if (!bloc) {
+        console.warn('[INVITE] ❌ bloc-invitation non trouvé en DOM');
+        return;
+    }
 
     const lien     = construireLienInvitation();
     const partieId = getPartieSessionId();
 
     if (!lien || !partieId) {
+        console.warn('[INVITE] ⚠️ Pas de lien ou partieId — bloc masqué');
         bloc.hidden = true;
-        console.warn('[INVITE] ⚠️ Pas de partieId — bloc masqué');
         return;
     }
 
@@ -108,28 +77,23 @@ export function afficherBlocInvitation() {
     console.log('[INVITE] ✅ Bloc invitation affiché — partieId :', partieId);
 }
 
-/**
- * Met à jour le lien et les métadonnées sans toucher à la visibilité.
- * Appelé par main.js immédiatement après GAME_CREATED.
- */
 export function mettreAJourLienInvitation() {
     const lien     = construireLienInvitation();
     const partieId = getPartieSessionId();
+
     if (!lien || !partieId) {
-        console.warn('[INVITE] ⚠️ Impossible de mettre à jour — pas de partieId');
+        console.warn('[INVITE] ⚠️ Impossible de mettre à jour — pas de lien ou partieId');
         return;
     }
 
     _remplirBloc(lien, partieId);
-
-    // Rendre visible si masqué
     const bloc = document.getElementById('bloc-invitation');
-    if (bloc) bloc.hidden = false;
-
-    console.log('[INVITE] 🔗 Lien mis à jour :', lien);
+    if (bloc) {
+        bloc.hidden = false;
+        console.log('[INVITE] 🔗 Lien mis à jour et bloc affiché :', lien);
+    }
 }
 
-/** Remplit tous les champs du bloc statique. */
 function _remplirBloc(lien, partieId) {
     const jeu      = GameState.jeuActuel || GameState.jeu || '';
     const hote     = (GameState.joueurs || [])[0] || '';
@@ -138,29 +102,24 @@ function _remplirBloc(lien, partieId) {
     const dateStr  = d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' })
                     + ' à ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
 
-    // Métadonnées
     _setText('invite-meta-hote',  hote || '—');
     _setText('invite-meta-nom',   GameState.partieNom || '—');
     _setText('invite-meta-jeu',   jeuLabel);
     _setText('invite-meta-date',  dateStr);
-    _setText('invite-meta-id',    partieId);
+    _setText('invite-meta-id',    partieId || '—');
 
-    // Ligne hôte : visible seulement si hôte présent
     const rowHote = document.getElementById('invite-row-hote');
     if (rowHote) rowHote.hidden = !hote;
 
-    // Champ lien
     const input = document.getElementById('invite-link-input');
-    if (input) input.value = lien;
+    if (input) input.value = lien || '';
 
-    // Boutons : activer (ils sont disabled par défaut dans le HTML)
     const btnCopy = document.getElementById('invite-copy-btn');
     const btnQR   = document.getElementById('invite-showqr-btn');
-    if (btnCopy) { btnCopy.disabled = false; btnCopy.onclick = () => _copierLien(lien); }
-    if (btnQR)   { btnQR.disabled   = false; btnQR.onclick   = () => _ouvrirQR(lien); }
+    if (btnCopy) { btnCopy.disabled = !lien; btnCopy.onclick = () => _copierLien(lien); }
+    if (btnQR)   { btnQR.disabled   = !lien; btnQR.onclick   = () => _ouvrirQR(lien); }
 }
 
-/** Remet le bloc à son état initial (masqué, champs vides). */
 function _viderBlocStatique() {
     const bloc = document.getElementById('bloc-invitation');
     if (!bloc) return;
@@ -178,7 +137,6 @@ function _viderBlocStatique() {
     if (btnQR)   { btnQR.disabled   = true; btnQR.onclick   = null; }
 }
 
-// ── Copier le lien ────────────────────────────────────────
 function _copierLien(lien) {
     if (!lien) return;
     navigator.clipboard.writeText(lien).then(() => {
@@ -190,30 +148,22 @@ function _copierLien(lien) {
     });
 }
 
-// ── Ouvrir la modale QR ───────────────────────────────────
 function _ouvrirQR(lien) {
     if (!document.getElementById('modale-qr')) _injecterModaleQR();
     ouvrirModaleQR(lien, GameState.partieNom || 'Partie');
 }
 
-// ── Utilitaire DOM ────────────────────────────────────────
 function _setText(id, text) {
     const el = document.getElementById(id);
     if (el) el.textContent = text ?? '—';
 }
 
-// ══════════════════════════════════════════════════════════════
-// COMPAT — fonctions conservées pour les appels existants
-// ══════════════════════════════════════════════════════════════
-
-/** Remplacé par l'écoute WS dans HostSession (main.js). */
 export function demarrerPollingInvites() {
     console.log('[INVITE] ℹ️ demarrerPollingInvites() → délégué à HostSession WS');
 }
 
 export function arreterPollingInvites() {}
 
-/** Toast "X a rejoint" — utilisé par main.js si nécessaire. */
 export function afficherNotifNouveauJoueur(pseudo) {
     const notif = document.createElement('div');
     notif.className = 'invite-notif';

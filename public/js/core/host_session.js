@@ -57,9 +57,9 @@ const HostSession = {
 
                 localStorage.setItem('minigame_partie_id', partieId);
 
-                import('./invite.js').then(m => {
+                import('../modules/invite.js').then(m => {
                     m.setPartieSessionId(partieId);
-                    m.mettreAJourLienInvitation();
+                    m.afficherBlocInvitation();
                 }).catch(err => console.warn('[HOST] ⚠️ Erreur import invite.js:', err.message));
 
                 this._afficherLienJoin(joinUrl, snapshot?.codeCourt);
@@ -74,9 +74,9 @@ const HostSession = {
 
                 localStorage.setItem('minigame_partie_id', partieId);
 
-                import('./invite.js').then(m => {
+                import('../modules/invite.js').then(m => {
                     m.setPartieSessionId(partieId);
-                    m.mettreAJourLienInvitation();
+                    m.afficherBlocInvitation();
                 }).catch(err => console.warn('[HOST] ⚠️ Erreur invite.js:', err.message));
 
                 this._afficherLienJoin(joinUrl, snapshot?.codeCourt);
@@ -134,11 +134,11 @@ const HostSession = {
                 localStorage.removeItem('minigame_partie_id');
                 localStorage.removeItem('minigame_partie_session_id');
 
-                import('../core/cleanup.js').then(m => {
+                import('./cleanup.js').then(m => {
                     if (typeof m.resetEtatQuizHote === 'function') m.resetEtatQuizHote();
                 }).catch(() => {});
 
-                import('./invite.js').then(m => {
+                import('../modules/invite.js').then(m => {
                     if (typeof m.resetPartieSessionId === 'function') m.resetPartieSessionId();
                 }).catch(() => {});
             });
@@ -155,7 +155,7 @@ const HostSession = {
                     this._snapshot    = null;
                     this._pendingGame = null;
 
-                    import('./invite.js').then(m => {
+                    import('../modules/invite.js').then(m => {
                         if (typeof m.resetPartieSessionId === 'function') m.resetPartieSessionId();
                     }).catch(() => {});
 

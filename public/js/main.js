@@ -461,9 +461,10 @@ function init() {
 
 window.addEventListener("DOMContentLoaded", init);
 
-window.HostSession = HostSession;
-window.jeuSocket   = socket;
+window.HostSession           = HostSession;
+window.jeuSocket             = socket;
 window._restaurerBoutonStart = _restaurerBoutonStart;
+window.lancerJeu             = lancerJeu;
 
 window._hostCreerPartieQuandPret = function() {
     if (HostSession._authenticated && !HostSession._partieId && !HostSession._creationEnCours) {
