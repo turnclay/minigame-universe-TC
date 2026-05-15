@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // /js/jeux/quiz.js — v3.3 WS-server-driven (RENDER-SAFE & FIXED)
 // ============================================================
 // Déploiement Render : chemins absolus, imports robustes, gestion erreurs
@@ -597,3 +597,24 @@ window._quizValiderAvecPoints = function (correct, points) {
         console.warn('[QUIZ] ⚠️ Erreur _quizValiderAvecPoints:', err.message);
     }
 };
+// ======================================================
+// AUTO-INIT QUIZ QUAND LA SECTION APPARAÎT
+// ======================================================
+document.addEventListener("DOMContentLoaded", () => {
+    const sectionQuiz = document.getElementById("quiz");
+    if (!sectionQuiz) return;
+
+    const observer = new MutationObserver(() => {
+        const visible = sectionQuiz.style.display !== "none" && !sectionQuiz.hidden;
+        if (visible) {
+            console.log("[QUIZ] Section affichée → initialiserQuiz()");
+            initialiserQuiz();
+            observer.disconnect();
+        }
+    });
+
+    observer.observe(sectionQuiz, {
+        attributes: true,
+        attributeFilter: ["style", "hidden"]
+    });
+});

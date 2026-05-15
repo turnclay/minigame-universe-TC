@@ -257,10 +257,12 @@ function lancerJeuLocal(game) {
     }
 
     _countdown(() => {
-        if (typeof window[init] === "function") window[init]();
-        show(key.replace(/\s+/g,""));
-    });
-}
+    show(key.replace(/\s+/g,""));
+    if (key !== "quiz" && typeof window[init] === "function") {
+        window[init]();
+    }
+});
+
 
 function _afficherEtatCreation() {
     const btnStart = $("btn-start-solo");

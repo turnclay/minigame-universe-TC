@@ -4,5 +4,6 @@
     <file url="file://$PROJECT_DIR$/auto-push.ps1" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/public/data/questions.json" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/public/js/jeux/quiz.js" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/server/games/quiz.js" charset="UTF-8" />
   </component>
 </project>
