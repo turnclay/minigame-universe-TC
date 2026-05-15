@@ -527,7 +527,7 @@ async function initialiserQuiz() {
 
     // Charger questions.json depuis /public/ (fichier statique, toujours disponible)
     try {
-        const res = await fetch('/questions.json');
+        const res = await fetch('/data/questions.json');
         if (!res.ok) {
             throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         }
