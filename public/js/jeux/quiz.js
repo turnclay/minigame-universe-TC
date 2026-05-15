@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // /js/jeux/quiz.js — v3.3 WS-server-driven (RENDER-SAFE & FIXED)
 // ============================================================
 // Déploiement Render : chemins absolus, imports robustes, gestion erreurs
