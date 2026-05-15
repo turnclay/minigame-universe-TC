@@ -1,7 +1,7 @@
 // /js/modules/joueurs.js
 
 import { $, $$, show, hide } from "../core/dom.js";
-import { afficherBlocInvitation, arreterPollingInvites } from './invite.js';
+import { arreterPollingInvites } from './invite.js';
 import { GameState } from "../core/state.js";
 import {
     getPlayers,
@@ -12,9 +12,6 @@ import {
 } from "../core/storage.js";
 
 
-// ======================================================
-// 📌 1. Remplir la liste déroulante avec les joueurs existants
-// ======================================================
 export function remplirListeJoueurs(selectId) {
     const select = $(selectId);
     if (!select) return;
@@ -22,7 +19,6 @@ export function remplirListeJoueurs(selectId) {
     const joueurs = getPlayers();
     select.innerHTML = "";
 
-    // Option vide par défaut pour forcer un choix conscient
     const optVide = document.createElement("option");
     optVide.value = "";
     optVide.textContent = "— Choisir un joueur —";
@@ -39,9 +35,6 @@ export function remplirListeJoueurs(selectId) {
 }
 
 
-// ======================================================
-// 📌 2. Créer un nouveau joueur + mise à jour GameState
-// ======================================================
 export function creerNouveauJoueur(inputId, callback) {
     const input = $(inputId);
     if (!input) return;
@@ -62,9 +55,6 @@ export function creerNouveauJoueur(inputId, callback) {
 }
 
 
-// ======================================================
-// 📌 3. Ajouter un joueur existant depuis la liste
-// ======================================================
 export function ajouterJoueurDepuisListe(selectId) {
     const select = $(selectId);
     if (!select) return;
@@ -77,16 +67,12 @@ export function ajouterJoueurDepuisListe(selectId) {
         GameState.scores[pseudo] = 0;
     }
 
-    // Remettre l'option vide sélectionnée après l'ajout
     select.selectedIndex = 0;
 
     return pseudo;
 }
 
 
-// ======================================================
-// 📌 4. Afficher les joueurs sélectionnés (tags + suppression)
-// ======================================================
 export function afficherJoueursSelectionnes(containerId) {
     const container = $(containerId);
     if (!container) return;
@@ -111,29 +97,20 @@ export function afficherJoueursSelectionnes(containerId) {
         container.appendChild(div);
     });
 
-    // Mettre à jour le bloc invitation uniquement si un partieId serveur existe déjà.
-    // Dans le nouveau flux (v4.0), la partie est créée au clic sur btn-start-solo,
-    // pas au moment de l'ajout d'un joueur. Avant ce clic, aucun partieId n'est
-    // disponible → on ne tente pas de générer un lien (évite les warnings console).
     import('../modules/invite.js').then(m => {
         if (GameState.joueurs.length > 0) {
-            // Vérifier si un partieId existe avant de tenter la mise à jour du lien
             const partieIdDisponible = typeof m.getPartieSessionId === 'function'
                 ? m.getPartieSessionId()
                 : null;
 
             if (partieIdDisponible) {
-                // UUID serveur connu → mettre à jour le lien directement
                 m.mettreAJourLienInvitation();
             } else {
-                // Pas encore de partieId → déclencher la création de partie (silencieux).
-                // GAME_CREATED appellera setPartieSessionId() puis mettreAJourLienInvitation().
                 if (typeof window._hostCreerPartieQuandPret === 'function') {
                     window._hostCreerPartieQuandPret();
                 }
             }
         } else {
-            // Liste vide → masquer le bloc invitation
             const bloc = document.getElementById('bloc-invitation');
             if (bloc) bloc.hidden = true;
         }
@@ -141,34 +118,18 @@ export function afficherJoueursSelectionnes(containerId) {
 }
 
 
-// ======================================================
-// 📌 5. Initialisation du formulaire SOLO
-// Peut être appelée plusieurs fois sans effet cumulatif.
-// ======================================================
 export function initFormSolo() {
-    // ✅ Réinitialisation complète à chaque appel —
-    // que ce soit une nouvelle partie ou un retour arrière.
     GameState.joueurs               = [];
     GameState.scores                = {};
     GameState.partieEnCoursChargee  = false;
 
-    // Stopper l'ancien polling localStorage (remplacé par WS).
-    // Ne PAS appeler resetPartieSessionId() ici :
-    //   cette clé contient l'UUID serveur reçu via GAME_CREATED,
-    //   la supprimer casserait le lien d'invitation.
-    // La réinitialisation de la partie WS est gérée par HostSession
-    // dans main.js (creerPartie / AUTH_OK / GAME_CREATED).
     arreterPollingInvites();
 
-    // Vider l'affichage des tags
     const container = $("joueurs-selectionnes-container");
     if (container) container.innerHTML = "";
 
-    // Remplir la liste déroulante (avec option vide par défaut)
     remplirListeJoueurs("liste-joueurs");
 
-    // ── Bouton "Ajouter" depuis la liste déroulante ──────────────
-    // On remplace le nœud pour effacer tous les anciens listeners
     const btnCharger = $("charger-joueur");
     if (btnCharger) {
         const clone = btnCharger.cloneNode(true);
@@ -179,7 +140,6 @@ export function initFormSolo() {
         });
     }
 
-    // ── Bouton "Créer et ajouter" ────────────────────────────────
     const btnCreer = $("creer-joueur");
     if (btnCreer) {
         const clone = btnCreer.cloneNode(true);
@@ -192,7 +152,6 @@ export function initFormSolo() {
         });
     }
 
-    // ── Entrée clavier sur le champ pseudo ──────────────────────
     const inputPseudo = $("pseudo-solo");
     if (inputPseudo) {
         const clone = inputPseudo.cloneNode(true);
@@ -207,22 +166,12 @@ export function initFormSolo() {
         });
     }
 
-    // Le bloc invitation est affiché par afficherJoueursSelectionnes()
-    // dès qu'un joueur est ajouté ET que l'UUID serveur est disponible.
-    // Ne pas l'appeler ici : aucun UUID disponible à ce stade.
-
-    // [FIX] Re-brancher le bouton Démarrer avec un listener propre.
-    // initStartSolo() clone le bouton pour supprimer les anciens listeners,
-    // évitant l'empilement qui démarrerait plusieurs parties à la fois.
     if (typeof window.initStartSolo === 'function') {
         window.initStartSolo();
     }
 }
 
 
-// ======================================================
-// 📌 6. Validation du formulaire SOLO
-// ======================================================
 export function validerFormSolo() {
     if (!GameState.joueurs || GameState.joueurs.length === 0) {
         alert("Sélectionne au moins un joueur.");
@@ -235,9 +184,6 @@ export function validerFormSolo() {
 }
 
 
-// ======================================================
-// 🗑️ 7. Supprimer un joueur du storage
-// ======================================================
 function supprimerJoueur(pseudo) {
     if (!confirm(`Supprimer le joueur "${pseudo}" ? Ses scores seront conservés dans l'historique.`)) return false;
 
@@ -247,9 +193,6 @@ function supprimerJoueur(pseudo) {
 }
 
 
-// ======================================================
-// ✏️ 8. Renommer un joueur dans tout le storage
-// ======================================================
 function renommerJoueur(ancienNom, nouveauNom) {
     if (!nouveauNom || nouveauNom.trim() === "") return false;
     nouveauNom = nouveauNom.trim();
@@ -294,9 +237,6 @@ function renommerJoueur(ancienNom, nouveauNom) {
 }
 
 
-// ======================================================
-// 📊 9. Calcul des stats d'un joueur
-// ======================================================
 function calculerStatsJoueur(pseudo) {
     const parties = getAllParties();
     const scoresGlobaux = getScoresGlobaux();
@@ -351,9 +291,6 @@ function calculerStatsJoueur(pseudo) {
 }
 
 
-// ======================================================
-// 🎨 10. Icônes et couleurs par jeu
-// ======================================================
 const JEUX_META = {
     quiz:       { label: "Quiz",           icon: "❓", color: "#00d4ff" },
     justeprix:  { label: "Le Bon Prix",    icon: "💰", color: "#ffd700" },
@@ -368,9 +305,6 @@ const JEUX_META = {
 };
 
 
-// ======================================================
-// 🖥️ 11. Rendu HTML du dashboard joueur
-// ======================================================
 function buildDashboardJoueurHTML(stats, filtre = "tous") {
     const { pseudo, scoreGlobal, rangGlobal, totalJoueurs, totalParties, statsParJeu } = stats;
 
@@ -468,9 +402,6 @@ function buildDashboardJoueurHTML(stats, filtre = "tous") {
 }
 
 
-// ======================================================
-// 🖥️ 12. Interface de gestion des joueurs
-// ======================================================
 export function afficherGestionJoueurs() {
     let panel = document.getElementById("gestion-joueurs-panel");
     if (!panel) {

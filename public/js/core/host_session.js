@@ -1,38 +1,7 @@
-// /js/core/host_session.js — v2.0
-// ============================================================
-// HostSession — Gestion centralisée de la session WebSocket
-//
-// CORRECTIONS v2.0 :
-//
-// [FIX A] GAME_CREATED handler fait maintenant TOUT :
-//   1. Stocke _partieId + _snapshot
-//   2. Écrit minigame_partie_id dans localStorage
-//   3. Met à jour invite.js (lien d'invitation)
-//   4. Envoie HOST_START_GAME (garantit que _partieId existe)
-//   5. Lance le jeu via lancerJeu(_pendingGame)
-//   Avant : lancerJeu() était appelé depuis initStartSolo() → notifierDemarrage()
-//   était appelé avec _partieId=null → double creerPartie → NAME_TAKEN.
-//
-// [FIX B] notifierDemarrage() est supprimé du flux principal.
-//   HOST_START_GAME est envoyé uniquement depuis le handler GAME_CREATED.
-//   notifierDemarrage() reste pour les cas de rejoin (HOST_REJOINED).
-//
-// [FIX C] nettoyerSession() est appelé ICI, juste avant lancerJeu(),
-//   et non plus dans lancerJeu(). Garantit que minigame_partie_id
-//   du nouveau jeu est écrit AVANT le nettoyage des anciennes clés.
-//
-// [FIX D] _pendingGame : stocke le nom du jeu à lancer.
-//   Défini par initStartSolo() dans main.js, lu dans GAME_CREATED.
-//
-// [FIX E] NAME_TAKEN : restaure le bouton start et affiche un message clair.
-//
-// [FIX F] creerPartie() a un verrou _creationEnCours pour éviter
-//   les doubles appels depuis des chemins concurrents.
-// ============================================================
+// /js/core/host_session.js
 
 import { GameState } from './state.js';
 import { socket } from './socket.js';
-import { setPartieSessionId, resetPartieSessionId, mettreAJourLienInvitation } from '../modules/invite.js';
 
 const HostSession = {
     _partieId        : null,
@@ -41,9 +10,9 @@ const HostSession = {
     _pendingStart    : false,
     _pendingGame     : null,
     _creationEnCours : false,
-    _partieStarted   : false,  // true dès que lancerJeu() est appelé
+    _partieStarted   : false,
+    _wsHandlersAdded : false,
 
-    // ── Reset complet avant une nouvelle partie ──────────
     reset() {
         this._partieId        = null;
         this._snapshot        = null;
@@ -51,11 +20,14 @@ const HostSession = {
         this._pendingGame     = null;
         this._creationEnCours = false;
         this._partieStarted   = false;
+        this._wsHandlersAdded = false;
         console.log('[HOST] 🔄 HostSession reset (nouvelle partie)');
     },
 
-    // ── Initialisation WS ────────────────────────────────
     init() {
+        if (this._wsHandlersAdded) return;
+        this._wsHandlersAdded = true;
+
         try {
             socket.connect();
 
@@ -82,17 +54,17 @@ const HostSession = {
                 this._partieId        = partieId;
                 this._snapshot        = snapshot;
                 this._creationEnCours = false;
+
+                localStorage.setItem('minigame_partie_id', partieId);
+
+                import('./invite.js').then(m => {
+                    m.setPartieSessionId(partieId);
+                    m.mettreAJourLienInvitation();
+                }).catch(err => console.warn('[HOST] ⚠️ Erreur import invite.js:', err.message));
+
                 this._afficherLienJoin(joinUrl, snapshot?.codeCourt);
             });
 
-            // ── GAME_CREATED — point central du flux WS ──────
-            // [FIX A] Tout se passe ici, dans l'ordre garanti :
-            // 1. Sauvegarder l'ID dans localStorage
-            // 2. Mettre à jour le lien d'invitation
-            // 3. Envoyer HOST_START_GAME (maintenant que _partieId est défini)
-            // 4. Nettoyer l'ancienne session
-            // 5. Créer la partie locale
-            // 6. Lancer le jeu
             socket.on('GAME_CREATED', ({ partieId, snapshot, joinUrl }) => {
                 console.log('[HOST] ✅ Partie créée —', partieId);
 
@@ -100,29 +72,24 @@ const HostSession = {
                 this._snapshot        = snapshot;
                 this._creationEnCours = false;
 
-                // 1. Persister l'ID (source de vérité pour quiz_hote._pid())
                 localStorage.setItem('minigame_partie_id', partieId);
 
-                // 2. Mettre à jour invite.js — synchrone, import statique (pas de race condition)
-                setPartieSessionId(partieId);
-                mettreAJourLienInvitation();
+                import('./invite.js').then(m => {
+                    m.setPartieSessionId(partieId);
+                    m.mettreAJourLienInvitation();
+                }).catch(err => console.warn('[HOST] ⚠️ Erreur invite.js:', err.message));
 
                 this._afficherLienJoin(joinUrl, snapshot?.codeCourt);
 
-                // 3. Lancer le jeu si un jeu était en attente (edge case: créé depuis initStartSolo)
-                // Cas normal : _pendingGame est null (partie créée dès l'ajout du premier joueur)
-                // → le bloc invitation s'affiche, l'hôte partage le lien, puis clique Démarrer.
                 const gameALancer = this._pendingGame;
                 this._pendingGame = null;
 
                 if (gameALancer) {
-                    // Edge case : creerPartie() appelée depuis initStartSolo directement
-                    // → envoyer HOST_START_GAME et lancer le jeu
                     try {
                         socket.send('HOST_START_GAME', { partieId });
-                        console.log('[HOST] 📤 HOST_START_GAME (pendingGame) —', partieId);
+                        console.log('[HOST] 📤 HOST_START_GAME —', partieId);
                     } catch (err) {
-                        console.error('[HOST] ❌ Erreur HOST_START_GAME:', err.message);
+                        console.error('[HOST] ❌ HOST_START_GAME:', err.message);
                     }
                     if (typeof window._restaurerBoutonStart === 'function') {
                         window._restaurerBoutonStart();
@@ -133,8 +100,6 @@ const HostSession = {
                         window.lancerJeu(gameALancer, { fromServer: true });
                     }
                 }
-                // Cas normal : afficher le bloc invitation (GAME_CREATED vient de _hostCreerPartieQuandPret)
-                // mettreAJourLienInvitation() ci-dessus a déjà mis hidden=false sur le bloc.
             });
 
             socket.on('PLAYER_JOINED', ({ pseudo, joueurs }) => {
@@ -173,7 +138,9 @@ const HostSession = {
                     if (typeof m.resetEtatQuizHote === 'function') m.resetEtatQuizHote();
                 }).catch(() => {});
 
-                resetPartieSessionId();
+                import('./invite.js').then(m => {
+                    if (typeof m.resetPartieSessionId === 'function') m.resetPartieSessionId();
+                }).catch(() => {});
             });
 
             socket.on('ERROR', ({ code, message }) => {
@@ -188,16 +155,17 @@ const HostSession = {
                     this._snapshot    = null;
                     this._pendingGame = null;
 
-                    resetPartieSessionId();
+                    import('./invite.js').then(m => {
+                        if (typeof m.resetPartieSessionId === 'function') m.resetPartieSessionId();
+                    }).catch(() => {});
 
-                    // Restaurer le bouton start
                     if (typeof window._restaurerBoutonStart === 'function') {
                         window._restaurerBoutonStart();
                     }
                 }
 
                 if (code === 'HOST_ALREADY_HAS_GAME') {
-                    console.log('[HOST] ℹ️ Partie déjà active côté serveur — attente HOST_REJOINED');
+                    console.log('[HOST] ℹ️ Partie déjà active — attente HOST_REJOINED');
                 }
 
                 if (code === 'NAME_TAKEN') {
@@ -205,7 +173,6 @@ const HostSession = {
                     this._partieId    = null;
                     this._pendingGame = null;
 
-                    // [FIX E] Restaurer le bouton et avertir l'utilisateur
                     if (typeof window._restaurerBoutonStart === 'function') {
                         window._restaurerBoutonStart();
                     }
@@ -231,8 +198,6 @@ const HostSession = {
         }
     },
 
-    // ── Créer la partie côté serveur ─────────────────────
-    // [FIX F] Verrou _creationEnCours pour éviter les doubles envois.
     creerPartie() {
         if (!this._authenticated) {
             console.warn('[HOST] creerPartie() ignoré — pas authentifié');
@@ -273,9 +238,6 @@ const HostSession = {
         }
     },
 
-    // ── notifierDemarrage — utilisé uniquement pour rejoin ──
-    // [FIX B] N'est plus appelé dans le flux normal.
-    // Reste disponible pour les cas de reconnexion (HOST_REJOINED + partie déjà démarrée).
     notifierDemarrage() {
         if (!this._authenticated) {
             console.warn('[HOST] notifierDemarrage() ignoré — pas authentifié');
@@ -293,7 +255,6 @@ const HostSession = {
         }
     },
 
-    // ── Terminer la partie ───────────────────────────────
     terminer() {
         if (!this._authenticated || !this._partieId) return;
         try {
@@ -304,7 +265,6 @@ const HostSession = {
         }
     },
 
-    // ── Sync joueur dans GameState + DOM ─────────────────
     _syncJoueurRejoint(pseudo) {
         if (!pseudo) return;
         if (!GameState.joueurs.includes(pseudo)) {
@@ -347,7 +307,6 @@ const HostSession = {
         console.log(`[HOST] ✅ Joueur retiré du lobby: ${pseudo}`);
     },
 
-    // ── Toast hôte ───────────────────────────────────────
     _toastHote(msg, type = 'info') {
         const COLORS = { success: '#22c55e', error: '#ef4444', warning: '#f59e0b', info: '#00d4ff' };
         const ICONS  = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
@@ -375,7 +334,6 @@ const HostSession = {
         }, 4000);
     },
 
-    // ── Afficher lien / QR ───────────────────────────────
     _afficherLienJoin(joinUrl, code) {
         const el = document.getElementById('ws-join-info');
         if (!el || !joinUrl) return;

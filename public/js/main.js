@@ -1,27 +1,4 @@
-// /js/main.js — v4.0
-// ============================================================
-// CORRECTIONS v4.0 :
-//
-// [FIX 1] Suppression du bloc `const HostSession = {...}` en double.
-//   La seule source est désormais host_session.js via l'import ligne 15.
-//   Ce bug causait un SyntaxError fatal qui empêchait tout le code de s'exécuter.
-//
-// [FIX 2] Ajout de initStartSolo() qui était appelée mais jamais définie.
-//
-// [FIX 3] lancerJeu() ne fait PLUS appel à HostSession.notifierDemarrage().
-//   Avant : notifierDemarrage() était appelé alors que _partieId = null
-//   (GAME_CREATED pas encore reçu) → creerPartie() déclenchée une 2e fois
-//   → NAME_TAKEN sur le serveur.
-//   Maintenant : HOST_START_GAME est envoyé depuis le handler GAME_CREATED
-//   dans host_session.js, après que _partieId soit garanti.
-//
-// [FIX 4] lancerJeu() ne fait PLUS appel à nettoyerSession() directement.
-//   Le nettoyage est délégué à host_session.js juste avant le lancement.
-//   Sinon minigame_partie_id était supprimé avant que GAME_CREATED puisse l'écrire.
-//
-// [FIX 5] initStartSolo() stocke GameState.jeu dans HostSession._pendingGame
-//   pour que le handler GAME_CREATED sache quel jeu lancer.
-// ============================================================
+// /js/main.js
 
 import HostSession from './core/host_session.js';
 
@@ -62,13 +39,10 @@ import { initialiserMemoire }    from "./jeux/memoire.js";
 import { initialiserPuissance4 } from "./jeux/puissance4.js";
 import { initialiserMimer }      from "./jeux/mimedessine.js";
 import { initialiserPetitBac }   from "./jeux/petitbac.js";
-import "./jeux/quiz.js"; // charge quiz.js et expose window.initialiserQuiz
+import "./jeux/quiz.js";
 
 import { socket } from "./core/socket.js";
 
-// ============================================
-// DEBUG SCOREBOARD
-// ============================================
 document.addEventListener("DOMContentLoaded", () => {
     initToggleScoreboard();
     initScoreButtons();
@@ -76,9 +50,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btn) btn.addEventListener("click", () => console.log("toggle-scores cliqué"));
 });
 
-// ============================================
-// CONSTANTES
-// ============================================
 const SPLASH_DURATION = { SCREEN: 1500, LOADER: 2500, INIT: 2600 };
 const FADE_DURATION   = 800;
 
@@ -109,9 +80,6 @@ const REGLES_JEUX = {
     puissance4:"Aligne 4 jetons de ta couleur !"
 };
 
-// ============================================
-// UTILITAIRES
-// ============================================
 const hideAll = (ids) => ids.forEach(hide);
 const fadeOutAndRemove = (el, d = FADE_DURATION) => {
     if (!el) return;
@@ -119,9 +87,6 @@ const fadeOutAndRemove = (el, d = FADE_DURATION) => {
     setTimeout(() => el.style.display = "none", d);
 };
 
-// ============================================
-// MASQUAGE UNDERCOVER
-// ============================================
 function masquerUndercoverComplet() {
     const ucConfig = document.getElementById("undercover-config");
     const ucGame   = document.getElementById("undercover");
@@ -129,9 +94,6 @@ function masquerUndercoverComplet() {
     if (ucGame)   { ucGame.hidden   = true;  ucGame.style.display    = "none"; }
 }
 
-// ============================================
-// MUSIQUE
-// ============================================
 function lancerMusique() {
     const audio = document.getElementById("bg-music");
     if (!audio) return;
@@ -150,9 +112,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 document.addEventListener("click", lancerMusique, { once: true });
 
-// ============================================
-// SPLASH
-// ============================================
 function initSplashScreen() {
     const splash = $("splash-screen");
     const loader = $("loader");
@@ -161,17 +120,11 @@ function initSplashScreen() {
     setTimeout(() => { lancerMusique(); initHomeHub(); show("home"); }, SPLASH_DURATION.INIT);
 }
 
-// ============================================
-// NAVIGATION
-// ============================================
 function initNavigationButtons() {
     const btn = $("btn-nouveau-jeu");
     if (btn) btn.onclick = () => { naviguerVers("choix-jeu", "home"); masquerUndercoverComplet(); };
 }
 
-// ============================================
-// ACCUEIL
-// ============================================
 function initHomeHub() {
     const sauvegarde = loadGame();
     show("hub-accueil");
@@ -217,9 +170,6 @@ export function afficherAccueilJeux() {
 
 export function masquerModules() { hideAll(ALL_MODULES); }
 
-// ============================================
-// SÉLECTION JEU
-// ============================================
 function initGameButtons() {
     $$(".game-btn").forEach(btn => {
         btn.addEventListener("mouseenter", () => {
@@ -257,14 +207,10 @@ function initGameButtons() {
     });
 }
 
-// ============================================
-// CHOIX DU MODE
-// ============================================
 function validerNomPartie(nom) {
     if (!nom) { alert("Merci d'indiquer un nom de partie"); return false; }
     if (getAllParties().some(p => (p.nomPartie || "").toLowerCase() === nom.toLowerCase())) {
-        alert("Ce nom existe déjà."); return false;
-    }
+        alert("Ce nom existe déjà."); return false; }
     return true;
 }
 
@@ -279,7 +225,7 @@ function initModeCards() {
 
             if (GameState.mode === "solo") {
                 initFormSolo();
-                initStartSolo(); // [FIX 2] Re-bind à chaque entrée sur form-solo
+                initStartSolo();
                 naviguerVers("form-solo", "choix-mode");
             } else {
                 initFormEquipes();
@@ -289,27 +235,59 @@ function initModeCards() {
     });
 }
 
-// ============================================
-// 🚀 DÉMARRAGE MODE SOLO
-// ============================================
-// [FIX 2] initStartSolo() était appelée mais jamais définie dans v3.9.
-// [FIX 3] Ne PAS appeler lancerJeu() directement ici.
-//   → lancerJeu() est désormais appelé par host_session.js dans le handler
-//     GAME_CREATED, après que _partieId soit garanti.
-//   → Pour les jeux locaux (morpion, undercover), on lance directement
-//     car ils ne dépendent pas d'un partieId serveur.
-// [FIX 5] On stocke le jeu à lancer dans HostSession._pendingGame pour que
-//   le handler GAME_CREATED sache quoi démarrer.
+function lancerJeuLocal(game) {
+    GameState.jeuActuel = game;
+
+    nettoyerSession();
+
+    hideAll(["home","choix-mode","form-solo","form-equipes","choix-jeu","liste-parties"]);
+    masquerUndercoverComplet();
+    masquerModules();
+    show("container");
+    show("scoreboard");
+    afficherScoreboard();
+
+    const key  = game.toLowerCase();
+    const init = GAME_INITIALIZERS[key];
+    if (!init) { afficherAccueilJeux(); return; }
+
+    if (key === "morpion") {
+        if (typeof window[init] === "function") window[init]();
+        show("morpion"); return;
+    }
+
+    _countdown(() => {
+        if (typeof window[init] === "function") window[init]();
+        show(key.replace(/\s+/g,""));
+    });
+}
+
+function _afficherEtatCreation() {
+    const btnStart = $("btn-start-solo");
+    if (btnStart) {
+        btnStart.disabled      = true;
+        btnStart.style.opacity = '0.5';
+        btnStart.textContent   = '⏳ Création en cours…';
+    }
+}
+
+function _restaurerBoutonStart() {
+    const btnStart = $("btn-start-solo");
+    if (btnStart) {
+        btnStart.disabled      = false;
+        btnStart.style.opacity = '1';
+        btnStart.textContent   = '🚀 Commencer la partie';
+    }
+}
+
 function initStartSolo() {
     const btnStart = $("btn-start-solo");
     if (!btnStart) return;
 
-    // Toujours visible et actif
     btnStart.hidden        = false;
     btnStart.disabled      = false;
     btnStart.style.display = 'block';
 
-    // Cloner pour supprimer les anciens listeners et éviter l'accumulation
     const clone = btnStart.cloneNode(true);
     btnStart.parentNode.replaceChild(clone, btnStart);
     const btn = $("btn-start-solo");
@@ -320,17 +298,12 @@ function initStartSolo() {
         }
         GameState.mode = "solo";
 
-        // Si une partie a déjà été jouée (pas juste créée pour le lobby),
-        // la terminer et réinitialiser avant d'en créer une nouvelle.
-        // Si _partieId existe mais que le jeu n'a pas encore démarré (lobby en cours),
-        // on garde la partie et on lance directement.
         if (HostSession._partieStarted) {
             if (HostSession._partieId) HostSession.terminer();
             HostSession.reset();
             resetEtatQuizHote();
         }
 
-        // Jeux locaux (pas de serveur WS nécessaire pour démarrer)
         if (GameState.jeu === "morpion") {
             if (GameState.joueurs.length < 2 || GameState.joueurs.length > 3) {
                 alert("Le Morpion : 2 à 3 joueurs."); return;
@@ -372,17 +345,11 @@ function initStartSolo() {
             return;
         }
 
-        // La partie a déjà été créée dès que le premier joueur a été ajouté
-        // (via _hostCreerPartieQuandPret → creerPartie → GAME_CREATED).
-        // Si _partieId est déjà défini : lancer le jeu directement.
-        // Sinon (edge case) : créer la partie et attendre GAME_CREATED.
         if (HostSession._partieId) {
-            // Partie déjà créée (lobby) → envoyer HOST_START_GAME et lancer le jeu
             HostSession._partieStarted = true;
             HostSession.notifierDemarrage();
             lancerJeu(GameState.jeu, { fromServer: true });
         } else {
-            // Pas encore de partieId → stocker le jeu et créer la partie
             nettoyerSession();
             HostSession._pendingGame = GameState.jeu;
             HostSession.creerPartie();
@@ -391,74 +358,13 @@ function initStartSolo() {
     });
 }
 
-// Affiche un indicateur pendant la création de partie côté serveur
-function _afficherEtatCreation() {
-    const btnStart = $("btn-start-solo");
-    if (btnStart) {
-        btnStart.disabled      = true;
-        btnStart.style.opacity = '0.5';
-        btnStart.textContent   = '⏳ Création en cours…';
-    }
-}
-
-// Restaure le bouton après erreur de création
-export function _restaurerBoutonStart() {
-    const btnStart = $("btn-start-solo");
-    if (btnStart) {
-        btnStart.disabled      = false;
-        btnStart.style.opacity = '';
-        btnStart.textContent   = '🚀 Commencer la partie';
-    }
-}
-
-// ============================================
-// Jeux locaux (sans dépendance WS pour démarrer)
-// ============================================
-function lancerJeuLocal(game) {
-    GameState.jeuActuel = game;
-    nettoyerSession();
-    if (!GameState.partieEnCoursChargee) {
-        const p = loadGame();
-        if (!p || p.nomPartie !== GameState.partieNom) creerNouvellePartie();
-    }
-    hideAll(["home","choix-mode","form-solo","form-equipes","choix-jeu","liste-parties"]);
-    masquerUndercoverComplet();
-    masquerModules();
-    show("container");
-    show("scoreboard");
-    afficherScoreboard();
-    const init = GAME_INITIALIZERS[game.toLowerCase()];
-    if (init && typeof window[init] === "function") window[init]();
-    show(game);
-}
-
-// ============================================
-// LANCEMENT DES JEUX WS
-// ============================================
-// [FIX 3] lancerJeu() ne fait PLUS appel à HostSession.notifierDemarrage().
-//   HOST_START_GAME est envoyé depuis le handler GAME_CREATED dans host_session.js.
-//   Cela garantit que _partieId est disponible avant l'envoi.
-//
-// [FIX 4] lancerJeu() ne fait PLUS appel à nettoyerSession().
-//   Le nettoyage est fait dans host_session.js AVANT d'appeler lancerJeu(),
-//   ce qui évite que minigame_partie_id soit supprimé trop tôt.
 export function lancerJeu(game, options = {}) {
-    const fromLoad   = options.fromLoad   === true;
-    const fromServer = options.fromServer === true; // appelé depuis GAME_CREATED handler
+    const fromLoad = options.fromLoad === true;
     GameState.jeuActuel = game;
 
     if (game.toLowerCase() === "undercover") return;
 
-    if (fromLoad) {
-        // Chargement d'une partie sauvegardée depuis la liste
-        nettoyerSession();
-        if (!GameState.partieEnCoursChargee) {
-            const p = loadGame();
-            if (!p || p.nomPartie !== GameState.partieNom) creerNouvellePartie();
-        }
-    } else if (fromServer) {
-        // Appelé depuis GAME_CREATED : nettoyerSession() déjà fait dans initStartSolo().
-        // Créer la partie locale (localStorage) maintenant.
+    if (!fromLoad) {
         if (!GameState.partieEnCoursChargee) {
             const p = loadGame();
             if (!p || p.nomPartie !== GameState.partieNom) creerNouvellePartie();
@@ -485,13 +391,6 @@ export function lancerJeu(game, options = {}) {
     if (pid) {
         localStorage.setItem(`partie_etat_${pid}`, 'en_cours');
         signalDemarrage(pid, game);
-    }
-
-    // [FIX 3] Plus d'appel à notifierDemarrage() ici.
-    // HOST_START_GAME est géré dans host_session.js handler GAME_CREATED.
-
-    if (key === 'petitbac' && typeof window._petitbacPublierManche === 'function') {
-        window._petitbacPublierManche();
     }
 
     _countdown(() => {
@@ -532,20 +431,6 @@ function _countdown(onEnd) {
     }, 1000);
 }
 
-window.lancerJeu            = lancerJeu;
-window.initHomeHub          = initHomeHub;
-window.initStartSolo        = initStartSolo;
-window._restaurerBoutonStart = _restaurerBoutonStart;
-
-window.initialiserPendu      = initialiserPendu;
-window.initialiserMemoire    = initialiserMemoire;
-window.initialiserPuissance4 = initialiserPuissance4;
-window.initialiserMimer      = initialiserMimer;
-window.initialiserPetitBac   = initialiserPetitBac;
-
-// ============================================
-// TOOLTIPS
-// ============================================
 let tooltipActif = null;
 function afficherRegles(jeu, btn) {
     cacherRegles();
@@ -562,9 +447,6 @@ function cacherRegles() {
     if (tooltipActif) { tooltipActif.remove(); tooltipActif = null; }
 }
 
-// ============================================
-// INIT
-// ============================================
 function init() {
     nettoyerParasites();
     initSplashScreen();
@@ -579,13 +461,10 @@ function init() {
 
 window.addEventListener("DOMContentLoaded", init);
 
-// Exposer HostSession sur window pour navigation.js et quiz_hote.js
 window.HostSession = HostSession;
 window.jeuSocket   = socket;
+window._restaurerBoutonStart = _restaurerBoutonStart;
 
-// Utilisé par joueurs.js pour déclencher la création de partie quand le 1er joueur est ajouté.
-// La partie est créée DÈS QU'UN JOUEUR est sélectionné pour que GAME_CREATED puisse
-// retourner le partieId et afficher le bloc d'invitation avec le lien à partager.
 window._hostCreerPartieQuandPret = function() {
     if (HostSession._authenticated && !HostSession._partieId && !HostSession._creationEnCours) {
         HostSession.creerPartie();
