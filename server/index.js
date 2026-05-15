@@ -195,6 +195,43 @@ app.post('/api/parties/:id/statut', express.json(), (req, res) => {
     }
 });
 
+// ── Route questions.json ─────────────────────────────
+// Sert questions.json depuis le disque (production: /data/, dev: public/)
+// Nettoie les caractères de contrôle avant envoi pour éviter les erreurs JSON.
+app.get('/api/questions', async (req, res) => {
+    try {
+        const fs   = await import('fs/promises');
+        const path = await import('path');
+
+        // Chercher dans plusieurs emplacements possibles
+        const candidates = [
+            '/data/questions.json',                                    // Render disk
+            path.default.join(ROOT, 'public', 'questions.json'),      // public/
+            path.default.join(ROOT, 'server', 'questions.json'),      // server/
+            path.default.join(ROOT, 'questions.json'),                // racine
+        ];
+
+        let texte = null;
+        for (const p of candidates) {
+            try { texte = await fs.default.readFile(p, 'utf-8'); break; } catch {}
+        }
+
+        if (!texte) {
+            return res.status(404).json({ error: 'questions.json introuvable' });
+        }
+
+        // Supprimer les caractères de contrôle invalides dans les chaînes JSON
+        // (garde \t \n \r qui sont légaux en JSON)
+        const propre = texte.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+
+        const questions = JSON.parse(propre);
+        res.json(questions);
+    } catch (err) {
+        console.error('[API] /api/questions:', err.message);
+        res.status(500).json({ error: 'Erreur lecture questions.json : ' + err.message });
+    }
+});
+
 // ── WebSocket ─────────────────────────────────────────
 const wsServer = new WebSocketServer({ server, path: '/ws' });
 setupWebSocket(wsServer);
