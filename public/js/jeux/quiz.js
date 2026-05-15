@@ -513,13 +513,16 @@ async function initialiserQuiz() {
         }
     }
 
-    // Charger les questions depuis l'API serveur (fiable, nettoyé côté serveur)
+    // Charger questions.json depuis /public/ (fichier statique, toujours disponible)
     try {
-        const res = await fetch('/api/questions');
+        const res = await fetch('/questions.json');
         if (!res.ok) {
             throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         }
-        const questions = await res.json();
+        const raw = await res.text();
+        // Nettoyer les caractères de contrôle invalides avant parsing
+        const propre = raw.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+        const questions = JSON.parse(propre);
         if (!Array.isArray(questions) || questions.length === 0) {
             throw new Error('questions.json vide ou invalide');
         }
