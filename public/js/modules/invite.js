@@ -1,7 +1,6 @@
 // /js/modules/invite.js — v2.3 (FIXED — bloc-invitation apparaît correctement)
 
 import { GameState } from '../core/state.js';
-import { ouvrirModaleQR, _injecterModaleQR } from './parties.js';
 
 const PARTIE_ID_KEY = 'minigame_partie_session_id';
 
@@ -149,8 +148,10 @@ function _copierLien(lien) {
 }
 
 function _ouvrirQR(lien) {
-    if (!document.getElementById('modale-qr')) _injecterModaleQR();
-    ouvrirModaleQR(lien, GameState.partieNom || 'Partie');
+    import('./parties.js').then(m => {
+        if (!document.getElementById('modale-qr')) m._injecterModaleQR();
+        m.ouvrirModaleQR(lien, GameState.partieNom || 'Partie');
+    }).catch(err => console.warn('[INVITE] QR indisponible:', err.message));
 }
 
 function _setText(id, text) {

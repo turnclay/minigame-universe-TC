@@ -8,7 +8,6 @@ export function setPartiesCallback({ lancerJeu }) {
     _cbLancerJeu = lancerJeu || null;
 }
 import { GameState } from "../core/state.js";
-import { naviguerVersAccueil } from "../navigation.js";
 import { getPartieSessionId, setPartieSessionId, mettreAJourLienInvitation } from "./invite.js";
 import {
     getAllParties,
