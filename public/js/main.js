@@ -21,7 +21,7 @@ import {
     initScoreButtons,
     initToggleScoreboard
 } from "./modules/scoreboard.js";
-import { naviguerVers, initNavigation } from "./navigation.js";
+import { naviguerVers, initNavigation, naviguerVersAccueil } from "./navigation.js";
 import { signalDemarrage } from "./core/signal.js";
 import {
     nettoyerSession,
@@ -39,6 +39,9 @@ import { initialiserMemoire }    from "./jeux/memoire.js";
 import { initialiserPuissance4 } from "./jeux/puissance4.js";
 import { initialiserMimer }      from "./jeux/mimedessine.js";
 import { initialiserPetitBac }   from "./jeux/petitbac.js";
+import { initialiserLML }        from "./jeux/lml.js";
+import { initialiserJustePrix }  from "./jeux/justeprix.js";
+import { prepublierPetitBac }    from "./jeux/petitbac.js";
 import { initialiserQuiz } from "./jeux/quiz.js";
 
 import { socket } from "./core/socket.js";
@@ -111,14 +114,17 @@ function lancerMusique() {
 
 function initSplashScreen() {
     const splash = document.getElementById("splash-screen");
-    if (!splash) return;
+    if (!splash) { show("home"); return; }
     setTimeout(() => {
         splash.classList.add("fade-out");
-        setTimeout(() => splash.style.display = "none", FADE_DURATION);
+        setTimeout(() => {
+            splash.style.display = "none";
+            show("home");
+        }, FADE_DURATION);
     }, SPLASH_DURATION.SCREEN);
 }
 
-function afficherAccueilJeux() {
+export function afficherAccueilJeux() {
     naviguerVers("home", "choix-jeu");
 }
 
@@ -271,6 +277,9 @@ const GAME_INIT_FNS = {
     mimedessine: ()     => initialiserMimer(),
     petitbac   : ()     => initialiserPetitBac(),
     morpion    : ()     => { /* handled separately */ },
+    lml        : ()     => initialiserLML(),
+    justeprix  : ()     => initialiserJustePrix(),
+    'juste prix': ()    => initialiserJustePrix(),
 };
 
 function _callGameInit(key) {
