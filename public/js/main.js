@@ -39,9 +39,8 @@ import { initialiserMemoire }    from "./jeux/memoire.js";
 import { initialiserPuissance4 } from "./jeux/puissance4.js";
 import { initialiserMimer }      from "./jeux/mimedessine.js";
 import { initialiserPetitBac }   from "./jeux/petitbac.js";
-import { initialiserLML }        from "./jeux/lml.js";
-import { initialiserJustePrix }  from "./jeux/justeprix.js";
-import { prepublierPetitBac }    from "./jeux/petitbac.js";
+import { initialiserLML }       from "./jeux/lml.js";
+import { initialiserJustePrix } from "./jeux/justeprix.js";
 import { initialiserQuiz } from "./jeux/quiz.js";
 
 import { socket } from "./core/socket.js";

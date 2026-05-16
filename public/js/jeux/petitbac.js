@@ -78,7 +78,6 @@ async function _prepublierPetitBac() {
     _publierScores();
     _publierManche({ lettre: lettreActuelle, categories: CATEGORIES });
 }
-window._petitbacPublierManche = _prepublierPetitBac;
 
 // ── Initialisation ───────────────────────────────────────────
 async function initialiserPetitBac() {
@@ -124,7 +123,6 @@ async function initialiserPetitBac() {
     }
 }
 
-window.initialiserPetitBac = initialiserPetitBac;
 
 // ── Reset ─────────────────────────────────────────────────────
 function resetJeu() {
@@ -303,3 +301,4 @@ function escHtml(s) {
 }
 
 export { initialiserPetitBac, resetJeu };
+export { _prepublierPetitBac as prepublierPetitBac };

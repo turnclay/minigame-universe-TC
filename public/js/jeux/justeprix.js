@@ -7,11 +7,6 @@ import { $, show, hide } from "../core/dom.js";
 import { GameState } from "../core/state.js";
 import { ajouterPoints } from "../modules/scoreboard.js";
 
-let _jpCallbacks = {};
-export function setJpCallbacks(cbs) { _jpCallbacks = { ..._jpCallbacks, ...cbs }; }
-export function getJpCallbacks()    { return _jpCallbacks; }
-
-
 let jpProduits = [];
 let jpOrdre    = [];
 let jpIndex    = 0;
@@ -46,18 +41,16 @@ async function chargerModuleHote() {
         _declencherRevelationAvecPrix   = m.declencherRevelationAvecPrix   || (() => {});
 
         // Exposer sur window pour index.html
-        setJpCallbacks({
-            envoyerEstimation : (v) => _envoyerEstimationHote(v),
-            declencherAfficher: ()  => _declencherAfficherPrix(),
-            nbInvites: () => Math.max(0, (GameState.joueurs || []).length - 1),
-            validerAvecPoints: (pts) => {
-                if (pts > 0) {
-                    if (GameState.mode === 'solo') ajouterPoints(GameState.joueurs[0], pts);
-                    else ajouterPoints(GameState.equipes[0].nom, pts);
-                    _publierScores();
-                }
-            },
-        });
+        window._jpEnvoyerEstimationHote = (v) => _envoyerEstimationHote(v);
+        window._jpDeclencherAfficher    = ()  => _declencherAfficherPrix();
+        window._jpNbJoueursInvites = () => Math.max(0, (GameState.joueurs || []).length - 1);
+        window._jpValiderAvecPoints = (pts) => {
+            if (pts > 0) {
+                if (GameState.mode === 'solo') ajouterPoints(GameState.joueurs[0], pts);
+                else ajouterPoints(GameState.equipes[0].nom, pts);
+                _publierScores();
+            }
+        };
 
         console.log('[JP] ✅ Module hôte Juste Prix chargé');
         return true;
