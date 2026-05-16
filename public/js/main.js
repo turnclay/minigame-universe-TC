@@ -47,10 +47,11 @@ import { socket } from "./core/socket.js";
 import { setJoueursCallbacks } from "./modules/joueurs.js";
 import { setPartiesCallback } from "./modules/parties.js";
 
-// Initialisation scoreboard au chargement DOM
 document.addEventListener("DOMContentLoaded", () => {
     initToggleScoreboard();
     initScoreButtons();
+    const btn = $("toggle-scores");
+    if (btn) btn.addEventListener("click", () => console.log("toggle-scores cliqué"));
 });
 
 const SPLASH_DURATION = { SCREEN: 1500, LOADER: 2500, INIT: 2600 };
