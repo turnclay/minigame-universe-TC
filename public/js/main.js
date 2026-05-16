@@ -47,12 +47,6 @@ import { socket } from "./core/socket.js";
 import { setJoueursCallbacks } from "./modules/joueurs.js";
 import { setPartiesCallback } from "./modules/parties.js";
 
-document.addEventListener("DOMContentLoaded", () => {
-    initToggleScoreboard();
-    initScoreButtons();
-    const btn = $("toggle-scores");
-    if (btn) btn.addEventListener("click", () => console.log("toggle-scores cliqué"));
-});
 
 const SPLASH_DURATION = { SCREEN: 1500, LOADER: 2500, INIT: 2600 };
 const FADE_DURATION   = 800;
@@ -168,13 +162,14 @@ function initSplashScreen() {
     const loader = document.getElementById("loader");
 
     if (!splash) {
-        // Pas de splash screen → masquer le loader et montrer l'accueil
+        // Pas de splash screen → masquer le loader et montrer l'accueil IMMÉDIATEMENT
         if (loader) loader.hidden = true;
         show("home");
         return;
     }
 
-    // Afficher splash pendant SPLASH_DURATION
+    // Splash screen trouvée : elle est déjà visible depuis le HTML
+    // Attendre le délai, puis masquer la splash ET le loader simultanément
     setTimeout(() => {
         splash.classList.add("fade-out");
         setTimeout(() => {
@@ -182,6 +177,7 @@ function initSplashScreen() {
             // Masquer le loader et afficher l'accueil
             if (loader) loader.hidden = true;
             show("home");
+            console.log('[INIT] ✅ Splash disparue, home affichée, loader masqué');
         }, FADE_DURATION);
     }, SPLASH_DURATION.SCREEN);
 }
@@ -555,24 +551,40 @@ function cacherRegles() {
 }
 
 function initAppliqueGlobale() {
+    console.log('[INIT] 🚀 Démarrage initAppliqueGlobale()');
+
+    // === ÉTAPE 1 : Nettoyer immédiatement ===
     nettoyerParasites();
 
-    // Afficher le loader immédiatement
-    afficherLoader("Connexion au serveur…");
+    // === ÉTAPE 2 : Initialiser scoreboard (l'ordre n'a pas d'importance) ===
+    initToggleScoreboard();
+    initScoreButtons();
 
-    // Initialiser l'interface
+    // === ÉTAPE 3 : Afficher le loader avec timeout de sécurité ===
+    afficherLoader("Connexion au serveur…");
+    console.log('[INIT] 📍 Loader affiché avec timeout 10s');
+
+    // === ÉTAPE 4 : Initialiser UI et splash screen ===
+    // initSplashScreen() masquera le loader après le délai d'affichage de la splash
     initSplashScreen();
+    console.log('[INIT] 📍 Splash screen initialisée');
+
+    // === ÉTAPE 5 : Initialiser navigation et jeux (ne dépend pas de connexion) ===
     initNavigationButtons();
     initGameButtons();
     initModeCards();
     initStartSolo();
     masquerUndercoverComplet();
     initNavigation();
+    console.log('[INIT] 📍 UI et navigation initialisées');
 
-    // Initialiser et authentifier la session (masquera le loader une fois AUTH_OK reçu)
+    // === ÉTAPE 6 : Initialiser WebSocket et authentification ===
+    // Cette étape va appeler masquerLoader() une fois AUTH_OK reçu
     HostSession.init();
+    console.log('[INIT] 📍 HostSession.init() lancée (async)');
 }
 
+// UNIQUE point d'entrée : Un seul addEventListener DOMContentLoaded
 window.addEventListener("DOMContentLoaded", initAppliqueGlobale);
 
 // Injecter les callbacks dans HostSession (évite window.xxx dans host_session.js)
