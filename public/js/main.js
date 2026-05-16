@@ -47,11 +47,10 @@ import { socket } from "./core/socket.js";
 import { setJoueursCallbacks } from "./modules/joueurs.js";
 import { setPartiesCallback } from "./modules/parties.js";
 
+// Initialisation scoreboard au chargement DOM
 document.addEventListener("DOMContentLoaded", () => {
     initToggleScoreboard();
     initScoreButtons();
-    const btn = $("toggle-scores");
-    if (btn) btn.addEventListener("click", () => console.log("toggle-scores cliqué"));
 });
 
 const SPLASH_DURATION = { SCREEN: 1500, LOADER: 2500, INIT: 2600 };
@@ -98,6 +97,58 @@ function masquerUndercoverComplet() {
     if (ucGame)   { ucGame.hidden   = true;  ucGame.style.display    = "none"; }
 }
 
+// Gestion du loader avec timeout
+let _loaderTimeoutId = null;
+function afficherLoader(message = "Chargement en cours…") {
+    const loader = document.getElementById("loader");
+    if (loader) {
+        loader.hidden = false;
+        const loaderText = loader.querySelector("p");
+        if (loaderText) loaderText.textContent = message;
+    }
+    // Timeout de sécurité : masquer le loader après 10s si rien ne se passe
+    if (_loaderTimeoutId) clearTimeout(_loaderTimeoutId);
+    _loaderTimeoutId = setTimeout(() => {
+        masquerLoader(true);
+    }, 10000);
+}
+
+function masquerLoader(avecErreur = false) {
+    const loader = document.getElementById("loader");
+    if (loader) {
+        loader.hidden = true;
+    }
+    if (_loaderTimeoutId) {
+        clearTimeout(_loaderTimeoutId);
+        _loaderTimeoutId = null;
+    }
+    if (avecErreur) {
+        console.error("[LOADER] ⚠️ Timeout connexion après 10s");
+        _toastErreur("Connexion serveur lente. Veuillez rafraîchir la page.");
+    }
+}
+
+function _toastErreur(message) {
+    // Toast minimaliste via alert (peut être amélioré avec une UI personnalisée)
+    const toast = document.createElement("div");
+    toast.className = "toast-error";
+    toast.textContent = "⚠️ " + message;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(220, 38, 38, 0.9);
+        color: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        z-index: 9999;
+        animation: slideIn 0.3s ease-out;
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 5000);
+}
+
 function lancerMusique() {
     const audio = document.getElementById("bg-music");
     if (!audio) return;
@@ -113,11 +164,22 @@ function lancerMusique() {
 
 function initSplashScreen() {
     const splash = document.getElementById("splash-screen");
-    if (!splash) { show("home"); return; }
+    const loader = document.getElementById("loader");
+
+    if (!splash) {
+        // Pas de splash screen → masquer le loader et montrer l'accueil
+        if (loader) loader.hidden = true;
+        show("home");
+        return;
+    }
+
+    // Afficher splash pendant SPLASH_DURATION
     setTimeout(() => {
         splash.classList.add("fade-out");
         setTimeout(() => {
             splash.style.display = "none";
+            // Masquer le loader et afficher l'accueil
+            if (loader) loader.hidden = true;
             show("home");
         }, FADE_DURATION);
     }, SPLASH_DURATION.SCREEN);
@@ -493,6 +555,11 @@ function cacherRegles() {
 
 function initAppliqueGlobale() {
     nettoyerParasites();
+
+    // Afficher le loader immédiatement
+    afficherLoader("Connexion au serveur…");
+
+    // Initialiser l'interface
     initSplashScreen();
     initNavigationButtons();
     initGameButtons();
@@ -500,6 +567,8 @@ function initAppliqueGlobale() {
     initStartSolo();
     masquerUndercoverComplet();
     initNavigation();
+
+    // Initialiser et authentifier la session (masquera le loader une fois AUTH_OK reçu)
     HostSession.init();
 }
 
@@ -509,6 +578,7 @@ window.addEventListener("DOMContentLoaded", initAppliqueGlobale);
 HostSession.setCallbacks({
     restaurerBouton : _restaurerBoutonStart,
     lancerJeu       : lancerJeu,
+    masquerLoader   : masquerLoader,
 });
 
 // Injecter les callbacks dans joueurs.js et parties.js

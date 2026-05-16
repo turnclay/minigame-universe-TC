@@ -58,6 +58,7 @@ export class GameSocket {
         this._maxReconnect     = 5;
         this._reconnectCount   = 0;
         this._url              = null;
+        this._connectTimeout   = null;   // [NOUVEAU] Timeout pour la connexion
     }
 
     // ── Construction d'URL ─────────────────────────
@@ -86,7 +87,21 @@ export class GameSocket {
 
         this._ws = new WebSocket(this._url);
 
+        // [NOUVEAU] Timeout de connexion : 10 secondes
+        this._connectTimeout = setTimeout(() => {
+            console.error('[Socket] ❌ Timeout connexion (10s) — fermeture');
+            this._emit('__connect_timeout__', {});
+            if (this._ws) {
+                this._ws.close();
+            }
+        }, 10000);
+
         this._ws.onopen = () => {
+            // Annuler le timeout si la connexion a réussi
+            if (this._connectTimeout) {
+                clearTimeout(this._connectTimeout);
+                this._connectTimeout = null;
+            }
             console.log('[Socket] ✅ Connecté');
             this._connected      = true;
             this._reconnectCount = 0;
@@ -107,6 +122,11 @@ export class GameSocket {
         };
 
         this._ws.onclose = () => {
+            // Annuler le timeout
+            if (this._connectTimeout) {
+                clearTimeout(this._connectTimeout);
+                this._connectTimeout = null;
+            }
             console.warn('[Socket] ⚠️ Connexion fermée');
             this._connected = false;
             this._emit('__disconnected__', {});

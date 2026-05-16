@@ -6,6 +6,7 @@ import { socket } from './socket.js';
 // Callbacks injectés par main.js pour éviter les dépendances circulaires
 let _cbRestaurerBouton = null;
 let _cbLancerJeu       = null;
+let _cbMasquerLoader   = null;
 
 const HostSession = {
     _partieId        : null,
@@ -28,9 +29,10 @@ const HostSession = {
         console.log('[HOST] 🔄 HostSession reset (nouvelle partie)');
     },
 
-    setCallbacks({ restaurerBouton, lancerJeu }) {
+    setCallbacks({ restaurerBouton, lancerJeu, masquerLoader }) {
         _cbRestaurerBouton = restaurerBouton || null;
         _cbLancerJeu       = lancerJeu       || null;
+        _cbMasquerLoader   = masquerLoader   || null;
     },
 
     init() {
@@ -48,6 +50,9 @@ const HostSession = {
             socket.on('AUTH_OK', () => {
                 console.log('[HOST] ✅ Authentifié');
                 this._authenticated = true;
+
+                // Masquer le loader une fois authentifié
+                if (_cbMasquerLoader) _cbMasquerLoader(false);
 
                 const savedId = localStorage.getItem('minigame_partie_id');
                 if (savedId) {
@@ -192,6 +197,20 @@ const HostSession = {
                     if (_cbRestaurerBouton) _cbRestaurerBouton();
                     this._toastHote('Erreur serveur temporaire. Réessaie dans quelques secondes.', 'error');
                 }
+            });
+
+            // Gérer les échecs de reconnexion
+            socket.on('__reconnect_failed__', () => {
+                console.error('[HOST] ❌ Reconnexion échouée après 5 tentatives');
+                if (_cbMasquerLoader) _cbMasquerLoader(true); // avec erreur
+                this._toastHote('Impossible de se connecter au serveur. Veuillez rafraîchir la page.', 'error');
+            });
+
+            // Gérer les timeouts de connexion
+            socket.on('__connect_timeout__', () => {
+                console.error('[HOST] ⏱️ Timeout connexion WebSocket (10s)');
+                if (_cbMasquerLoader) _cbMasquerLoader(true); // avec erreur
+                this._toastHote('Le serveur met trop de temps à répondre. Veuillez rafraîchir la page.', 'error');
             });
 
         } catch (err) {
