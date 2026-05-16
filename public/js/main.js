@@ -34,14 +34,14 @@ import {
     nettoyerPartie     as ucNettoyerPartie
 } from "./modules/undercover_hote.js";
 
-import { initialiserPendu }      from "./jeux/pendu.js";
-import { initialiserMemoire }    from "./jeux/memoire.js";
-import { initialiserPuissance4 } from "./jeux/puissance4.js";
-import { initialiserMimer }      from "./jeux/mimedessine.js";
-import { initialiserPetitBac }   from "./jeux/petitbac.js";
-import { initialiserLML }       from "./jeux/lml.js";
-import { initialiserJustePrix } from "./jeux/justeprix.js";
-import { initialiserQuiz } from "./jeux/quiz.js";
+import "./jeux/pendu.js";
+import "./jeux/memoire.js";
+import "./jeux/puissance4.js";
+import "./jeux/mimedessine.js";
+import "./jeux/petitbac.js";
+import "./jeux/lml.js";
+import "./jeux/justeprix.js";
+import "./jeux/quiz.js";
 
 import { socket } from "./core/socket.js";
 import { setJoueursCallbacks } from "./modules/joueurs.js";
@@ -267,18 +267,18 @@ function initModeCards() {
 
 // Registry des initialiseurs de jeux (sans window)
 const GAME_INIT_FNS = {
-    quiz       : (sock) => initialiserQuiz(sock),
-    quizz      : (sock) => initialiserQuiz(sock),
-    pendu      : ()     => initialiserPendu(),
-    memoire    : ()     => initialiserMemoire(),
-    puissance4 : ()     => initialiserPuissance4(),
-    mimer      : ()     => initialiserMimer(),
-    mimedessine: ()     => initialiserMimer(),
-    petitbac   : ()     => initialiserPetitBac(),
+    quiz       : (sock) => { if (typeof window.initialiserQuiz === 'function') window.initialiserQuiz(sock); },
+    quizz      : (sock) => { if (typeof window.initialiserQuiz === 'function') window.initialiserQuiz(sock); },
+    pendu      : ()     => { if (typeof window.initialiserPendu === 'function') window.initialiserPendu(); },
+    memoire    : ()     => { if (typeof window.initialiserMemoire === 'function') window.initialiserMemoire(); },
+    puissance4 : ()     => { if (typeof window.initialiserPuissance4 === 'function') window.initialiserPuissance4(); },
+    mimer      : ()     => { if (typeof window.initialiserMimer === 'function') window.initialiserMimer(); },
+    mimedessine: ()     => { if (typeof window.initialiserMimer === 'function') window.initialiserMimer(); },
+    petitbac   : ()     => { if (typeof window.initialiserPetitBac === 'function') window.initialiserPetitBac(); },
     morpion    : ()     => { /* handled separately */ },
-    lml        : ()     => initialiserLML(),
-    justeprix  : ()     => initialiserJustePrix(),
-    'juste prix': ()    => initialiserJustePrix(),
+    lml        : ()     => { if (typeof window.initialiserLML === 'function') window.initialiserLML(); },
+    justeprix  : ()     => { if (typeof window.initialiserJustePrix === 'function') window.initialiserJustePrix(); },
+    'juste prix': ()    => { if (typeof window.initialiserJustePrix === 'function') window.initialiserJustePrix(); },
 };
 
 function _callGameInit(key) {
