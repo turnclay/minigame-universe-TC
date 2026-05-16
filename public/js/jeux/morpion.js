@@ -2,7 +2,7 @@
 // 🎮 MORPION - MODE CLASSIQUE & AVANCÉ (2-4 JOUEURS)
 // ======================================================
 
-import { $, $$, show, hide } from "/js/core/dom.js";
+import { $, $$, show, hide } from "../core/dom.js";
 import { GameState } from "../core/state.js";
 import { ajouterPoints } from "../modules/scoreboard.js";
 
@@ -964,4 +964,4 @@ export function initialiserMorpion() {
 }
 
 // Export global pour compatibility
-window.initialiserMorpion = initialiserMorpion;
+// export already declared above

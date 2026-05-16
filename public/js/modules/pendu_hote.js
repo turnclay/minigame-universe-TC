@@ -19,6 +19,9 @@
 // ============================================================
 
 import { GameState } from '../core/state.js';
+import { getPenduCallbacks } from '../jeux/pendu.js';
+import { getPenduCallbacks } from '../jeux/pendu.js';
+import { afficherScoreboard } from '../modules/scoreboard.js';
 
 function partieId() {
     // Lire ws_partie_id (source de vérité) avec fallback minigame_partie_session_id
@@ -94,10 +97,9 @@ export function declencherRevelation(POINTS_BASE) {
         const pts = data.points || 0;
         if (pts <= 0) return;
         if (pseudo === pseudoHote) {
-            // L'hôte se crédite via window._penduValiderAvecPoints
-            if (typeof window._penduValiderAvecPoints === 'function') {
-                window._penduValiderAvecPoints(pts);
-            }
+            // L'hôte se crédite via getPenduCallbacks
+            const cbs = getPenduCallbacks();
+            if (typeof cbs.validerAvecPoints === 'function') cbs.validerAvecPoints(pts);
         } else {
             if (GameState.scores[pseudo] === undefined) GameState.scores[pseudo] = 0;
             GameState.scores[pseudo] = +((GameState.scores[pseudo] + pts).toFixed(2));
@@ -127,7 +129,7 @@ export function declencherRevelation(POINTS_BASE) {
         ts: Date.now()
     }));
 
-    if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
+    afficherScoreboard();
     _afficherPanneauResultats(repTri, pseudoHote);
 }
 

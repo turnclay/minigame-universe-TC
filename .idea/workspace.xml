@@ -6,9 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="73d891ed-7cb8-4a2e-b43e-d24a9aad95e0" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/modules/parties.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/parties.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/modules/quiz_hote.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/quiz_hote.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/modules/scoreboard.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/scoreboard.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/jeux/memoire.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/jeux/memoire.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -18,12 +16,12 @@
   <component name="CopilotChats">
     <option name="panelChat">
       <chat>
-        <option name="activeSessionId" value="42801a32-67b5-402d-8039-21edf2ee32af" />
+        <option name="activeSessionId" value="87f5db9c-8b92-4481-896e-0a7a2a984fb6" />
         <option name="sessions">
           <session>
             <option name="chatType" value="PANEL" />
             <option name="id" value="87f5db9c-8b92-4481-896e-0a7a2a984fb6" />
-            <option name="modeId" value="Ask" />
+            <option name="modeId" value="file:///c%3A/snapshot/cls-source/dist/assets/agents/Plan.agent.md" />
             <option name="modelType" value="builtin_family" />
             <option name="modelValue" value="claude-haiku-4.5" />
             <option name="status" value="Completed" />
@@ -48,6 +46,14 @@
           <session>
             <option name="chatType" value="PANEL" />
             <option name="id" value="42801a32-67b5-402d-8039-21edf2ee32af" />
+            <option name="modeId" value="Ask" />
+            <option name="modelType" value="builtin_family" />
+            <option name="modelValue" value="auto" />
+            <option name="targetType" value="LOCAL" />
+          </session>
+          <session>
+            <option name="chatType" value="PANEL" />
+            <option name="id" value="272a0f22-ada5-4626-ae5b-40fb86df4883" />
             <option name="modeId" value="Ask" />
             <option name="modelType" value="builtin_family" />
             <option name="modelValue" value="auto" />

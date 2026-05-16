@@ -5,6 +5,12 @@ import { $ } from '../core/dom.js';
 import { GameState } from '../core/state.js';
 import { ajouterPoints } from '../modules/scoreboard.js';
 
+// ── Callbacks exportés pour lml_hote.js ─────────────────────
+let _lmlCallbacks = {};
+export function setLmlCallbacks(cbs) { _lmlCallbacks = { ..._lmlCallbacks, ...cbs }; }
+export function getLmlCallbacks()    { return _lmlCallbacks; }
+
+
 const VOYELLES  = ['A','E','I','O','U','Y'];
 const CONSONNES = 'BCDFGHJKLMNPQRSTVWXZ'.split('');
 
@@ -33,17 +39,19 @@ async function chargerModuleHote() {
         _envoyerMot    = m.envoyerMotHote    || (() => {});
         _declencherRev = m.declencherRevelation || (() => {});
 
-        window._lmlEnvoyerMotHote     = (mot) => _envoyerMot(mot);
-        window._lmlDeclencherAfficher = ()    => _declencherRev(lexique, lettresLML);
-        window._lmlNbInvites          = ()    => Math.max(0, (GameState.joueurs || []).length - 1);
-        window._lmlValiderAvecPoints  = (pts) => {
-            if (pts > 0) {
-                const c = GameState.mode === 'solo'
-                    ? GameState.joueurs[0]
-                    : GameState.equipes[0]?.nom;
-                if (c) { ajouterPoints(c, pts); _publierScores(); }
-            }
-        };
+        setLmlCallbacks({
+            envoyerMotHote    : (mot) => _envoyerMot(mot),
+            declencherAfficher: ()    => _declencherRev(lexique, lettresLML),
+            nbInvites         : ()    => Math.max(0, (GameState.joueurs || []).length - 1),
+            validerAvecPoints : (pts) => {
+                if (pts > 0) {
+                    const c = GameState.mode === 'solo'
+                        ? GameState.joueurs[0]
+                        : GameState.equipes[0]?.nom;
+                    if (c) { ajouterPoints(c, pts); _publierScores(); }
+                }
+            },
+        });
 
         console.log('[LML] ✅ Module hôte chargé');
         return true;
@@ -276,4 +284,4 @@ async function initialiserLML() {
     chargerLexiqueAsync();
 }
 
-window.initialiserLML = initialiserLML;
+export { initialiserLML };

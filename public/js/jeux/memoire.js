@@ -12,7 +12,7 @@
 
 import { $, hide, show } from "../core/dom.js";
 import { GameState } from "../core/state.js";
-import { afficherAccueilJeux } from "../main.js";
+import { naviguerVersAccueil } from "../navigation.js";
 import { afficherScoreboard, ajouterPoints } from "../modules/scoreboard.js";
 
 // ── Module hôte (chargé dynamiquement si partie multijoueur) ─
@@ -147,7 +147,6 @@ export async function initialiserMemoire() {
     attacherEvenements();
 }
 
-window.initialiserMemoire = initialiserMemoire;
 
 // ── Chargement dynamique de memoire_hote.js ──────────────────
 async function _chargerModuleHote() {

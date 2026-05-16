@@ -14,6 +14,8 @@
 // ============================================================
 
 import { GameState } from '../core/state.js';
+import { getLmlCallbacks } from '../jeux/lml.js';
+import { afficherScoreboard } from '../modules/scoreboard.js';
 
 let _validationEnCours  = false;
 let _reponseHoteEnvoyee = false;
@@ -44,8 +46,9 @@ export function viderReponses()    { localStorage.removeItem(cleR()); }
 
 // ── Nb joueurs ────────────────────────────────────────────────────
 function _getNbTotal() {
-    if (typeof window._lmlNbInvites === 'function') {
-        const n = window._lmlNbInvites();
+    const cbs = getLmlCallbacks();
+    if (typeof cbs.nbInvites === 'function') {
+        const n = cbs.nbInvites();
         if (n >= 0) return n + 1;
     }
     const t = (GameState.joueurs || []).length;
@@ -191,7 +194,8 @@ export function declencherRevelation(lexique, lettres) {
     resultats.forEach(r => {
         if (r.points <= 0) return;
         if (r.pseudo === pseudoHote) {
-            if (typeof window._lmlValiderAvecPoints === 'function') window._lmlValiderAvecPoints(r.points);
+            const cbs2 = getLmlCallbacks();
+            if (typeof cbs2.validerAvecPoints === 'function') cbs2.validerAvecPoints(r.points);
         } else {
             if (GameState.scores[r.pseudo] === undefined) GameState.scores[r.pseudo] = 0;
             GameState.scores[r.pseudo] = +((GameState.scores[r.pseudo] + r.points).toFixed(2));
@@ -219,7 +223,7 @@ export function declencherRevelation(lexique, lettres) {
     }));
 
     _afficherPanneauResultats(resultats, motMax);
-    if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
+    afficherScoreboard();
 }
 
 // ── Vérification mot avec lettres disponibles ─────────────────────

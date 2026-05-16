@@ -20,6 +20,9 @@
 // ============================================================
 
 import { GameState } from '../core/state.js';
+import { getJpCallbacks } from '../jeux/justeprix.js';
+import { getJpCallbacks } from '../jeux/justeprix.js';
+import { afficherScoreboard } from '../modules/scoreboard.js';
 
 let timerSync           = null;
 let _produitSuivantCb   = null;   // callback "Produit suivant" (hôte garde la main)
@@ -127,8 +130,9 @@ function _demarrerEcouteReponsesInstantanee() {
 
 // ── Nombre de joueurs attendus ────────────────────────────────
 function _getNbJoueursInvites() {
-    if (typeof window._jpNbJoueursInvites === 'function') {
-        const n = window._jpNbJoueursInvites();
+    const cbs = getJpCallbacks();
+    if (typeof cbs.nbInvites === 'function') {
+        const n = cbs.nbInvites();
         if (n > 0) return n;
     }
     const total = (GameState.joueurs || []).length;
@@ -268,9 +272,8 @@ function _declencharRevelation(vraiPrix) {
     resultats.forEach(r => {
         if (r.points <= 0) return;
         if (r.pseudo === pseudoHote) {
-            if (typeof window._jpValiderAvecPoints === 'function') {
-                window._jpValiderAvecPoints(r.points);
-            }
+            const cbs2 = getJpCallbacks();
+            if (typeof cbs2.validerAvecPoints === 'function') cbs2.validerAvecPoints(r.points);
         } else {
             if (GameState.scores[r.pseudo] === undefined) GameState.scores[r.pseudo] = 0;
             GameState.scores[r.pseudo] = +((GameState.scores[r.pseudo] + r.points).toFixed(2));
@@ -292,7 +295,7 @@ function _declencharRevelation(vraiPrix) {
     _afficherPanneauResultats(resultats, vraiPrix, prix);
     publierRevelation(resultats, vraiPrix, prix);
 
-    if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
+    afficherScoreboard();
 }
 
 // ── Publier le signal de révélation pour jeu.html ────────────
