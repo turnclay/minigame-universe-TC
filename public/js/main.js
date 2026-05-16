@@ -42,6 +42,8 @@ import { initialiserPetitBac }   from "./jeux/petitbac.js";
 import { initialiserQuiz } from "./jeux/quiz.js";
 
 import { socket } from "./core/socket.js";
+import { setJoueursCallbacks } from "./modules/joueurs.js";
+import { setPartiesCallback } from "./modules/parties.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     initToggleScoreboard();
@@ -501,9 +503,15 @@ HostSession.setCallbacks({
     lancerJeu       : lancerJeu,
 });
 
-// Exposer _hostCreerPartieQuandPret pour joueurs.js (sera supprimé quand joueurs.js sera migré)
-window._hostCreerPartieQuandPret = function() {
-    if (HostSession._authenticated && !HostSession._partieId && !HostSession._creationEnCours) {
-        HostSession.creerPartie();
-    }
-};
+// Injecter les callbacks dans joueurs.js et parties.js
+setJoueursCallbacks({
+    creerPartie  : () => {
+        if (HostSession._authenticated && !HostSession._partieId && !HostSession._creationEnCours) {
+            HostSession.creerPartie();
+        }
+    },
+    initStartSolo : initStartSolo,
+});
+setPartiesCallback({ lancerJeu });
+
+// _hostCreerPartieQuandPret désormais injecté via setJoueursCallbacks()

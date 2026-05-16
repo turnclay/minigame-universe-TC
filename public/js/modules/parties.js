@@ -1,6 +1,12 @@
 // /js/modules/parties.js
 
 import { $, show, hide } from "../core/dom.js";
+
+// Callback injecté par main.js
+let _cbLancerJeu = null;
+export function setPartiesCallback({ lancerJeu }) {
+    _cbLancerJeu = lancerJeu || null;
+}
 import { GameState } from "../core/state.js";
 import { naviguerVersAccueil } from "../navigation.js";
 import { getPartieSessionId, setPartieSessionId, mettreAJourLienInvitation } from "./invite.js";
@@ -294,7 +300,7 @@ export function afficherListeParties() {
 
             // Autres jeux
             try { localStorage.removeItem('invite_pret_' + sidARestaurer); } catch {}
-            window.lancerJeu(partie.jeu, { fromLoad: true });
+            if (_cbLancerJeu) _cbLancerJeu(partie.jeu, { fromLoad: true });
             hide("liste-parties");
         };
 

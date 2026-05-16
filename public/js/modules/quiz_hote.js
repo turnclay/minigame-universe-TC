@@ -25,12 +25,16 @@
 // ============================================================
 
 import { GameState } from '../core/state.js';
+import { socket } from '../core/socket.js';
+import HostSession from '../core/host_session.js';
+import { afficherScoreboard } from './scoreboard.js';
 
 let _validationEnCours   = false;
 let _reponseHoteEnvoyee  = false;
 let _reponsesRecues      = {};
 let _nbInvites           = 0;   // nb d'invités réels (sans l'hôte)
 let _wsListenersActifs   = false;
+let _quizReponseSaisieHote = ''; // remplace _quizReponseSaisieHote
 
 // Références des handlers WS pour pouvoir les retirer avec socket.off()
 // [FIX B] — stockés pour cleanup propre
@@ -43,7 +47,7 @@ let _handlePlayerJoined   = null;
 let _handleQuizIndice     = null;
 let _handleError          = null;
 
-function _ws()   { return window.jeuSocket || null; }
+function _ws()   { return socket; }
 function _wsOk() { const s = _ws(); return !!(s && s.connected); }
 
 function _pid() {
@@ -59,7 +63,7 @@ function _pseudoHote() { return (GameState?.joueurs?.[0]) || 'Hôte'; }
 // [FIX C] — défensif : si snapshot null ou vide → 0 invités (hôte seul)
 function _nbJoueursTotal() {
     if (_nbInvites > 0) return _nbInvites + 1;
-    const snapJoueurs = window.HostSession?._snapshot?.joueurs;
+    const snapJoueurs = HostSession?._snapshot?.joueurs;
     const fromSnap    = Array.isArray(snapJoueurs) ? snapJoueurs.length : 0;
     return fromSnap + 1; // +1 pour l'hôte
 }
@@ -76,8 +80,8 @@ function _initWsListeners() {
 
     // Initialiser _nbInvites depuis le snapshot courant (non résiduel)
     // [FIX A] — on ne prend le snapshot QUE si la partie est active (partieId non null)
-    const snap = window.HostSession?._snapshot;
-    if (snap?.joueurs?.length > 0 && window.HostSession?._partieId) {
+    const snap = HostSession?._snapshot;
+    if (snap?.joueurs?.length > 0 && HostSession?._partieId) {
         _nbInvites = snap.joueurs.length;
     } else {
         _nbInvites = 0; // [FIX A] — hôte seul par défaut
@@ -89,12 +93,12 @@ function _initWsListeners() {
         _reponsesRecues     = {};
         _validationEnCours  = false;
         _reponseHoteEnvoyee = false;
-        window._quizReponseSaisieHote = '';
+        _quizReponseSaisieHote = '';
 
         // [FIX A] Recalculer _nbInvites depuis le snapshot actif
         // (peut avoir changé si un joueur a rejoint/quitté entre deux questions)
-        const snapNow = window.HostSession?._snapshot;
-        if (window.HostSession?._partieId && Array.isArray(snapNow?.joueurs)) {
+        const snapNow = HostSession?._snapshot;
+        if (HostSession?._partieId && Array.isArray(snapNow?.joueurs)) {
             // Snapshot joueurs inclut l'hôte si hostJoue:true → soustraire 1
             const total = snapNow.joueurs.length;
             _nbInvites = Math.max(0, total - 1); // -1 pour l'hôte
@@ -132,7 +136,7 @@ function _initWsListeners() {
 
         // Intégrer la réponse de l'hôte si absente des résultats serveur
         if (!resultats.some(r => r.pseudo === pseudoHote)) {
-            const texteHote = (window._quizReponseSaisieHote || '').trim();
+            const texteHote = (_quizReponseSaisieHote || '').trim();
             const correct   = texteHote && bonneReponse
                 ? _similariteLocale(texteHote, bonneReponse)
                 : false;
@@ -151,7 +155,7 @@ function _initWsListeners() {
         }
 
         _afficherPanneauResultats(resultats, bonneReponse || '');
-        if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
+        afficherScoreboard();
     };
 
     _handleScoresUpdate = ({ scores }) => {
@@ -166,7 +170,7 @@ function _initWsListeners() {
         }
         const cle = _cleScores();
         if (cle) localStorage.setItem(cle, JSON.stringify(GameState.scores));
-        if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
+        afficherScoreboard();
     };
 
     _handlePlayerJoined = ({ joueurs }) => {
@@ -367,7 +371,7 @@ export function publierEtat(etat) {
 export function publierScores() {
     const cle = _cleScores();
     if (cle) localStorage.setItem(cle, JSON.stringify(GameState.scores || {}));
-    if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
+    afficherScoreboard();
 }
 
 export function afficherReponsesInvitesSurHote() {
@@ -382,7 +386,7 @@ export function viderReponses() {
     // [FIX A] Remettre _nbInvites à 0 : sera recalculé sur QUIZ_QUESTION
     // via le snapshot actif. Évite les joueurs fantômes de la partie précédente.
     _nbInvites           = 0;
-    window._quizReponseSaisieHote = '';
+    _quizReponseSaisieHote = '';
 
     const btnEnv = document.getElementById('btn-valider-reponse');
     const inp    = document.getElementById('quiz-reponse-input');
@@ -411,7 +415,7 @@ export function declencherAfficherReponse() {
 
     if (_wsOk()) {
         const data    = {};
-        const repHote = (window._quizReponseSaisieHote || '').trim();
+        const repHote = (_quizReponseSaisieHote || '').trim();
         if (repHote) { data.reponseHote = repHote; data.tsHote = Date.now(); }
         _ws().send('HOST_ACTION', { action: 'quiz:reveal', data });
     } else {
@@ -497,7 +501,7 @@ export function nettoyerPartieInvites() {
     _reponseHoteEnvoyee  = false;
     _nbInvites           = 0;       // [FIX A] — CRITIQUE
     _wsListenersActifs   = false;
-    window._quizReponseSaisieHote = '';
+    _quizReponseSaisieHote = '';
 
     const pid = _pid();
     if (pid) {

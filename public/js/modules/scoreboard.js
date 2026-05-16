@@ -124,8 +124,6 @@ export function afficherScoreboard() {
         `;
     }).join("");
 
-    // Exposer sur window pour compatibilité
-    window.afficherScoreboard = afficherScoreboard;
 }
 
 // ======================================================
