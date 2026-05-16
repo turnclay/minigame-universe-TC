@@ -416,12 +416,6 @@ body {
     z-index: 9000;
 }
 
-/* Respecter l'attribut HTML hidden */
-#loader[hidden],
-.loader[hidden] {
-    display: none !important;
-}
-
 .spinner {
     width: 70px;
     height: 70px;
