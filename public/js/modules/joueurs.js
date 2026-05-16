@@ -11,6 +11,14 @@ import {
     getAllPerformances
 } from "../core/storage.js";
 
+// Callbacks injectés par main.js pour éviter window.xxx
+let _cbCreerPartie   = null;
+let _cbInitStartSolo = null;
+
+export function setJoueursCallbacks({ creerPartie, initStartSolo }) {
+    _cbCreerPartie   = creerPartie   || null;
+    _cbInitStartSolo = initStartSolo || null;
+}
 
 export function remplirListeJoueurs(selectId) {
     const select = $(selectId);
@@ -34,7 +42,6 @@ export function remplirListeJoueurs(selectId) {
     });
 }
 
-
 export function creerNouveauJoueur(inputId, callback) {
     const input = $(inputId);
     if (!input) return;
@@ -54,7 +61,6 @@ export function creerNouveauJoueur(inputId, callback) {
     if (callback) callback(pseudo);
 }
 
-
 export function ajouterJoueurDepuisListe(selectId) {
     const select = $(selectId);
     if (!select) return;
@@ -71,7 +77,6 @@ export function ajouterJoueurDepuisListe(selectId) {
 
     return pseudo;
 }
-
 
 export function afficherJoueursSelectionnes(containerId) {
     const container = $(containerId);
@@ -106,9 +111,7 @@ export function afficherJoueursSelectionnes(containerId) {
             if (partieIdDisponible) {
                 m.mettreAJourLienInvitation();
             } else {
-                if (typeof window._hostCreerPartieQuandPret === 'function') {
-                    window._hostCreerPartieQuandPret();
-                }
+                if (_cbCreerPartie) _cbCreerPartie();
             }
         } else {
             const bloc = document.getElementById('bloc-invitation');
@@ -116,7 +119,6 @@ export function afficherJoueursSelectionnes(containerId) {
         }
     }).catch(() => {});
 }
-
 
 export function initFormSolo() {
     GameState.joueurs               = [];
@@ -166,11 +168,8 @@ export function initFormSolo() {
         });
     }
 
-    if (typeof window.initStartSolo === 'function') {
-        window.initStartSolo();
-    }
+    if (_cbInitStartSolo) _cbInitStartSolo();
 }
-
 
 export function validerFormSolo() {
     if (!GameState.joueurs || GameState.joueurs.length === 0) {
@@ -183,7 +182,6 @@ export function validerFormSolo() {
     return true;
 }
 
-
 function supprimerJoueur(pseudo) {
     if (!confirm(`Supprimer le joueur "${pseudo}" ? Ses scores seront conservés dans l'historique.`)) return false;
 
@@ -191,7 +189,6 @@ function supprimerJoueur(pseudo) {
     localStorage.setItem("players", JSON.stringify(joueurs));
     return true;
 }
-
 
 function renommerJoueur(ancienNom, nouveauNom) {
     if (!nouveauNom || nouveauNom.trim() === "") return false;
@@ -235,7 +232,6 @@ function renommerJoueur(ancienNom, nouveauNom) {
 
     return true;
 }
-
 
 function calculerStatsJoueur(pseudo) {
     const parties = getAllParties();
@@ -290,7 +286,6 @@ function calculerStatsJoueur(pseudo) {
     };
 }
 
-
 const JEUX_META = {
     quiz:       { label: "Quiz",           icon: "❓", color: "#00d4ff" },
     justeprix:  { label: "Le Bon Prix",    icon: "💰", color: "#ffd700" },
@@ -303,7 +298,6 @@ const JEUX_META = {
     morpion:    { label: "Morpion",        icon: "⭕", color: "#84cc16" },
     puissance4: { label: "Puissance 4",    icon: "🔴", color: "#fb923c" }
 };
-
 
 function buildDashboardJoueurHTML(stats, filtre = "tous") {
     const { pseudo, scoreGlobal, rangGlobal, totalJoueurs, totalParties, statsParJeu } = stats;
@@ -401,7 +395,6 @@ function buildDashboardJoueurHTML(stats, filtre = "tous") {
     `;
 }
 
-
 export function afficherGestionJoueurs() {
     let panel = document.getElementById("gestion-joueurs-panel");
     if (!panel) {
@@ -421,7 +414,6 @@ export function afficherGestionJoueurs() {
     const btnRetour = $("btn-retour-permanent");
     if (btnRetour) btnRetour.hidden = false;
 }
-
 
 function renderGestionJoueurs(panel, joueurSelectId = null, filtre = "tous") {
     const joueurs = getPlayers();
