@@ -205,12 +205,14 @@ function initGameButtons() {
             GameState.jeuActuel = game;
             naviguerVers("choix-mode", "choix-jeu");
 
+            // CLAUDE.md §Nom de partie : ne JAMAIS pré-remplir #nom-partie.
+            // L'utilisateur doit saisir le nom manuellement.
             const input = $("nom-partie");
             if (input) {
-                const defaultName = `${game.charAt(0).toUpperCase() + game.slice(1)}${Date.now() % 1000}`;
-                input.value = defaultName;
-                GameState.partieNom = defaultName;
+                input.value = "";
+                setTimeout(() => input.focus(), 50);
             }
+            GameState.partieNom = "";
         };
     });
 }
@@ -460,9 +462,12 @@ function initStartSolo() {
         }
 
         if (HostSession._partieId) {
-            HostSession._partieStarted = true;
+            // Partie déjà créée : on demande juste le démarrage.
+            // Le lancement effectif (lancerJeu + countdown) se fera dans
+            // le listener GAME_STARTED de host_session.js, avec le
+            // tsCountdownEnd serveur — synchro stricte avec les invités.
+            HostSession._pendingGame = GameState.jeu;
             HostSession.notifierDemarrage();
-            lancerJeu(GameState.jeu, { fromServer: true });
         } else {
             nettoyerSession();
             HostSession._pendingGame = GameState.jeu;
@@ -473,8 +478,9 @@ function initStartSolo() {
 }
 
 function lancerJeu(game, options = {}) {
-    const fromLoad = options.fromLoad === true;
-    GameState.jeuActuel = game;
+    const fromLoad       = options.fromLoad === true;
+    const tsCountdownEnd = options.tsCountdownEnd || null;
+    GameState.jeuActuel  = game;
 
     if (game.toLowerCase() === "undercover") return;
 
@@ -511,27 +517,49 @@ function lancerJeu(game, options = {}) {
     _countdown(() => {
         show(key.replace(/\s+/g,""));
         _callGameInit(key);
-    });
+    }, tsCountdownEnd);
 }
 
-function _countdown(callback) {
+// Countdown synchronisé serveur : si tsEnd est fourni, l'affichage est
+// calé sur l'échéance absolue (Date.now() local). Tous les écrans qui
+// utilisent le même tsEnd terminent à la même milliseconde wall-clock,
+// peu importe quand le countdown a démarré localement.
+function _countdown(callback, tsEnd = null) {
+    const FALLBACK_MS = 3000;
+    const target      = tsEnd || (Date.now() + FALLBACK_MS);
+
     const overlay = document.querySelector(".compte-a-rebours-overlay");
     if (!overlay) {
+        const wait = Math.max(0, target - Date.now());
+        setTimeout(callback, wait);
+        return;
+    }
+
+    const countEl = overlay.querySelector(".countdown-number");
+    const compute = () => Math.max(0, Math.ceil((target - Date.now()) / 1000));
+
+    let last = compute();
+    if (last <= 0) {
+        overlay.style.display = "none";
         callback();
         return;
     }
+
     overlay.style.display = "flex";
-    let count = 3;
-    const countEl = overlay.querySelector(".countdown-number");
+    if (countEl) countEl.textContent = String(last);
+
     const interval = setInterval(() => {
-        count--;
-        if (countEl) countEl.textContent = count;
-        if (count === 0) {
+        const remaining = compute();
+        if (remaining !== last) {
+            last = remaining;
+            if (countEl && remaining > 0) countEl.textContent = String(remaining);
+        }
+        if (remaining <= 0) {
             clearInterval(interval);
             overlay.style.display = "none";
             callback();
         }
-    }, 1000);
+    }, 100);
 }
 
 let tooltipActif = null;

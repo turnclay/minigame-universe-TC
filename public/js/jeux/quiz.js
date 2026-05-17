@@ -507,37 +507,18 @@ export async function initialiserQuiz(socket) {
         }
     }
 
-    // Charger questions.json depuis /public/ (fichier statique, toujours disponible)
+    // Source de vérité = serveur (CLAUDE.md §Questions).
+    // Le client ne charge plus questions.json ni ne mélange : il demande
+    // simplement au serveur de tirer et charger la session quiz.
     try {
-        const res = await fetch('/data/questions.json');
-        if (!res.ok) {
-            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        }
-        const raw = await res.text();
-        // Nettoyer les caractères de contrôle invalides avant parsing
-        const propre = raw.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
-        const questions = JSON.parse(propre);
-        if (!Array.isArray(questions) || questions.length === 0) {
-            throw new Error('questions.json vide ou invalide');
-        }
-
-        // Mélanger côté client
-        const ordre = [...Array(questions.length).keys()];
-        for (let i = ordre.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [ordre[i], ordre[j]] = [ordre[j], ordre[i]];
-        }
-        const qMelangees = ordre.map(i => questions[i]);
-
-        // Envoyer au serveur
-        socket.send('HOST_ACTION', { action: 'quiz:load', data: { questions: qMelangees } });
-        console.log('[QUIZ] 📡 ' + qMelangees.length + ' questions envoyées au serveur');
+        socket.send('HOST_ACTION', { action: 'quiz:load', data: {} });
+        console.log('[QUIZ] 📡 quiz:load envoyé — tirage et chargement côté serveur');
 
         if (hoteActif) injecterPanneauInvites();
 
     } catch (err) {
-        console.error('[QUIZ] ❌ questions.json :', err.message);
-        alert('Impossible de charger les questions. Vérifiez la connexion.');
+        console.error('[QUIZ] ❌ Erreur send quiz:load :', err.message);
+        alert('Impossible de démarrer le quiz. Vérifie la connexion.');
     }
 }
 

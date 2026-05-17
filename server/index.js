@@ -196,19 +196,19 @@ app.post('/api/parties/:id/statut', express.json(), (req, res) => {
 });
 
 // ── Route questions.json ─────────────────────────────
-// Sert questions.json depuis le disque (production: /data/, dev: public/)
-// Nettoie les caractères de contrôle avant envoi pour éviter les erreurs JSON.
+// Source canonique : server/data/questions.json.
+// Production Render : /data/questions.json (disque persistant) en fallback.
+// NOTE : depuis P2, le client ne fetche plus cette route pour alimenter le
+// quiz — le tirage est exclusivement côté serveur via server/games/quiz.js.
+// La route est conservée pour usages diagnostiques / outillage.
 app.get('/api/questions', async (req, res) => {
     try {
         const fs   = await import('fs/promises');
         const path = await import('path');
 
-        // Chercher dans plusieurs emplacements possibles
         const candidates = [
-            '/data/questions.json',                                    // Render disk
-            path.default.join(ROOT, 'public', 'questions.json'),      // public/
-            path.default.join(ROOT, 'server', 'questions.json'),      // server/
-            path.default.join(ROOT, 'questions.json'),                // racine
+            path.default.join(ROOT, 'server', 'data', 'questions.json'), // source canonique
+            '/data/questions.json',                                       // Render disk (prod)
         ];
 
         let texte = null;

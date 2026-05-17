@@ -95,10 +95,12 @@ const HostSession = {
 
                 this._afficherLienJoin(joinUrl, snapshot?.codeCourt);
 
-                const gameALancer = this._pendingGame;
-                this._pendingGame = null;
-
-                if (gameALancer) {
+                // Si un jeu est en attente : demander le démarrage au serveur.
+                // Le lancement effectif (lancerJeu + countdown synchronisé)
+                // se fait dans le listener GAME_STARTED ci-dessous, pour que
+                // host et invités basent leur countdown sur le même
+                // tsCountdownEnd émis par le serveur.
+                if (this._pendingGame) {
                     try {
                         socket.send('HOST_START_GAME', { partieId });
                         console.log('[HOST] 📤 HOST_START_GAME —', partieId);
@@ -106,11 +108,33 @@ const HostSession = {
                         console.error('[HOST] ❌ HOST_START_GAME:', err.message);
                     }
                     if (_cbRestaurerBouton) _cbRestaurerBouton();
-                    if (_cbLancerJeu) {
-                        console.log('[HOST] 🎮 Lancement du jeu —', gameALancer);
-                        this._partieStarted = true;
-                        _cbLancerJeu(gameALancer, { fromServer: true });
-                    }
+                }
+            });
+
+            // GAME_STARTED arrive sur tous les clients de la partie (host + invités).
+            // L'hôte y déclenche son lancerJeu avec le tsCountdownEnd serveur
+            // pour garantir une synchro stricte avec les invités.
+            socket.on('GAME_STARTED', ({ snapshot, tsCountdownEnd, countdownMs }) => {
+                console.log('[HOST] 🚀 GAME_STARTED — tsCountdownEnd:', tsCountdownEnd);
+
+                if (snapshot) this._snapshot = snapshot;
+
+                const gameALancer = this._pendingGame || this._snapshot?.jeu || null;
+                this._pendingGame = null;
+
+                if (!gameALancer) {
+                    console.warn('[HOST] ⚠️ GAME_STARTED reçu mais aucun jeu à lancer');
+                    return;
+                }
+
+                if (_cbLancerJeu) {
+                    console.log('[HOST] 🎮 Lancement du jeu —', gameALancer);
+                    this._partieStarted = true;
+                    _cbLancerJeu(gameALancer, {
+                        fromServer     : true,
+                        tsCountdownEnd : tsCountdownEnd || null,
+                        countdownMs    : countdownMs    || null,
+                    });
                 }
             });
 

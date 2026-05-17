@@ -179,8 +179,8 @@ export const Player = {
             this._afficherAttente(snapshot);
         });
 
-        // ── GAME_STARTED → basculer + module immédiat + countdown visuel ─
-        socket.on('GAME_STARTED', ({ snapshot }) => {
+        // ── GAME_STARTED → basculer + module immédiat + countdown synchronisé ─
+        socket.on('GAME_STARTED', ({ snapshot, tsCountdownEnd }) => {
             this.snapshot        = snapshot;
             this._waitingForGame = false;
 
@@ -194,8 +194,9 @@ export const Player = {
             const jeuReel = snapshot?.jeu || session.jeu;
             this._chargerModule(jeuReel, null, snapshot);
 
-            // 3. Overlay countdown par-dessus (ne masque pas #jeu-contenu)
-            this._afficherCountdownOverlay(3, () => {
+            // 3. Overlay countdown synchronisé : basé sur tsCountdownEnd serveur
+            //    pour terminer à la même milliseconde wall-clock chez tous les clients.
+            this._afficherCountdownOverlay(tsCountdownEnd, () => {
                 toast('La partie commence ! 🚀', 'success', 2000);
             });
         });
@@ -520,10 +521,21 @@ export const Player = {
         }
     },
 
-    // ── Countdown OVERLAY (par-dessus le contenu, ne l'efface pas) ────
-    _afficherCountdownOverlay(n, onEnd) {
-        // Supprimer un éventuel countdown précédent
+    // ── Countdown OVERLAY synchronisé serveur ──────────────────────
+    // Argument : tsEnd = échéance absolue (Date.now() local) envoyée par
+    // le serveur dans GAME_STARTED.tsCountdownEnd. Si tsEnd est absent
+    // (compat ancien serveur), fallback sur 3 s à partir de maintenant.
+    // L'affichage recalcule la valeur à chaque tick depuis le timestamp
+    // → fin strictement simultanée sur host + tous les invités.
+    _afficherCountdownOverlay(tsEnd, onEnd) {
         document.getElementById('pl-cd-overlay')?.remove();
+
+        const FALLBACK_MS = 3000;
+        const target      = tsEnd || (Date.now() + FALLBACK_MS);
+        const compute     = () => Math.max(0, Math.ceil((target - Date.now()) / 1000));
+
+        let cur = compute();
+        if (cur <= 0) { if (onEnd) onEnd(); return; }
 
         if (!document.getElementById('style-pl-cd')) {
             const s = document.createElement('style'); s.id = 'style-pl-cd';
@@ -553,27 +565,30 @@ export const Player = {
         }
 
         const ov  = document.createElement('div'); ov.id = 'pl-cd-overlay';
-        const nEl = document.createElement('div'); nEl.className = 'pl-cd-n'; nEl.textContent = String(n);
+        const nEl = document.createElement('div'); nEl.className = 'pl-cd-n'; nEl.textContent = String(cur);
         const lEl = document.createElement('div'); lEl.className = 'pl-cd-l'; lEl.textContent = 'La partie commence…';
         ov.append(nEl, lEl);
         document.body.appendChild(ov);
 
-        let cur = n;
         const iv = setInterval(() => {
-            cur--;
-            if (cur > 0) {
-                nEl.style.animation = 'none';
-                nEl.textContent = String(cur);
-                requestAnimationFrame(() => {
-                    nEl.style.animation = 'plCdPop .4s cubic-bezier(.4,0,.2,1)';
-                });
-            } else {
+            const remaining = compute();
+            if (remaining !== cur) {
+                cur = remaining;
+                if (remaining > 0) {
+                    nEl.style.animation = 'none';
+                    nEl.textContent = String(remaining);
+                    requestAnimationFrame(() => {
+                        nEl.style.animation = 'plCdPop .4s cubic-bezier(.4,0,.2,1)';
+                    });
+                }
+            }
+            if (remaining <= 0) {
                 clearInterval(iv);
                 ov.style.opacity = '0';
                 ov.style.transition = 'opacity .3s';
                 setTimeout(() => { ov.remove(); if (onEnd) onEnd(); }, 300);
             }
-        }, 1000);
+        }, 100);
     },
 
     // ── Countdown dans #jeu-contenu (conservé pour compat, non utilisé par GAME_STARTED) ─

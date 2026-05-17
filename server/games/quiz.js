@@ -12,8 +12,61 @@
 // ======================================================
 
 import store from '../store.js';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(__filename);
 
 const sessions = new Map();
+
+// ─────────────────────────────────────────────────────
+// CHARGEMENT QUESTIONS — source canonique : server/data/questions.json
+// Production Render : /data/questions.json (disque persistant) en fallback.
+// Le tirage aléatoire est effectué EXCLUSIVEMENT côté serveur (CLAUDE.md
+// §Questions : tirage aléatoire, ordre partagé, progression identique).
+// ─────────────────────────────────────────────────────
+
+const QUESTIONS_PATH = path.join(__dirname, '..', 'data', 'questions.json');
+const QUESTIONS_FALLBACK_PROD = '/data/questions.json';
+
+let _questionsCache = null;
+
+async function _chargerQuestionsDisque() {
+    if (_questionsCache) return _questionsCache;
+
+    const candidates = [QUESTIONS_PATH];
+    if (process.env.NODE_ENV === 'production') candidates.unshift(QUESTIONS_FALLBACK_PROD);
+
+    for (const p of candidates) {
+        try {
+            const raw = await fs.readFile(p, 'utf-8');
+            // Nettoyer les caractères de contrôle invalides (cohérent avec /api/questions)
+            const propre = raw.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+            const data   = JSON.parse(propre);
+            if (!Array.isArray(data) || !data.length) continue;
+            _questionsCache = data;
+            console.log(`[QUIZ] 📚 ${data.length} question(s) chargée(s) depuis ${p}`);
+            return data;
+        } catch (err) {
+            if (err.code !== 'ENOENT') {
+                console.warn(`[QUIZ] ⚠️ Lecture ${p} échouée :`, err.message);
+            }
+        }
+    }
+    return null;
+}
+
+// Fisher-Yates — tirage déterministe pour CETTE session, partagé par tous.
+function _melanger(arr) {
+    const out = arr.slice();
+    for (let i = out.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [out[i], out[j]] = [out[j], out[i]];
+    }
+    return out;
+}
 
 function getSession(partieId)  { return sessions.get(partieId) || null; }
 
@@ -79,35 +132,57 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
 
     switch (cmd) {
 
+        // quiz:load — tirage et chargement EXCLUSIVEMENT côté serveur.
+        // Le client n'envoie PLUS de questions (CLAUDE.md §Questions).
+        // Si data.questions est présent (legacy), il est ignoré + warn.
         case 'load': {
-            let s = getSession(partieId);
-            if (s && (s.phase === 'ended' || s.questions.length === 0)) {
-                _annulerTimers(s);
-                sessions.delete(partieId);
-                s = null;
+            if (Array.isArray(data?.questions) && data.questions.length) {
+                console.warn(`[QUIZ] ⚠️ quiz:load reçoit data.questions du client — ignoré (tirage serveur uniquement)`);
             }
-            if (!s) s = creerSession(partieId);
 
-            const questions = Array.isArray(data.questions) ? data.questions : [];
-            if (!questions.length) return send(ws, 'ERROR', { code: 'QUIZ_BAD_STATE', message: 'Aucune question.' });
-
-            s.questions = questions;
-            s.posees    = 0;
-            s.phase     = 'idle';
-
-            broadcastToGame(wss, partieId, 'QUIZ_READY', {
-                total  : questions.length,
-                message: `${questions.length} question${questions.length > 1 ? 's' : ''} chargée${questions.length > 1 ? 's' : ''} !`,
-            });
-
-            s._autoStartPending = true;
-            setTimeout(() => {
-                const sNow = getSession(partieId);
-                if (sNow && sNow.phase === 'idle' && sNow.questions.length > 0 && sNow._autoStartPending) {
-                    sNow._autoStartPending = false;
-                    handleHostAction(wss, ws, partieId, 'quiz:next_question', {}, helpers);
+            _chargerQuestionsDisque().then(banque => {
+                if (!banque || !banque.length) {
+                    return send(ws, 'ERROR', {
+                        code   : 'QUIZ_BAD_STATE',
+                        message: 'Banque de questions introuvable côté serveur.',
+                    });
                 }
-            }, 1000);
+
+                let s = getSession(partieId);
+                if (s && (s.phase === 'ended' || s.questions.length === 0)) {
+                    _annulerTimers(s);
+                    sessions.delete(partieId);
+                    s = null;
+                }
+                if (!s) s = creerSession(partieId);
+
+                // Tirage Fisher-Yates côté serveur — ordre partagé par tous.
+                const tirage = _melanger(banque);
+
+                s.questions = tirage;
+                s.posees    = 0;
+                s.phase     = 'idle';
+
+                broadcastToGame(wss, partieId, 'QUIZ_READY', {
+                    total  : tirage.length,
+                    message: `${tirage.length} question${tirage.length > 1 ? 's' : ''} chargée${tirage.length > 1 ? 's' : ''} !`,
+                });
+
+                s._autoStartPending = true;
+                setTimeout(() => {
+                    const sNow = getSession(partieId);
+                    if (sNow && sNow.phase === 'idle' && sNow.questions.length > 0 && sNow._autoStartPending) {
+                        sNow._autoStartPending = false;
+                        handleHostAction(wss, ws, partieId, 'quiz:next_question', {}, helpers);
+                    }
+                }, 1000);
+            }).catch(err => {
+                console.error('[QUIZ] ❌ quiz:load échec chargement disque :', err);
+                send(ws, 'ERROR', {
+                    code   : 'QUIZ_BAD_STATE',
+                    message: 'Erreur serveur lors du chargement des questions.',
+                });
+            });
             break;
         }
 

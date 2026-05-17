@@ -252,11 +252,20 @@ function handleMessage(wss, ws, type, payload) {
             });
 
             store.setStatut(partie.id, 'en_cours');
+
+            // Countdown 3s synchronisé : on émet une échéance absolue serveur.
+            // Tous les clients (host + invités) basent leur affichage sur ce
+            // timestamp → fin du compte à rebours strictement simultanée.
+            const COUNTDOWN_MS   = 3000;
+            const tsCountdownEnd = Date.now() + COUNTDOWN_MS;
+
             broadcastToGame(wss, partie.id, 'GAME_STARTED', {
-                snapshot : store.snapshotPartie(partie.id),
-                joinUrl  : buildJoinUrl(partie),
+                snapshot       : store.snapshotPartie(partie.id),
+                joinUrl        : buildJoinUrl(partie),
+                tsCountdownEnd,
+                countdownMs    : COUNTDOWN_MS,
             });
-            console.log(`[WS] ✅ GAME_STARTED "${partie.nom}"`);
+            console.log(`[WS] ✅ GAME_STARTED "${partie.nom}" (tsCountdownEnd=${tsCountdownEnd})`);
             break;
         }
 

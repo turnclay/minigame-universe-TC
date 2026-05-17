@@ -4,7 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="73d891ed-7cb8-4a2e-b43e-d24a9aad95e0" name="Changes" comment="" />
+    <list default="true" id="73d891ed-7cb8-4a2e-b43e-d24a9aad95e0" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DIAGNOSTIC_LOADER_BLOQUE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/RESOLUTION_FINAL.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/RESUMÉ_SOLUTION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/core/host_session.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/core/host_session.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/main.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/modules/player.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/player.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/render.yaml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/games/quiz.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/games/quiz.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/ws-handler.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/ws-handler.js" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -13,15 +24,16 @@
   <component name="CopilotChats">
     <option name="panelChat">
       <chat>
-        <option name="activeSessionId" value="6ce5b2eb-ea6d-46c7-839d-b68144801f9e" />
+        <option name="activeSessionId" value="7bfa3efa-fa83-4ba4-a3f9-7be89ae76331" />
         <option name="sessions">
           <session>
             <option name="chatType" value="PANEL" />
             <option name="id" value="87f5db9c-8b92-4481-896e-0a7a2a984fb6" />
             <option name="modeId" value="Agent" />
-            <option name="modelType" value="builtin_family" />
-            <option name="modelValue" value="claude-haiku-4.5" />
-            <option name="status" value="Completed" />
+            <option name="modelProviderName" value="Anthropic" />
+            <option name="modelType" value="byok_family" />
+            <option name="modelValue" value="claude-sonnet-4-6" />
+            <option name="status" value="Stopped" />
             <option name="targetType" value="LOCAL" />
           </session>
           <session>
@@ -64,6 +76,24 @@
             <option name="modelValue" value="auto" />
             <option name="targetType" value="LOCAL" />
           </session>
+          <session>
+            <option name="chatType" value="PANEL" />
+            <option name="id" value="a8cdf439-3d82-4753-bfba-ed1c564b7a21" />
+            <option name="modeId" value="Ask" />
+            <option name="modelType" value="builtin_family" />
+            <option name="modelValue" value="auto" />
+            <option name="targetType" value="LOCAL" />
+          </session>
+          <session>
+            <option name="chatType" value="PANEL" />
+            <option name="id" value="7bfa3efa-fa83-4ba4-a3f9-7be89ae76331" />
+            <option name="modeId" value="Agent" />
+            <option name="modelProviderName" value="Anthropic" />
+            <option name="modelType" value="byok_family" />
+            <option name="modelValue" value="claude-sonnet-4-6" />
+            <option name="status" value="Stopped" />
+            <option name="targetType" value="LOCAL" />
+          </session>
         </option>
         <option name="type" value="PANEL" />
       </chat>
@@ -76,8 +106,8 @@
   </component>
   <component name="CopilotUserSelectedModel">
     <selectedModels>
-      <entry key="agent-panel" value="Auto" />
-      <entry key="chat-panel" value="Auto" />
+      <entry key="agent-panel" value="Claude Sonnet 4.6#(Anthropic)" />
+      <entry key="chat-panel" value="Claude Sonnet 4.6#(Anthropic)" />
     </selectedModels>
   </component>
   <component name="FileTemplateManagerImpl">
@@ -111,11 +141,12 @@
   <component name="ProjectSessionTemplates">
     <option name="panelTemplate">
       <template>
-        <option name="modeId" value="Ask" />
+        <option name="modeId" value="Agent" />
         <option name="model">
           <model>
-            <option name="modelType" value="builtin_family" />
-            <option name="modelValue" value="auto" />
+            <option name="modelProviderName" value="Anthropic" />
+            <option name="modelType" value="byok_family" />
+            <option name="modelValue" value="claude-sonnet-4-6" />
           </model>
         </option>
         <option name="targetType" value="LOCAL" />
