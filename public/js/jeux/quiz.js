@@ -554,3 +554,6 @@ export function validerAvecPoints(correct, points) {
         }
     } catch (err) {}
 }
+
+// ── Exposition globale pour main.js (GAME_INIT_FNS via window) ──
+window.initialiserQuiz = initialiserQuiz;

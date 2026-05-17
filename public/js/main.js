@@ -328,8 +328,8 @@ function initModeCards() {
 
 // Registry des initialiseurs de jeux (sans window)
 const GAME_INIT_FNS = {
-    quiz       : (sock) => { if (typeof window.initialiserQuiz === 'function') window.initialiserQuiz(sock); },
-    quizz      : (sock) => { if (typeof window.initialiserQuiz === 'function') window.initialiserQuiz(sock); },
+    quiz       : (sock) => { if (typeof window.initialiserQuiz === 'function') return window.initialiserQuiz(sock); },
+    quizz      : (sock) => { if (typeof window.initialiserQuiz === 'function') return window.initialiserQuiz(sock); },
     pendu      : ()     => { if (typeof window.initialiserPendu === 'function') window.initialiserPendu(); },
     memoire    : ()     => { if (typeof window.initialiserMemoire === 'function') window.initialiserMemoire(); },
     puissance4 : ()     => { if (typeof window.initialiserPuissance4 === 'function') window.initialiserPuissance4(); },
@@ -346,7 +346,14 @@ function _callGameInit(key) {
     const fn = GAME_INIT_FNS[key];
     if (!fn) return;
     if (key === 'quiz' || key === 'quizz') {
-        fn(socket).catch(err => console.error('[MAIN] ❌ initialiserQuiz:', err));
+        try {
+            const result = fn(socket);
+            if (result && typeof result.catch === 'function') {
+                result.catch(err => console.error('[MAIN] ❌ initialiserQuiz:', err));
+            }
+        } catch(err) {
+            console.error('[MAIN] ❌ initialiserQuiz (sync):', err);
+        }
     } else {
         try { fn(); } catch(err) { console.error('[MAIN] ❌ init', key, err); }
     }

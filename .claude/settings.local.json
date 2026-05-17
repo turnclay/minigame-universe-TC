@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --check server/index.js)",
+      "Bash(node --check server/ws-handler.js)",
+      "Bash(node --check server/games/quiz.js)",
+      "Bash(node --check public/js/main.js)",
+      "Bash(node --check public/js/core/host_session.js)"
+    ]
+  }
+}
