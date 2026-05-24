@@ -5,7 +5,12 @@
       "Bash(node --check server/ws-handler.js)",
       "Bash(node --check server/games/quiz.js)",
       "Bash(node --check public/js/main.js)",
-      "Bash(node --check public/js/core/host_session.js)"
+      "Bash(node --check public/js/core/host_session.js)",
+      "Bash(timeout 5 node server/index.js)",
+      "Bash(node --check public/js/core/partie_id.js)",
+      "Bash(node --check public/js/modules/invite.js)",
+      "Bash(node --check public/js/modules/quiz_hote.js)",
+      "Bash(timeout 4 node server/index.js)"
     ]
   }
 }

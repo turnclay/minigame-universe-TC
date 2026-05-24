@@ -27,6 +27,7 @@
 import { GameState } from '../core/state.js';
 import { socket } from '../core/socket.js';
 import HostSession from '../core/host_session.js';
+import { getPartieId } from '../core/partie_id.js';
 import { afficherScoreboard } from './scoreboard.js';
 
 let _validationEnCours   = false;
@@ -51,10 +52,7 @@ function _ws()   { return socket; }
 function _wsOk() { const s = _ws(); return !!(s && s.connected); }
 
 function _pid() {
-    return localStorage.getItem('minigame_partie_id')
-        || localStorage.getItem('minigame_partie_session_id')
-        || localStorage.getItem('ws_partie_id')
-        || '';
+    return getPartieId() || '';
 }
 function _cleScores() { const p = _pid(); return p ? `partie_scores_${p}` : null; }
 function _cleEtat()   { const p = _pid(); return p ? `partie_etat_${p}` : null; }

@@ -4,6 +4,7 @@ import HostSession from './core/host_session.js';
 
 import { $, $$, show, hide } from "./core/dom.js";
 import { GameState } from "./core/state.js";
+import { getPartieId } from "./core/partie_id.js";
 import {
     getAllParties, loadGame
 } from "./core/storage.js";
@@ -473,7 +474,10 @@ function initStartSolo() {
             // Le lancement effectif (lancerJeu + countdown) se fera dans
             // le listener GAME_STARTED de host_session.js, avec le
             // tsCountdownEnd serveur — synchro stricte avec les invités.
+            // On verrouille le bouton dans l'intervalle pour empêcher un
+            // double-clic qui enverrait un second HOST_START_GAME.
             HostSession._pendingGame = GameState.jeu;
+            _afficherEtatCreation();
             HostSession.notifierDemarrage();
         } else {
             nettoyerSession();
@@ -498,7 +502,7 @@ function lancerJeu(game, options = {}) {
         }
     }
 
-    const pid = localStorage.getItem('minigame_partie_id') || '';
+    const pid = getPartieId() || '';
     hideAll(["home","choix-mode","form-solo","form-equipes","choix-jeu","liste-parties"]);
     masquerUndercoverComplet();
     masquerModules();

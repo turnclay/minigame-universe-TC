@@ -1,18 +1,15 @@
-// /js/modules/invite.js — v2.3 (FIXED — bloc-invitation apparaît correctement)
+// /js/modules/invite.js — v3.0 (P4 — délégué à core/partie_id.js)
 
 import { GameState } from '../core/state.js';
+import { getPartieId, setPartieId, clearPartieId } from '../core/partie_id.js';
 
-const PARTIE_ID_KEY = 'minigame_partie_session_id';
-
-let _partieSessionId = null;
+// Les 3 fonctions ci-dessous restent exportées pour compat avec leurs
+// appelants (parties.js, host_session.js, etc.). Elles délèguent toutes
+// au helper unique core/partie_id.js — plus aucun accès localStorage
+// direct ici, plus aucun cache en mémoire (la canonique fait foi).
 
 export function getPartieSessionId() {
-    if (_partieSessionId) return _partieSessionId;
-    const stored = localStorage.getItem(PARTIE_ID_KEY)
-                || localStorage.getItem('ws_partie_id')
-                || localStorage.getItem('minigame_partie_id');
-    if (stored) { _partieSessionId = stored; return stored; }
-    return null;
+    return getPartieId();
 }
 
 export function setPartieSessionId(id) {
@@ -20,14 +17,12 @@ export function setPartieSessionId(id) {
         console.warn('[INVITE] ⚠️ setPartieSessionId appelé avec ID null');
         return;
     }
-    _partieSessionId = id;
-    localStorage.setItem(PARTIE_ID_KEY, id);
+    setPartieId(id);
     console.log('[INVITE] ✅ partieId serveur enregistré :', id);
 }
 
 export function resetPartieSessionId() {
-    _partieSessionId = null;
-    localStorage.removeItem(PARTIE_ID_KEY);
+    clearPartieId();
     _viderBlocStatique();
     console.log('[INVITE] 🧹 partieSessionId réinitialisé');
 }

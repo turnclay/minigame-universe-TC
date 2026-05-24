@@ -2,6 +2,7 @@
 
 import { GameState } from './state.js';
 import { socket } from './socket.js';
+import { getPartieId, setPartieId, clearPartieId } from './partie_id.js';
 
 // Callbacks injectés par main.js pour éviter les dépendances circulaires
 let _cbRestaurerBouton = null;
@@ -54,7 +55,7 @@ const HostSession = {
                 // Masquer le loader une fois authentifié
                 if (_cbMasquerLoader) _cbMasquerLoader(false);
 
-                const savedId = localStorage.getItem('minigame_partie_id');
+                const savedId = getPartieId();
                 if (savedId) {
                     console.log('[HOST] 🔄 HOST_REJOIN —', savedId);
                     socket.send('HOST_REJOIN', { partieId: savedId });
@@ -69,10 +70,11 @@ const HostSession = {
                 this._snapshot        = snapshot;
                 this._creationEnCours = false;
 
-                localStorage.setItem('minigame_partie_id', partieId);
+                // setPartieId alimente la canonique + les miroirs legacy
+                // → plus besoin d'appeler m.setPartieSessionId().
+                setPartieId(partieId);
 
                 import('../modules/invite.js').then(m => {
-                    m.setPartieSessionId(partieId);
                     m.afficherBlocInvitation();
                 }).catch(err => console.warn('[HOST] ⚠️ Erreur import invite.js:', err.message));
 
@@ -86,10 +88,11 @@ const HostSession = {
                 this._snapshot        = snapshot;
                 this._creationEnCours = false;
 
-                localStorage.setItem('minigame_partie_id', partieId);
+                // setPartieId alimente la canonique + les miroirs legacy
+                // → plus besoin d'appeler m.setPartieSessionId().
+                setPartieId(partieId);
 
                 import('../modules/invite.js').then(m => {
-                    m.setPartieSessionId(partieId);
                     m.afficherBlocInvitation();
                 }).catch(err => console.warn('[HOST] ⚠️ Erreur invite.js:', err.message));
 
@@ -100,14 +103,25 @@ const HostSession = {
                 // se fait dans le listener GAME_STARTED ci-dessous, pour que
                 // host et invités basent leur countdown sur le même
                 // tsCountdownEnd émis par le serveur.
+                //
+                // NOTE : on NE restaure PAS le bouton "Commencer" ici.
+                // Il doit rester en "⏳ Création en cours…" jusqu'à
+                // GAME_STARTED (qui masque #form-solo via lancerJeu).
+                // Sinon, fenêtre de double-clic ~RTT entre GAME_CREATED
+                // et GAME_STARTED → deuxième HOST_START_GAME → lancerJeu
+                // appelé deux fois. Les handlers d'erreur (NAME_TAKEN,
+                // INTERNAL_ERROR, GAME_NOT_FOUND) restaurent le bouton
+                // en cas d'échec — pas de bouton bloqué.
                 if (this._pendingGame) {
                     try {
                         socket.send('HOST_START_GAME', { partieId });
                         console.log('[HOST] 📤 HOST_START_GAME —', partieId);
                     } catch (err) {
                         console.error('[HOST] ❌ HOST_START_GAME:', err.message);
+                        // Erreur d'envoi → restaurer le bouton pour permettre une nouvelle tentative
+                        this._pendingGame = null;
+                        if (_cbRestaurerBouton) _cbRestaurerBouton();
                     }
-                    if (_cbRestaurerBouton) _cbRestaurerBouton();
                 }
             });
 
@@ -119,11 +133,23 @@ const HostSession = {
 
                 if (snapshot) this._snapshot = snapshot;
 
-                const gameALancer = this._pendingGame || this._snapshot?.jeu || null;
+                // Idempotence : GAME_STARTED peut être rebroadcast par le
+                // serveur (double HOST_START_GAME, reconnexion exotique…).
+                // On ne lance le jeu qu'une seule fois par cycle de partie.
+                // Le flag est remis à false dans reset() (nouvelle partie).
+                if (this._partieStarted) {
+                    console.log('[HOST] ↩️ GAME_STARTED ignoré — jeu déjà lancé');
+                    return;
+                }
+
+                // _pendingGame doit avoir été posé par initStartSolo avant
+                // l'envoi de HOST_START_GAME. Pas de fallback silencieux :
+                // si _pendingGame est null, c'est une anomalie à investiguer.
+                const gameALancer = this._pendingGame;
                 this._pendingGame = null;
 
                 if (!gameALancer) {
-                    console.warn('[HOST] ⚠️ GAME_STARTED reçu mais aucun jeu à lancer');
+                    console.warn('[HOST] ⚠️ GAME_STARTED reçu sans _pendingGame — ignoré');
                     return;
                 }
 
@@ -166,9 +192,9 @@ const HostSession = {
                 this._pendingStart    = false;
                 this._pendingGame     = null;
                 this._creationEnCours = false;
+                this._partieStarted   = false;  // libère le verrou d'idempotence GAME_STARTED
 
-                localStorage.removeItem('minigame_partie_id');
-                localStorage.removeItem('minigame_partie_session_id');
+                clearPartieId();
 
                 import('./cleanup.js').then(m => {
                     if (typeof m.resetEtatQuizHote === 'function') m.resetEtatQuizHote();
@@ -185,8 +211,7 @@ const HostSession = {
 
                 if (code === 'GAME_NOT_FOUND') {
                     console.log('[HOST] 🧹 ID périmé supprimé — prêt pour une nouvelle partie');
-                    localStorage.removeItem('minigame_partie_id');
-                    localStorage.removeItem('minigame_partie_session_id');
+                    clearPartieId();
                     this._partieId    = null;
                     this._snapshot    = null;
                     this._pendingGame = null;
