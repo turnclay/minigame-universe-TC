@@ -19,6 +19,7 @@ import { Player }           from './modules/player.js';
 // Chaque jeu WS doit être listé ici pour que JeuRegistry.get(jeu) le trouve.
 import                           './modules/petitbac_player.js';
 import                           './modules/pendu_player.js';
+import                           './modules/lml_player.js';
 
 // ── DOM utils ──────────────────────────────────────────────────
 const $      = id => document.getElementById(id);

@@ -5,15 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="73d891ed-7cb8-4a2e-b43e-d24a9aad95e0" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/data/pendu.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/jeu.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/jeu.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/jeux/pendu.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/jeux/pendu.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/jeux/petitbac.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/jeux/petitbac.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/modules/pendu_hote.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/pendu_hote.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/modules/petitbac_hote.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/petitbac_hote.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/ws-handler.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/ws-handler.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

@@ -19,7 +19,12 @@
       "Bash(node --check server/games/pendu.js)",
       "Bash(node --check public/js/jeux/pendu.js)",
       "Bash(node --check public/js/modules/pendu_hote.js)",
-      "Bash(node --check public/js/modules/pendu_player.js)"
+      "Bash(node --check public/js/modules/pendu_player.js)",
+      "Bash(node --check server/games/lml.js)",
+      "Bash(node --check public/js/jeux/lml.js)",
+      "Bash(node --check public/js/modules/lml_hote.js)",
+      "Bash(node --check public/js/modules/lml_player.js)",
+      "Bash(timeout 6 node server/index.js)"
     ]
   }
 }
