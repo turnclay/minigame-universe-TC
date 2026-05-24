@@ -1,159 +1,125 @@
-/**
- * ============================================
- * 📝 PETITBAC.JS — Jeu du Petit Bac (Hôte)
- * ============================================
- * Intègre la synchronisation multi-joueur via petitbac_hote.js.
- * Architecture identique aux autres jeux (quiz, justeprix…).
- */
+// ============================================================
+// /js/jeux/petitbac.js — v2.0 WS-server-driven (P5.1)
+// ============================================================
+// Toute la logique métier (tirage de lettre, timer, scoring,
+// révélation) est désormais SERVEUR. Ce module ne gère plus que
+// l'affichage hôte et l'envoi/réception des actions WS.
+// ============================================================
 
-import { GameState } from "../core/state.js";
-import { modifierScore } from "../modules/scoreboard.js";
+import { GameState } from '../core/state.js';
+import { socket } from '../core/socket.js';
+import { afficherScoreboard } from '../modules/scoreboard.js';
 
-// ── Variables globales ───────────────────────────────────────
-let timerInterval  = null;
-let tempsRestant   = 120;
-let lettreActuelle = "";
-let reponses       = {};
-
-const CATEGORIES = [
-    { id: "prenom",     label: "Prénom",           icon: "👤" },
-    { id: "ville",      label: "Ville",             icon: "🏙️" },
-    { id: "pays",       label: "Pays",              icon: "🌍" },
-    { id: "animal",     label: "Animal",            icon: "🐾" },
-    { id: "fruit",      label: "Fruit / Légume",    icon: "🍎" },
-    { id: "metier",     label: "Métier",            icon: "💼" },
-    { id: "objet",      label: "Objet",             icon: "📦" },
-    { id: "marque",     label: "Marque",            icon: "🏷️" },
-    { id: "personnage", label: "Personnage fictif", icon: "🧚" },
-    { id: "celebrite",  label: "Célébrité",         icon: "🌟" }
-];
-
-const LETTRES = "ABCDEFGHIJKLMNOPRSTUVW".split("");
+// ── État local (affichage uniquement) ──────────────────────────
+let _lettreActuelle = '';
+let _categories     = [];
+let _timerLocal     = null;
+let _tsDebut        = 0;
+let _dureeMs        = 120_000;
+let _reponseSoumise = false;
 
 // ── Stubs module hôte ────────────────────────────────────────
-let _publierEtat                    = () => {};
-let _publierManche                  = () => {};
-let _publierPhase                   = () => {};
-let _publierScores                  = () => {};
-let _afficherReponsesInvitesSurHote = () => {};
-let _viderReponses                  = () => {};
-let _envoyerReponsesHote            = () => {};
-let _declencherRevelation           = () => {};
+let _viderPanneau                   = () => {};
 let _injecterPanneauHote            = () => {};
+let _afficherReponsesInvitesSurHote = () => {};
 let _hoteActif                      = false;
 
-// ── Chargement dynamique module hôte ────────────────────────
 async function chargerModuleHote() {
     try {
         const m = await import('../modules/petitbac_hote.js');
-        _publierEtat                    = m.publierEtat;
-        _publierManche                  = m.publierManche;
-        _publierPhase                   = m.publierPhase;
-        _publierScores                  = m.publierScores;
-        _afficherReponsesInvitesSurHote = m.afficherReponsesInvitesSurHote;
-        _viderReponses                  = m.viderReponses;
-        _envoyerReponsesHote            = m.envoyerReponsesHote;
-        _declencherRevelation           = m.declencherRevelation;
-        _injecterPanneauHote            = m.injecterPanneauHote;
+        _viderPanneau                   = m.viderPanneau                  || (() => {});
+        _injecterPanneauHote            = m.injecterPanneauHote           || (() => {});
+        _afficherReponsesInvitesSurHote = m.afficherReponsesInvitesSurHote || (() => {});
         _hoteActif = true;
         console.log('[PETITBAC] ✅ Module hôte chargé');
         return true;
     } catch (e) {
-        console.warn('[PETITBAC] ⚠️ petitbac_hote.js introuvable — mode solo', e.message);
+        console.warn('[PETITBAC] ⚠️ petitbac_hote.js indisponible :', e.message);
         return false;
     }
 }
 
-// ── Publication anticipée (appelée depuis main.js AVANT le countdown) ──────
-// Permet aux invités de recevoir la lettre dès que l'hôte clique Commencer,
-// sans attendre la fin du countdown hôte (3s).
-async function _prepublierPetitBac() {
-    if (!_hoteActif) await chargerModuleHote();
-    if (!_hoteActif) return;
-    if (!lettreActuelle) {
-        lettreActuelle = "ABCDEFGHIJKLMNOPRSTUVW"[Math.floor(Math.random() * 22)];
-        console.log('[PETITBAC] 📡 Pré-publication lettre:', lettreActuelle);
+// ── Handlers events serveur ─────────────────────────────────
+
+function _onMancheStart(payload) {
+    _arreterTimerVisuel();
+    _lettreActuelle = payload.lettre || '';
+    _categories     = Array.isArray(payload.categories) ? payload.categories : [];
+    _tsDebut        = payload.tsDebut || Date.now();
+    _dureeMs        = payload.dureeMs || 120_000;
+    _reponseSoumise = false;
+
+    // Mettre à jour les scores depuis le serveur
+    if (payload.scores) {
+        GameState.scores = GameState.scores || {};
+        Object.assign(GameState.scores, payload.scores);
     }
-    _publierEtat('en_cours');
-    _publierScores();
-    _publierManche({ lettre: lettreActuelle, categories: CATEGORIES });
+
+    const elL = document.getElementById('petitbac-lettre-actuelle');
+    if (elL) {
+        elL.textContent = _lettreActuelle;
+        elL.style.animation = 'none';
+        setTimeout(() => { elL.style.animation = 'bounceIn 0.6s ease-out'; }, 10);
+    }
+    _afficherCategories();
+    _demarrerTimerVisuel();
+    _reactiverBoutonValidation();
+
+    try { _viderPanneau(); } catch {}
+
+    console.log(`[PETITBAC] 🎲 Manche ${payload.manche} — lettre: ${_lettreActuelle}`);
 }
 
-// ── Initialisation ───────────────────────────────────────────
-async function initialiserPetitBac() {
-    console.log("[PETITBAC] Initialisation du jeu");
-    await chargerModuleHote();
+function _onRevelation(payload) {
+    _arreterTimerVisuel();
+    const { lettre, reponses, scores, manche } = payload;
 
-    resetJeu();
-    // Réutiliser la lettre pré-publiée si déjà tirée, sinon en tirer une nouvelle
-    if (!lettreActuelle) tirerLettre();
-    else {
-        const el = document.getElementById("petitbac-lettre-actuelle");
-        if (el) {
-            el.textContent = lettreActuelle;
-            el.style.animation = "none";
-            setTimeout(() => { el.style.animation = "bounceIn 0.6s ease-out"; }, 10);
-        }
+    if (scores) {
+        GameState.scores = GameState.scores || {};
+        Object.assign(GameState.scores, scores);
     }
-    afficherCategories();
-    demarrerTimer();
-    configurerBoutonValidation();
+    try { afficherScoreboard(); } catch {}
 
-    if (_hoteActif) {
-        _publierEtat('en_cours');
-        _publierScores();
-        _publierManche({ lettre: lettreActuelle, categories: CATEGORIES });
-        _injecterPanneauHote();
+    // Activer le bouton "Nouvelle manche" (reuse petitbac-valider)
+    const btn = document.getElementById('petitbac-valider');
+    if (btn) {
+        btn.disabled    = false;
+        btn.textContent = '🔄 Nouvelle manche';
+        btn.className   = 'btn-primary btn-rejouer';
+        btn.onclick = () => {
+            try { socket.send('HOST_ACTION', { action: 'petitbac:next_manche', data: {} }); }
+            catch (err) { console.error('[PETITBAC] send next_manche:', err.message); }
+        };
+    }
 
-        // Re-pub pour invités en retard
-        const pid = localStorage.getItem('minigame_partie_session_id');
-        let _dernierTs = 0;
-        setInterval(() => {
-            try {
-                const raw = localStorage.getItem(`partie_demande_etat_${pid}`);
-                if (!raw) return;
-                const data = JSON.parse(raw);
-                if (data.ts <= _dernierTs) return;
-                _dernierTs = data.ts;
-                _publierEtat('en_cours');
-                _publierScores();
-                _publierManche({ lettre: lettreActuelle, categories: CATEGORIES });
-            } catch {}
-        }, 800);
+    // Panneau résultats (rempli par petitbac_hote.js via event)
+    try { _afficherReponsesInvitesSurHote('pb-invites-reponses', reponses); } catch {}
+
+    console.log(`[PETITBAC] 🎯 Révélation manche ${manche} — lettre: ${lettre}`);
+}
+
+function _onTimerExpired({ nbReponses, nbJoueurs }) {
+    console.log(`[PETITBAC] ⏱ Timer expiré — ${nbReponses}/${nbJoueurs}`);
+    // L'hôte peut maintenant cliquer "Révéler" même si tout le monde n'a pas soumis.
+    const btn = document.getElementById('pb-btn-resultats');
+    if (btn) {
+        btn.disabled       = false;
+        btn.style.opacity  = '1';
+        btn.style.cursor   = 'pointer';
+        btn.title          = '⏱ Temps écoulé — Cliquez pour révéler';
+        btn.style.animation = 'btnPulse .6s ease infinite alternate';
     }
 }
 
+// ── Affichage local ─────────────────────────────────────────
 
-// ── Reset ─────────────────────────────────────────────────────
-function resetJeu() {
-    tempsRestant  = 120;
-    lettreActuelle = "";
-    reponses       = {};
-    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-    const t = document.getElementById("petitbac-timer");
-    if (t) { t.textContent = "02:00"; t.classList.remove("clignote"); }
-}
-
-// ── Tirer une lettre ─────────────────────────────────────────
-function tirerLettre() {
-    lettreActuelle = LETTRES[Math.floor(Math.random() * LETTRES.length)];
-    const el = document.getElementById("petitbac-lettre-actuelle");
-    if (el) {
-        el.textContent = lettreActuelle;
-        el.style.animation = "none";
-        setTimeout(() => { el.style.animation = "bounceIn 0.6s ease-out"; }, 10);
-    }
-    console.log("[PETITBAC] Lettre tirée:", lettreActuelle);
-}
-
-// ── Afficher catégories ───────────────────────────────────────
-function afficherCategories() {
-    const container = document.getElementById("petitbac-categories");
+function _afficherCategories() {
+    const container = document.getElementById('petitbac-categories');
     if (!container) return;
-    container.innerHTML = "";
-    CATEGORIES.forEach(cat => {
-        const card = document.createElement("div");
-        card.className = "petitbac-categorie-card";
+    container.innerHTML = '';
+    _categories.forEach(cat => {
+        const card = document.createElement('div');
+        card.className = 'petitbac-categorie-card';
         card.innerHTML = `
             <div class="categorie-header">
                 <span class="categorie-icon">${cat.icon}</span>
@@ -165,140 +131,140 @@ function afficherCategories() {
         container.appendChild(card);
         const input = document.getElementById(`input-${cat.id}`);
         if (input) {
-            input.addEventListener("input", (e) => {
+            input.addEventListener('input', (e) => {
                 if (e.target.value.length === 1) e.target.value = e.target.value.toUpperCase();
             });
         }
     });
 }
 
-// ── Timer ─────────────────────────────────────────────────────
-function demarrerTimer() {
-    const t = document.getElementById("petitbac-timer");
-    timerInterval = setInterval(() => {
-        tempsRestant--;
-        const m = String(Math.floor(tempsRestant / 60)).padStart(2, '0');
-        const s = String(tempsRestant % 60).padStart(2, '0');
-        if (t) t.textContent = `${m}:${s}`;
-        if (tempsRestant === 30 && t) t.classList.add("clignote");
-        if (tempsRestant <= 0) finPartieAutomatique();
-    }, 1000);
-}
-
-// ── Validation ───────────────────────────────────────────────
-function configurerBoutonValidation() {
-    const btn = document.getElementById("petitbac-valider");
-    if (btn) btn.onclick = () => validerReponses();
-}
-
-function validerReponses() {
-    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-    let score = 0;
-    reponses  = {};
-
-    CATEGORIES.forEach(cat => {
-        const input    = document.getElementById(`input-${cat.id}`);
-        const feedback = document.getElementById(`feedback-${cat.id}`);
-        if (!input || !feedback) return;
-        const valeur = input.value.trim();
-        reponses[cat.id] = valeur;
-
-        if (valeur === "") {
-            feedback.innerHTML = '<span class="feedback-vide">❌ Vide</span>';
-            feedback.className = "validation-feedback vide";
-        } else if (valeur.charAt(0).toUpperCase() !== lettreActuelle) {
-            feedback.innerHTML = `<span class="feedback-invalide">❌ Ne commence pas par ${lettreActuelle}</span>`;
-            feedback.className = "validation-feedback invalide";
-        } else {
-            score++;
-            feedback.innerHTML = '<span class="feedback-valide">✅ Valide (+1 pt)</span>';
-            feedback.className = "validation-feedback valide";
+function _demarrerTimerVisuel() {
+    _arreterTimerVisuel();
+    const t = document.getElementById('petitbac-timer');
+    const compute = () => Math.max(0, Math.ceil((_tsDebut + _dureeMs - Date.now()) / 1000));
+    let last = compute();
+    if (t) {
+        const m = String(Math.floor(last / 60)).padStart(2, '0');
+        const s = String(last % 60).padStart(2, '0');
+        t.textContent = `${m}:${s}`;
+    }
+    _timerLocal = setInterval(() => {
+        const remaining = compute();
+        if (remaining !== last) {
+            last = remaining;
+            if (t) {
+                const m = String(Math.floor(remaining / 60)).padStart(2, '0');
+                const s = String(remaining % 60).padStart(2, '0');
+                t.textContent = `${m}:${s}`;
+                if (remaining <= 30 && remaining > 0) t.classList.add('clignote');
+            }
         }
+        if (remaining <= 0) {
+            _arreterTimerVisuel();
+            if (t) { t.textContent = '00:00'; t.classList.remove('clignote'); }
+        }
+    }, 250);
+}
+
+function _arreterTimerVisuel() {
+    if (_timerLocal) { clearInterval(_timerLocal); _timerLocal = null; }
+    const t = document.getElementById('petitbac-timer');
+    if (t) t.classList.remove('clignote');
+}
+
+function _reactiverBoutonValidation() {
+    const btn = document.getElementById('petitbac-valider');
+    if (!btn) return;
+    btn.disabled    = false;
+    btn.textContent = 'Valider mes réponses';
+    btn.className   = 'btn-primary';
+    btn.onclick     = _soumettreReponsesHote;
+}
+
+function _soumettreReponsesHote() {
+    if (_reponseSoumise) return;
+    _reponseSoumise = true;
+    _arreterTimerVisuel();
+
+    const reponses = {};
+    _categories.forEach(cat => {
+        const input = document.getElementById(`input-${cat.id}`);
+        if (!input) return;
+        reponses[cat.id] = input.value.trim();
         input.disabled = true;
     });
 
-    if (_hoteActif) {
-        _envoyerReponsesHote({ reponses, score });
-        _publierPhase('resultats');
-        // Activer le bouton "Afficher résultats"
-        const btnRes = document.getElementById('pb-btn-resultats');
-        if (btnRes) {
-            btnRes.onclick = () => {
-                _declencherRevelation(lettreActuelle);
-                _afficherPanneauResultatsHote();
-            };
-        }
+    const pseudoHote = (GameState?.joueurs?.[0]) || null;
+    try {
+        socket.send('HOST_ACTION', {
+            action: 'petitbac:host_answer',
+            data: { pseudo: pseudoHote, reponses },
+        });
+        console.log('[PETITBAC] 📨 Réponses hôte envoyées');
+    } catch (err) {
+        console.error('[PETITBAC] ❌ send host_answer:', err.message);
     }
 
-    afficherResultat(score);
-    enregistrerScore(score);
+    // Désactiver le bouton "Valider" et activer "Révéler" (panneau hôte)
+    const btn = document.getElementById('petitbac-valider');
+    if (btn) {
+        btn.disabled    = true;
+        btn.textContent = '⏳ Réponses soumises';
+    }
 }
 
-function _afficherPanneauResultatsHote() {
-    const container = document.getElementById('pb-invites-reponses');
-    if (!container) return;
+// ── Abonnements WS ──────────────────────────────────────────
+
+function _abonnerEvenements() {
+    socket.on('PETITBAC_MANCHE_START',  payload => { try { _onMancheStart(payload); }  catch (e) { console.warn('[PETITBAC] MANCHE_START', e.message); } });
+    socket.on('PETITBAC_REVELATION',    payload => { try { _onRevelation(payload); }   catch (e) { console.warn('[PETITBAC] REVELATION', e.message); } });
+    socket.on('PETITBAC_TIMER_EXPIRED', payload => { try { _onTimerExpired(payload); } catch (e) { console.warn('[PETITBAC] TIMER_EXPIRED', e.message); } });
+    socket.on('PETITBAC_RESPONSE_IN',   payload => {
+        // Délégué au module hôte pour mise à jour du panneau
+        try { _afficherReponsesInvitesSurHote('pb-invites-reponses'); } catch {}
+    });
+    socket.on('SCORES_UPDATE', ({ scores }) => {
+        if (scores) {
+            GameState.scores = GameState.scores || {};
+            Object.assign(GameState.scores, scores);
+        }
+        try { afficherScoreboard(); } catch {}
+    });
+}
+
+// ── Initialisation principale ───────────────────────────────
+
+export async function initialiserPetitBac() {
+    console.log('[PETITBAC] Initialisation WS');
+    _abonnerEvenements();
+    const hoteActif = await chargerModuleHote();
+    if (hoteActif) _injecterPanneauHote();
+
+    // Réinitialiser l'UI
+    const elL = document.getElementById('petitbac-lettre-actuelle');
+    if (elL) elL.textContent = '—';
+    const t = document.getElementById('petitbac-timer');
+    if (t) { t.textContent = '02:00'; t.classList.remove('clignote'); }
+    const container = document.getElementById('petitbac-categories');
+    if (container) container.innerHTML = '';
+
+    // Demander au serveur de démarrer une session + tirer la 1re lettre
     try {
-        const pid = localStorage.getItem('minigame_partie_session_id');
-        const raw = localStorage.getItem(`partie_reponses_${pid}`);
-        if (!raw) return;
-        const reps = JSON.parse(raw);
-        const hote = GameState?.joueurs?.[0] || '';
-        container.innerHTML = Object.entries(reps)
-            .sort((a, b) => (b[1].score || 0) - (a[1].score || 0))
-            .map(([pseudo, data]) => {
-                const sc     = data.score || 0;
-                const isHote = pseudo === hote;
-                const bg     = sc > 0 ? 'rgba(34,197,94,.15)'   : 'rgba(255,255,255,.06)';
-                const bd     = sc > 0 ? 'rgba(34,197,94,.35)'   : 'rgba(255,255,255,.12)';
-                return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;
-                    background:${bg};border:1px solid ${bd};border-radius:10px;margin-bottom:6px;flex-wrap:wrap;">
-                    <span style="font-weight:700;font-size:.85rem;color:${isHote?'#c4b5fd':'#a78bfa'};min-width:80px;">
-                        ${isHote?'🎮 ':''}${escHtml(pseudo)}</span>
-                    <span style="flex:1;font-size:.82rem;color:rgba(255,255,255,.6);">
-                        ${sc} bonne${sc!==1?'s':''} réponse${sc!==1?'s':''}</span>
-                    <span style="font-weight:700;font-size:.82rem;color:#86efac;">
-                        +${sc} pt${sc!==1?'s':''} ✅</span>
-                </div>`;
-            }).join('');
-    } catch {}
+        socket.send('HOST_ACTION', { action: 'petitbac:load', data: {} });
+        console.log('[PETITBAC] 📡 petitbac:load envoyé');
+    } catch (err) {
+        console.error('[PETITBAC] ❌ send load:', err.message);
+        alert('Impossible de démarrer le Petit Bac. Vérifie la connexion.');
+    }
 }
 
-// ── Fin automatique ───────────────────────────────────────────
-function finPartieAutomatique() {
-    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-    validerReponses();
+// Compat : appelée par le registry main.js (window.initialiserPetitBac).
+export function resetJeu() {
+    _arreterTimerVisuel();
+    _lettreActuelle = '';
+    _categories     = [];
+    _reponseSoumise = false;
 }
 
-// ── Résultat + rejouer ────────────────────────────────────────
-function afficherResultat(score) {
-    const btn = document.getElementById("petitbac-valider");
-    if (!btn) return;
-    btn.textContent = `🎉 Score : ${score} pt${score!==1?'s':''} — Nouvelle lettre`;
-    btn.className   = "btn-primary btn-rejouer";
-    btn.onclick = () => {
-        _viderReponses();
-        resetJeu();
-        tirerLettre();
-        afficherCategories();
-        demarrerTimer();
-        btn.textContent = "Valider mes réponses";
-        btn.className   = "btn-primary";
-        btn.onclick     = () => validerReponses();
-        if (_hoteActif) _publierManche({ lettre: lettreActuelle, categories: CATEGORIES });
-    };
-}
-
-// ── Score ─────────────────────────────────────────────────────
-function enregistrerScore(score) {
-    let participant = null;
-    if (GameState.mode === "solo" && GameState.joueurs?.length > 0) participant = GameState.joueurs[0];
-    else if (GameState.mode === "team" && GameState.equipes?.length > 0) participant = GameState.equipes[0].nom;
-    if (participant && score > 0) modifierScore(participant, score);
-}
-
-function escHtml(s) {
-    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-export { initialiserPetitBac, resetJeu };
-export { _prepublierPetitBac as prepublierPetitBac };
+// Expose pour le registry GAME_INIT_FNS de main.js (compat window.*)
+window.initialiserPetitBac = initialiserPetitBac;

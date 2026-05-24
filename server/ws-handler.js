@@ -12,10 +12,14 @@
 // ======================================================
 
 import store from './store.js';
-import * as quizHandler from './games/quiz.js';
+import * as quizHandler     from './games/quiz.js';
+import * as petitbacHandler from './games/petitbac.js';
+import * as penduHandler    from './games/pendu.js';
 
 const JEU_HANDLERS = {
-    quiz: quizHandler,
+    quiz     : quizHandler,
+    petitbac : petitbacHandler,
+    pendu    : penduHandler,
 };
 
 const PSEUDO_REGEX    = /^[a-zA-Z0-9_-]{2,20}$/;

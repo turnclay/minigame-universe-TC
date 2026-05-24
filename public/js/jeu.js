@@ -15,6 +15,10 @@
 
 import { socket }           from './core/socket.js';
 import { Player }           from './modules/player.js';
+// Import à effet de bord : enregistre les modules jeu dans JeuRegistry.
+// Chaque jeu WS doit être listé ici pour que JeuRegistry.get(jeu) le trouve.
+import                           './modules/petitbac_player.js';
+import                           './modules/pendu_player.js';
 
 // ── DOM utils ──────────────────────────────────────────────────
 const $      = id => document.getElementById(id);

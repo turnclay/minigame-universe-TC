@@ -1,223 +1,187 @@
-// /js/modules/petitbac_hote.js
+// /js/modules/petitbac_hote.js — v2.0 WS-server-driven (P5.1)
 // ============================================================
-// 📡 PETITBAC_HOTE.JS — Synchronisation hôte ↔ invités (Petit Bac)
-// ============================================================
-// Jeu simultané — même lettre pour tous :
-//   1. L'hôte tire une lettre + publie les catégories
-//   2. Tous les joueurs (hôte compris) remplissent leurs réponses en 2 min
-//   3. Quand l'hôte clique "Valider" → publish phase 'resultats'
-//   4. Les invités soumettent via partie_reponses_*
-//      { pseudo: { reponses: {cat:val,…}, score, ts } }
-//   5. L'hôte clique "Afficher résultats" → révélation groupée + scores
+// Plus aucun accès localStorage. Toutes les données viennent des
+// events WS serveur. Ce module gère uniquement le PANNEAU HÔTE
+// (suivi des soumissions invités + bouton "Révéler résultats").
 //
-// Clés localStorage :
-//   partie_question_{sid}   — { lettre, categories, phase, ts }
-//     phase : "attente" | "jeu" | "resultats"
-//   partie_reponses_{sid}   — { pseudo: { reponses:{…}, score, ts } }
-//   partie_scores_{sid}     — { pseudo: totalPts }
-//   partie_revelation_{sid} — { reponses:[…], lettre, hote, ts }
-//   partie_etat_{sid}       — "attente" | "en_cours" | "fin"
+// Données en mémoire mises à jour par les events WS du module
+// jeu (public/js/jeux/petitbac.js) :
+//   - _reponsesRecues : { pseudo: { score? } }     ← PETITBAC_RESPONSE_IN
+//   - _resultatsManche : [{ pseudo, reponses, score }] ← PETITBAC_REVELATION
+//
+// Pattern handlers stockés + socket.off pour cleanup propre,
+// comme quiz_hote.js (FIX B).
 // ============================================================
 
-import { GameState } from '../core/state.js';
+import { GameState }    from '../core/state.js';
+import { socket }       from '../core/socket.js';
+import HostSession      from '../core/host_session.js';
 
-// ── Helpers clés ──────────────────────────────────────────────
-function partieId() {
-    // Lire ws_partie_id (source de vérité) avec fallback minigame_partie_session_id
-    const id = localStorage.getItem('ws_partie_id')
-             || localStorage.getItem('minigame_partie_session_id');
-    if (!id) console.warn('[HOTE] ⚠️ Aucun partieId en localStorage — GAME_CREATED pas encore reçu ?');
-    return id || 'inconnu';
-}
-const cleQ  = () => `partie_question_${partieId()}`;
-const cleE  = () => `partie_etat_${partieId()}`;
-const cleS  = () => `partie_scores_${partieId()}`;
-const cleR  = () => `partie_reponses_${partieId()}`;
-const cleRv = () => `partie_revelation_${partieId()}`;
+let _reponsesRecues   = {};   // { pseudo: { score } }  (live, depuis RESPONSE_IN)
+let _resultatsManche  = [];   // [{ pseudo, reponses, score }] (depuis REVELATION)
+let _wsListenersActifs = false;
 
-// ── Publications ──────────────────────────────────────────────
+// Handlers WS stockés pour cleanup (socket.off)
+let _hManche      = null;
+let _hResponseIn  = null;
+let _hRevelation  = null;
+let _hCanNext     = null;
+let _hError       = null;
 
-export function publierEtat(etat) {
-    localStorage.setItem(cleE(), etat);
+function _nbJoueursTotal() {
+    const snapJoueurs = HostSession?._snapshot?.joueurs;
+    return Array.isArray(snapJoueurs) ? snapJoueurs.length : 1;
 }
 
-export function publierScores() {
-    localStorage.setItem(cleS(), JSON.stringify(GameState.scores || {}));
+function _pseudoHote() { return GameState?.joueurs?.[0] || 'Hôte'; }
+
+// ────────────────────────────────────────────────────────────
+// Listeners WS — branchés une seule fois par session quiz.
+// ────────────────────────────────────────────────────────────
+
+function _initWsListeners() {
+    if (_wsListenersActifs) return;
+    _wsListenersActifs = true;
+
+    _hManche = () => {
+        _reponsesRecues  = {};
+        _resultatsManche = [];
+        _refreshPanneau();
+        // Réinitialiser le bouton "Révéler"
+        const btn = document.getElementById('pb-btn-resultats');
+        if (btn) {
+            btn.disabled       = true;
+            btn.style.opacity  = '0.4';
+            btn.style.cursor   = 'not-allowed';
+            btn.title          = 'En attente des soumissions…';
+            btn.style.animation = '';
+            btn.textContent    = '📊 Afficher les résultats';
+        }
+    };
+
+    _hResponseIn = ({ pseudo, nbReponses, nbJoueurs, allAnswered }) => {
+        if (!pseudo || pseudo === 'null' || pseudo === 'undefined') return;
+        if (!_reponsesRecues[pseudo]) _reponsesRecues[pseudo] = { ts: Date.now() };
+        _refreshPanneau({ nbReponses, nbJoueurs });
+        // Si tous ont soumis, activer le bouton "Révéler"
+        if (allAnswered) _activerBoutonReveler('✅ Tous ont soumis — Révéler');
+    };
+
+    _hRevelation = ({ reponses }) => {
+        _resultatsManche = Array.isArray(reponses) ? reponses : [];
+        _afficherResultatsPanneau();
+    };
+
+    _hCanNext = () => {
+        // Désactiver "Révéler" après révélation faite
+        const btn = document.getElementById('pb-btn-resultats');
+        if (btn) {
+            btn.disabled       = true;
+            btn.style.opacity  = '0.3';
+            btn.style.cursor   = 'not-allowed';
+            btn.style.animation = '';
+            btn.title          = 'Manche révélée — cliquez sur "Nouvelle manche"';
+        }
+    };
+
+    _hError = ({ code }) => {
+        if (code === 'PETITBAC_BAD_STATE') {
+            console.warn('[PB_HOTE] ⚠️ PETITBAC_BAD_STATE — réinit panneau');
+        }
+    };
+
+    socket.on('PETITBAC_MANCHE_START',  _hManche);
+    socket.on('PETITBAC_RESPONSE_IN',   _hResponseIn);
+    socket.on('PETITBAC_REVELATION',    _hRevelation);
+    socket.on('PETITBAC_CAN_NEXT',      _hCanNext);
+    socket.on('ERROR',                  _hError);
 }
 
-export function viderReponses() {
-    localStorage.removeItem(cleR());
-    localStorage.removeItem(cleRv());
+export function nettoyerPartieInvites() {
+    if (!_wsListenersActifs) return;
+    socket.off('PETITBAC_MANCHE_START',  _hManche);
+    socket.off('PETITBAC_RESPONSE_IN',   _hResponseIn);
+    socket.off('PETITBAC_REVELATION',    _hRevelation);
+    socket.off('PETITBAC_CAN_NEXT',      _hCanNext);
+    socket.off('ERROR',                  _hError);
+    _hManche = _hResponseIn = _hRevelation = _hCanNext = _hError = null;
+    _wsListenersActifs = false;
+    _reponsesRecues  = {};
+    _resultatsManche = [];
 }
 
-export function lireReponses() {
-    try { return JSON.parse(localStorage.getItem(cleR()) || '{}'); } catch { return {}; }
-}
+// ────────────────────────────────────────────────────────────
+// Affichage panneau
+// ────────────────────────────────────────────────────────────
 
-/**
- * Publier la lettre + les catégories pour que tous jouent en même temps.
- * phase = "jeu" → les invités affichent les champs et le timer démarre.
- */
-export function publierManche({ lettre, categories }) {
-    viderReponses();
-    localStorage.setItem(cleQ(), JSON.stringify({
-        lettre,
-        categories,  // [{id, label, icon}, …]
-        phase: 'jeu',
-        ts: Date.now()
-    }));
-    console.log(`[PB_HOTE] 📡 Lettre publiée : "${lettre}"`);
-}
-
-/**
- * Changer la phase sans modifier lettre/catégories NI le ts de manche.
- * ⚠️ NE PAS toucher au ts : côté invité, _lireEtat détecte une "nouvelle manche"
- * quand data.ts change. Modifier le ts ici réinitialiserait la grille et effacerait
- * les réponses déjà saisies, rendant le score = 0.
- */
-export function publierPhase(phase) {
-    try {
-        const raw  = localStorage.getItem(cleQ());
-        if (!raw) return;
-        const data = JSON.parse(raw);
-        data.phase = phase;
-        // ✅ ts volontairement conservé : l'invité ne doit pas croire à une nouvelle manche
-        localStorage.setItem(cleQ(), JSON.stringify(data));
-    } catch (e) {
-        console.error('[PB_HOTE] publierPhase error', e);
-    }
-}
-
-/**
- * L'hôte soumet ses propres réponses (appelé en même temps que validerReponses()).
- */
-export function envoyerReponsesHote({ reponses, score }) {
-    const pseudo   = GameState?.joueurs?.[0] || 'Hôte';
-    const toutes   = lireReponses();
-    toutes[pseudo] = { reponses, score, ts: Date.now() };
-    localStorage.setItem(cleR(), JSON.stringify(toutes));
-    console.log(`[PB_HOTE] 📨 Réponses hôte (${pseudo}) : score=${score}`);
-}
-
-/**
- * Nombre de joueurs attendus (hôte + invités).
- */
-function _getNbTotal() {
-    const n = (GameState.joueurs || []).length;
-    if (n > 0) return n;
-    try {
-        const pid = localStorage.getItem('ws_partie_id') || localStorage.getItem('minigame_partie_session_id');
-        const r   = pid && localStorage.getItem(`invite_rejoint_${pid}`);
-        if (r) { const l = JSON.parse(r); return l.length + 1; }
-    } catch {}
-    return 1;
-}
-
-/**
- * Révélation groupée — appelée par l'hôte via le bouton "Afficher résultats".
- * Crédite les points et publie le signal de révélation pour jeu.html.
- */
-export function declencherRevelation(lettre, POINTS_PAR_REPONSE = 1) {
-    const pseudoHote = GameState?.joueurs?.[0] || 'Hôte';
-    const reponses   = lireReponses();
-    const repTri     = Object.entries(reponses).sort((a, b) => (a[1].ts || 0) - (b[1].ts || 0));
-
-    // Créditer les points dans GameState
-    repTri.forEach(([pseudo, data]) => {
-        const pts = (data.score || 0) * POINTS_PAR_REPONSE;
-        if (pts <= 0) return;
-        if (GameState.scores[pseudo] === undefined) GameState.scores[pseudo] = 0;
-        GameState.scores[pseudo] = +((GameState.scores[pseudo] + pts).toFixed(2));
-        try {
-            const sg = JSON.parse(localStorage.getItem('scores_globaux') || '{}');
-            if (!sg[pseudo]) sg[pseudo] = { total: 0, parJeu: {} };
-            sg[pseudo].total = +((sg[pseudo].total || 0) + pts).toFixed(2);
-            sg[pseudo].parJeu = sg[pseudo].parJeu || {};
-            sg[pseudo].parJeu.petitbac = +((sg[pseudo].parJeu.petitbac || 0) + pts).toFixed(2);
-            localStorage.setItem('scores_globaux', JSON.stringify(sg));
-        } catch {}
-    });
-
-    publierScores();
-
-    // Signal révélation pour jeu.html
-    localStorage.setItem(cleRv(), JSON.stringify({
-        hote: pseudoHote,
-        lettre,
-        reponses: repTri.map(([pseudo, data]) => ({
-            pseudo,
-            reponses: data.reponses || {},
-            score:    data.score    || 0
-        })),
-        ts: Date.now()
-    }));
-
-    if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
-    console.log('[PB_HOTE] 🎯 Révélation déclenchée');
-}
-
-/**
- * Panneau invités côté hôte — affiche les soumissions en temps réel.
- */
-export function afficherReponsesInvitesSurHote(containerId = 'pb-invites-reponses') {
-    const container = document.getElementById(containerId);
+function _refreshPanneau(meta = {}) {
+    const container = document.getElementById('pb-invites-reponses');
     if (!container) return;
-    const reponses   = lireReponses();
-    const entries    = Object.entries(reponses);
-    const nbAttendu  = _getNbTotal();
-    const pseudoHote = GameState?.joueurs?.[0] || 'Hôte';
+
+    const entries     = Object.entries(_reponsesRecues);
+    const nbAttendu   = meta.nbJoueurs || _nbJoueursTotal();
+    const nbReponses  = meta.nbReponses ?? entries.length;
+    const pseudoHote  = _pseudoHote();
 
     if (entries.length === 0) {
         container.innerHTML = `<p style="font-size:.8rem;color:rgba(255,255,255,.4);text-align:center;">
-            En attente des réponses… (0 / ${nbAttendu || '?'})</p>`;
+            En attente des réponses… (0 / ${nbAttendu})</p>`;
         return;
     }
-    container.innerHTML = entries.map(([p, data]) => {
+
+    container.innerHTML = entries.map(([p]) => {
         const isHote = p === pseudoHote;
-        const score  = data.score ?? '?';
-        return `
-        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;
+        return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;
             background:${isHote ? 'rgba(196,181,253,.07)' : 'rgba(167,139,250,.07)'};
             border:1px solid ${isHote ? 'rgba(196,181,253,.25)' : 'rgba(167,139,250,.25)'};
             border-radius:10px;margin-bottom:6px;">
             <span style="font-weight:700;font-size:.85rem;color:${isHote ? '#c4b5fd' : '#a78bfa'};min-width:80px;">
-                ${isHote ? '🎮 ' : ''}${escHtml(p)}
-            </span>
-            <span style="flex:1;font-size:.82rem;color:rgba(255,255,255,.55);">
-                ✅ ${score} bonne${score !== 1 ? 's' : ''} réponse${score !== 1 ? 's' : ''}
-            </span>
+                ${isHote ? '🎮 ' : ''}${_escHtml(p)}</span>
+            <span style="flex:1;font-size:.82rem;color:rgba(255,255,255,.55);">⏳ Soumis</span>
         </div>`;
     }).join('') + `<p style="font-size:.78rem;color:rgba(255,255,255,.35);text-align:center;margin-top:6px;">
-        ${entries.length} / ${nbAttendu || '?'} joueurs ont soumis</p>`;
+        ${nbReponses} / ${nbAttendu} joueurs ont soumis</p>`;
 }
 
-/**
- * Vérifier si tous ont soumis → activer le bouton "Afficher résultats".
- */
-export function verifierSiTousOntSoumis() {
-    const nb  = _getNbTotal();
-    const nbR = Object.keys(lireReponses()).length;
+function _afficherResultatsPanneau() {
+    const container = document.getElementById('pb-invites-reponses');
+    if (!container) return;
+    const hote = _pseudoHote();
+    container.innerHTML = _resultatsManche
+        .slice().sort((a, b) => (b.score || 0) - (a.score || 0))
+        .map(r => {
+            const sc     = r.score || 0;
+            const isHote = r.pseudo === hote;
+            const bg     = sc > 0 ? 'rgba(34,197,94,.15)' : 'rgba(255,255,255,.06)';
+            const bd     = sc > 0 ? 'rgba(34,197,94,.35)' : 'rgba(255,255,255,.12)';
+            return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;
+                background:${bg};border:1px solid ${bd};border-radius:10px;margin-bottom:6px;flex-wrap:wrap;">
+                <span style="font-weight:700;font-size:.85rem;color:${isHote ? '#c4b5fd' : '#a78bfa'};min-width:80px;">
+                    ${isHote ? '🎮 ' : ''}${_escHtml(r.pseudo)}</span>
+                <span style="flex:1;font-size:.82rem;color:rgba(255,255,255,.6);">
+                    ${sc} bonne${sc !== 1 ? 's' : ''} réponse${sc !== 1 ? 's' : ''}</span>
+                <span style="font-weight:700;font-size:.82rem;color:#86efac;">
+                    +${sc} pt${sc !== 1 ? 's' : ''} ✅</span>
+            </div>`;
+        }).join('');
+}
+
+function _activerBoutonReveler(label) {
     const btn = document.getElementById('pb-btn-resultats');
     if (!btn) return;
-    if (nb > 0 && nbR >= nb) {
-        btn.disabled = false;
-        btn.style.opacity = '1';
-        btn.style.cursor  = 'pointer';
-        btn.title = '✅ Tous ont soumis — Afficher les résultats';
-    } else {
-        const reste = Math.max(0, nb - nbR);
-        btn.disabled = true;
-        btn.style.opacity = '0.4';
-        btn.style.cursor  = 'not-allowed';
-        btn.title = `En attente de ${reste} joueur${reste > 1 ? 's' : ''}…`;
-    }
+    btn.disabled       = false;
+    btn.style.opacity  = '1';
+    btn.style.cursor   = 'pointer';
+    btn.title          = label;
+    btn.style.animation = 'btnPulse .6s ease infinite alternate';
 }
 
-/**
- * Injecter le panneau de suivi invités dans la section Petit Bac (côté hôte).
- * Appelé depuis petitbac.js une fois le module hôte chargé.
- */
+// ────────────────────────────────────────────────────────────
+// API publique appelée par jeux/petitbac.js
+// ────────────────────────────────────────────────────────────
+
 export function injecterPanneauHote() {
+    _initWsListeners();
     if (document.getElementById('panneau-invites-pb')) return;
     const section = document.getElementById('petitbac');
     if (!section) return;
@@ -226,8 +190,7 @@ export function injecterPanneauHote() {
     panneau.id = 'panneau-invites-pb';
     panneau.style.cssText = `
         margin-top:18px;background:rgba(139,92,246,.06);
-        border:1px solid rgba(139,92,246,.25);border-radius:14px;padding:14px 16px;
-    `;
+        border:1px solid rgba(139,92,246,.25);border-radius:14px;padding:14px 16px;`;
     panneau.innerHTML = `
         <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;
             color:rgba(139,92,246,.8);margin-bottom:10px;font-weight:700;">
@@ -246,26 +209,40 @@ export function injecterPanneauHote() {
                 disabled title="En attente des soumissions…">
                 📊 Afficher les résultats
             </button>
-        </div>
-    `;
+        </div>`;
     section.appendChild(panneau);
 
-    // Polling toutes les 2s
-    setInterval(() => {
-        afficherReponsesInvitesSurHote('pb-invites-reponses');
-        verifierSiTousOntSoumis();
-    }, 2000);
+    document.getElementById('pb-btn-resultats').onclick = () => {
+        try { socket.send('HOST_ACTION', { action: 'petitbac:reveal', data: {} }); }
+        catch (err) { console.error('[PB_HOTE] send reveal:', err.message); }
+    };
+
+    if (!document.getElementById('style-pb-btn-pulse')) {
+        const s = document.createElement('style');
+        s.id = 'style-pb-btn-pulse';
+        s.textContent = '@keyframes btnPulse{0%{transform:scale(1)}100%{transform:scale(1.05)}}';
+        document.head.appendChild(s);
+    }
 }
 
-export function nettoyerPartieInvites() {
-    const pid = partieId();
-    [`partie_question_${pid}`, `partie_reponses_${pid}`,
-     `partie_scores_${pid}`, `partie_revelation_${pid}`]
-        .forEach(k => localStorage.removeItem(k));
-    publierEtat('fin');
+// Vide le panneau (appelé par jeux/petitbac.js sur MANCHE_START)
+export function viderPanneau() {
+    _reponsesRecues  = {};
+    _resultatsManche = [];
+    _refreshPanneau();
 }
 
-function escHtml(s) {
+// Affiche le panneau (live ou résultats selon ce qui est disponible)
+export function afficherReponsesInvitesSurHote(_containerId, reponsesDepuisServeur) {
+    if (Array.isArray(reponsesDepuisServeur) && reponsesDepuisServeur.length) {
+        _resultatsManche = reponsesDepuisServeur;
+        _afficherResultatsPanneau();
+    } else {
+        _refreshPanneau();
+    }
+}
+
+function _escHtml(s) {
     return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
         .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }

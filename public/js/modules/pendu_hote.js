@@ -1,232 +1,212 @@
-// /js/modules/pendu_hote.js
+// /js/modules/pendu_hote.js — v2.0 WS-server-driven (P5.2)
 // ============================================================
-// 📡 PENDU_HOTE.JS — Synchronisation hôte ↔ invités (Pendu)
-// ============================================================
-// Logique MULTIJOUEUR : chaque joueur (hôte + invités) joue
-// le MÊME mot en parallèle sur son propre écran.
+// Plus aucun accès localStorage. Les événements WS du module
+// jeu (public/js/jeux/pendu.js) ne suffisent pas pour le panneau
+// hôte : on enregistre ici nos propres listeners (RESULT_IN,
+// REVELATION, CAN_NEXT) pour rafraîchir le panneau de suivi.
 //
-// Clés localStorage :
-//   partie_question_{id}   — { motSecret, theme, ts }
-//   partie_etat_{id}       — "attente" | "en_cours" | "fin"
-//   partie_scores_{id}     — scores de tous
-//   partie_reponses_{id}   — { pseudo: { victoire, erreurs, points, ts } }
-//   partie_revelation_{id} — résultats finaux (déclenché par l'hôte)
-//
-// Flux :
-//   1. L'hôte publie le mot → tous les joueurs le reçoivent et jouent
-//   2. Chaque joueur envoie son résultat dans partie_reponses_*
-//   3. L'hôte clique "Résultats" → révélation + scores
+// Pattern handlers stockés + socket.off — calqué sur petitbac_hote
+// et quiz_hote (FIX B).
 // ============================================================
 
 import { GameState } from '../core/state.js';
-import { getPenduCallbacks } from '../jeux/pendu.js';
-import { getPenduCallbacks } from '../jeux/pendu.js';
-import { afficherScoreboard } from '../modules/scoreboard.js';
+import { socket }    from '../core/socket.js';
+import HostSession   from '../core/host_session.js';
 
-function partieId() {
-    // Lire ws_partie_id (source de vérité) avec fallback minigame_partie_session_id
-    const id = localStorage.getItem('ws_partie_id')
-             || localStorage.getItem('minigame_partie_session_id');
-    if (!id) console.warn('[HOTE] ⚠️ Aucun partieId en localStorage — GAME_CREATED pas encore reçu ?');
-    return id || 'inconnu';
+let _resultatsLive    = {};   // { pseudo: { victoire?, erreurs?, status:'en_cours'|'fini' } }
+let _resultatsRevele  = [];   // [{ pseudo, victoire, erreurs, points }]
+let _wsListenersActifs = false;
+
+let _hMotStart   = null;
+let _hResultIn   = null;
+let _hRevelation = null;
+let _hCanNext    = null;
+let _hError      = null;
+
+function _nbJoueursTotal() {
+    const j = HostSession?._snapshot?.joueurs;
+    return Array.isArray(j) ? j.length : 1;
 }
-
-const cleQ  = () => `partie_question_${partieId()}`;
-const cleE  = () => `partie_etat_${partieId()}`;
-const cleS  = () => `partie_scores_${partieId()}`;
-const cleR  = () => `partie_reponses_${partieId()}`;
-const cleRv = () => `partie_revelation_${partieId()}`;
-
 function _pseudoHote() { return GameState?.joueurs?.[0] || 'Hôte'; }
 
-export function publierEtat(etat)  { localStorage.setItem(cleE(), etat); }
-export function publierScores()    { localStorage.setItem(cleS(), JSON.stringify(GameState.scores || {})); }
-export function lireReponses()     { try { return JSON.parse(localStorage.getItem(cleR()) || '{}'); } catch { return {}; } }
-export function viderReponses()    { localStorage.removeItem(cleR()); }
+function _initWsListeners() {
+    if (_wsListenersActifs) return;
+    _wsListenersActifs = true;
 
-// ======================================================
-// 📡 PUBLIER UN NOUVEAU MOT (début de manche)
-// Publie motSecret + theme pour que TOUS jouent le même mot.
-// ======================================================
-export function publierMot({ motSecret, theme }) {
-    localStorage.removeItem(cleRv());
-    localStorage.removeItem(cleR());
-    localStorage.setItem(cleQ(), JSON.stringify({
-        motSecret,
-        theme,
-        ts: Date.now()
-    }));
-    console.log(`[PENDU_HOTE] 📡 Mot publié : "${motSecret}" (${theme})`);
-}
-
-// ======================================================
-// 📨 ENVOYER LE RÉSULTAT DE L'HÔTE
-// ======================================================
-export function envoyerResultatHote({ victoire, erreurs, points }) {
-    const pseudo   = _pseudoHote();
-    const reponses = lireReponses();
-    reponses[pseudo] = { victoire: !!victoire, erreurs: erreurs || 0, points: points || 0, ts: Date.now() };
-    localStorage.setItem(cleR(), JSON.stringify(reponses));
-    console.log(`[PENDU_HOTE] 📨 Résultat hôte (${pseudo}) : victoire=${victoire}, pts=${points}`);
-}
-
-// ======================================================
-// 🔔 NOMBRE DE JOUEURS ATTENDUS
-// ======================================================
-function _getNbTotal() {
-    const n = (GameState.joueurs || []).length;
-    if (n > 0) return n;
-    try {
-        const pid = localStorage.getItem('ws_partie_id') || localStorage.getItem('minigame_partie_session_id');
-        const r   = pid && localStorage.getItem(`invite_rejoint_${pid}`);
-        if (r) { const l = JSON.parse(r); return l.length + 1; }
-    } catch {}
-    return 1;
-}
-
-// ======================================================
-// 🎯 RÉVÉLATION — Déclenché par l'hôte (bouton Résultats)
-// ======================================================
-export function declencherRevelation(POINTS_BASE) {
-    const pseudoHote = _pseudoHote();
-    const reponses   = lireReponses();
-    const repTri     = Object.entries(reponses).sort((a, b) => (a[1].ts || 0) - (b[1].ts || 0));
-
-    // Créditer les points dans GameState
-    repTri.forEach(([pseudo, data]) => {
-        const pts = data.points || 0;
-        if (pts <= 0) return;
-        if (pseudo === pseudoHote) {
-            // L'hôte se crédite via getPenduCallbacks
-            const cbs = getPenduCallbacks();
-            if (typeof cbs.validerAvecPoints === 'function') cbs.validerAvecPoints(pts);
-        } else {
-            if (GameState.scores[pseudo] === undefined) GameState.scores[pseudo] = 0;
-            GameState.scores[pseudo] = +((GameState.scores[pseudo] + pts).toFixed(2));
-            try {
-                const jeu = GameState.jeuActuel || 'pendu';
-                const sg  = JSON.parse(localStorage.getItem('scores_globaux') || '{}');
-                if (!sg[pseudo]) sg[pseudo] = { total: 0, parJeu: {} };
-                sg[pseudo].total = +((sg[pseudo].total || 0) + pts).toFixed(2);
-                sg[pseudo].parJeu = sg[pseudo].parJeu || {};
-                sg[pseudo].parJeu[jeu] = +((sg[pseudo].parJeu[jeu] || 0) + pts).toFixed(2);
-                localStorage.setItem('scores_globaux', JSON.stringify(sg));
-            } catch {}
+    _hMotStart = () => {
+        _resultatsLive   = {};
+        _resultatsRevele = [];
+        _refreshPanneauLive();
+        const btn = document.getElementById('pendu-btn-resultats');
+        if (btn) {
+            btn.disabled       = true;
+            btn.style.opacity  = '0.4';
+            btn.style.cursor   = 'not-allowed';
+            btn.style.animation = '';
+            btn.title          = 'En attente que tous aient terminé…';
+            btn.textContent    = '📊 Afficher les résultats';
         }
-    });
+    };
 
-    publierScores();
+    _hResultIn = ({ pseudo, nbResults, nbJoueurs, allDone }) => {
+        if (!pseudo || pseudo === 'null' || pseudo === 'undefined') return;
+        // On ne connaît pas la victoire/erreurs avant REVELATION, on marque "fini"
+        _resultatsLive[pseudo] = { status: 'fini', ts: Date.now() };
+        _refreshPanneauLive({ nbResults, nbJoueurs });
+        if (allDone) _activerBoutonReveler('✅ Tous ont terminé — Révéler');
+    };
 
-    // Signal révélation pour jeu.html
-    localStorage.setItem(cleRv(), JSON.stringify({
-        hote: pseudoHote,
-        reponses: repTri.map(([pseudo, data]) => ({
-            pseudo,
-            victoire: data.victoire,
-            erreurs:  data.erreurs || 0,
-            points:   data.points  || 0
-        })),
-        ts: Date.now()
-    }));
+    _hRevelation = ({ resultats }) => {
+        _resultatsRevele = Array.isArray(resultats) ? resultats : [];
+        _afficherPanneauResultats();
+    };
 
-    afficherScoreboard();
-    _afficherPanneauResultats(repTri, pseudoHote);
+    _hCanNext = () => {
+        const btn = document.getElementById('pendu-btn-resultats');
+        if (btn) {
+            btn.disabled       = true;
+            btn.style.opacity  = '0.3';
+            btn.style.cursor   = 'not-allowed';
+            btn.style.animation = '';
+            btn.title          = 'Manche révélée — cliquez sur "Nouveau mot"';
+        }
+    };
+
+    _hError = ({ code }) => {
+        if (code === 'PENDU_BAD_STATE') console.warn('[PENDU_HOTE] ⚠️ PENDU_BAD_STATE');
+    };
+
+    socket.on('PENDU_MOT_START',  _hMotStart);
+    socket.on('PENDU_RESULT_IN',  _hResultIn);
+    socket.on('PENDU_REVELATION', _hRevelation);
+    socket.on('PENDU_CAN_NEXT',   _hCanNext);
+    socket.on('ERROR',            _hError);
 }
 
-// ── Panneau résultats côté hôte ──────────────────────────────
-function _afficherPanneauResultats(repTri, pseudoHote) {
+export function nettoyerPartieInvites() {
+    if (!_wsListenersActifs) return;
+    socket.off('PENDU_MOT_START',  _hMotStart);
+    socket.off('PENDU_RESULT_IN',  _hResultIn);
+    socket.off('PENDU_REVELATION', _hRevelation);
+    socket.off('PENDU_CAN_NEXT',   _hCanNext);
+    socket.off('ERROR',            _hError);
+    _hMotStart = _hResultIn = _hRevelation = _hCanNext = _hError = null;
+    _wsListenersActifs = false;
+    _resultatsLive   = {};
+    _resultatsRevele = [];
+}
+
+// ── Panneau ────────────────────────────────────────────────────
+
+function _refreshPanneauLive(meta = {}) {
     const container = document.getElementById('pendu-invites-reponses');
     if (!container) return;
-    container.innerHTML = repTri.map(([pseudo, data]) => {
-        const victoire = data.victoire;
-        const erreurs  = data.erreurs || 0;
-        const points   = data.points  || 0;
-        const isHote   = pseudo === pseudoHote;
-        const bg       = victoire ? 'rgba(34,197,94,.15)'   : 'rgba(239,68,68,.12)';
-        const border   = victoire ? 'rgba(34,197,94,.35)'   : 'rgba(239,68,68,.25)';
-        const badge    = victoire
-            ? `<span style="color:#86efac;font-weight:700;font-size:.82rem;">+${points}pt${points!==1?'s':''} ✅</span>`
-            : `<span style="color:#fca5a5;font-size:.82rem;">0pt ❌ (${erreurs} erreur${erreurs!==1?'s':''})</span>`;
-        return `
-        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;
-            background:${bg};border:1px solid ${border};
-            border-radius:10px;margin-bottom:6px;flex-wrap:wrap;">
-            <span style="font-weight:700;font-size:.85rem;color:${isHote?'#c4b5fd':'#a78bfa'};min-width:80px;">
-                ${isHote?'🎮 ':''}${escHtml(pseudo)}
-            </span>
+    const entries    = Object.entries(_resultatsLive);
+    const nbAttendu  = meta.nbJoueurs || _nbJoueursTotal();
+    const nbResults  = meta.nbResults ?? entries.length;
+    const hote       = _pseudoHote();
+
+    if (!entries.length) {
+        container.innerHTML = `<p style="font-size:.8rem;color:rgba(255,255,255,.4);text-align:center;">
+            En attente des résultats… (0 / ${nbAttendu})</p>`;
+        return;
+    }
+    container.innerHTML = entries.map(([p]) => {
+        const isHote = p === hote;
+        return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;
+            background:${isHote ? 'rgba(196,181,253,.07)' : 'rgba(167,139,250,.07)'};
+            border:1px solid ${isHote ? 'rgba(196,181,253,.25)' : 'rgba(167,139,250,.25)'};
+            border-radius:10px;margin-bottom:6px;">
+            <span style="font-weight:700;font-size:.85rem;color:${isHote ? '#c4b5fd' : '#a78bfa'};min-width:80px;">
+                ${isHote ? '🎮 ' : ''}${_escHtml(p)}</span>
+            <span style="flex:1;font-size:.82rem;color:rgba(255,255,255,.55);">✅ Terminé</span>
+        </div>`;
+    }).join('') + `<p style="font-size:.78rem;color:rgba(255,255,255,.35);text-align:center;margin-top:6px;">
+        ${nbResults} / ${nbAttendu} joueurs</p>`;
+}
+
+function _afficherPanneauResultats() {
+    const container = document.getElementById('pendu-invites-reponses');
+    if (!container) return;
+    const hote = _pseudoHote();
+    container.innerHTML = _resultatsRevele.map(r => {
+        const isHote = r.pseudo === hote;
+        const bg     = r.victoire ? 'rgba(34,197,94,.15)' : 'rgba(239,68,68,.12)';
+        const bd     = r.victoire ? 'rgba(34,197,94,.35)' : 'rgba(239,68,68,.25)';
+        const badge  = r.victoire
+            ? `<span style="color:#86efac;font-weight:700;font-size:.82rem;">+${r.points}pt${r.points !== 1 ? 's' : ''} ✅</span>`
+            : `<span style="color:#fca5a5;font-size:.82rem;">0pt ❌ (${r.erreurs} erreur${r.erreurs !== 1 ? 's' : ''})</span>`;
+        return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;
+            background:${bg};border:1px solid ${bd};border-radius:10px;margin-bottom:6px;flex-wrap:wrap;">
+            <span style="font-weight:700;font-size:.85rem;color:${isHote ? '#c4b5fd' : '#a78bfa'};min-width:80px;">
+                ${isHote ? '🎮 ' : ''}${_escHtml(r.pseudo)}</span>
             <span style="flex:1;font-size:.82rem;color:rgba(255,255,255,.6);">
-                ${victoire ? '🎉 Trouvé' : '😢 Pas trouvé'} — ${erreurs} erreur${erreurs!==1?'s':''}
-            </span>
+                ${r.victoire ? '🎉 Trouvé' : '😢 Pas trouvé'} — ${r.erreurs} erreur${r.erreurs !== 1 ? 's' : ''}</span>
             ${badge}
         </div>`;
     }).join('');
 }
 
-// ======================================================
-// 🔔 PANNEAU D'ATTENTE (avant révélation)
-// ======================================================
-export function afficherReponsesInvitesSurHote(containerId = 'pendu-invites-reponses') {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    const reponses   = lireReponses();
-    const entries    = Object.entries(reponses);
-    const nbAttendu  = _getNbTotal();
-    const pseudoHote = _pseudoHote();
-
-    if (entries.length === 0) {
-        container.innerHTML = `<p style="font-size:.8rem;color:rgba(255,255,255,.4);text-align:center;">En attente des résultats… (0 / ${nbAttendu||'?'})</p>`;
-        return;
-    }
-    container.innerHTML = entries.map(([p, data]) => {
-        const isHote = p === pseudoHote;
-        const fini   = data.victoire !== undefined;
-        const status = fini
-            ? (data.victoire ? '✅ Trouvé' : '❌ Pas trouvé')
-            : '📝 En cours…';
-        return `
-        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;
-            background:${isHote?'rgba(196,181,253,.07)':'rgba(167,139,250,.07)'};
-            border:1px solid ${isHote?'rgba(196,181,253,.25)':'rgba(167,139,250,.25)'};
-            border-radius:10px;margin-bottom:6px;">
-            <span style="font-weight:700;font-size:.85rem;color:${isHote?'#c4b5fd':'#a78bfa'};min-width:80px;">
-                ${isHote?'🎮 ':''}${escHtml(p)}
-            </span>
-            <span style="flex:1;font-size:.82rem;color:rgba(255,255,255,.55);">${status}</span>
-        </div>`;
-    }).join('') + `<p style="font-size:.78rem;color:rgba(255,255,255,.35);text-align:center;margin-top:6px;">${entries.length} / ${nbAttendu||'?'} joueurs</p>`;
-}
-
-// ======================================================
-// 🔍 VÉRIFIER SI TOUS ONT TERMINÉ (pour activer le bouton Résultats)
-// ======================================================
-export function verifierSiTousOntTermine() {
-    const nb  = _getNbTotal();
-    const nbR = Object.keys(lireReponses()).length;
+function _activerBoutonReveler(label) {
     const btn = document.getElementById('pendu-btn-resultats');
     if (!btn) return;
+    btn.disabled       = false;
+    btn.style.opacity  = '1';
+    btn.style.cursor   = 'pointer';
+    btn.title          = label;
+    btn.style.animation = 'lmlPulse .5s ease';
+}
 
-    if (nb > 0 && nbR >= nb) {
-        btn.disabled = false;
-        btn.style.opacity = '1';
-        btn.style.cursor  = 'pointer';
-        btn.title = '✅ Tous ont terminé — Afficher les résultats';
-        btn.style.animation = 'lmlPulse .5s ease';
-    } else {
-        const reste = Math.max(0, nb - nbR);
-        btn.disabled = true;
-        btn.style.opacity = '0.4';
-        btn.style.cursor  = 'not-allowed';
-        btn.title = `En attente de ${reste} joueur${reste>1?'s':''}…`;
+// ── API publique ────────────────────────────────────────────
+
+export function injecterPanneauHote() {
+    _initWsListeners();
+    if (document.getElementById('panneau-invites-pendu')) return;
+    const section = document.getElementById('pendu');
+    if (!section) return;
+
+    // Style pulse
+    if (!document.getElementById('style-pendu-pulse')) {
+        const s = document.createElement('style');
+        s.id = 'style-pendu-pulse';
+        s.textContent = '@keyframes lmlPulse{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}';
+        document.head.appendChild(s);
     }
+
+    const panneau = document.createElement('div');
+    panneau.id = 'panneau-invites-pendu';
+    panneau.style.cssText = `
+        margin-top:16px;background:rgba(167,139,250,.06);
+        border:1px solid rgba(167,139,250,.25);border-radius:14px;padding:14px 16px;`;
+    panneau.innerHTML = `
+        <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;
+            color:rgba(167,139,250,.8);margin-bottom:10px;font-weight:700;">
+            🎮 Résultats des joueurs
+        </div>
+        <div id="pendu-invites-reponses">
+            <p style="font-size:.8rem;color:rgba(255,255,255,.4);text-align:center;">
+                En attente des résultats…
+            </p>
+        </div>
+        <div style="margin-top:12px;text-align:center;">
+            <button id="pendu-btn-resultats"
+                style="padding:10px 22px;background:rgba(167,139,250,.18);
+                border:1.5px solid rgba(167,139,250,.45);border-radius:12px;color:white;
+                font-size:.88rem;font-weight:700;cursor:not-allowed;opacity:0.4;
+                transition:opacity .2s;font-family:inherit;"
+                disabled title="En attente que tous aient terminé…">
+                📊 Afficher les résultats
+            </button>
+        </div>`;
+    section.appendChild(panneau);
+
+    document.getElementById('pendu-btn-resultats').onclick = () => {
+        try { socket.send('HOST_ACTION', { action: 'pendu:reveal', data: {} }); }
+        catch (err) { console.error('[PENDU_HOTE] send reveal:', err.message); }
+    };
 }
 
-export function nettoyerPartieInvites() {
-    const pid = partieId();
-    [`partie_question_${pid}`, `partie_reponses_${pid}`, `partie_scores_${pid}`, `partie_revelation_${pid}`]
-        .forEach(k => localStorage.removeItem(k));
-    publierEtat('fin');
-}
-
-function escHtml(s) {
-    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function _escHtml(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }

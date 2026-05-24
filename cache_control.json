@@ -1,0 +1,31 @@
+{
+  "prompts": [
+    {
+      "name": "architecte",
+      "file": "CLAUDE.md",
+      "message": {
+        "role": "system",
+        "cache_control": { "type": "ephemeral" },
+        "content": "<<LOAD_FILE:CLAUDE.md>>"
+      }
+    },
+    {
+      "name": "jeux",
+      "file": "JEUX.md",
+      "message": {
+        "role": "system",
+        "cache_control": { "type": "ephemeral" },
+        "content": "<<LOAD_FILE:JEUX.md>>"
+      }
+    },
+    {
+      "name": "qa",
+      "file": "QA.md",
+      "message": {
+        "role": "system",
+        "cache_control": { "type": "ephemeral" },
+        "content": "<<LOAD_FILE:QA.md>>"
+      }
+    }
+  ]
+}
