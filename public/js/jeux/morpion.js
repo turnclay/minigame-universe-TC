@@ -5,6 +5,7 @@
 import { $, $$, show, hide } from "../core/dom.js";
 import { GameState } from "../core/state.js";
 import { ajouterPoints } from "../modules/scoreboard.js";
+import { socket } from "../core/socket.js";
 
 // ── Module hôte (chargé dynamiquement pour ne pas bloquer) ──
 let _publierEtat       = () => {};
@@ -76,16 +77,9 @@ class MorpionGame {
         this._pseudoHote = GameState.joueurs?.[0] || '';
         this._hoteActifM = false; // activé dans demarrerPartie()
 
-        // Écraser le 'en_cours' de main.js : les invités doivent attendre
-        // que l'hôte finisse la config avant de lancer le countdown
-        if (this._moduleHote) {
-            const pid = localStorage.getItem('minigame_partie_session_id');
-            localStorage.setItem('partie_etat_' + pid, 'config');
-            // Signaler aux invités : en attente de configuration
-            localStorage.setItem('partie:signal', JSON.stringify({
-                type: 'config', sid: pid, jeu: 'morpion', ts: Date.now()
-            }));
-        }
+        // Transport WS : aucun signal localStorage. Les invités ont déjà
+        // reçu GAME_STARTED et affichent un écran d'attente jusqu'au premier
+        // 'morpion:state' diffusé par l'hôte après la configuration.
 
         this.preparerJoueurs();
         this.afficherEcranConfiguration();
@@ -94,22 +88,25 @@ class MorpionGame {
     _publierEtatCourant() {
         if (!this._hoteActif || !this.plateau || this.plateau.length === 0) return;
         const joueur = this.joueurs[this.tourActuel % this.joueurs.length];
-        _publierPlateau({
-            plateau:          this.plateau,
-            taille:           this.grilleTaille,
-            alignementRequis: this.alignementRequis,
-            tourActuel:       this.tourActuel,
-            joueurs:          this.joueurs.map(j => ({
-                nom:       j.nom,
-                symbole:   j.symbole.symbol,
-                color:     j.symbole.color,
-                equipe:    j.equipe,
-                equipeNom: j.equipeNom || null
-            })),
-            partieTerminee:   this.partieTerminee,
-            gagnant:          this._gagnantNom || null,
-            matchNul:         this._matchNul   || false,
-            modeAvance:       this.modeAvance
+        socket.send('HOST_ACTION', {
+            action: 'morpion:state',
+            data: {
+                plateau:          this.plateau,
+                taille:           this.grilleTaille,
+                alignementRequis: this.alignementRequis,
+                tourActuel:       this.tourActuel,
+                joueurs:          this.joueurs.map(j => ({
+                    nom:       j.nom,
+                    symbole:   j.symbole.symbol,
+                    color:     j.symbole.color,
+                    equipe:    j.equipe,
+                    equipeNom: j.equipeNom || null
+                })),
+                partieTerminee:   this.partieTerminee,
+                gagnant:          this._gagnantNom || null,
+                matchNul:         this._matchNul   || false,
+                modeAvance:       this.modeAvance
+            }
         });
     }
 
@@ -392,39 +389,32 @@ initConfigListeners() {
         this._gagnantNom = null;
         this._matchNul   = false;
 
-        // ── Activer la sync multijoueur MAINTENANT (hôte a cliqué Commencer) ──
-        const m = this._moduleHote;
-        if (m) {
-            const pid = localStorage.getItem('minigame_partie_session_id');
+        // ── Transport WS : l'hôte reste l'autorité du jeu ──
+        // Diffusion de l'état complet après chaque coup (morpion:state) et
+        // réception des coups invités (morpion:move). Le serveur relaie
+        // génériquement HOST_ACTION → invités et PLAYER_ACTION → hôte.
+        if (_publierScores) { try { _publierScores(); } catch {} }
 
-            // Émettre le VRAI signal de démarrage (après config)
-            // Ce signal déclenche le countdown côté invités
-            localStorage.setItem('partie:signal', JSON.stringify({
-                type: 'start', sid: pid, jeu: 'morpion', ts: Date.now()
-            }));
-            _publierEtat('en_cours');
-            _publierScores();
-
-            // Répondre aux demandes de re-sync des invités
-            const cleD = 'partie_demande_etat_' + pid;
-            let _tsVu = 0;
-            if (this._syncInterval) clearInterval(this._syncInterval);
-            this._syncInterval = setInterval(() => {
-                try {
-                    const raw = localStorage.getItem(cleD); if (!raw) return;
-                    const d = JSON.parse(raw); if (d.ts <= _tsVu) return;
-                    _tsVu = d.ts;
-                    _publierEtat('en_cours'); _publierScores();
-                    this._publierEtatCourant();
-                } catch {}
-            }, 800);
-
-            // Écouter les coups des invités (une seule fois)
-            if (_stopEcoute) { _stopEcoute(); _stopEcoute = null; }
-            _stopEcoute = m.ecouterCoupInvite((coup) => this._recevoirCoupInvite(coup));
-            this._hoteActif  = true;
-            this._hoteActifM = true;  // activer le verrou de tour côté hôte
+        if (!this._wsCoupHandler) {
+            this._wsCoupHandler = (payload) => {
+                if (!payload || payload.action !== 'morpion:move') return;
+                const d = payload.data || {};
+                this._recevoirCoupInvite({ pseudo: payload.pseudo, row: d.row, col: d.col });
+            };
         }
+        if (!this._wsResyncHandler) {
+            // Invité qui arrive / recharge en cours de partie → renvoi de l'état complet.
+            this._wsResyncHandler = () => this._publierEtatCourant();
+        }
+        socket.off('PLAYER_ACTION', this._wsCoupHandler);
+        socket.on('PLAYER_ACTION', this._wsCoupHandler);
+        socket.off('PLAYER_JOINED', this._wsResyncHandler);
+        socket.on('PLAYER_JOINED', this._wsResyncHandler);
+        socket.off('PLAYER_RECONNECTED', this._wsResyncHandler);
+        socket.on('PLAYER_RECONNECTED', this._wsResyncHandler);
+
+        this._hoteActif  = true;
+        this._hoteActifM = true;  // activer le verrou de tour côté hôte
 
         // Countdown 3s côté hôte PUIS afficher le plateau
         // (main.js ne fait plus le countdown pour morpion)

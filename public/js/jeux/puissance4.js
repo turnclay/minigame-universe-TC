@@ -8,6 +8,7 @@
 
 import { GameState } from "../core/state.js";
 import { modifierScore } from "../modules/scoreboard.js";
+import { socket } from "../core/socket.js";
 
 // ── Module hôte (chargé dynamiquement) ──
 let _publierEtat    = () => {};
@@ -17,6 +18,8 @@ let _crediterPoints = () => {};
 let _viderCoup      = () => {};
 let _stopEcouteP4   = null;
 let _hoteActifP4    = false;
+let _wsCoupHandlerP4   = null;
+let _wsResyncHandlerP4 = null;
 
 async function _chargerModuleHoteP4() {
     try {
@@ -36,14 +39,17 @@ async function _chargerModuleHoteP4() {
 
 function _publierEtatGrilleP4() {
     if (!_hoteActifP4) return;
-    _publierGrille({
-        grille:         grille,
-        joueurActuel:   joueurActuel,
-        joueurs:        joueurs.map(nom => ({ nom, emoji: couleurs[nom] })),
-        couleurs:       couleurs,
-        partieTerminee: partieTerminee,
-        gagnant:        _gagnantP4  || null,
-        matchNul:       _matchNulP4 || false
+    socket.send('HOST_ACTION', {
+        action: 'puissance4:state',
+        data: {
+            grille:         grille,
+            joueurActuel:   joueurActuel,
+            joueurs:        joueurs.map(nom => ({ nom, emoji: couleurs[nom] })),
+            couleurs:       couleurs,
+            partieTerminee: partieTerminee,
+            gagnant:        _gagnantP4  || null,
+            matchNul:       _matchNulP4 || false
+        }
     });
 }
 
@@ -435,30 +441,30 @@ async function initialiserPuissance4() {
     console.log("[PUISSANCE4] Joueurs:", joueurs);
     console.log("[PUISSANCE4] Couleurs:", couleurs);
 
-    // Charger le module hôte et démarrer la sync
-    const m = await _chargerModuleHoteP4();
-    if (m) {
-        const pid = localStorage.getItem('minigame_partie_session_id');
-        _publierEtat('en_cours');
-        _publierScores();
+    // Charger le module hôte (pour crediterPoints / scores globaux)
+    await _chargerModuleHoteP4();
 
-        // Répondre aux demandes de re-sync
-        const cleD = 'partie_demande_etat_' + pid;
-        let _tsVu = 0;
-        setInterval(() => {
-            try {
-                const raw = localStorage.getItem(cleD); if (!raw) return;
-                const d = JSON.parse(raw); if (d.ts <= _tsVu) return;
-                _tsVu = d.ts;
-                _publierEtat('en_cours'); _publierScores();
-                _publierEtatGrilleP4();
-            } catch {}
-        }, 800);
+    // Transport WS : l'hôte garde la logique, diffuse l'état complet
+    // (puissance4:state) et reçoit les coups (puissance4:move). Le serveur
+    // relaie génériquement HOST_ACTION → invités et PLAYER_ACTION → hôte.
+    if (_publierScores) { try { _publierScores(); } catch {} }
 
-        // Écouter les coups des invités
-        _stopEcouteP4 = m.ecouterCoupInvite((coup) => _recevoirCoupInviteP4(coup));
-        _hoteActifP4 = true;
+    if (!_wsCoupHandlerP4) {
+        _wsCoupHandlerP4 = (payload) => {
+            if (!payload || payload.action !== 'puissance4:move') return;
+            _recevoirCoupInviteP4({ pseudo: payload.pseudo, col: payload.data?.col });
+        };
     }
+    if (!_wsResyncHandlerP4) {
+        _wsResyncHandlerP4 = () => _publierEtatGrilleP4();
+    }
+    socket.off('PLAYER_ACTION', _wsCoupHandlerP4);
+    socket.on('PLAYER_ACTION', _wsCoupHandlerP4);
+    socket.off('PLAYER_JOINED', _wsResyncHandlerP4);
+    socket.on('PLAYER_JOINED', _wsResyncHandlerP4);
+    socket.off('PLAYER_RECONNECTED', _wsResyncHandlerP4);
+    socket.on('PLAYER_RECONNECTED', _wsResyncHandlerP4);
+    _hoteActifP4 = true;
 
     // Démarrer la partie
     nouvellePartie();
