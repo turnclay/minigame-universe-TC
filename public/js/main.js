@@ -27,7 +27,7 @@ import { signalDemarrage } from "./core/signal.js";
 import {
     nettoyerSession,
     nettoyerParasites,
-    resetEtatQuizHote
+    resetEtatJeuxHote
 } from "./core/cleanup.js";
 
 import {

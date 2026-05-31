@@ -1,311 +1,257 @@
-// /js/jeux/justeprix.js
 // ============================================================
-// 💰 JUSTE PRIX — Module hôte
-// Même architecture que quiz.js.
+// /js/jeux/justeprix.js — v2.0 WS-server-driven (P5.4)
 // ============================================================
-import { $, show, hide } from "../core/dom.js";
-import { GameState } from "../core/state.js";
-import { ajouterPoints } from "../modules/scoreboard.js";
+// Le serveur tire les produits et calcule les points. Le client
+// hôte affiche le produit reçu via JUSTEPRIX_PRODUIT_START, soumet
+// son estimation, déclenche la révélation.
+// ============================================================
 
-let jpProduits = [];
-let jpOrdre    = [];
-let jpIndex    = 0;
-let timerJP    = null;
-let tempsRestantJP = 60;
+import { $ } from '../core/dom.js';
+import { GameState } from '../core/state.js';
+import { socket } from '../core/socket.js';
+import { afficherScoreboard } from '../modules/scoreboard.js';
 
-// Fonctions déléguées à justeprix_hote.js
-let _publierEtat                     = () => {};
-let _publierProduit                  = () => {};
-let _publierScores                   = () => {};
-let _afficherReponsesInvitesSurHote  = () => {};
-let _viderReponses                   = () => {};
-let _setProduitSuivantCallback       = () => {};
-let _envoyerEstimationHote           = () => {};
-let _declencherAfficherPrix          = () => {};
-let _declencherRevelationAvecPrix    = () => {};
+let _produitCourant = null;   // payload public reçu (sans prix)
+let _tsDebut        = 0;
+let _dureeMs        = 60_000;
+let _timerLocal     = null;
+let _estimationEnvoyee = false;
 
-// ======================================================
-// 📡 CHARGEMENT DYNAMIQUE DE JUSTEPRIX_HOTE
-// ======================================================
+let _injecterPanneauHote = () => {};
+
 async function chargerModuleHote() {
     try {
         const m = await import('../modules/justeprix_hote.js');
-        _publierEtat                    = m.publierEtat;
-        _publierProduit                 = m.publierProduit;
-        _publierScores                  = m.publierScores;
-        _afficherReponsesInvitesSurHote = m.afficherReponsesInvitesSurHote;
-        _viderReponses                  = m.viderReponses;
-        _setProduitSuivantCallback      = m.setProduitSuivantCallback;
-        _envoyerEstimationHote          = m.envoyerEstimationHote          || (() => {});
-        _declencherAfficherPrix         = m.declencherAfficherPrix         || (() => {});
-        _declencherRevelationAvecPrix   = m.declencherRevelationAvecPrix   || (() => {});
-
-        // Exposer sur window pour index.html
-        window._jpEnvoyerEstimationHote = (v) => _envoyerEstimationHote(v);
-        window._jpDeclencherAfficher    = ()  => _declencherAfficherPrix();
-        window._jpNbJoueursInvites = () => Math.max(0, (GameState.joueurs || []).length - 1);
-        window._jpValiderAvecPoints = (pts) => {
-            if (pts > 0) {
-                if (GameState.mode === 'solo') ajouterPoints(GameState.joueurs[0], pts);
-                else ajouterPoints(GameState.equipes[0].nom, pts);
-                _publierScores();
-            }
-        };
-
-        console.log('[JP] ✅ Module hôte Juste Prix chargé');
+        _injecterPanneauHote = m.injecterPanneauHote || (() => {});
+        console.log('[JP] ✅ Module hôte chargé');
         return true;
     } catch (e) {
-        console.warn('[JP] ⚠️ justeprix_hote.js introuvable — mode solo', e.message);
+        console.warn('[JP] ⚠️ justeprix_hote.js indisponible :', e.message);
         return false;
     }
 }
 
-// ── Outils ────────────────────────────────────────────────────
-function melangerTableau(tab) {
-    for (let i = tab.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [tab[i], tab[j]] = [tab[j], tab[i]];
+// ── Handlers events serveur ────────────────────────────────────
+
+function _onProduitStart(payload) {
+    _arreterTimer();
+    _produitCourant     = payload.produit || null;
+    _tsDebut            = payload.tsDebut || Date.now();
+    _dureeMs            = payload.dureeMs || 60_000;
+    _estimationEnvoyee  = false;
+
+    if (payload.scores) {
+        GameState.scores = GameState.scores || {};
+        Object.assign(GameState.scores, payload.scores);
     }
-    return tab;
+
+    _afficherProduit(_produitCourant);
+    _resetBoutonsHote();
+    _demarrerTimer();
+    console.log(`[JP] 🎲 Manche ${payload.manche} — produit reçu (sans prix)`);
 }
 
-function getProduitCourant() {
-    return jpProduits[jpOrdre[jpIndex]];
-}
+function _onRevelation(payload) {
+    _arreterTimer();
+    const { produit, scores } = payload;
+    if (scores) {
+        GameState.scores = GameState.scores || {};
+        Object.assign(GameState.scores, scores);
+    }
+    try { afficherScoreboard(); } catch {}
 
-// ── Timer ──────────────────────────────────────────────────────
-function afficherTimerJP() {
-    const t = $("jp-timer");
-    if (!t) return;
-    const m = String(Math.floor(tempsRestantJP / 60)).padStart(2, "0");
-    const s = String(tempsRestantJP % 60).padStart(2, "0");
-    t.textContent = `${m}:${s}`;
-}
+    // Afficher le vrai prix sur la carte produit
+    const prixEl = $('jp-produit-prix');
+    if (prixEl) {
+        prixEl.textContent = produit?.prix || '';
+        prixEl._revealed   = true;
+    }
 
-function demarrerTimerJP() {
-    clearInterval(timerJP);
-    tempsRestantJP = 60;
-    const t = $("jp-timer");
-    if (t) t.classList.remove("clignote");
-    afficherTimerJP();
-
-    timerJP = setInterval(() => {
-        tempsRestantJP--;
-        afficherTimerJP();
-        if (tempsRestantJP <= 5 && tempsRestantJP > 0) {
-            $("jp-timer")?.classList.add("clignote");
+    // Bouton "Produit suivant" actif (déjà présent dans le DOM existant)
+    // Repointer btn-next-jp / jp-btn-next vers next_produit serveur
+    ['btn-next-jp', 'jp-btn-next'].forEach(id => {
+        const el = $(id);
+        if (el) {
+            el.onclick = () => {
+                try { socket.send('HOST_ACTION', { action: 'justeprix:next_produit', data: {} }); }
+                catch (err) { console.error('[JP] send next_produit:', err.message); }
+            };
         }
-        if (tempsRestantJP <= 0) {
-            clearInterval(timerJP);
-            $("jp-timer")?.classList.remove("clignote");
-        }
-    }, 1000);
+    });
 }
 
-// ── Afficher un produit ────────────────────────────────────────
-function afficherProduit() {
-    const p = getProduitCourant();
+function _onTimerExpired() {
+    if (!_estimationEnvoyee) {
+        const inp = $('jp-input-hote');
+        const val = inp ? inp.value.trim() : '';
+        if (val) _soumettreEstimation(val);
+    }
+}
+
+// ── Affichage produit ─────────────────────────────────────────
+
+function _afficherProduit(p) {
     if (!p) return;
 
-    // Nom
-    const nomEl = $("jp-produit-nom");
-    if (nomEl) nomEl.textContent = p.Nom || '';
+    const nomEl = $('jp-produit-nom');
+    if (nomEl) nomEl.textContent = p.nom || '';
 
-    // Description
-    const descEl = $("jp-produit-description");
-    if (descEl) descEl.textContent = p.Description || '';
+    const descEl = $('jp-produit-description');
+    if (descEl) descEl.textContent = p.description || '';
 
-    // Catégorie
-    const catEl = $("jp-categorie");
+    const catEl = $('jp-categorie');
     if (catEl) {
-        catEl.textContent = p['Catégorie'] || '';
+        catEl.textContent = p.categorie || '';
         catEl.style.animation = 'none';
         void catEl.offsetWidth;
         catEl.style.animation = 'bounceIn 0.8s ease-out';
     }
 
-    // Image
-    const imgEl = $("jp-produit-image");
+    const imgEl = $('jp-produit-image');
     if (imgEl) {
-        const src = (p.Image && p.Image.trim() !== '') ? p.Image : `images/produit_${p.ID}.jpg`;
+        const src = (p.imageSrc && p.imageSrc.trim() !== '') ? p.imageSrc : `images/produit_${p.id}.jpg`;
         imgEl.src   = src;
-        imgEl.alt   = p.Nom || 'Produit';
+        imgEl.alt   = p.nom || 'Produit';
         imgEl.style.display = 'block';
     }
 
-    // Lien Google Shopping
-    const lienEl = $("jp-produit-lien");
+    const lienEl = $('jp-produit-lien');
     if (lienEl) {
-        const q = encodeURIComponent(`${p.Marque || ''} ${p.Nom || ''} ${p.Description || ''}`.trim());
+        const q = encodeURIComponent(`${p.marque || ''} ${p.nom || ''} ${p.description || ''}`.trim());
         lienEl.href = `https://www.google.com/search?tbm=shop&q=${q}`;
     }
 
-    // Bouton prix — stocker le vrai prix mais ne pas l'afficher encore
-    const prixEl = $("jp-produit-prix");
+    // Bouton prix : caché tant que pas révélé
+    const prixEl = $('jp-produit-prix');
     if (prixEl) {
         prixEl.textContent = '👁️ Afficher le prix';
-        prixEl._prix       = p.Prix || '';
         prixEl._revealed   = false;
-    }
-
-    // Réinitialiser champ + boutons hôte
-    _resetBoutonsUI();
-
-    demarrerTimerJP();
-
-    // Publier aux invités — résoudre l'URL image en absolu
-    // pour que jeu.html puisse l'afficher quel que soit son emplacement
-    const srcImg = (p.Image && p.Image.trim()) ? p.Image.trim() : `images/produit_${p.ID}.jpg`;
-    const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '');
-    const srcAbsolu = srcImg.startsWith('http') ? srcImg : `${baseUrl}/${srcImg.replace(/^\//, '')}`;
-    p._imageSrcResolu = srcAbsolu;
-    _publierProduit(p);
-    _viderReponses();
-
-    // Mettre à jour le panneau après 500ms
-    setTimeout(() => _afficherReponsesInvitesSurHote('jp-invites-reponses'), 500);
-}
-
-function _resetBoutonsUI() {
-    const btnEnvoyer = document.getElementById('jp-btn-envoyer-hote');
-    if (btnEnvoyer) {
-        btnEnvoyer.disabled      = false;
-        btnEnvoyer._sent         = false;
-        btnEnvoyer.style.opacity = '';
-        btnEnvoyer.textContent   = '✅ Envoyer mon estimation';
-    }
-    const input = document.getElementById('jp-input-hote');
-    if (input) { input.value = ''; input.disabled = false; }
-
-    const btnAfficher = document.getElementById('jp-btn-afficher-prix');
-    if (btnAfficher) {
-        btnAfficher.disabled        = true;
-        btnAfficher.style.opacity   = '0.4';
-        btnAfficher.style.cursor    = 'not-allowed';
-        btnAfficher.title           = 'En attente des estimations de tous les joueurs…';
-        btnAfficher.style.animation = '';
-    }
-}
-
-// ── Navigation ─────────────────────────────────────────────────
-function produitSuivant() {
-    jpIndex = (jpIndex + 1) % jpOrdre.length;
-    afficherProduit();
-}
-
-function produitPrecedent() {
-    jpIndex = (jpIndex - 1 + jpOrdre.length) % jpOrdre.length;
-    afficherProduit();
-}
-
-// ── Panneau invités injecté dans la section ────────────────────
-function injecterPanneauInvites() {
-    if (document.getElementById('panneau-invites-jp')) return;
-    const section = $("justeprix");
-    if (!section) return;
-
-    // Déplacer les boutons Lien et Produit suivant APRÈS le panneau
-    // pour le layout : lien bas-gauche, suivant bas-droite
-    const btnLien    = document.getElementById('jp-produit-lien');
-    const btnSuivant = document.getElementById('btn-next-jp');
-
-    const panneau = document.createElement('div');
-    panneau.id = 'panneau-invites-jp';
-    panneau.style.cssText = `
-        margin-top:20px;background:rgba(251,191,36,0.06);
-        border:1px solid rgba(251,191,36,0.25);border-radius:14px;padding:14px 16px;
-    `;
-    panneau.innerHTML = `
-        <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;
-            color:rgba(251,191,36,.8);margin-bottom:10px;font-weight:700;">
-            💰 Estimations des joueurs
-        </div>
-        <div id="jp-invites-reponses">
-            <p style="font-size:.8rem;color:rgba(255,255,255,.4);text-align:center;">Aucune estimation pour l'instant</p>
-        </div>
-    `;
-    section.appendChild(panneau);
-
-    // Barre boutons bas : lien gauche | suivant droite
-    const barresBas = document.createElement('div');
-    barresBas.id = 'jp-barre-bas';
-    barresBas.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:10px;';
-    if (btnLien)    barresBas.appendChild(btnLien);
-    if (btnSuivant) barresBas.appendChild(btnSuivant);
-    section.appendChild(barresBas);
-
-    setInterval(() => _afficherReponsesInvitesSurHote('jp-invites-reponses'), 2000);
-}
-
-// ── Attacher les listeners hôte ────────────────────────────────
-function attacherListenersJP() {
-    // Navigation produits
-    ["btn-next-jp", "jp-btn-next"].forEach(id => {
-        const el = $(id);
-        if (el) el.onclick = produitSuivant;
-    });
-    const prev = $("jp-btn-prev");
-    if (prev) prev.onclick = produitPrecedent;
-
-    // Bouton "Afficher le prix" (hôte clique quand prêt)
-    const btnPrix = $("jp-produit-prix");
-    if (btnPrix) {
-        btnPrix.onclick = () => {
-            if (btnPrix._revealed) return;
-            const prix = btnPrix._prix || '';
-            if (!prix) return;
-            btnPrix._revealed  = true;
-            btnPrix.textContent = prix;
-            // Déclencher la révélation avec ce prix
-            _declencherRevelationAvecPrix(prix);
+        prixEl.onclick = () => {
+            if (prixEl._revealed) return;
+            try { socket.send('HOST_ACTION', { action: 'justeprix:reveal', data: {} }); }
+            catch (err) { console.error('[JP] send reveal:', err.message); }
         };
     }
 }
 
-// ── Initialisation principale ──────────────────────────────────
-async function initialiserJustePrix() {
-    const hoteActif = await chargerModuleHote();
-
-    if (hoteActif) {
-        const pid = localStorage.getItem('minigame_partie_session_id');
-        console.log('[JP] Partie — partieId =', pid);
-        _publierEtat('en_cours');
-        _publierScores();
-        _setProduitSuivantCallback(produitSuivant);
-
-        // Re-publication pour les invités en retard
-        const cleDemandeEtat = `partie_demande_etat_${pid}`;
-        let _dernierTs = 0;
-        setInterval(() => {
-            try {
-                const raw = localStorage.getItem(cleDemandeEtat);
-                if (!raw) return;
-                const data = JSON.parse(raw);
-                if (data.ts <= _dernierTs) return;
-                _dernierTs = data.ts;
-                _publierEtat('en_cours');
-                _publierScores();
-                const p = getProduitCourant();
-                if (p) _publierProduit(p);
-            } catch {}
-        }, 800);
+function _resetBoutonsHote() {
+    const btnEnv = $('jp-btn-envoyer-hote');
+    if (btnEnv) {
+        btnEnv.disabled      = false;
+        btnEnv._sent         = false;
+        btnEnv.style.opacity = '';
+        btnEnv.textContent   = '✅ Envoyer mon estimation';
     }
-
-    fetch("data/justeprix.json")
-        .then(r => r.json())
-        .then(data => {
-            jpProduits = data;
-            jpOrdre    = melangerTableau([...Array(jpProduits.length).keys()]);
-            jpIndex    = 0;
-            _viderReponses();
-            afficherProduit();
-            attacherListenersJP();
-            if (hoteActif) injecterPanneauInvites();
-        })
-        .catch(err => {
-            console.error("❌ justeprix.json :", err);
-            alert("Impossible de charger les produits.");
-        });
+    const input = $('jp-input-hote');
+    if (input) { input.value = ''; input.disabled = false; }
 }
 
-export { initialiserJustePrix };
+// ── Timer ─────────────────────────────────────────────────────
+
+function _demarrerTimer() {
+    _arreterTimer();
+    const t = $('jp-timer');
+    const compute = () => Math.max(0, Math.ceil((_tsDebut + _dureeMs - Date.now()) / 1000));
+    const fmt = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+    let last = compute();
+    if (t) { t.textContent = fmt(last); t.classList.remove('clignote'); }
+    _timerLocal = setInterval(() => {
+        const r = compute();
+        if (r !== last) {
+            last = r;
+            if (t) {
+                t.textContent = fmt(r);
+                if (r <= 5 && r > 0) t.classList.add('clignote');
+            }
+        }
+        if (r <= 0) {
+            _arreterTimer();
+            if (t) t.classList.remove('clignote');
+        }
+    }, 250);
+}
+
+function _arreterTimer() {
+    if (_timerLocal) { clearInterval(_timerLocal); _timerLocal = null; }
+}
+
+// ── Soumission estimation ─────────────────────────────────────
+
+function _soumettreEstimation(valeur) {
+    if (_estimationEnvoyee || !valeur) return;
+    _estimationEnvoyee = true;
+    const pseudoHote = (GameState?.joueurs?.[0]) || null;
+    try {
+        socket.send('HOST_ACTION', {
+            action: 'justeprix:host_answer',
+            data: { pseudo: pseudoHote, estimation: valeur },
+        });
+        console.log(`[JP] 📨 Estimation hôte envoyée: ${valeur}`);
+    } catch (err) {
+        console.error('[JP] send host_answer:', err.message);
+    }
+    const btn = $('jp-btn-envoyer-hote');
+    if (btn) {
+        btn.disabled = true;
+        btn._sent    = true;
+        btn.style.opacity = '0.45';
+        btn.textContent = '⏳ Envoyé';
+    }
+    const inp = $('jp-input-hote');
+    if (inp) inp.disabled = true;
+}
+
+// ── Listeners ─────────────────────────────────────────────────
+
+function _attacherListeners() {
+    const btnEnv = $('jp-btn-envoyer-hote');
+    if (btnEnv) {
+        btnEnv.onclick = () => {
+            if (btnEnv._sent) return;
+            const inp = $('jp-input-hote');
+            const val = inp ? inp.value.trim() : '';
+            if (!val) return;
+            _soumettreEstimation(val);
+        };
+    }
+
+    // btn-prev local : avant de migrer "produit précédent" en WS, on l'inhibe
+    // (puisque le serveur fait le tirage avec mémoire séquentielle).
+    const prev = $('jp-btn-prev');
+    if (prev) { prev.disabled = true; prev.style.opacity = '0.3'; prev.title = 'Désactivé en mode WS'; }
+}
+
+// ── Abonnements WS ────────────────────────────────────────────
+
+function _abonnerEvenements() {
+    socket.on('JUSTEPRIX_PRODUIT_START', payload => { try { _onProduitStart(payload); } catch (e) { console.warn('[JP] PRODUIT_START', e.message); } });
+    socket.on('JUSTEPRIX_REVELATION',    payload => { try { _onRevelation(payload); }   catch (e) { console.warn('[JP] REVELATION', e.message); } });
+    socket.on('JUSTEPRIX_TIMER_EXPIRED', ()      => { try { _onTimerExpired(); }        catch (e) { console.warn('[JP] TIMER_EXPIRED', e.message); } });
+    socket.on('SCORES_UPDATE', ({ scores }) => {
+        if (scores) {
+            GameState.scores = GameState.scores || {};
+            Object.assign(GameState.scores, scores);
+        }
+        try { afficherScoreboard(); } catch {}
+    });
+}
+
+// ── Init ──────────────────────────────────────────────────────
+
+export async function initialiserJustePrix() {
+    console.log('[JP] Initialisation WS');
+    _abonnerEvenements();
+    const hoteActif = await chargerModuleHote();
+    if (hoteActif) _injecterPanneauHote();
+    _attacherListeners();
+
+    try {
+        socket.send('HOST_ACTION', { action: 'justeprix:load', data: {} });
+        console.log('[JP] 📡 justeprix:load envoyé');
+    } catch (err) {
+        console.error('[JP] send load:', err.message);
+        alert('Impossible de démarrer Juste Prix. Vérifie la connexion.');
+    }
+}
+
+window.initialiserJustePrix = initialiserJustePrix;

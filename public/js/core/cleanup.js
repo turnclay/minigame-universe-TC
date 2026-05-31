@@ -61,15 +61,34 @@ export function nettoyerTout() {
     console.log('[CLEANUP] Nettoyage complet effectué');
 }
 
-export function resetEtatQuizHote() {
-    import('../modules/quiz_hote.js')
-        .then(m => {
-            if (typeof m.nettoyerPartieInvites === 'function') {
-                m.nettoyerPartieInvites();
-                console.log('[CLEANUP] ✅ quiz_hote réinitialisé');
-            }
-        })
-        .catch(() => {});
+// Réinitialise l'état hôte de TOUS les modules de jeu WS migrés.
+// Appelé à GAME_ENDED et au démarrage d'une nouvelle partie (initStartSolo).
+// Chaque module fait un socket.off() propre sur ses handlers WS via son
+// propre nettoyerPartieInvites() — évite les listeners fantômes après un
+// cycle de partie quand l'utilisateur enchaîne plusieurs jeux différents.
+//
+// À étendre quand un nouveau jeu sera migré en WS (P5.5+, P5.8).
+const MODULES_WS_HOTE = [
+    '../modules/quiz_hote.js',
+    '../modules/petitbac_hote.js',
+    '../modules/pendu_hote.js',
+    '../modules/lml_hote.js',
+    '../modules/justeprix_hote.js',
+];
 
+export function resetEtatJeuxHote() {
+    MODULES_WS_HOTE.forEach(chemin => {
+        import(chemin)
+            .then(m => {
+                if (typeof m.nettoyerPartieInvites === 'function') {
+                    m.nettoyerPartieInvites();
+                    console.log(`[CLEANUP] ✅ ${chemin.split('/').pop()} réinitialisé`);
+                }
+            })
+            .catch(() => {});
+    });
     // HostSession est réinitialisé depuis main.js qui le détient
 }
+
+// Alias rétrocompatible — à supprimer une fois tous les callers migrés vers resetEtatJeuxHote.
+export const resetEtatQuizHote = resetEtatJeuxHote;

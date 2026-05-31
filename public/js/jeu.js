@@ -20,6 +20,7 @@ import { Player }           from './modules/player.js';
 import                           './modules/petitbac_player.js';
 import                           './modules/pendu_player.js';
 import                           './modules/lml_player.js';
+import                           './modules/justeprix_player.js';
 
 // ── DOM utils ──────────────────────────────────────────────────
 const $      = id => document.getElementById(id);

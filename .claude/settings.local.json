@@ -24,7 +24,11 @@
       "Bash(node --check public/js/jeux/lml.js)",
       "Bash(node --check public/js/modules/lml_hote.js)",
       "Bash(node --check public/js/modules/lml_player.js)",
-      "Bash(timeout 6 node server/index.js)"
+      "Bash(timeout 6 node server/index.js)",
+      "Bash(node --check server/games/justeprix.js)",
+      "Bash(node --check public/js/jeux/justeprix.js)",
+      "Bash(node --check public/js/modules/justeprix_hote.js)",
+      "Bash(node --check public/js/modules/justeprix_player.js)"
     ]
   }
 }
