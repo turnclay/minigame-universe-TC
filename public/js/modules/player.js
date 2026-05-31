@@ -219,24 +219,39 @@ export const Player = {
             if (el) el.textContent = (this.scoreLocal ?? 0) + ' pt' + ((this.scoreLocal ?? 0) > 1 ? 's' : '');
         });
 
-        // ── Relay QUIZ_* vers QuizModule (enregistré tôt pour éviter
-        //    les pertes si QUIZ_QUESTION arrive avant initPlayer()) ────
-        // Ces listeners sont enregistrés dès Player.init() et relaient
-        // vers this.module si QuizModule est déjà chargé.
-        const quizEvents = ['QUIZ_QUESTION','QUIZ_CORRECTION','QUIZ_END',
-                            'QUIZ_INDICE','QUIZ_ANSWER_ACK','QUIZ_RESPONSE_IN',
-                            'QUIZ_TIMER_EXPIRED','QUIZ_CAN_NEXT'];
-        quizEvents.forEach(evt => {
+        // ── Relay des events de jeu vers le module invité actif ────────
+        // Dispatcher central enregistré une seule fois dès Player.init()
+        // (pas de listener dupliqué). Pour chaque event :
+        //   - si le module expose _on<EVENT> (Quiz, historique) → appelé ;
+        //   - sinon → délégation générique via onWsEvent(evt, payload)
+        //     (Petit Bac, Pendu, Maxi Lettres, Juste Prix).
+        // Un event non géré par le module courant est ignoré par son switch
+        // → aucun effet de bord inter-jeux. Avant P5.5, seuls les QUIZ_*
+        // étaient relayés : les jeux P5 côté invité ne recevaient jamais
+        // leurs events et restaient bloqués sur l'écran d'attente.
+        const gameEvents = [
+            // Quiz
+            'QUIZ_QUESTION','QUIZ_CORRECTION','QUIZ_END','QUIZ_INDICE',
+            'QUIZ_ANSWER_ACK','QUIZ_RESPONSE_IN','QUIZ_TIMER_EXPIRED','QUIZ_CAN_NEXT',
+            // Petit Bac
+            'PETITBAC_MANCHE_START','PETITBAC_REVELATION','PETITBAC_ANSWER_ACK','PETITBAC_TIMER_EXPIRED',
+            // Pendu
+            'PENDU_MOT_START','PENDU_REVELATION','PENDU_ANSWER_ACK','PENDU_RESULT_IN','PENDU_TIMER_EXPIRED',
+            // Maxi Lettres
+            'LML_MANCHE_START','LML_REVELATION','LML_ANSWER_ACK','LML_TIMER_EXPIRED',
+            // Juste Prix
+            'JUSTEPRIX_PRODUIT_START','JUSTEPRIX_REVELATION','JUSTEPRIX_ANSWER_ACK','JUSTEPRIX_TIMER_EXPIRED',
+        ];
+        gameEvents.forEach(evt => {
             socket.on(evt, payload => {
                 if (this.module && typeof this.module['_on' + evt] === 'function') {
                     this.module['_on' + evt](payload);
                 } else if (this.module) {
-                    // Délégation générique via onWsEvent si disponible
                     this.module.onWsEvent?.(evt, payload);
                 }
-                // Si module pas encore chargé : l'événement sera perdu.
-                // QuizModule.initPlayer() enregistre ses propres listeners
-                // sock.on() qui fonctionneront pour les événements suivants.
+                // Si module pas encore chargé : l'événement est perdu, mais la
+                // ré-hydratation gameState au (re)chargement du module couvre
+                // l'état courant (PRODUIT_START / MANCHE_START / résultats).
             });
         });
 
