@@ -1,9 +1,14 @@
 // ============================================================
-// /js/jeux/justeprix.js — v2.0 WS-server-driven (P5.4)
+// /js/jeux/justeprix.js — v2.1 WS-server-driven (P5.4)
 // ============================================================
 // Le serveur tire les produits et calcule les points. Le client
 // hôte affiche le produit reçu via JUSTEPRIX_PRODUIT_START, soumet
 // son estimation, déclenche la révélation.
+//
+// v2.1 : #jp-produit-prix n'est plus un déclencheur de révélation
+//        (chemin caché et redondant). La révélation passe uniquement
+//        par #jp-btn-afficher-prix (câblé dans justeprix_hote.js).
+//        #jp-produit-prix reste un simple porteur de texte du prix.
 // ============================================================
 
 import { $ } from '../core/dom.js';
@@ -60,11 +65,12 @@ function _onRevelation(payload) {
     }
     try { afficherScoreboard(); } catch {}
 
-    // Afficher le vrai prix sur la carte produit
+    // Afficher le vrai prix sur la carte produit (porteur de texte)
     const prixEl = $('jp-produit-prix');
     if (prixEl) {
-        prixEl.textContent = produit?.prix || '';
-        prixEl._revealed   = true;
+        prixEl.textContent  = produit?.prix || '';
+        prixEl._revealed    = true;
+        prixEl.style.display = 'block';
     }
 
     // Bouton "Produit suivant" actif (déjà présent dans le DOM existant)
@@ -121,16 +127,14 @@ function _afficherProduit(p) {
         lienEl.href = `https://www.google.com/search?tbm=shop&q=${q}`;
     }
 
-    // Bouton prix : caché tant que pas révélé
+    // #jp-produit-prix : simple porteur de texte, caché tant que pas révélé.
+    // La révélation est déclenchée uniquement par #jp-btn-afficher-prix.
     const prixEl = $('jp-produit-prix');
     if (prixEl) {
-        prixEl.textContent = '👁️ Afficher le prix';
-        prixEl._revealed   = false;
-        prixEl.onclick = () => {
-            if (prixEl._revealed) return;
-            try { socket.send('HOST_ACTION', { action: 'justeprix:reveal', data: {} }); }
-            catch (err) { console.error('[JP] send reveal:', err.message); }
-        };
+        prixEl.textContent   = '';
+        prixEl._revealed     = false;
+        prixEl.onclick       = null;
+        prixEl.style.display = 'none';
     }
 }
 

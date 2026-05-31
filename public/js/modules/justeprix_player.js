@@ -1,9 +1,13 @@
 // ============================================================
-// /js/modules/justeprix_player.js — v1.0 (P5.4)
+// /js/modules/justeprix_player.js — v1.1 (P5.4)
 // ============================================================
 // Module invité Juste Prix. Auto-enregistré dans JeuRegistry.
 // Affiche le produit (sans prix), permet la saisie d'estimation,
 // soumet via PLAYER_ACTION justeprix:answer.
+//
+// v1.1 : rejoin pendant la phase 'resultats' — le serveur fournit
+//        désormais reponses[] + produit dans gameState, on
+//        reconstruit l'écran de résultats à l'identique.
 // ============================================================
 
 import { JeuRegistry } from './player.js';
@@ -43,9 +47,10 @@ const JusteprixModule = {
                 dureeMs : gameState.dureeMs,
                 manche  : gameState.manche,
             });
-        } else if (gameState && gameState.phase === 'resultats' && gameState.produit) {
-            // Rejoin pendant la révélation — on aura besoin du payload complet.
-            // Pour l'instant on attend le prochain MANCHE_START / REVELATION.
+        } else if (gameState && gameState.phase === 'resultats' && gameState.reponses) {
+            // Rejoin pendant la révélation : payload complet fourni par
+            // getSessionState → on reconstruit l'écran de résultats.
+            this._afficherResultats(gameState);
         }
     },
 

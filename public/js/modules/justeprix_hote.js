@@ -1,7 +1,11 @@
-// /js/modules/justeprix_hote.js — v2.0 WS-server-driven (P5.4)
+// /js/modules/justeprix_hote.js — v2.1 WS-server-driven (P5.4)
 // ============================================================
 // Plus aucun accès localStorage. Le panneau hôte est alimenté
 // par les events WS. Pattern handlers stockés + socket.off.
+//
+// v2.1 : le panneau n'injecte plus de second bouton
+//        #jp-btn-afficher-prix (id dupliqué avec celui d'index.html
+//        → getElementById ambigu). On câble le bouton HTML existant.
 // ============================================================
 
 import { GameState } from '../core/state.js';
@@ -208,23 +212,21 @@ export function injecterPanneauHote() {
             <p style="font-size:.8rem;color:rgba(255,255,255,.4);text-align:center;">
                 Aucune estimation pour l'instant
             </p>
-        </div>
-        <div style="margin-top:12px;text-align:center;">
-            <button id="jp-btn-afficher-prix"
-                style="padding:10px 22px;background:rgba(251,191,36,.18);
-                border:1.5px solid rgba(251,191,36,.45);border-radius:12px;color:white;
-                font-size:.88rem;font-weight:700;cursor:not-allowed;opacity:0.4;
-                transition:opacity .2s;font-family:inherit;"
-                disabled title="En attente des estimations…">
-                💰 Afficher le prix
-            </button>
         </div>`;
     section.appendChild(panneau);
 
-    document.getElementById('jp-btn-afficher-prix').onclick = () => {
-        try { socket.send('HOST_ACTION', { action: 'justeprix:reveal', data: {} }); }
-        catch (err) { console.error('[JP_HOTE] send reveal:', err.message); }
-    };
+    // Le bouton de révélation est l'élément #jp-btn-afficher-prix déjà
+    // présent dans index.html (ligne de saisie hôte). On ne crée PAS de
+    // second bouton portant le même id : deux éléments identiques
+    // rendaient getElementById('jp-btn-afficher-prix') ambigu et cassaient
+    // l'activation/désactivation pilotée par les events WS.
+    const btnReveal = document.getElementById('jp-btn-afficher-prix');
+    if (btnReveal) {
+        btnReveal.onclick = () => {
+            try { socket.send('HOST_ACTION', { action: 'justeprix:reveal', data: {} }); }
+            catch (err) { console.error('[JP_HOTE] send reveal:', err.message); }
+        };
+    }
 }
 
 function _escHtml(s) {

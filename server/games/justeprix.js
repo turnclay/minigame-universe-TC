@@ -1,5 +1,5 @@
 // ======================================================
-// 🎮 server/games/justeprix.js — v1.0 (P5.4)
+// 🎮 server/games/justeprix.js — v1.1 (P5.4)
 // ======================================================
 // Migration de Juste Prix en WS-server-driven. Patron petitbac/pendu.
 //
@@ -27,6 +27,11 @@
 //   JUSTEPRIX_REVELATION    { produit (avec prix), prixNum, reponses[], scores, manche }
 //   JUSTEPRIX_CAN_NEXT      { manche }                                       (host)
 //   JUSTEPRIX_ANSWER_ACK    { status: 'ok'|'already'|'too_late'|'invalid' }
+//
+// v1.1 : la révélation est mémorisée dans s.derniereRevelation et
+//        rejouée par getSessionState (phase 'resultats') → un invité
+//        qui se reconnecte pendant la révélation reconstruit l'écran
+//        de résultats à l'identique (parité LML / Petit Bac).
 // ======================================================
 
 import store from '../store.js';
@@ -92,6 +97,7 @@ function _creerSession(partieId) {
         tsDebut           : null,
         estimations       : {},        // { pseudo: { valeur:string, ts } }
         revelationEnCours : false,
+        derniereRevelation: null,      // payload JUSTEPRIX_REVELATION mémorisé (rejoin)
         timerHandle       : null,
         timerReveal       : null,
         produitsJoues     : new Set(), // IDs déjà tirés
@@ -150,13 +156,10 @@ export function getSessionState(partieId) {
             nbReponses : Object.keys(s.estimations).length,
         };
     }
-    if (s.phase === 'resultats' && s.produit) {
-        return {
-            ...base,
-            produit  : _produitAvecPrix(s.produit),
-            prixNum  : s.prixNum,
-            scores   : store.getScores(partieId) || {},
-        };
+    if (s.phase === 'resultats' && s.derniereRevelation) {
+        // Rejoin pendant la révélation : on renvoie le payload complet
+        // (produit avec prix + reponses calculées) tel qu'il a été diffusé.
+        return { ...base, ...s.derniereRevelation };
     }
     return base;
 }
@@ -200,6 +203,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
                 s.tsDebut           = Date.now();
                 s.estimations       = {};
                 s.revelationEnCours = false;
+                s.derniereRevelation = null;
 
                 broadcastToGame(wss, partieId, 'JUSTEPRIX_PRODUIT_START', {
                     produit : _produitPublic(p),
@@ -361,13 +365,18 @@ function _declencherRevelation(wss, partieId, s, helpers, source) {
     s.phase = 'resultats';
     const scores = store.getScores(partieId) || {};
 
-    broadcastToGame(wss, partieId, 'JUSTEPRIX_REVELATION', {
+    // Source unique du payload : diffusé en direct ET réutilisé au rejoin
+    // (getSessionState) → host, invités présents et invités reconnectés
+    // voient exactement les mêmes résultats.
+    s.derniereRevelation = {
         produit  : _produitAvecPrix(s.produit),
         prixNum  : prix,
         reponses : resultats,
         scores,
         manche   : s.manche,
-    });
+    };
+
+    broadcastToGame(wss, partieId, 'JUSTEPRIX_REVELATION', s.derniereRevelation);
     broadcastToGame(wss, partieId, 'SCORES_UPDATE', { scores });
     broadcastToHost(wss, partieId, 'JUSTEPRIX_CAN_NEXT', { manche: s.manche });
 

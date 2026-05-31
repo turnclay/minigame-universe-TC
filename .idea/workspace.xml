@@ -5,15 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="73d891ed-7cb8-4a2e-b43e-d24a9aad95e0" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/data/justeprix.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/core/cleanup.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/core/cleanup.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/jeu.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/jeu.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/jeux/justeprix.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/jeux/justeprix.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/main.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/modules/justeprix_hote.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/justeprix_hote.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/ws-handler.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/ws-handler.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/games/justeprix.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/games/justeprix.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -23,18 +16,8 @@
   <component name="CopilotChats">
     <option name="panelChat">
       <chat>
-        <option name="activeSessionId" value="7bfa3efa-fa83-4ba4-a3f9-7be89ae76331" />
+        <option name="activeSessionId" value="2deec38d-bdc6-46b7-9ede-90bf72327f36" />
         <option name="sessions">
-          <session>
-            <option name="chatType" value="PANEL" />
-            <option name="id" value="87f5db9c-8b92-4481-896e-0a7a2a984fb6" />
-            <option name="modeId" value="Agent" />
-            <option name="modelProviderName" value="Anthropic" />
-            <option name="modelType" value="byok_family" />
-            <option name="modelValue" value="claude-sonnet-4-6" />
-            <option name="status" value="Stopped" />
-            <option name="targetType" value="LOCAL" />
-          </session>
           <session>
             <option name="chatType" value="PANEL" />
             <option name="id" value="2deec38d-bdc6-46b7-9ede-90bf72327f36" />
@@ -85,12 +68,20 @@
           </session>
           <session>
             <option name="chatType" value="PANEL" />
-            <option name="id" value="7bfa3efa-fa83-4ba4-a3f9-7be89ae76331" />
+            <option name="id" value="44dbcbc3-a9e0-41f6-bdf3-01ff78f87135" />
             <option name="modeId" value="Agent" />
             <option name="modelProviderName" value="Anthropic" />
             <option name="modelType" value="byok_family" />
             <option name="modelValue" value="claude-sonnet-4-6" />
-            <option name="status" value="Stopped" />
+            <option name="targetType" value="LOCAL" />
+          </session>
+          <session>
+            <option name="chatType" value="PANEL" />
+            <option name="id" value="15a1b419-af54-4b8a-bb59-88c5d3cd2aab" />
+            <option name="modeId" value="Agent" />
+            <option name="modelProviderName" value="Anthropic" />
+            <option name="modelType" value="byok_family" />
+            <option name="modelValue" value="claude-opus-4-7" />
             <option name="targetType" value="LOCAL" />
           </session>
         </option>
