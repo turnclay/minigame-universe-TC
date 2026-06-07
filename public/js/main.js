@@ -38,6 +38,7 @@ import {
 import "./jeux/pendu.js";
 import "./jeux/memoire.js";
 import "./jeux/puissance4.js";
+import "./jeux/morpion.js";
 import "./jeux/mimedessine.js";
 import "./jeux/petitbac.js";
 import "./jeux/lml.js";
@@ -337,7 +338,7 @@ const GAME_INIT_FNS = {
     mimer      : ()     => { if (typeof window.initialiserMimer === 'function') window.initialiserMimer(); },
     mimedessine: ()     => { if (typeof window.initialiserMimer === 'function') window.initialiserMimer(); },
     petitbac   : ()     => { if (typeof window.initialiserPetitBac === 'function') window.initialiserPetitBac(); },
-    morpion    : ()     => { /* handled separately */ },
+    morpion    : ()     => { if (typeof window.initialiserMorpion === 'function') window.initialiserMorpion(); },
     lml        : ()     => { if (typeof window.initialiserLML === 'function') window.initialiserLML(); },
     justeprix  : ()     => { if (typeof window.initialiserJustePrix === 'function') window.initialiserJustePrix(); },
     'juste prix': ()    => { if (typeof window.initialiserJustePrix === 'function') window.initialiserJustePrix(); },
@@ -432,14 +433,15 @@ function initStartSolo() {
             if (GameState.joueurs.length < 2 || GameState.joueurs.length > 3) {
                 alert("Le Morpion : 2 à 3 joueurs."); return;
             }
-            lancerJeuLocal("morpion"); return;
+            // pas de return : création de partie WS générique (ci-dessous)
+            // pour que les invités rejoignent et reçoivent l'état via WS.
         }
 
         if (GameState.jeu === "puissance4") {
             if (GameState.joueurs.length !== 2) {
                 alert("Puissance 4 : exactement 2 joueurs."); return;
             }
-            lancerJeuLocal("puissance4"); return;
+            // pas de return : création de partie WS générique (ci-dessous).
         }
 
         if (GameState.jeu === "undercover") {
