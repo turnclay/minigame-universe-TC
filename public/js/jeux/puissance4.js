@@ -291,15 +291,15 @@ function mettreAJourStatus() {
     if (status && !partieTerminee) {
         const nomJoueur = joueurs[joueurActuel];
         const couleur   = couleurs[nomJoueur];
-        const estTourHote = !_hoteActifP4 || nomJoueur === _pseudoHoteP4;
+        const estTourHote = !_hoteActif || nomJoueur === _pseudoHote;
         const suffixe     = estTourHote ? '' : ' ⏳ (en attente…)';
         status.textContent = `Au tour de : ${couleur} ${nomJoueur}${suffixe}`;
         status.className   = "puissance4-status";
     }
     // Griser les colonnes quand c'est le tour d'un invité
     const grilleEl = document.getElementById('puissance4-grille');
-    if (grilleEl && _hoteActifP4) {
-        const estTourHote = joueurs[joueurActuel] === _pseudoHoteP4;
+    if (grilleEl && _hoteActif) {
+        const estTourHote = joueurs[joueurActuel] === _pseudoHote;
         grilleEl.style.opacity = estTourHote ? '1' : '0.45';
         grilleEl.style.pointerEvents = estTourHote ? '' : 'none';
     }
@@ -319,7 +319,7 @@ function afficherVictoire(gagnant, cellulesGagnantes = []) {
     const grilleEnd = document.getElementById("puissance4-grille");
     if (grilleEnd) { grilleEnd.style.opacity = "1"; grilleEnd.style.pointerEvents = ""; }
 
-    // 🎨 Appliquer la classe d’animation selon la couleur du gagnant
+    // 🎨 Appliquer la classe d'animation selon la couleur du gagnant
     const classeWin = couleurs[gagnant] === "jaune" ? "win-yellow" : "win-red";
 
     cellulesGagnantes.forEach(cell => {
