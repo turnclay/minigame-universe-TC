@@ -953,5 +953,6 @@ export function initialiserMorpion() {
     game.initialiser();
 }
 
-// Export global pour compatibility
-// export already declared above
+// Exposé pour le registre GAME_INIT_FNS de main.js (compat window.*),
+// comme initialiserPuissance4 / initialiserPetitBac.
+window.initialiserMorpion = initialiserMorpion;
