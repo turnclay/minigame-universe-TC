@@ -11,24 +11,18 @@ import { modifierScore } from "../modules/scoreboard.js";
 import { socket } from "../core/socket.js";
 
 // ── Module hôte (chargé dynamiquement) ──
-let _publierEtat    = () => {};
-let _publierScores  = () => {};
-let _publierGrille  = () => {};
-let _crediterPoints = () => {};
-let _viderCoup      = () => {};
-let _stopEcouteP4   = null;
-let _hoteActifP4    = false;
-let _wsCoupHandlerP4   = null;
-let _wsResyncHandlerP4 = null;
+let _publierEtatGrille = () => {};
+let _publierScores     = () => {};
+let _crediterPoints    = () => {};
+let _wsCoupHandler     = null;
+let _wsResyncHandler   = null;
 
-async function _chargerModuleHoteP4() {
+async function _chargerModuleHote() {
     try {
         const m = await import('../modules/puissance4_hote.js');
-        _publierEtat    = m.publierEtat;
-        _publierScores  = m.publierScores;
-        _publierGrille  = m.publierEtatGrille;
-        _crediterPoints = m.crediterPoints;
-        _viderCoup      = m.viderCoupInvite;
+        _publierEtatGrille = m.publierEtatGrille;
+        _publierScores     = m.publierScores;
+        _crediterPoints    = m.crediterPoints;
         console.log('[P4] ✅ Module hôte chargé');
         return m;
     } catch (e) {
@@ -37,8 +31,8 @@ async function _chargerModuleHoteP4() {
     }
 }
 
-function _publierEtatGrilleP4() {
-    if (!_hoteActifP4) return;
+function _publierEtatCourant() {
+    if (!_hoteActif) return;
     socket.send('HOST_ACTION', {
         action: 'puissance4:state',
         data: {
@@ -47,14 +41,14 @@ function _publierEtatGrilleP4() {
             joueurs:        joueurs.map(nom => ({ nom, emoji: couleurs[nom] })),
             couleurs:       couleurs,
             partieTerminee: partieTerminee,
-            gagnant:        _gagnantP4  || null,
-            matchNul:       _matchNulP4 || false
+            gagnant:        _gagnant  || null,
+            matchNul:       _matchNul || false
         }
     });
 }
 
-let _gagnantP4  = null;
-let _matchNulP4 = false;
+let _gagnant  = null;
+let _matchNul = false;
 
 // ============================================
 // 🎯 CONSTANTES
@@ -74,7 +68,8 @@ let joueurs = [];
 let partieTerminee = false;
 let couleurs = {};
 let _animationEnCours = false;  // verrou anti-double-clic pendant la chute
-let _pseudoHoteP4     = null;   // nom du joueur hôte (joueurs[0])
+let _pseudoHote      = null;   // nom du joueur hôte (joueurs[0])
+let _hoteActif       = false;  // true si c'est l'hôte en jeu actif
 
 // ============================================
 // 🎨 CRÉATION DE LA GRILLE
@@ -127,13 +122,13 @@ function creerGrille() {
 function jouerColonne(col, fromInvite = false) {
     if (partieTerminee || _animationEnCours) return;
     // Clics UI : l'hôte ne peut jouer que quand c'est son tour
-    if (!fromInvite && _hoteActifP4 && joueurs[joueurActuel] !== _pseudoHoteP4) {
+    if (!fromInvite && _hoteActif && joueurs[joueurActuel] !== _pseudoHote) {
         console.log('[P4] Clic UI ignoré — tour de ' + joueurs[joueurActuel] + ', pas de l\'hôte');
         return;
     }
     // Coup invité : vérifier que c'est bien son tour
-    if (fromInvite && _hoteActifP4) {
-        // déjà validé par _recevoirCoupInviteP4 — on passe
+    if (fromInvite && _hoteActif) {
+        // déjà validé par _recevoirCoupInvite — on passe
     }
 
     // Trouver la première case vide en partant du bas (gravité)
@@ -189,7 +184,7 @@ function jouerColonne(col, fromInvite = false) {
         joueurActuel = (joueurActuel + 1) % joueurs.length;
         mettreAJourStatus();
         // Publier le nouvel état pour les invités
-        _publierEtatGrilleP4();
+        _publierEtatCourant();
     }, 620);
 }
 
@@ -332,11 +327,11 @@ function afficherVictoire(gagnant, cellulesGagnantes = []) {
     });
 
     // Publier la fin de partie
-    _gagnantP4 = gagnant; _matchNulP4 = false;
-    _publierEtatGrilleP4();
+    _gagnant = gagnant; _matchNul = false;
+    _publierEtatCourant();
 
     // Ajouter des points au gagnant
-    if (_hoteActifP4) {
+    if (_hoteActif) {
         _crediterPoints([gagnant], 4);
     } else if (GameState.mode === "solo") {
         modifierScore(gagnant, 4);
@@ -365,8 +360,8 @@ function afficherMatchNul() {
         status.className = "puissance4-status puissance4-nul";
     }
 
-    _matchNulP4 = true; _gagnantP4 = null;
-    _publierEtatGrilleP4();
+    _matchNul = true; _gagnant = null;
+    _publierEtatCourant();
 
     const btnRejouer = document.getElementById("puissance4-rejouer");
     if (btnRejouer) {
@@ -383,14 +378,14 @@ function nouvellePartie() {
     // Premier joueur aléatoire : peut être n'importe quel joueur
     joueurActuel = joueurs.length > 0 ? Math.floor(Math.random() * joueurs.length) : 0;
     _animationEnCours = false;
-    _gagnantP4 = null;
-    _matchNulP4 = false;
+    _gagnant = null;
+    _matchNul = false;
     // Remettre le pseudo hôte si les joueurs sont déjà chargés
-    if (joueurs.length > 0) _pseudoHoteP4 = joueurs[0];
+    if (joueurs.length > 0) _pseudoHote = joueurs[0];
     creerGrille();
     mettreAJourStatus();
     // Publier l'état initial pour les invités
-    _publierEtatGrilleP4();
+    _publierEtatCourant();
 
     const btnRejouer = document.getElementById("puissance4-rejouer");
     if (btnRejouer) {
@@ -429,7 +424,7 @@ async function initialiserPuissance4() {
     joueurs.forEach((joueur, index) => {
         couleurs[joueur] = COLORS[index % COLORS.length];
     });
-    _pseudoHoteP4 = joueurs[0]; // l'hôte est toujours le premier joueur
+    _pseudoHote = joueurs[0]; // l'hôte est toujours le premier joueur
 
     // Initialiser le bouton rejouer
     const btnRejouer = document.getElementById("puissance4-rejouer");
@@ -442,42 +437,41 @@ async function initialiserPuissance4() {
     console.log("[PUISSANCE4] Couleurs:", couleurs);
 
     // Charger le module hôte (pour crediterPoints / scores globaux)
-    await _chargerModuleHoteP4();
+    await _chargerModuleHote();
 
     // Transport WS : l'hôte garde la logique, diffuse l'état complet
     // (puissance4:state) et reçoit les coups (puissance4:move). Le serveur
     // relaie génériquement HOST_ACTION → invités et PLAYER_ACTION → hôte.
     if (_publierScores) { try { _publierScores(); } catch {} }
 
-    if (!_wsCoupHandlerP4) {
-        _wsCoupHandlerP4 = (payload) => {
+    if (!_wsCoupHandler) {
+        _wsCoupHandler = (payload) => {
             if (!payload || payload.action !== 'puissance4:move') return;
-            _recevoirCoupInviteP4({ pseudo: payload.pseudo, col: payload.data?.col });
+            _recevoirCoupInvite({ pseudo: payload.pseudo, col: payload.data?.col });
         };
     }
-    if (!_wsResyncHandlerP4) {
-        _wsResyncHandlerP4 = () => _publierEtatGrilleP4();
+    if (!_wsResyncHandler) {
+        _wsResyncHandler = () => _publierEtatCourant();
     }
-    socket.off('PLAYER_ACTION', _wsCoupHandlerP4);
-    socket.on('PLAYER_ACTION', _wsCoupHandlerP4);
-    socket.off('PLAYER_JOINED', _wsResyncHandlerP4);
-    socket.on('PLAYER_JOINED', _wsResyncHandlerP4);
-    socket.off('PLAYER_RECONNECTED', _wsResyncHandlerP4);
-    socket.on('PLAYER_RECONNECTED', _wsResyncHandlerP4);
-    _hoteActifP4 = true;
+    socket.off('PLAYER_ACTION', _wsCoupHandler);
+    socket.on('PLAYER_ACTION', _wsCoupHandler);
+    socket.off('PLAYER_JOINED', _wsResyncHandler);
+    socket.on('PLAYER_JOINED', _wsResyncHandler);
+    socket.off('PLAYER_RECONNECTED', _wsResyncHandler);
+    socket.on('PLAYER_RECONNECTED', _wsResyncHandler);
+    _hoteActif = true;
 
     // Démarrer la partie
     nouvellePartie();
 }
 
-function _recevoirCoupInviteP4(coup) {
+function _recevoirCoupInvite(coup) {
     if (partieTerminee) return;
     const joueurCourant = joueurs[joueurActuel];
     if (coup.pseudo !== joueurCourant) {
         console.log('[P4] Coup ignoré — pas le tour de', coup.pseudo, '(attendu:', joueurCourant, ')');
         return;
     }
-    _viderCoup();
     console.log('[P4] Coup invité accepté col:', coup.col);
     jouerColonne(coup.col, true); // fromInvite=true → bypass garde UI
 }

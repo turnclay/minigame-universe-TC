@@ -2,16 +2,11 @@
 // ============================================================
 // 📡 PUISSANCE4_HOTE.JS — Synchronisation hôte ↔ invités (Puissance 4)
 // ============================================================
-// Logique identique au morpion : l'hôte publie la grille complète
-// après chaque coup, les invités jouent depuis leur écran.
+// Logique multijoueur : l'hôte publie la grille complète après chaque coup.
+// Les invités reçoivent l'état via WS (HOST_ACTION 'puissance4:state').
 //
-// Clés localStorage :
-//   partie_question_{id}   — { grille, joueurActuel, joueurs, couleurs,
-//                            partieTerminee, gagnant, matchNul, ts }
-//   partie_etat_{id}       — "attente" | "en_cours" | "fin"
-//   partie_scores_{id}     — scores
-//   partie_reponses_{id}   — { pseudo, col, ts }  coup soumis par un invité
-//   partie_revelation_{id} — { gagnant, matchNul, ts }
+// Clés localStorage (LEGACY — non utilisées par puissance4.js) :
+//   partie_scores_{id}     — scores de tous
 // ============================================================
 
 import { GameState } from '../core/state.js';
@@ -24,69 +19,21 @@ function partieId() {
     return id || 'inconnu';
 }
 
-const cleQ  = () => `partie_question_${partieId()}`;
-const cleE  = () => `partie_etat_${partieId()}`;
 const cleS  = () => `partie_scores_${partieId()}`;
-const cleR  = () => `partie_reponses_${partieId()}`;
-const cleRv = () => `partie_revelation_${partieId()}`;
 
-export function publierEtat(etat)  { localStorage.setItem(cleE(), etat); }
 export function publierScores()    { localStorage.setItem(cleS(), JSON.stringify(GameState.scores || {})); }
-export function lireCoupInvite()   {
-    try { return JSON.parse(localStorage.getItem(cleR()) || 'null'); } catch { return null; }
-}
-export function viderCoupInvite()  { localStorage.removeItem(cleR()); }
 
 // ======================================================
 // 📡 PUBLIER L'ÉTAT COMPLET DE LA GRILLE
+// Appelé après chaque coup valide côté hôte.
+// L'état est envoyé via WS (HOST_ACTION 'puissance4:state')
 // ======================================================
 export function publierEtatGrille({ grille, joueurActuel, joueurs, couleurs,
                                     partieTerminee, gagnant, matchNul }) {
-    localStorage.setItem(cleQ(), JSON.stringify({
-        grille,         // tableau 2D [row][col] = null | indexJoueur
-        joueurActuel,   // index du joueur courant
-        joueurs,        // [{ nom, emoji }]
-        couleurs,       // { pseudo: emoji }
-        partieTerminee: !!partieTerminee,
-        gagnant:  gagnant  || null,
-        matchNul: !!matchNul,
-        ts: Date.now()
-    }));
-
-    if (partieTerminee) {
-        localStorage.setItem(cleRv(), JSON.stringify({
-            gagnant:  gagnant  || null,
-            matchNul: !!matchNul,
-            ts: Date.now()
-        }));
-    }
-}
-
-// ======================================================
-// 📡 ÉCOUTER LES COUPS DES INVITÉS
-// ======================================================
-export function ecouterCoupInvite(onCoup) {
-    let _tsVu = 0;
-
-    const verifier = () => {
-        const raw = localStorage.getItem(cleR());
-        if (!raw) return;
-        try {
-            const data = JSON.parse(raw);
-            if (!data || data.ts <= _tsVu) return;
-            _tsVu = data.ts;
-            onCoup(data);  // { pseudo, col, ts }
-        } catch {}
-    };
-
-    const handler = (e) => { if (e.key === cleR()) verifier(); };
-    window.addEventListener('storage', handler);
-    const iv = setInterval(verifier, 500);
-
-    return () => {
-        window.removeEventListener('storage', handler);
-        clearInterval(iv);
-    };
+    // Les données sont envoyées via WS par puissance4.js, pas localStorage
+    // Cette fonction est nécessaire à l'import du module, mais directement inutilisée
+    // On la garde pour compatibilité et future utilisation.
+    console.log('[PUISSANCE4_HOTE] État grille (via WS, pas localStorage)');
 }
 
 // ======================================================
@@ -109,12 +56,4 @@ export function crediterPoints(gagnants, points = 4) {
     });
     publierScores();
     if (typeof window.afficherScoreboard === 'function') window.afficherScoreboard();
-}
-
-export function nettoyerPartieInvites() {
-    const pid = partieId();
-    [`partie_question_${pid}`, `partie_reponses_${pid}`,
-     `partie_scores_${pid}`,   `partie_revelation_${pid}`]
-        .forEach(k => localStorage.removeItem(k));
-    publierEtat('fin');
 }

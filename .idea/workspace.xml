@@ -5,8 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="73d891ed-7cb8-4a2e-b43e-d24a9aad95e0" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/public/js/jeux/morpion.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/jeux/morpion.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/modules/morpion_hote.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/morpion_hote.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/jeux/puissance4.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/jeux/puissance4.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/modules/puissance4_hote.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/puissance4_hote.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/ws-handler.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/ws-handler.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
