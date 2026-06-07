@@ -8,21 +8,17 @@ import { ajouterPoints } from "../modules/scoreboard.js";
 import { socket } from "../core/socket.js";
 
 // ── Module hôte (chargé dynamiquement pour ne pas bloquer) ──
-let _publierEtat       = () => {};
-let _publierScores     = () => {};
-let _publierPlateau    = () => {};
-let _crediterPoints    = () => {};
-let _viderCoup         = () => {};
-let _stopEcoute        = null;
+let _publierEtatPlateau = () => {};
+let _publierScores      = () => {};
+let _crediterPoints     = () => {};
+let _stopEcoute         = null;
 
 async function _chargerModuleHote() {
     try {
         const m = await import('../modules/morpion_hote.js');
-        _publierEtat    = m.publierEtat;
-        _publierScores  = m.publierScores;
-        _publierPlateau = m.publierEtatPlateau;
-        _crediterPoints = m.crediterPoints;
-        _viderCoup      = m.viderCoupInvite;
+        _publierEtatPlateau = m.publierEtatPlateau;
+        _publierScores      = m.publierScores;
+        _crediterPoints     = m.crediterPoints;
         console.log('[MORPION] ✅ Module hôte chargé');
         return m;
     } catch (e) {
@@ -56,10 +52,10 @@ class MorpionGame {
         this.jetonsBloquage = {};
         this.partieTerminee = false;
 
-        // ✔️ Nouveau container compatible avec ton HTML
+        // ✔️ Conteneur du jeu
         this.container     = document.getElementById("morpion-container");
         this._pseudoHote   = null;  // pseudo du joueur hôte
-        this._hoteActifM   = false; // true si module hôte chargé
+        this._hoteActif    = false; // true si c'est l'hôte en jeu actif
     }
 
     // ======================================================
@@ -75,7 +71,7 @@ class MorpionGame {
 
         // Le pseudo hôte est toujours GameState.joueurs[0]
         this._pseudoHote = GameState.joueurs?.[0] || '';
-        this._hoteActifM = false; // activé dans demarrerPartie()
+        this._hoteActif  = false; // activé dans demarrerPartie()
 
         // Transport WS : aucun signal localStorage. Les invités ont déjà
         // reçu GAME_STARTED et affichent un écran d'attente jusqu'au premier
@@ -119,7 +115,6 @@ class MorpionGame {
             console.log('[MORPION] Coup ignoré — pas le tour de', coup.pseudo, '(attendu:', joueurActuel.nom, ')');
             return;
         }
-        _viderCoup();
         console.log('[MORPION] Coup invité accepté :', coup);
         this.jouerCoup(coup.row, coup.col, true); // fromInvite=true → bypass garde UI
     }
@@ -413,8 +408,7 @@ initConfigListeners() {
         socket.off('PLAYER_RECONNECTED', this._wsResyncHandler);
         socket.on('PLAYER_RECONNECTED', this._wsResyncHandler);
 
-        this._hoteActif  = true;
-        this._hoteActifM = true;  // activer le verrou de tour côté hôte
+        this._hoteActif = true;
 
         // Countdown 3s côté hôte PUIS afficher le plateau
         // (main.js ne fait plus le countdown pour morpion)
@@ -533,7 +527,7 @@ initConfigListeners() {
     // 🖥️ METTRE À JOUR L'UI DU TOUR
     // ======================================================
     _mettreAJourTourUI() {
-        if (!this._hoteActifM) return;
+        if (!this._hoteActif) return;
         const joueurCourant = this.joueurs[this.tourActuel % this.joueurs.length];
         const estMonTour    = joueurCourant.nom === this._pseudoHote;
 
@@ -562,7 +556,7 @@ initConfigListeners() {
     // ======================================================
     jouerCoup(row, col, fromInvite = false) {
         // Clics UI hôte : bloquer si ce n'est pas son tour
-        if (!fromInvite && this._hoteActifM) {
+        if (!fromInvite && this._hoteActif) {
             const joueurCourant = this.joueurs[this.tourActuel % this.joueurs.length];
             if (joueurCourant.nom !== this._pseudoHote) {
                 console.log('[MORPION] Clic UI ignoré — tour de ' + joueurCourant.nom + ', pas de l\'hôte');
@@ -831,7 +825,7 @@ initConfigListeners() {
 
         setTimeout(() => {
             // Attribuer les points via le module hôte (sync globaux)
-            if (this._hoteActif) {
+            if (this._hoteActif && _crediterPoints) {
                 _crediterPoints(gagnants, 3);
             } else {
                 gagnants.forEach(nomJoueur => ajouterPoints(nomJoueur, 3));

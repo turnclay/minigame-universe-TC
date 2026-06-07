@@ -17,6 +17,7 @@ import * as petitbacHandler  from './games/petitbac.js';
 import * as penduHandler     from './games/pendu.js';
 import * as lmlHandler       from './games/lml.js';
 import * as justeprixHandler from './games/justeprix.js';
+import * as morpionHandler   from './games/morpion.js';
 
 const JEU_HANDLERS = {
     quiz      : quizHandler,
@@ -24,6 +25,7 @@ const JEU_HANDLERS = {
     pendu     : penduHandler,
     lml       : lmlHandler,
     justeprix : justeprixHandler,
+    morpion   : morpionHandler,
 };
 
 const PSEUDO_REGEX    = /^[a-zA-Z0-9_-]{2,20}$/;
