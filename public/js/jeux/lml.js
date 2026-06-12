@@ -63,9 +63,9 @@ function _onRevelation(payload) {
     if (btnR) {
         btnR.hidden      = false;
         btnR.textContent = '🔄 Nouvelles lettres';
-        // Handler unique attaché dans _attacherListeners (pas de doublon
-        // d'événement : on ne ré-attache pas de onclick ici, sinon
-        // lml:next_manche partirait deux fois au clic).
+        // Handler unique attaché dans _attacherListeners (pas de doublon :
+        // ne pas ré-attacher de onclick ici, sinon lml:next_manche partirait
+        // deux fois au clic).
     }
 }
 
@@ -140,6 +140,17 @@ function _arreterTimer() {
 
 // ── Soumission du mot hôte ────────────────────────────────────
 
+// Logique de clic centralisée : lue par le bouton ET par la touche Entrée.
+function _clicEnvoyerMotHote() {
+    const be = $('lml-btn-envoyer-hote');
+    if (be && be._sent) return;
+    if (_motEnvoye) return;
+    const inp = $('lml-input');
+    const mot = (inp ? inp.value : '').toUpperCase().trim();
+    if (!mot) return;
+    _soumettreMotHote(mot);
+}
+
 function _soumettreMotHote(mot) {
     if (_motEnvoye) return;
     _motEnvoye = true;
@@ -152,6 +163,8 @@ function _soumettreMotHote(mot) {
         console.log(`[LML] 📨 Mot hôte envoyé: "${mot}"`);
     } catch (err) {
         console.error('[LML] send host_answer:', err.message);
+        _motEnvoye = false; // permet une nouvelle tentative si l'envoi a échoué
+        return;
     }
     const be = $('lml-btn-envoyer-hote');
     if (be) { be.disabled = true; be._sent = true; be.style.opacity = '0.45'; be.textContent = '⏳ Envoyé'; }
@@ -159,7 +172,7 @@ function _soumettreMotHote(mot) {
     if (inp) inp.disabled = true;
 }
 
-// ── Boutons hôte (statiques .lml-hote-row, ou injectés en fallback) ──
+// ── Boutons hôte (statiques .lml-hote-row, ou injectés en secours) ──
 
 function _injecterBoutons() {
     const section = $('lml'); if (!section) return;
@@ -188,19 +201,12 @@ function _injecterBoutons() {
         else section.appendChild(wrap);
     }
 
-    // Attache le handler de soumission UNE seule fois — que le bouton soit
-    // statique (index.html) ou injecté. C'était le bug : sur bouton statique,
-    // l'ancien code abandonnait sans jamais relier le clic → l'hôte ne pouvait
-    // pas soumettre son mot.
+    // CORRECTIF : attache le handler de clic UNE seule fois, que le bouton
+    // soit statique (index.html) ou injecté. L'ancien code sortait sans rien
+    // attacher quand le bouton existait déjà → l'hôte ne pouvait pas envoyer.
     if (!btnEnv._lmlBound) {
         btnEnv._lmlBound = true;
-        btnEnv.addEventListener('click', () => {
-            if (btnEnv._sent) return;
-            const inp = $('lml-input');
-            const mot = (inp ? inp.value : '').toUpperCase().trim();
-            if (!mot) return;
-            _soumettreMotHote(mot);
-        });
+        btnEnv.addEventListener('click', _clicEnvoyerMotHote);
     }
 }
 
@@ -217,8 +223,10 @@ function _attacherListeners() {
         _afficherLettres();
     });
 
+    // Entrée → soumission directe (ne dépend plus d'un .click() sur un bouton
+    // potentiellement non câblé).
     $('lml-input')?.addEventListener('keypress', e => {
-        if (e.key === 'Enter') document.getElementById('lml-btn-envoyer-hote')?.click();
+        if (e.key === 'Enter') { e.preventDefault(); _clicEnvoyerMotHote(); }
     });
     $('lml-input')?.addEventListener('input', e => {
         e.target.value = e.target.value.toUpperCase();
