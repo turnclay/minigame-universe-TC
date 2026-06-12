@@ -17,12 +17,14 @@ let _dureeMs        = 60_000;
 let _timerLocal     = null;
 let _motEnvoye      = false;
 
-let _injecterPanneauHote = () => {};
+let _injecterPanneauHote      = () => {};
+let _enregistrerSoumissionHote = () => {}; // maj directe du panneau au clic
 
 async function chargerModuleHote() {
     try {
         const m = await import('../modules/lml_hote.js');
-        _injecterPanneauHote = m.injecterPanneauHote || (() => {});
+        _injecterPanneauHote       = m.injecterPanneauHote   || (() => {});
+        _enregistrerSoumissionHote = m.enregistrerSoumission || (() => {});
         console.log('[LML] ✅ Module hôte chargé');
         return true;
     } catch (e) {
@@ -140,7 +142,7 @@ function _arreterTimer() {
 
 // ── Soumission du mot hôte ────────────────────────────────────
 
-// Logique de clic centralisée : lue par le bouton ET par la touche Entrée.
+// Logique de clic centralisée : appelée par le bouton ET par la touche Entrée.
 function _clicEnvoyerMotHote() {
     const be = $('lml-btn-envoyer-hote');
     if (be && be._sent) return;
@@ -166,6 +168,11 @@ function _soumettreMotHote(mot) {
         _motEnvoye = false; // permet une nouvelle tentative si l'envoi a échoué
         return;
     }
+
+    // Mise à jour DIRECTE du panneau #panneau-invites-lml dès le clic
+    // (optimiste). Le LML_RESPONSE_IN serveur viendra reconfirmer ensuite.
+    if (pseudoHote) { try { _enregistrerSoumissionHote(pseudoHote); } catch {} }
+
     const be = $('lml-btn-envoyer-hote');
     if (be) { be.disabled = true; be._sent = true; be.style.opacity = '0.45'; be.textContent = '⏳ Envoyé'; }
     const inp = $('lml-input');

@@ -95,6 +95,16 @@ export function nettoyerPartieInvites() {
     _motMax          = '';
 }
 
+// ── Maj DIRECTE du panneau au clic hôte (optimiste) ───────────
+// Appelée par lml.js quand l'hôte envoie son mot : le panneau
+// #panneau-invites-lml se met à jour immédiatement, sans attendre
+// l'aller-retour serveur. LML_RESPONSE_IN reconfirme ensuite (idempotent).
+export function enregistrerSoumission(pseudo) {
+    if (!pseudo || pseudo === 'null' || pseudo === 'undefined') return;
+    _reponsesLive[pseudo] = { status: 'fini', ts: Date.now() };
+    _refreshLive();
+}
+
 // ── Panneau ───────────────────────────────────────────────────
 
 function _refreshLive(meta = {}) {
@@ -181,9 +191,10 @@ export function injecterPanneauHote() {
     panneau.style.cssText = `
         margin-top:16px;background:rgba(167,139,250,.06);
         border:1px solid rgba(167,139,250,.25);border-radius:14px;padding:14px 16px;`;
-    // On n'injecte QUE le panneau de réponses : le bouton "Révéler" existe déjà
-    // statiquement dans .lml-hote-row (#lml-btn-afficher). Injecter un second
-    // bouton avec le même id créait un doublon d'id dans le DOM.
+    // On n'injecte QUE le panneau de réponses. Le bouton "Révéler" existe déjà
+    // statiquement dans .lml-hote-row (#lml-btn-afficher) : injecter un second
+    // bouton au même id créait un DOUBLON CACHÉ qui rendait getElementById
+    // ambigu. On réutilise donc le bouton statique.
     panneau.innerHTML = `
         <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;
             color:rgba(167,139,250,.8);margin-bottom:10px;font-weight:700;">
@@ -196,8 +207,7 @@ export function injecterPanneauHote() {
         </div>`;
     section.appendChild(panneau);
 
-    // Réutilise le bouton "Révéler" statique (#lml-btn-afficher) pour la
-    // révélation. Handler attaché une seule fois.
+    // Réutilise le bouton "Révéler" statique (#lml-btn-afficher). Handler unique.
     const btnReveal = document.getElementById('lml-btn-afficher');
     if (btnReveal && !btnReveal._lmlBound) {
         btnReveal._lmlBound = true;
