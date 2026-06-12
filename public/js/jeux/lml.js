@@ -61,12 +61,11 @@ function _onRevelation(payload) {
 
     const btnR = $('lml-rejouer');
     if (btnR) {
-        btnR.hidden     = false;
+        btnR.hidden      = false;
         btnR.textContent = '🔄 Nouvelles lettres';
-        btnR.onclick = () => {
-            try { socket.send('HOST_ACTION', { action: 'lml:next_manche', data: {} }); }
-            catch (err) { console.error('[LML] send next_manche:', err.message); }
-        };
+        // Handler unique attaché dans _attacherListeners (pas de doublon
+        // d'événement : on ne ré-attache pas de onclick ici, sinon
+        // lml:next_manche partirait deux fois au clic).
     }
 }
 
@@ -160,40 +159,53 @@ function _soumettreMotHote(mot) {
     if (inp) inp.disabled = true;
 }
 
-// ── Boutons hôte (injectés dynamiquement) ─────────────────────
+// ── Boutons hôte (statiques .lml-hote-row, ou injectés en fallback) ──
 
 function _injecterBoutons() {
     const section = $('lml'); if (!section) return;
-    if (document.getElementById('lml-btn-envoyer-hote')) return;
 
-    const wrap = document.createElement('div');
-    wrap.id = 'lml-actions-hote';
-    wrap.style.cssText = 'display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;';
+    let btnEnv = document.getElementById('lml-btn-envoyer-hote');
 
-    const btnEnv = document.createElement('button');
-    btnEnv.id = 'lml-btn-envoyer-hote';
-    btnEnv.style.cssText = [
-        'flex:1;padding:12px;border-radius:12px;font-size:.9rem;font-weight:700;',
-        'background:rgba(34,197,94,.2);border:1.5px solid rgba(34,197,94,.45);',
-        'color:white;cursor:pointer;font-family:inherit;transition:opacity .2s;min-width:140px;'
-    ].join('');
-    btnEnv.textContent = '✅ Envoyer mon mot';
-    btnEnv.addEventListener('click', () => {
-        if (btnEnv._sent) return;
-        const inp = $('lml-input');
-        const mot = (inp ? inp.value : '').toUpperCase().trim();
-        if (!mot) return;
-        _soumettreMotHote(mot);
-    });
-    wrap.appendChild(btnEnv);
+    // Le bouton est normalement présent statiquement dans index.html
+    // (.lml-hote-row). S'il est absent, on le crée en secours.
+    if (!btnEnv) {
+        const wrap = document.createElement('div');
+        wrap.id = 'lml-actions-hote';
+        wrap.style.cssText = 'display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;';
 
-    const inputEl = $('lml-input');
-    if (inputEl?.parentElement) inputEl.parentElement.insertAdjacentElement('afterend', wrap);
-    else section.appendChild(wrap);
+        btnEnv = document.createElement('button');
+        btnEnv.id = 'lml-btn-envoyer-hote';
+        btnEnv.style.cssText = [
+            'flex:1;padding:12px;border-radius:12px;font-size:.9rem;font-weight:700;',
+            'background:rgba(34,197,94,.2);border:1.5px solid rgba(34,197,94,.45);',
+            'color:white;cursor:pointer;font-family:inherit;transition:opacity .2s;min-width:140px;'
+        ].join('');
+        btnEnv.textContent = '✅ Envoyer mon mot';
+        wrap.appendChild(btnEnv);
+
+        const inputEl = $('lml-input');
+        if (inputEl?.parentElement) inputEl.parentElement.insertAdjacentElement('afterend', wrap);
+        else section.appendChild(wrap);
+    }
+
+    // Attache le handler de soumission UNE seule fois — que le bouton soit
+    // statique (index.html) ou injecté. C'était le bug : sur bouton statique,
+    // l'ancien code abandonnait sans jamais relier le clic → l'hôte ne pouvait
+    // pas soumettre son mot.
+    if (!btnEnv._lmlBound) {
+        btnEnv._lmlBound = true;
+        btnEnv.addEventListener('click', () => {
+            if (btnEnv._sent) return;
+            const inp = $('lml-input');
+            const mot = (inp ? inp.value : '').toUpperCase().trim();
+            if (!mot) return;
+            _soumettreMotHote(mot);
+        });
+    }
 }
 
 function _attacherListeners() {
-    // Bouton "Nouvelle manche" piloté serveur
+    // Bouton "Nouvelle manche / Nouvelles lettres" piloté serveur — handler unique.
     $('lml-rejouer')?.addEventListener('click', () => {
         try { socket.send('HOST_ACTION', { action: 'lml:next_manche', data: {} }); }
         catch (err) { console.error('[LML] send next_manche:', err.message); }

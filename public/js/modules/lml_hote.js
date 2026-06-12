@@ -181,6 +181,9 @@ export function injecterPanneauHote() {
     panneau.style.cssText = `
         margin-top:16px;background:rgba(167,139,250,.06);
         border:1px solid rgba(167,139,250,.25);border-radius:14px;padding:14px 16px;`;
+    // On n'injecte QUE le panneau de réponses : le bouton "Révéler" existe déjà
+    // statiquement dans .lml-hote-row (#lml-btn-afficher). Injecter un second
+    // bouton avec le même id créait un doublon d'id dans le DOM.
     panneau.innerHTML = `
         <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;
             color:rgba(167,139,250,.8);margin-bottom:10px;font-weight:700;">
@@ -190,23 +193,19 @@ export function injecterPanneauHote() {
             <p style="font-size:.8rem;color:rgba(255,255,255,.4);text-align:center;">
                 En attente des mots…
             </p>
-        </div>
-        <div style="margin-top:12px;text-align:center;">
-            <button id="lml-btn-afficher"
-                style="padding:10px 22px;background:rgba(167,139,250,.18);
-                border:1.5px solid rgba(167,139,250,.45);border-radius:12px;color:white;
-                font-size:.88rem;font-weight:700;cursor:not-allowed;opacity:0.4;
-                transition:opacity .2s;font-family:inherit;"
-                disabled title="En attente des mots…">
-                📊 Afficher les résultats
-            </button>
         </div>`;
     section.appendChild(panneau);
 
-    document.getElementById('lml-btn-afficher').onclick = () => {
-        try { socket.send('HOST_ACTION', { action: 'lml:reveal', data: {} }); }
-        catch (err) { console.error('[LML_HOTE] send reveal:', err.message); }
-    };
+    // Réutilise le bouton "Révéler" statique (#lml-btn-afficher) pour la
+    // révélation. Handler attaché une seule fois.
+    const btnReveal = document.getElementById('lml-btn-afficher');
+    if (btnReveal && !btnReveal._lmlBound) {
+        btnReveal._lmlBound = true;
+        btnReveal.onclick = () => {
+            try { socket.send('HOST_ACTION', { action: 'lml:reveal', data: {} }); }
+            catch (err) { console.error('[LML_HOTE] send reveal:', err.message); }
+        };
+    }
 }
 
 function _escHtml(s) {
