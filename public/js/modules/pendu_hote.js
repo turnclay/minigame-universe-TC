@@ -161,11 +161,8 @@ function _activerBoutonReveler(label) {
 
 export function injecterPanneauHote() {
     _initWsListeners();
-    if (document.getElementById('panneau-invites-pendu')) return;
-    const section = document.getElementById('pendu');
-    if (!section) return;
 
-    // Style pulse
+    // Style pulse (utilisé par _activerBoutonReveler)
     if (!document.getElementById('style-pendu-pulse')) {
         const s = document.createElement('style');
         s.id = 'style-pendu-pulse';
@@ -173,37 +170,69 @@ export function injecterPanneauHote() {
         document.head.appendChild(s);
     }
 
-    const panneau = document.createElement('div');
-    panneau.id = 'panneau-invites-pendu';
-    panneau.style.cssText = `
-        margin-top:16px;background:rgba(167,139,250,.06);
-        border:1px solid rgba(167,139,250,.25);border-radius:14px;padding:14px 16px;`;
-    panneau.innerHTML = `
-        <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;
-            color:rgba(167,139,250,.8);margin-bottom:10px;font-weight:700;">
-            🎮 Résultats des joueurs
-        </div>
-        <div id="pendu-invites-reponses">
-            <p style="font-size:.8rem;color:rgba(255,255,255,.4);text-align:center;">
-                En attente des résultats…
-            </p>
-        </div>
-        <div style="margin-top:12px;text-align:center;">
-            <button id="pendu-btn-resultats"
-                style="padding:10px 22px;background:rgba(167,139,250,.18);
-                border:1.5px solid rgba(167,139,250,.45);border-radius:12px;color:white;
-                font-size:.88rem;font-weight:700;cursor:not-allowed;opacity:0.4;
-                transition:opacity .2s;font-family:inherit;"
-                disabled title="En attente que tous aient terminé…">
-                📊 Afficher les résultats
-            </button>
-        </div>`;
-    section.appendChild(panneau);
+    const section = document.getElementById('pendu');
+    if (!section) return;
 
-    document.getElementById('pendu-btn-resultats').onclick = () => {
-        try { socket.send('HOST_ACTION', { action: 'pendu:reveal', data: {} }); }
-        catch (err) { console.error('[PENDU_HOTE] send reveal:', err.message); }
-    };
+    // Le panneau peut déjà exister statiquement dans index.html
+    // (#panneau-invites-pendu, sans bouton). On le réutilise, sinon on le crée.
+    let panneau = document.getElementById('panneau-invites-pendu');
+    if (!panneau) {
+        panneau = document.createElement('div');
+        panneau.id = 'panneau-invites-pendu';
+        panneau.style.cssText = `
+            margin-top:16px;background:rgba(167,139,250,.06);
+            border:1px solid rgba(167,139,250,.25);border-radius:14px;padding:14px 16px;`;
+        panneau.innerHTML = `
+            <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;
+                color:rgba(167,139,250,.8);margin-bottom:10px;font-weight:700;">
+                🎮 Résultats des joueurs
+            </div>
+            <div id="pendu-invites-reponses">
+                <p style="font-size:.8rem;color:rgba(255,255,255,.4);text-align:center;">
+                    En attente des résultats…
+                </p>
+            </div>`;
+        section.appendChild(panneau);
+    }
+
+    // S'assurer que le conteneur de réponses existe.
+    if (!document.getElementById('pendu-invites-reponses')) {
+        const div = document.createElement('div');
+        div.id = 'pendu-invites-reponses';
+        panneau.appendChild(div);
+    }
+
+    // CORRECTIF CRITIQUE : garantir la présence du bouton "Afficher les
+    // résultats". Le panneau statique d'index.html ne le contient pas, et
+    // l'ancien `return` anticipé empêchait sa création → l'hôte ne pouvait
+    // jamais révéler et la manche restait bloquée. On le crée s'il manque.
+    if (!document.getElementById('pendu-btn-resultats')) {
+        const wrapBtn = document.createElement('div');
+        wrapBtn.style.cssText = 'margin-top:12px;text-align:center;';
+        const btn = document.createElement('button');
+        btn.id = 'pendu-btn-resultats';
+        btn.style.cssText = [
+            'padding:10px 22px;background:rgba(167,139,250,.18);',
+            'border:1.5px solid rgba(167,139,250,.45);border-radius:12px;color:white;',
+            'font-size:.88rem;font-weight:700;cursor:not-allowed;opacity:0.4;',
+            'transition:opacity .2s;font-family:inherit;'
+        ].join('');
+        btn.disabled    = true;
+        btn.title       = 'En attente que tous aient terminé…';
+        btn.textContent = '📊 Afficher les résultats';
+        wrapBtn.appendChild(btn);
+        panneau.appendChild(wrapBtn);
+    }
+
+    // Câblage de la révélation (une seule fois).
+    const btnRes = document.getElementById('pendu-btn-resultats');
+    if (btnRes && !btnRes._penduBound) {
+        btnRes._penduBound = true;
+        btnRes.onclick = () => {
+            try { socket.send('HOST_ACTION', { action: 'pendu:reveal', data: {} }); }
+            catch (err) { console.error('[PENDU_HOTE] send reveal:', err.message); }
+        };
+    }
 }
 
 function _escHtml(s) {
