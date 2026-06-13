@@ -16,9 +16,15 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "helmet": "^7.1.0",
+    "node-fetch": "^3.3.2",
     "rate-limiter-flexible": "^5.0.3",
     "ws": "^8.17.1"
   },
-  "keywords": ["minigame", "websocket", "multiplayer", "node"],
+  "keywords": [
+    "minigame",
+    "websocket",
+    "multiplayer",
+    "node"
+  ],
   "license": "MIT"
 }

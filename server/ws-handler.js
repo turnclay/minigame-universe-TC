@@ -19,6 +19,7 @@ import * as lmlHandler       from './games/lml.js';
 import * as justeprixHandler from './games/justeprix.js';
 import * as morpionHandler   from './games/morpion.js';
 import * as puissance4Handler from './games/puissance4.js';
+import * as memoireHandler   from './games/memoire.js';
 
 const JEU_HANDLERS = {
     quiz      : quizHandler,
@@ -28,6 +29,7 @@ const JEU_HANDLERS = {
     justeprix : justeprixHandler,
     morpion   : morpionHandler,
     puissance4: puissance4Handler,
+    memoire   : memoireHandler,
 };
 
 const PSEUDO_REGEX    = /^[a-zA-Z0-9_-]{2,20}$/;
