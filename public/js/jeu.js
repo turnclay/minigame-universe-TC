@@ -23,6 +23,7 @@ import                           './modules/lml_player.js';
 import                           './modules/justeprix_player.js';
 import                           './modules/morpion_player.js';
 import                           './modules/puissance4_player.js';
+import                           './modules/memoire_player.js';
 
 // ── DOM utils ──────────────────────────────────────────────────
 const $      = id => document.getElementById(id);
