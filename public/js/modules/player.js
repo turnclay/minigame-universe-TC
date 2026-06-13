@@ -241,6 +241,8 @@ export const Player = {
             'LML_MANCHE_START','LML_REVELATION','LML_ANSWER_ACK','LML_TIMER_EXPIRED',
             // Juste Prix
             'JUSTEPRIX_PRODUIT_START','JUSTEPRIX_REVELATION','JUSTEPRIX_ANSWER_ACK','JUSTEPRIX_TIMER_EXPIRED',
+            // Memoire
+            'MEMOIRE_DEFI','MEMOIRE_PHASE','MEMOIRE_RESULT_ACK',
         ];
         gameEvents.forEach(evt => {
             socket.on(evt, payload => {

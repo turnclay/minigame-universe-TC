@@ -14,6 +14,7 @@ import { $, hide, show } from "../core/dom.js";
 import { GameState } from "../core/state.js";
 import { naviguerVersAccueil } from "../navigation.js";
 import { afficherScoreboard, ajouterPoints } from "../modules/scoreboard.js";
+import { socket } from "../core/socket.js";
 
 // ── Module hôte (chargé dynamiquement si partie multijoueur) ─
 let _publierEtat   = () => {};
@@ -148,24 +149,77 @@ export async function initialiserMemoire() {
 }
 
 
-// ── Chargement dynamique de memoire_hote.js ──────────────────
+// ── Transport WS hôte (remplace memoire_hote.js / localStorage) ──
 async function _chargerModuleHote() {
-    try {
-        const m = await import('../modules/memoire_hote.js');
-        _publierEtat   = m.publierEtat;
-        _publierScores = m.publierScores;
-        _publierDefi   = m.publierDefi;
-        _publierPhase  = m.publierPhase;
-        _viderReponses = m.viderReponses;
-        _crediterPts   = m.crediterPoints;
-        _hoteActif     = true;
-        _publierEtat('en_cours');
-        if (_stopEcoute) { _stopEcoute(); _stopEcoute = null; }
-        _stopEcoute = m.ecouterReponsesInvites(_onReponseInvite);
-        console.log('[MÉMOIRE] Module hôte chargé ✅');
-    } catch (e) {
-        console.warn('[MÉMOIRE] memoire_hote.js indisponible (mode solo):', e.message);
+    // Mémoire n'est multijoueur que s'il y a au moins un invité.
+    // En solo : transport inerte, scoring 100% local (ajouterPoints),
+    // et aucun panneau invités.
+    if (_nbInvites() <= 0) {
+        _hoteActif = false;
+        console.log('[MÉMOIRE] Mode solo — transport WS non activé');
+        return;
     }
+
+    _hoteActif = true;
+
+    // L'hôte publie défi/phase via socket ; le serveur rediffuse aux invités
+    // (MEMOIRE_DEFI / MEMOIRE_PHASE) et fait autorité sur les scores.
+    _publierEtat   = () => {};
+    _publierScores = () => {};        // autorité = serveur (SCORES_UPDATE)
+    _viderReponses = () => {};
+
+    _publierDefi = ({ typeDefi, difficulte, donnees, phase }) => {
+        let config = null, base = 3;
+        if (typeDefi && DEFIS_CONFIG[typeDefi]) {
+            config = DEFIS_CONFIG[typeDefi].difficultes[difficulte] || null;
+            base   = ({ facile: 2, moyen: 3, difficile: 4 })[difficulte] || 3;
+        }
+        try {
+            socket.send('HOST_ACTION', {
+                action: 'memoire:defi',
+                data: { typeDefi, difficulte, donnees, phase, config, base },
+            });
+        } catch (e) { console.error('[MÉMOIRE] send defi:', e.message); }
+    };
+
+    _publierPhase = (phase) => {
+        try {
+            socket.send('HOST_ACTION', { action: 'memoire:phase', data: { phase } });
+        } catch (e) { console.error('[MÉMOIRE] send phase:', e.message); }
+    };
+
+    // Créditer l'hôte = soumettre SON résultat au serveur (autorité scores).
+    _crediterPts = (pseudo, delta) => {
+        try {
+            socket.send('HOST_ACTION', {
+                action: 'memoire:result',
+                data: { pseudo, score: delta, erreurs: etatMemoire.donnees?.erreurs ?? 0 },
+            });
+        } catch (e) { console.error('[MÉMOIRE] send result:', e.message); }
+    };
+
+    // Abonnements WS hôte (idempotents).
+    if (!socket._memoireHoteBound) {
+        socket._memoireHoteBound = true;
+        socket.on('MEMOIRE_RESULT_IN', p => { try { _onResultIn(p); } catch (e) { console.warn('[MÉMOIRE] RESULT_IN', e.message); } });
+        socket.on('SCORES_UPDATE', ({ scores }) => {
+            if (scores) {
+                GameState.scores = GameState.scores || {};
+                Object.assign(GameState.scores, scores);
+            }
+            try { afficherScoreboard(); } catch {}
+        });
+    }
+    console.log('[MÉMOIRE] Transport WS hôte activé ✅');
+}
+
+// ── Réception d'un résultat invité (relayé par le serveur) ──
+function _onResultIn({ pseudo, erreurs, score }) {
+    if (!pseudo) return;
+    if (_resultatsRecus[pseudo] === undefined) _nbReponsesRecues++;
+    _resultatsRecus[pseudo] = { erreurs: erreurs ?? 0, score: score ?? 0 };
+    _scoresSession[pseudo]  = (_scoresSession[pseudo] || 0) + (score || 0);
+    _majSuiviHote();
 }
 
 // ── Réception d'une réponse d'un invité ──────────────────────
