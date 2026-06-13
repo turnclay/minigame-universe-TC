@@ -114,13 +114,21 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             s.config     = data.config ?? s.config;
             s.base       = data.base ?? s.base;
 
+            // Gère la cohérence des données en fonction de la phase
+            if (data.donnees != null) {
+                s.donnees = data.donnees;
+            } else if (s.phase === 'menu' || s.phase === 'countdown') {
+                // Si pas de nouvelles données fournies, et que nous sommes en phase menu ou countdown,
+                // on s'assure que les données sont nulles pour un état propre.
+                s.donnees = null;
+            }
+            // Si phase 'affichage' ou 'jeu' et data.donnees est null, s.donnees conserve sa valeur (attendu)
+
             if (s.phase === 'countdown') {
                 s.manche++;
                 s.resultats      = {};
-                s.donnees        = null;
-                s.tsAffichageFin = null;
+                s.tsAffichageFin = null; // Reset timer for countdown
             }
-            if (data.donnees != null) s.donnees = data.donnees;
 
             if (s.phase === 'affichage') {
                 s.tsAffichageFin = Date.now() + _dureeMemo(s);
