@@ -143,7 +143,14 @@ export async function initialiserMemoire() {
         etatMemoire.joueurActif = GameState.equipes[etatMemoire.indexJoueurActif].nom;
     }
 
-    await _chargerModuleHote();
+    // Le chargement du transport ne doit JAMAIS empêcher l'affichage du
+    // menu. En cas d'échec, on bascule en solo et on rend quand même le menu.
+    try {
+        await _chargerModuleHote();
+    } catch (e) {
+        console.error('[MÉMOIRE] _chargerModuleHote a échoué — menu rendu en mode solo:', e);
+        _hoteActif = false;
+    }
     afficherMenuDefis();
     attacherEvenements();
 }
