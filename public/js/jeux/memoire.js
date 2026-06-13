@@ -3,7 +3,7 @@
  * 🧠 MÉMOIRE.JS - Module de jeux de mémoire
  * ============================================
  * Architecture modulaire avec 4 défis variés
- * Version: 1.5 - Tooltip seuils d'erreurs par défi
+ * Version: 1.6 - Transport WS conforme + score serveur + révélation forcée
  */
 
 // ============================================
@@ -183,17 +183,21 @@ async function _chargerModuleHote() {
     };
 
     _publierPhase = (phase) => {
+        // 'resultats' est piloté par le serveur (allDone) ou par la révélation
+        // forcée : on ne le force pas ici pour ne pas couper les invités.
+        if (phase === 'resultats') return;
         try {
             socket.send('HOST_ACTION', { action: 'memoire:phase', data: { phase } });
         } catch (e) { console.error('[MÉMOIRE] send phase:', e.message); }
     };
 
-    // Créditer l'hôte = soumettre SON résultat au serveur (autorité scores).
-    _crediterPts = (pseudo, delta) => {
+    // Créditer l'hôte = soumettre SON résultat au serveur. Le score est
+    // recalculé serveur (anti-triche) ; on n'envoie que les erreurs.
+    _crediterPts = (pseudo) => {
         try {
             socket.send('HOST_ACTION', {
                 action: 'memoire:result',
-                data: { pseudo, score: delta, erreurs: etatMemoire.donnees?.erreurs ?? 0 },
+                data: { pseudo, erreurs: etatMemoire.donnees?.erreurs ?? 0 },
             });
         } catch (e) { console.error('[MÉMOIRE] send result:', e.message); }
     };
@@ -1356,6 +1360,7 @@ function afficherResultat(succes, message) {
         <div class="resultat-actions">
             <button id="btn-rejouer" class="btn-primary">🔄 Rejouer ce défi</button>
             <button id="btn-menu-defis" class="btn-secondary">🏠 Menu des défis</button>
+            ${_hoteActif ? `<button id="btn-classement-mem" class="btn-secondary">🏁 Afficher le classement</button>` : ''}
         </div>
     `;
 
@@ -1365,6 +1370,17 @@ function afficherResultat(succes, message) {
         lancerDefi(etatMemoire.defiActuel);
     };
     $("btn-menu-defis").onclick = () => { afficherMenuDefis(); attacherEvenements(); };
+
+    // Multijoueur : permet à l'hôte de révéler le classement sans attendre
+    // un invité qui ne soumettrait pas (anti soft-lock). Le serveur passe en
+    // phase 'resultats' et l'annonce à tous.
+    if (_hoteActif) {
+        const _bc = $("btn-classement-mem");
+        if (_bc) _bc.onclick = () => {
+            try { socket.send('HOST_ACTION', { action: 'memoire:force_resultats', data: {} }); }
+            catch (e) { console.error('[MÉMOIRE] send force_resultats:', e.message); }
+        };
+    }
 
     // Publier la phase résultats pour que les invités voient leur écran de fin
     if (_hoteActif) {
@@ -1407,4 +1423,14 @@ function animerTimer(duree, callback) {
 
 function nettoyerTimer() {
     if (etatMemoire.timer) { clearInterval(etatMemoire.timer); etatMemoire.timer = null; }
+}
+// ============================================
+// 🌐 EXPORT GLOBAL (requis par main.js)
+// ============================================
+// main.js lance le jeu via `window.initialiserMemoire()` (registre
+// GAME_INIT_FNS). Sans cette assignation, l'init n'est jamais appelée
+// après le démarrage → le menu des défis (afficherMenuDefis) ne
+// s'affiche pas. On l'expose donc explicitement.
+if (typeof window !== 'undefined') {
+    window.initialiserMemoire = initialiserMemoire;
 }
