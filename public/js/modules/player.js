@@ -247,18 +247,15 @@ export const Player = {
             'MIMEDESSSINE_DEFI', 'MIMEDESSSINE_PHASE', 'MIMEDESSSINE_MOT_A_DEVINER',
             'MIMEDESSSINE_DRAWING_DATA', 'MIMEDESSSINE_GUESS_IN', 'MIMEDESSSINE_GUESS_ACK',
         ];
-        gameEvents.forEach(evt => {
-            socket.on(evt, payload => {
-                if (this.module && typeof this.module['_on' + evt] === 'function') {
-                    this.module'_on' + evt;
-                } else if (this.module) {
-                    this.module.onWsEvent?.(evt, payload);
-                }
-                // Si module pas encore chargé : l'événement est perdu, mais la
-                // ré-hydratation gameState au (re)chargement du module couvre
-                // l'état courant (PRODUIT_START / MANCHE_START / résultats).
-            });
-        });
+gameEvents.forEach(evt => {
+    socket.on(evt, payload => {
+        if (this.module && typeof this.module['_on' + evt] === 'function') {
+            this.module['_on' + evt](payload);
+        } else if (this.module) {
+            this.module.onWsEvent?.(evt, payload);
+        }
+    });
+});
 
         // ── Fin de partie ──────────────────────────────────────
         socket.on('GAME_ENDED', ({ snapshot }) => {
