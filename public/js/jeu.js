@@ -13,18 +13,23 @@
 // Aucune logique de jeu ici.
 // ================================================================
 
-import { socket }           from './core/socket.js';
-import { Player }           from './modules/player.js';
+import { socket } from './core/socket.js';
+
+// 🔥 Import à effet de bord : charge Player et l’enregistre globalement
+import './modules/player.js';
+
+// Récupération de Player exposé par player.js
+const Player = window.Player;
+
 // Import à effet de bord : enregistre les modules jeu dans JeuRegistry.
-// Chaque jeu WS doit être listé ici pour que JeuRegistry.get(jeu) le trouve.
-import                           './modules/petitbac_player.js';
-import                           './modules/pendu_player.js';
-import                           './modules/lml_player.js';
-import                           './modules/justeprix_player.js';
-import                           './modules/morpion_player.js';
-import                           './modules/puissance4_player.js';
-import                           './modules/memoire_player.js';
-import                           './modules/mime_player.js'; // Import the new mime_player module
+import './modules/petitbac_player.js';
+import './modules/pendu_player.js';
+import './modules/lml_player.js';
+import './modules/justeprix_player.js';
+import './modules/morpion_player.js';
+import './modules/puissance4_player.js';
+import './modules/memoire_player.js';
+import './modules/mime_player.js';
 
 // ── DOM utils ──────────────────────────────────────────────────
 const $      = id => document.getElementById(id);
@@ -82,7 +87,6 @@ const JeuApp = {
     },
 
     _afficherFormulairePseudo(session) {
-        // Remplir la carte meta
         const LABELS = {
             quiz:'❓ Quiz', justeprix:'💰 Juste Prix', undercover:'🕵️ Undercover',
             lml:'📖 Maxi Lettres', mimer:'🎭 Mimer', mimedessine:'🎭 Mimer',
@@ -94,8 +98,10 @@ const JeuApp = {
             ? (LABELS[session.jeu.toLowerCase()] || session.jeu.toUpperCase()) : '—');
         setText('id-meta-id',   session.partieId  || '—');
         setText('id-meta-hote', session.hote      || '—');
+
         const rh = $('id-row-hote');
         if (rh) rh.style.display = session.hote ? '' : 'none';
+
         const rd = $('id-row-date');
         if (rd) {
             if (session.createdAt) {
@@ -110,7 +116,6 @@ const JeuApp = {
             } else { rd.style.display = 'none'; }
         }
 
-        // Lire les éléments statiques de jeu.html
         const etat  = $('id-etat');
         const input = $('id-pseudo');
         const btn   = $('btn-join');
@@ -146,7 +151,6 @@ const JeuApp = {
 
         input.addEventListener('keydown', e => { if (e.key === 'Enter') valider(); });
 
-        // Cloner pour nettoyer les anciens listeners
         btn.replaceWith(btn.cloneNode(true));
         $('btn-join').addEventListener('click', valider);
 
@@ -156,17 +160,11 @@ const JeuApp = {
     _demarrer(session) {
         this.session = session;
 
-        // Exposer sur window pour compatibilité modules existants
         window.JeuApp    = this;
         window.jeuSocket = socket;
 
-        // Enregistrer les listeners Player AVANT de connecter le socket.
-        // Si socket.connect() est appelé en premier, __connected__ peut
-        // se déclencher avant que Player.init() ait enregistré son .once(),
-        // et PLAYER_REJOIN ne serait jamais envoyé.
         Player.init(session, socket);
 
-        // Connecter après — __connected__ sera émis après l'enregistrement
         socket.connect();
     },
 };
