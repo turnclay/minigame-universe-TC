@@ -24,6 +24,7 @@ import                           './modules/justeprix_player.js';
 import                           './modules/morpion_player.js';
 import                           './modules/puissance4_player.js';
 import                           './modules/memoire_player.js';
+import                           './modules/mime_player.js'; // Import the new mime_player module
 
 // ── DOM utils ──────────────────────────────────────────────────
 const $      = id => document.getElementById(id);

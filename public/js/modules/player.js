@@ -243,6 +243,9 @@ export const Player = {
             'JUSTEPRIX_PRODUIT_START','JUSTEPRIX_REVELATION','JUSTEPRIX_ANSWER_ACK','JUSTEPRIX_TIMER_EXPIRED',
             // Memoire
             'MEMOIRE_DEFI','MEMOIRE_PHASE','MEMOIRE_RESULT_ACK',
+            // Mime Dessine
+            'MIMEDESSSINE_DEFI', 'MIMEDESSSINE_PHASE', 'MIMEDESSSINE_MOT_A_DEVINER',
+            'MIMEDESSSINE_DRAWING_DATA', 'MIMEDESSSINE_GUESS_IN', 'MIMEDESSSINE_GUESS_ACK',
         ];
         gameEvents.forEach(evt => {
             socket.on(evt, payload => {
