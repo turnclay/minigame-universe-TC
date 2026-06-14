@@ -25,6 +25,7 @@
 }
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Poppins:wght@400;500;600;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
 html{scroll-behavior:smooth}
 body{font-family:var(--font-secondary);background:var(--gradient-background);background-size:400% 400%;animation:gradientMove 15s ease infinite;color:white;min-height:100vh;overflow-x:hidden;line-height:1.6}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
