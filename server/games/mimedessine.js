@@ -1,86 +1,126 @@
 // ======================================================
-// 🎨 server/games/mimedessine.js — v1.0 (WS, conforme Architecte/JEUX/QA + durci)
+// 🎭 server/games/mimedessine.js — v3.0 (WS, tours auto — hôte + invités)
 // ======================================================
-// Source de vérité = serveur. Jeu simultané : l'hôte choisit un défi
-// + difficulté et GÉNÈRE les données (mots) une seule fois ; le serveur les
-// rediffuse à tous et FAIT AUTORITÉ sur :
-//   - le timing des phases (tsPhaseEnd = horloge serveur),
-//   - le SCORE (recalculé serveur à partir des devinettes → anti-triche),
-//   - la transition 'resultats' (auto sur allDone, ou forcée par l'hôte).
+// Source de vérité = serveur. Modèle :
+//   - Liste ordonnée de participants (hôte d'abord, puis invités).
+//   - L'hôte fait tourner les joueurs via « Participant suivant » : chaque
+//     appui DÉMARRE automatiquement la manche du joueur suivant (aucun bouton
+//     « Commencer »). Le mimeur voit le mot sur SON écran et pilote
+//     Trouvé / Passer / Fin de manche ; les autres devinent ; l'hôte observe.
+//   - Le serveur tire les mots (anti-répétition de catégorie), fait autorité
+//     sur la rotation, le minuteur (tsTourEnd) et les scores (store).
 //
-// Phases : menu → choix_mot → dessin → reponse → resultats
+// Phases : attente → tour → fin_manche → (tour → fin_manche …) → classement
 //
 // Actions hôte (HOST_ACTION) :
-//   mimedessine:defi            → { config, motsDisponibles } (initialisation du jeu)
-//   mimedessine:choix_mot       → { mot, drawerPseudo } (l'hôte choisit le mot et le dessinateur)
-//   mimedessine:start_dessin    → {} (l'hôte lance la phase de dessin)
-//   mimedessine:reveler_mot     → {} (l'hôte révèle le mot avant la fin du temps)
-//   mimedessine:force_resultats → {} (révélation forcée — anti soft-lock)
+//   mimedessine:config     { participants[], motsParCategorie{cat:[mots]}, duree? }
+//   mimedessine:suivant    {}   (démarre le tour du joueur suivant / 1er joueur)
+//   mimedessine:trouve     {}   (si l'hôte est le participant actif)
+//   mimedessine:passer     {}   (idem)
+//   mimedessine:fin_manche {}   (hôte : termine/force la manche en cours)
+//   mimedessine:classement {}
+//   mimedessine:rejouer    {}
 //
-// Action joueur (PLAYER_ACTION) :
-//   mimedessine:drawing_update  → { data } (le dessinateur envoie des données de dessin)
-//   mimedessine:guess           → { guess } (un joueur envoie une devinette)
+// Action joueur (PLAYER_ACTION) — uniquement le participant ACTIF :
+//   mimedessine:trouve {} | mimedessine:passer {} | mimedessine:fin_manche {}
 //
 // Events serveur → clients :
-//   MIMEDESSSINE_DEFI          { config, phase, manche, drawerPseudo, scores } (all)
-//   MIMEDESSSINE_PHASE         { phase, manche, tsPhaseEnd, motADevinerRevele, drawerPseudo } (all)
-//   MIMEDESSSINE_MOT_A_DEVINER { mot } (drawer only)
-//   MIMEDESSSINE_DRAWING_DATA  { data } (all except drawer)
-//   MIMEDESSSINE_GUESS_IN      { pseudo, guess, correct, scoreGuesseur, scoreDessinateur, allGuessed } (host)
-//   MIMEDESSSINE_GUESS_ACK     { status: 'ok'|'already'|'too_late'|'invalid'|'correct'|'incorrect' } (auteur)
-//   SCORES_UPDATE              { scores } (all)
+//   MIMEDESSSINE_PHASE        { phase, manche, participant, index, nbParticipants,
+//                               categorie, scores, scoreManche, motsManche, tsTourEnd, duree } (all, mot masqué)
+//   MIMEDESSSINE_MOT_A_DEVINER{ mot, categorie }     (participant actif + hôte)
+//   SCORES_UPDATE             { scores }              (all)
 // ======================================================
 
 import store from '../store.js';
 
 const sessions = new Map();
+const DUREE_DEFAUT = 180000;
 
-function _getSession(partieId) { return sessions.get(partieId) || null; }
+function _get(partieId) { return sessions.get(partieId) || null; }
 
-function _creerSession(partieId) {
+function _creer(partieId) {
     const s = {
-        phase           : 'menu',
-        manche          : 0,
-        config          : {
-            tempsDessin     : 90000, // 90 secondes
-            tempsReponse    : 15000, // 15 secondes après le dessin
-            scoreDessinateur: 3,
-            scoreGuesseur   : 2,
-            motsParManche   : 1,
-        },
-        motsDisponibles : [],
-        motADeviner     : null,
-        drawerPseudo    : null,
-        dessinData      : [],
-        guesses         : [], // { pseudo, guess, correct, ts }
-        tsPhaseEnd      : null,
-        motADevinerRevele: false,
+        phase: 'attente', manche: 0,
+        participants: [], index: -1, participant: null,
+        motsParCategorie: {}, categories: [],
+        derniereCategorie: null, categorie: null, mot: null,
+        motsManche: [], scoreManche: {},
+        duree: DUREE_DEFAUT, tsTourEnd: null, _timer: null,
     };
     sessions.set(partieId, s);
     return s;
 }
 
-// ─────────────────────────────────────────────────────
-// API publique
-// ─────────────────────────────────────────────────────
+function _clearTimer(s) { if (s._timer) { clearTimeout(s._timer); s._timer = null; } }
 
-export function getSessionState(partieId) {
-    const s = _getSession(partieId);
-    if (!s) return null;
+function _nouveauMot(s) {
+    const cats = s.categories.filter(c => c !== s.derniereCategorie);
+    const pool = cats.length ? cats : s.categories;
+    const cat  = pool[Math.floor(Math.random() * pool.length)] || null;
+    const mots = (cat && s.motsParCategorie[cat]) ? s.motsParCategorie[cat] : [];
+    const mot  = mots.length ? mots[Math.floor(Math.random() * mots.length)] : null;
+    s.categorie = cat;
+    s.mot = mot;
+    s.derniereCategorie = cat;
+    s.motsManche.push({ mot, categorie: cat, trouve: false });
+}
+
+function _payloadPhase(partieId, s) {
     return {
-        phase           : s.phase,
-        manche          : s.manche,
-        config          : s.config,
-        motADeviner     : s.motADeviner, // Should be null for non-drawer in 'dessin' phase
-        drawerPseudo    : s.drawerPseudo,
-        dessinData      : s.dessinData,
-        tsPhaseEnd      : s.tsPhaseEnd,
-        motADevinerRevele: s.motADevinerRevele,
-        scores          : store.getScores(partieId) || {},
+        phase: s.phase, manche: s.manche,
+        participant: s.participant, index: s.index,
+        nbParticipants: s.participants.length,
+        categorie: (s.phase === 'tour') ? s.categorie : null,
+        scores: store.getScores(partieId) || {},
+        scoreManche: { ...s.scoreManche },
+        motsManche: (s.phase === 'fin_manche') ? s.motsManche : [],
+        tsTourEnd: s.tsTourEnd,
+        duree: s.duree,
     };
 }
 
+function _diffuser(wss, partieId, s, helpers) {
+    const { broadcastToGame, broadcastToHost, sendToPseudo } = helpers;
+    broadcastToGame(wss, partieId, 'MIMEDESSSINE_PHASE', _payloadPhase(partieId, s));
+    if (s.phase === 'tour' && s.mot) {
+        if (s.participant) sendToPseudo(wss, partieId, s.participant, 'MIMEDESSSINE_MOT_A_DEVINER', { mot: s.mot, categorie: s.categorie });
+        broadcastToHost(wss, partieId, 'MIMEDESSSINE_MOT_A_DEVINER', { mot: s.mot, categorie: s.categorie });
+    }
+    broadcastToGame(wss, partieId, 'SCORES_UPDATE', { scores: store.getScores(partieId) || {} });
+}
+
+function _armerTimer(wss, partieId, s, helpers) {
+    _clearTimer(s);
+    if (!s.duree) return;
+    s._timer = setTimeout(() => {
+        const cur = _get(partieId);
+        if (!cur || cur.phase !== 'tour') return;
+        _finManche(wss, partieId, cur, helpers);
+    }, s.duree);
+}
+
+// Démarre automatiquement la manche du participant courant.
+function _demarrerTour(wss, partieId, s, helpers) {
+    s.phase = 'tour';
+    s.motsManche = [];
+    s.derniereCategorie = null;
+    s.tsTourEnd = Date.now() + s.duree;
+    _nouveauMot(s);
+    _diffuser(wss, partieId, s, helpers);
+    _armerTimer(wss, partieId, s, helpers);
+    console.log(`[MIMEDESSSINE] ▶️ tour auto de ${s.participant}`);
+}
+
+// ─────────────────────────────────────────────────────
+export function getSessionState(partieId) {
+    const s = _get(partieId);
+    if (!s) return null;
+    return _payloadPhase(partieId, s); // mot non inclus (sécurité)
+}
+
 export function detruireSession(partieId) {
+    const s = _get(partieId);
+    if (s) _clearTimer(s);
     sessions.delete(partieId);
     console.log(`[MIMEDESSSINE] 🗑️ Session détruite: ${partieId}`);
 }
@@ -88,238 +128,116 @@ export function detruireSession(partieId) {
 // ─────────────────────────────────────────────────────
 // HOST ACTIONS
 // ─────────────────────────────────────────────────────
-
 export function handleHostAction(wss, ws, partieId, action, data, helpers) {
-    const { broadcastToGame, sendToPseudo } = helpers;
     const cmd = action.split(':')[1];
-    let s = _getSession(partieId);
-    if (!s) s = _creerSession(partieId);
+    let s = _get(partieId);
+    if (!s) s = _creer(partieId);
 
     switch (cmd) {
-        case 'defi': {
-            s.config = { ...s.config, ...data.config };
-            s.motsDisponibles = data.motsDisponibles || [];
-            s.phase = 'menu';
-            s.manche = 0;
-            s.motADeviner = null;
-            s.drawerPseudo = null;
-            s.dessinData = [];
-            s.guesses = [];
-            s.tsPhaseEnd = null;
-            s.motADevinerRevele = false;
-
-            broadcastToGame(wss, partieId, 'MIMEDESSSINE_DEFI', {
-                config       : s.config,
-                phase        : s.phase,
-                manche       : s.manche,
-                drawerPseudo : s.drawerPseudo,
-                scores       : store.getScores(partieId) || {},
-            });
-            console.log(`[MIMEDESSSINE] 🎯 Défi configuré. Phase: ${s.phase}`);
+        case 'config': {
+            _clearTimer(s);
+            s.participants      = Array.isArray(data.participants) ? data.participants.filter(Boolean) : [];
+            s.motsParCategorie  = data.motsParCategorie || {};
+            s.categories        = Object.keys(s.motsParCategorie);
+            s.duree             = data.duree || DUREE_DEFAUT;
+            s.index             = -1;
+            s.participant       = null;
+            s.manche            = 0;
+            s.derniereCategorie = null;
+            s.categorie = null; s.mot = null;
+            s.motsManche = []; s.scoreManche = {};
+            s.participants.forEach(p => { s.scoreManche[p] = 0; });
+            s.tsTourEnd = null;
+            s.phase = 'attente';
+            _diffuser(wss, partieId, s, helpers);
+            console.log(`[MIMEDESSSINE] ⚙️ config — ${s.participants.length} participant(s)`);
             break;
         }
 
-        case 'choix_mot': {
-            if (s.phase !== 'menu' && s.phase !== 'resultats') break; // Only allow choosing word from menu or after results
-            s.manche++;
-            s.motADeviner = data.mot;
-            s.drawerPseudo = data.drawerPseudo;
-            s.dessinData = [];
-            s.guesses = [];
-            s.tsPhaseEnd = null;
-            s.motADevinerRevele = false;
-            s.phase = 'choix_mot'; // Host has chosen, now waiting for host to start drawing
-
-            // Send the word to the drawer only
-            if (s.drawerPseudo) {
-                sendToPseudo(wss, partieId, s.drawerPseudo, 'MIMEDESSSINE_MOT_A_DEVINER', { mot: s.motADeviner });
+        case 'suivant': {
+            _clearTimer(s);
+            const next = s.index + 1;
+            if (next < s.participants.length) {
+                s.index = next;
+                s.participant = s.participants[next];
+                s.manche = next + 1;
+                _demarrerTour(wss, partieId, s, helpers);
+                console.log(`[MIMEDESSSINE] ⏭️ tour de ${s.participant}`);
+            } else {
+                _classement(wss, partieId, s, helpers);
             }
-
-            // Broadcast the phase change to all clients
-            broadcastToGame(wss, partieId, 'MIMEDESSSINE_PHASE', {
-                phase: s.phase,
-                manche: s.manche,
-                drawerPseudo: s.drawerPseudo, // Include drawerPseudo for client UI logic
-            });
-
-            // Also broadcast MIMEDESSSINE_DEFI for general game state update (config, scores etc.)
-            broadcastToGame(wss, partieId, 'MIMEDESSSINE_DEFI', {
-                config       : s.config,
-                phase        : s.phase,
-                manche       : s.manche,
-                drawerPseudo : s.drawerPseudo,
-                scores       : store.getScores(partieId) || {},
-            });
-            console.log(`[MIMEDESSSINE] ✍️ Mot choisi: "${s.motADeviner}" par ${s.drawerPseudo}. Phase: ${s.phase}`);
             break;
         }
 
-        case 'start_dessin': {
-            if (s.phase !== 'choix_mot') break;
-            s.phase = 'dessin';
-            s.tsPhaseEnd = Date.now() + s.config.tempsDessin;
-            broadcastToGame(wss, partieId, 'MIMEDESSSINE_PHASE', {
-                phase: s.phase,
-                manche: s.manche,
-                tsPhaseEnd: s.tsPhaseEnd,
-                motADevinerRevele: s.motADevinerRevele,
-                drawerPseudo: s.drawerPseudo, // Added for consistency
-            });
-            console.log(`[MIMEDESSSINE] ▶️ Début du dessin. Fin dans ${s.config.tempsDessin / 1000}s. Phase: ${s.phase}`);
+        case 'trouve':     _trouve(wss, partieId, s, helpers, s.participant); break;
+        case 'passer':     _passer(wss, partieId, s, helpers); break;
+        case 'fin_manche': _finManche(wss, partieId, s, helpers); break;
+        case 'classement': _classement(wss, partieId, s, helpers); break;
+
+        case 'rejouer': {
+            _clearTimer(s);
+            s.index = -1; s.participant = null;
+            s.manche = 0; s.phase = 'attente';
+            s.derniereCategorie = null; s.categorie = null; s.mot = null;
+            s.motsManche = [];
+            s.scoreManche = {}; s.participants.forEach(p => { s.scoreManche[p] = 0; });
+            s.tsTourEnd = null;
+            _diffuser(wss, partieId, s, helpers);
             break;
         }
 
-        case 'reveler_mot': {
-            if (s.phase !== 'dessin' && s.phase !== 'reponse') break;
-            s.motADevinerRevele = true;
-            s.phase = 'reponse'; // Transition to reponse phase if not already there
-            s.tsPhaseEnd = Date.now() + s.config.tempsReponse; // Give a short time to see the word
-            broadcastToGame(wss, partieId, 'MIMEDESSSINE_PHASE', {
-                phase: s.phase,
-                manche: s.manche,
-                tsPhaseEnd: s.tsPhaseEnd,
-                motADevinerRevele: s.motADevinerRevele,
-                // motADeviner: s.motADeviner, // REMOVED: Host should not see the word
-                drawerPseudo: s.drawerPseudo, // Added for consistency
-            });
-            // Send the revealed word to guessers explicitly, not to host
-            wss.clients.forEach(client => {
-                if (client.readyState === 1 && client._partieId === partieId && client._pseudo !== s.drawerPseudo && !client._isHost) {
-                    sendToPseudo(wss, partieId, client._pseudo, 'MIMEDESSSINE_REVEALED_WORD', { mot: s.motADeviner });
-                }
-            });
-            console.log(`[MIMEDESSSINE] 💡 Mot révélé par l'hôte: "${s.motADeviner}". Phase: ${s.phase}`);
-            break;
-        }
-
-        case 'force_resultats': {
-            if (s.phase === 'resultats') break;
-            s.phase = 'resultats';
-            s.tsPhaseEnd = null;
-            broadcastToGame(wss, partieId, 'MIMEDESSSINE_PHASE', {
-                phase: s.phase,
-                manche: s.manche,
-                tsPhaseEnd: s.tsPhaseEnd,
-                motADevinerRevele: s.motADevinerRevele,
-                // motADeviner: s.motADeviner, // REMOVED: Host should not see the word
-                drawerPseudo: s.drawerPseudo, // Added for consistency
-            });
-            // Send the revealed word to guessers explicitly, not to host
-            wss.clients.forEach(client => {
-                if (client.readyState === 1 && client._partieId === partieId && client._pseudo !== s.drawerPseudo && !client._isHost) {
-                    sendToPseudo(wss, partieId, client._pseudo, 'MIMEDESSSINE_REVEALED_WORD', { mot: s.motADeviner });
-                }
-            });
-            console.log(`[MIMEDESSSINE] 🏁 Résultats forcés par l'hôte. Phase: ${s.phase}`);
-            break;
-        }
-
-        default:
-            console.warn(`[MIMEDESSSINE] ⚠️ Action host inconnue: ${cmd}`);
+        default: console.warn(`[MIMEDESSSINE] ⚠️ Action host inconnue: ${cmd}`);
     }
 }
 
 // ─────────────────────────────────────────────────────
-// PLAYER ACTIONS
+// PLAYER ACTIONS (participant actif uniquement)
 // ─────────────────────────────────────────────────────
-
 export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, helpers) {
-    const { broadcastToGame, send, broadcastToHost, sendToAllExcept } = helpers;
     const cmd = action.split(':')[1];
-    const s = _getSession(partieId);
-    if (!s) {
-        send(ws, 'MIMEDESSSINE_GUESS_ACK', { status: 'too_late' });
-        return;
-    }
+    const s = _get(partieId);
+    if (!s || s.phase !== 'tour' || pseudo !== s.participant) return;
 
     switch (cmd) {
-        case 'drawing_update': {
-            if (s.phase !== 'dessin' || pseudo !== s.drawerPseudo) {
-                // Only the drawer can send drawing updates during the drawing phase
-                return;
-            }
-            s.dessinData = data.data; // Store the latest drawing data
-            sendToAllExcept(wss, partieId, pseudo, 'MIMEDESSSINE_DRAWING_DATA', { data: s.dessinData });
-            break;
-        }
-
-        case 'guess': {
-            if (s.phase !== 'dessin' && s.phase !== 'reponse') {
-                send(ws, 'MIMEDESSSINE_GUESS_ACK', { status: 'too_late' });
-                return;
-            }
-            if (pseudo === s.drawerPseudo) {
-                send(ws, 'MIMEDESSSINE_GUESS_ACK', { status: 'invalid' }); // Drawer cannot guess
-                return;
-            }
-
-            const guess = String(data.guess || '').trim().toLowerCase();
-            if (!guess) {
-                send(ws, 'MIMEDESSSINE_GUESS_ACK', { status: 'invalid' });
-                return;
-            }
-
-            // Check if already guessed correctly
-            const alreadyGuessedCorrectly = s.guesses.some(g => g.pseudo === pseudo && g.correct);
-            if (alreadyGuessedCorrectly) {
-                send(ws, 'MIMEDESSSINE_GUESS_ACK', { status: 'already' });
-                return;
-            }
-
-            const motADevinerLower = String(s.motADeviner || '').trim().toLowerCase();
-            const correct = (guess === motADevinerLower);
-
-            const scoreGuesseur = correct ? s.config.scoreGuesseur : 0;
-            const scoreDessinateur = correct ? s.config.scoreDessinateur : 0;
-
-            s.guesses.push({ pseudo, guess, correct, ts: Date.now() });
-
-            if (correct) {
-                store.modifierScore(partieId, pseudo, scoreGuesseur);
-                if (s.drawerPseudo) {
-                    store.modifierScore(partieId, s.drawerPseudo, scoreDessinateur);
-                }
-            }
-
-            const partie = store.getPartie(partieId);
-            const nbJoueurs = (partie?.joueurs || []).length;
-            const nbGuessers = nbJoueurs - (s.drawerPseudo ? 1 : 0);
-            const nbCorrectGuesses = s.guesses.filter(g => g.correct).length;
-            const allGuessed = nbGuessers > 0 && nbCorrectGuesses >= nbGuessers;
-
-            send(ws, 'MIMEDESSSINE_GUESS_ACK', { status: correct ? 'correct' : 'incorrect' });
-
-            broadcastToHost(wss, partieId, 'MIMEDESSSINE_GUESS_IN', {
-                pseudo, guess, correct, scoreGuesseur, scoreDessinateur, allGuessed,
-            });
-            broadcastToGame(wss, partieId, 'SCORES_UPDATE', { scores: store.getScores(partieId) || {} });
-
-            if (allGuessed) {
-                s.phase = 'reponse'; // Transition to reponse phase
-                s.tsPhaseEnd = Date.now() + s.config.tempsReponse; // Give a short time to see the word
-                s.motADevinerRevele = true;
-                broadcastToGame(wss, partieId, 'MIMEDESSSINE_PHASE', {
-                    phase: s.phase,
-                    manche: s.manche,
-                    tsPhaseEnd: s.tsPhaseEnd,
-                    motADevinerRevele: s.motADevinerRevele,
-                    // motADeviner: s.motADeviner, // REMOVED: Host should not see the word
-                    drawerPseudo: s.drawerPseudo, // Added for consistency
-                });
-                // Send the revealed word to guessers explicitly, not to host
-                wss.clients.forEach(client => {
-                    if (client.readyState === 1 && client._partieId === partieId && client._pseudo !== s.drawerPseudo && !client._isHost) {
-                        sendToPseudo(wss, partieId, client._pseudo, 'MIMEDESSSINE_REVEALED_WORD', { mot: s.motADeviner });
-                    }
-                });
-                console.log(`[MIMEDESSSINE] 🎉 Tous ont deviné ! Mot: "${s.motADeviner}". Phase: ${s.phase}`);
-            }
-
-            console.log(`[MIMEDESSSINE] 💬 ${pseudo}: a deviné "${guess}" (${correct ? 'correct' : 'incorrect'})`);
-            break;
-        }
-
-        default:
-            console.warn(`[MIMEDESSSINE] ⚠️ Action joueur inconnue: ${cmd}`);
+        case 'trouve':     _trouve(wss, partieId, s, helpers, pseudo); break;
+        case 'passer':     _passer(wss, partieId, s, helpers); break;
+        case 'fin_manche': _finManche(wss, partieId, s, helpers); break;
+        default: console.warn(`[MIMEDESSSINE] ⚠️ Action joueur inconnue: ${cmd}`);
     }
+}
+
+// ─────────────────────────────────────────────────────
+function _trouve(wss, partieId, s, helpers, mimeur) {
+    if (s.phase !== 'tour') return;
+    const last = s.motsManche[s.motsManche.length - 1];
+    if (last) last.trouve = true;
+    if (mimeur) {
+        s.scoreManche[mimeur] = (s.scoreManche[mimeur] || 0) + 1;
+        store.modifierScore(partieId, mimeur, 1);
+    }
+    _nouveauMot(s);
+    _diffuser(wss, partieId, s, helpers);
+}
+
+function _passer(wss, partieId, s, helpers) {
+    if (s.phase !== 'tour') return;
+    _nouveauMot(s);
+    _diffuser(wss, partieId, s, helpers);
+}
+
+function _finManche(wss, partieId, s, helpers) {
+    _clearTimer(s);
+    s.phase = 'fin_manche';
+    s.tsTourEnd = null;
+    s.mot = null; s.categorie = null;
+    _diffuser(wss, partieId, s, helpers);
+    console.log(`[MIMEDESSSINE] 🏁 fin de manche ${s.participant}`);
+}
+
+function _classement(wss, partieId, s, helpers) {
+    _clearTimer(s);
+    s.phase = 'classement';
+    s.tsTourEnd = null; s.mot = null; s.categorie = null;
+    _diffuser(wss, partieId, s, helpers);
+    console.log('[MIMEDESSSINE] 🏆 classement final');
 }

@@ -1,293 +1,177 @@
-// C:/Users/clayt/PycharmProjects/MiniGameV2/public/js/modules/mime_player.js
+// ============================================================
+// /js/modules/mime_player.js — v5.0 (WS, tours auto — sans « Commencer »)
+// ============================================================
+// Écran invité miroir du participant ACTIF (rendu dans #jeu-contenu).
+//   - Si je suis le participant actif → thème + mot + Trouvé / Passer / Finir.
+//   - Sinon → thème + « X mime, devine à voix haute ! » + scores.
+// Events reçus (relayés par player.js) :
+//   MIMEDESSSINE_PHASE { phase, manche, participant, index, nbParticipants,
+//                        categorie, scores, scoreManche, motsManche, tsTourEnd }
+//   MIMEDESSSINE_MOT_A_DEVINER { mot, categorie }   (participant actif uniquement)
+// Actions émises (participant actif) :
+//   mimedessine:trouve {} | mimedessine:passer {} | mimedessine:fin_manche {}
+// ============================================================
 
-import { getPlayerPseudo } from './player.js'; // Correct path for player.js
+import { getPlayerPseudo } from './player.js';
 
-const gameContainer = document.getElementById('game-container'); // Main game area
-let currentGameState = null;
-let playerPseudo = null;
-let canvas = null;
-let ctx = null;
-let isDrawing = false;
-let lastX = 0;
-let lastY = 0;
+const $   = id => document.getElementById(id);
+const esc = s => String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
-// Add a module-level variable to hold the socket instance
+let _pseudo = null;
 let _socket = null;
+let _state  = { phase:'menu', participant:null, index:0, nbParticipants:0,
+                categorie:null, scores:{}, scoreManche:{}, motsManche:[], tsTourEnd:null };
+let _mot    = null;
+let _timerIv = null;
+
+const _estActif = () => _pseudo && _state.participant === _pseudo;
 
 const MimeDessineModule = {
     _session: null,
-    _socket: null, // This will hold the socket instance
+    _socket : null,
 
-    initPlayer(session, sock, gameState, snapshot) {
+    initPlayer(session, sock, gameState) {
         this._session = session;
-        this._socket = sock; // Assign the socket here
-        _socket = sock; // Also assign to the module-level variable for use in helper functions
-
-        playerPseudo = getPlayerPseudo(); // Ensure playerPseudo is set
-
-        console.log("[MIMEDESSINE_MODULE] Initializing with state:", gameState);
-        currentGameState = gameState; // Use gameState from server for initial render
-        renderPlayerUI();
+        this._socket  = sock;
+        _socket = sock;
+        _pseudo = session?.pseudo || getPlayerPseudo();
+        _state  = { ..._state, ...(gameState || {}) };
+        _mot = null;
+        _render();
     },
 
     destroy() {
-        // Clean up event listeners, canvas, etc.
-        if (canvas) {
-            canvas.removeEventListener('mousedown', startDrawing);
-            canvas.removeEventListener('mousemove', draw);
-            canvas.removeEventListener('mouseup', stopDrawing);
-            canvas.removeEventListener('mouseout', stopDrawing);
-        }
-        const clearButton = document.getElementById('clearCanvas');
-        if (clearButton) {
-            clearButton.removeEventListener('click', clearCanvas);
-        }
-        const submitGuessButton = document.getElementById('submitGuess');
-        if (submitGuessButton) {
-            submitGuessButton.removeEventListener('click', submitGuess);
-        }
-        const guessInput = document.getElementById('guessInput');
-        if (guessInput) {
-            guessInput.removeEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    submitGuess();
-                }
-            });
-        }
-        gameContainer.innerHTML = ''; // Clear game content
-        currentGameState = null;
-        canvas = null;
-        ctx = null;
-        isDrawing = false;
-        lastX = 0;
-        lastY = 0;
+        _stopTimer();
+        const c = $('jeu-contenu'); if (c) c.innerHTML = '';
+        _mot = null;
     },
 
-    onHostAction(action, data) {
-        // Mime Dessine doesn't have generic host actions relayed to players in this way,
-        // specific game events are handled by onWsEvent.
-        console.log("[MIMEDESSINE_MODULE] Host action received (ignored):", action, data);
-    },
-
-    onScores(scores) {
-        // Update scores display if needed
-        console.log("[MIMEDESSINE_MODULE] Scores updated:", scores);
-        // Optionally update UI to reflect new scores
-    },
+    onScores(scores) { if (scores) { _state.scores = scores; } },
 
     onWsEvent(type, payload) {
-        console.log(`[MIMEDESSINE_MODULE] Received event: ${type}`, payload);
-        switch (type) {
-            case 'MIMEDESSSINE_DEFI':
-            case 'MIMEDESSSINE_PHASE':
-                currentGameState = { ...currentGameState, ...payload };
-                renderPlayerUI();
-                break;
-            case 'MIMEDESSSINE_MOT_A_DEVINER':
-                // Only the drawer receives this
-                if (playerPseudo === currentGameState.drawerPseudo) {
-                    currentGameState.motADeviner = payload.mot;
-                    renderPlayerUI(); // Update UI to show the word to draw
-                }
-                break;
-            case 'MIMEDESSSINE_DRAWING_DATA':
-                // Guessers receive drawing data
-                if (playerPseudo !== currentGameState.drawerPseudo && currentGameState.phase === 'dessin') {
-                    drawReceivedData(payload.data);
-                }
-                break;
-            case 'MIMEDESSSINE_GUESS_ACK':
-                // Handle feedback for player's guess
-                console.log("[MIMEDESSSINE_MODULE] Guess ACK:", payload.status);
-                // Optionally update UI based on guess status (e.g., show "Correct!" or "Try again")
-                break;
-            case 'MIMEDESSSINE_REVEALED_WORD':
-                // Guessers receive the revealed word after the round
-                if (playerPseudo !== currentGameState.drawerPseudo) {
-                    currentGameState.motADeviner = payload.mot;
-                    renderPlayerUI(); // Update UI to show the revealed word
-                }
-                break;
-            // SCORES_UPDATE is handled by onScores directly from Player module
-            default:
-                console.warn(`[MIMEDESSSINE_MODULE] Unhandled event type: ${type}`);
+        if (type === 'MIMEDESSSINE_PHASE') {
+            _state = { ..._state, ...payload };
+            if (payload.phase !== 'tour') _mot = null;
+            _render();
+            if (payload.phase === 'tour' && payload.tsTourEnd && _estActif()) _startTimer(); else _stopTimer();
+        } else if (type === 'MIMEDESSSINE_MOT_A_DEVINER') {
+            _mot = payload.mot || null;
+            if (_state.phase === 'tour') _render();
         }
     },
 
-    // Helper function to send player actions
-    _sendPlayerAction(action, data) {
-        if (_socket) {
-            _socket.send('PLAYER_ACTION', { action, data });
-        } else {
-            console.error("[MIMEDESSSINE_MODULE] Socket not initialized for sending action:", action);
-        }
-    }
+    _send(cmd) {
+        try { _socket?.send('PLAYER_ACTION', { action: 'mimedessine:' + cmd, data: {} }); }
+        catch (e) { console.error('[MIME] send', cmd, e.message); }
+    },
 };
 
-function renderPlayerUI() {
-    if (!gameContainer || !currentGameState || !playerPseudo) return;
+// ── Rendu (#jeu-contenu) ─────────────────────────────────────
+function _render() {
+    const c = $('jeu-contenu');
+    if (!c) return;
+    const actif = _estActif();
 
-    gameContainer.innerHTML = ''; // Clear previous content
-
-    const isDrawer = (playerPseudo === currentGameState.drawerPseudo);
-    const phase = currentGameState.phase;
-
-    let htmlContent = `<h2>Mime Dessine - Manche ${currentGameState.manche}</h2>`;
-
-    if (phase === 'menu' || phase === 'choix_mot') {
-        if (isDrawer) {
-            htmlContent += `<p>Tu es le dessinateur pour cette manche. Attends que l'hôte lance le dessin.</p>`;
-            if (currentGameState.motADeviner) {
-                htmlContent += `<p>Mot à dessiner: <strong>${currentGameState.motADeviner}</strong></p>`;
-            }
-        } else {
-            htmlContent += `<p>Le jeu est en préparation. ${currentGameState.drawerPseudo || 'Quelqu\'un'} va dessiner.</p>`;
-        }
-    } else if (phase === 'dessin') {
-        if (isDrawer) {
-            htmlContent += `<p>Dessine: <strong>${currentGameState.motADeviner || 'Chargement du mot...'}</strong></p>`;
-            htmlContent += `<div class="drawing-area">
-                                <canvas id="drawingCanvas" width="600" height="400" style="border:1px solid #000;"></canvas>
-                                <button id="clearCanvas">Effacer</button>
-                                <button id="foundButton">Trouvé</button>
-                                <button id="passButton">Passer</button>
-                                <button id="endRoundButton">Fin de manche</button>
-                            </div>`;
-        } else {
-            htmlContent += `<p>${currentGameState.drawerPseudo} est en train de dessiner...</p>`;
-            htmlContent += `<div class="drawing-area">
-                                <canvas id="drawingCanvas" width="600" height="400" style="border:1px solid #000;"></canvas>
-                            </div>`;
-            htmlContent += `<div class="guess-area">
-                                <input type="text" id="guessInput" placeholder="Ton hypothèse...">
-                                <button id="submitGuess">Deviner</button>
-                            </div>`;
-        }
-    } else if (phase === 'reponse') {
-        htmlContent += `<p>Le mot était: <strong>${currentGameState.motADeviner}</strong></p>`;
-        htmlContent += `<p>Scores mis à jour.</p>`;
-        // Display final drawing
-        htmlContent += `<div class="drawing-area">
-                            <canvas id="drawingCanvas" width="600" height="400" style="border:1px solid #000;"></canvas>
-                        </div>`;
-    } else if (phase === 'resultats') {
-        htmlContent += `<p>Fin de la manche. Résultats:</p>`;
-        // Display scores or summary
-    }
-
-    gameContainer.innerHTML = htmlContent;
-    setupCanvasAndListeners(isDrawer);
-}
-
-function setupCanvasAndListeners(isDrawer) {
-    canvas = document.getElementById('drawingCanvas');
-    if (canvas) {
-        ctx = canvas.getContext('2d');
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = '#000';
-
-        // Restore drawing if available (for rejoining or phase transitions)
-        if (currentGameState.dessinData && currentGameState.dessinData.length > 0) {
-            drawReceivedData(currentGameState.dessinData);
-        }
-
-        if (isDrawer && currentGameState.phase === 'dessin') {
-            canvas.addEventListener('mousedown', startDrawing);
-            canvas.addEventListener('mousemove', draw);
-            canvas.addEventListener('mouseup', stopDrawing);
-            canvas.addEventListener('mouseout', stopDrawing);
-
-            const clearButton = document.getElementById('clearCanvas');
-            if (clearButton) {
-                clearButton.addEventListener('click', clearCanvas);
-            }
-            const foundButton = document.getElementById('foundButton');
-            if (foundButton) {
-                foundButton.addEventListener('click', () => MimeDessineModule._sendPlayerAction('mimedessine:found', {}));
-            }
-            const passButton = document.getElementById('passButton');
-            if (passButton) {
-                passButton.addEventListener('click', () => MimeDessineModule._sendPlayerAction('mimedessine:pass', {}));
-            }
-            const endRoundButton = document.getElementById('endRoundButton');
-            if (endRoundButton) {
-                endRoundButton.addEventListener('click', () => MimeDessineModule._sendPlayerAction('mimedessine:end_round', {}));
-            }
-        } else {
-            // Disable drawing for guessers
-            canvas.style.pointerEvents = 'none';
-        }
-    }
-
-    const submitGuessButton = document.getElementById('submitGuess');
-    if (submitGuessButton) {
-        submitGuessButton.addEventListener('click', submitGuess);
-    }
-    const guessInput = document.getElementById('guessInput');
-    if (guessInput) {
-        guessInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                submitGuess();
-            }
-        });
-    }
-}
-
-function startDrawing(e) {
-    isDrawing = true;
-    [lastX, lastY] = [e.offsetX, e.offsetY];
-}
-
-function draw(e) {
-    if (!isDrawing) return;
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(e.offsetX, e.offsetY);
-    ctx.stroke();
-    [lastX, lastY] = [e.offsetX, e.offsetY];
-
-    // Send drawing data to server using the module's socket
-    MimeDessineModule._sendPlayerAction('mimedessine:drawing_update', {
-        data: getDrawingData()
-    });
-}
-
-function stopDrawing() {
-    isDrawing = false;
-}
-
-function clearCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    MimeDessineModule._sendPlayerAction('mimedessine:drawing_update', { data: [] }); // Clear drawing on server
-}
-
-function getDrawingData() {
-    // For simplicity, we'll send the entire canvas as an image data URL.
-    // In a real-time drawing app, you'd send individual drawing strokes/commands.
-    return canvas.toDataURL();
-}
-
-function drawReceivedData(data) {
-    if (!ctx || !canvas) return;
-    if (Array.isArray(data) && data.length === 0) { // Clear command
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (_state.phase === 'attente' || _state.phase === 'menu') {
+        c.innerHTML = `<div style="text-align:center;padding:1.5rem;display:flex;flex-direction:column;gap:12px;">
+            <h2 style="color:#c4b5fd;margin:0;">🎭 Mime</h2>
+            <p style="color:rgba(255,255,255,.75);">En attente du démarrage de la partie par l'hôte… Prépare-toi, ton tour viendra automatiquement !</p>
+        </div>`;
         return;
     }
-    const img = new Image();
-    img.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear before drawing new image
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    };
-    img.src = data; // Assuming data is a Data URL
+
+    if (_state.phase === 'tour') {
+        if (actif) {
+            c.innerHTML = `<div style="text-align:center;padding:1rem;display:flex;flex-direction:column;gap:14px;max-width:520px;margin:0 auto;">
+                <div style="color:#c4b5fd;font-weight:700;">${esc(_state.categorie || '')}</div>
+                <div style="background:rgba(255,255,255,.06);border:1.5px solid rgba(167,139,250,.4);border-radius:14px;padding:18px;">
+                    <h1 style="margin:0;color:#fff;">${esc(_mot || '…')}</h1>
+                    <p id="mime-timer" style="margin:.4rem 0 0;color:rgba(255,255,255,.55);font-size:.85rem;"></p>
+                </div>
+                <p style="color:rgba(255,255,255,.6);font-size:.85rem;">Mime ce mot — les autres devinent à voix haute.</p>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+                    <button id="mime-trouve" class="btn-primary">✅ Trouvé !</button>
+                    <button id="mime-passer" class="btn-secondary">➡️ Passer</button>
+                    <button id="mime-fin" class="btn-secondary">⏹ Finir ma manche</button>
+                </div>
+            </div>`;
+            $('mime-trouve')?.addEventListener('click', () => MimeDessineModule._send('trouve'));
+            $('mime-passer')?.addEventListener('click', () => MimeDessineModule._send('passer'));
+            $('mime-fin')?.addEventListener('click', () => MimeDessineModule._send('fin_manche'));
+            if (_state.tsTourEnd) _startTimer();
+        } else {
+            c.innerHTML = `<div style="text-align:center;padding:1.5rem;display:flex;flex-direction:column;gap:12px;">
+                <h2 style="color:#fbbf24;margin:0;">🎭 ${esc(_state.participant || '')} mime !</h2>
+                <p style="color:#fff;">Thème : <strong>${esc(_state.categorie || '')}</strong></p>
+                <p style="color:rgba(255,255,255,.75);">Devine le mot à voix haute. 🗣️</p>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">${_miniScores()}</div>
+            </div>`;
+        }
+        return;
+    }
+
+    if (_state.phase === 'fin_manche') {
+        const p = _state.participant;
+        const sc = (_state.scoreManche || {})[p] || 0;
+        const mots = _state.motsManche || [];
+        const liste = mots.length
+            ? mots.map(m => `<li style="padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;gap:8px;">
+                <span style="font-weight:700;color:${m.trouve ? '#86efac' : 'rgba(255,255,255,.5)'};">${m.trouve ? '✅ ' : '❌ '}${esc(m.mot)}</span>
+                <span style="font-size:.72rem;color:rgba(255,255,255,.5);">${esc(m.categorie || '')}</span></li>`).join('')
+            : '<li style="color:rgba(255,255,255,.5);">—</li>';
+        c.innerHTML = `<div style="text-align:center;padding:1rem;max-width:520px;margin:0 auto;">
+            <h2 style="color:#c4b5fd;">🏁 Manche de ${esc(p || '')} terminée</h2>
+            <p style="color:#fff;">Score : <strong>${sc}</strong> / ${mots.length}</p>
+            <ul style="list-style:none;padding:12px;margin:10px 0;text-align:left;background:rgba(0,0,0,.15);border-radius:12px;max-height:160px;overflow:auto;">${liste}</ul>
+            <p style="color:rgba(255,255,255,.6);">En attente de l'hôte…</p>
+        </div>`;
+        return;
+    }
+
+    if (_state.phase === 'classement') {
+        const scores = _state.scores || {};
+        const rows = Object.entries(scores).map(([nom, score]) => ({ nom, score }))
+            .sort((a, b) => b.score - a.score);
+        const lignes = rows.map((it, i) => {
+            const m = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
+            return `<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 12px;${i===0?'font-weight:700;color:#fde68a;':''}">
+                <span>${m} ${esc(it.nom)}</span><span>${it.score} pt${it.score>1?'s':''}</span></div>`;
+        }).join('');
+        c.innerHTML = `<div style="text-align:center;padding:1rem;max-width:480px;margin:0 auto;">
+            <h2 style="color:#c4b5fd;">🏆 Classement final</h2>
+            <div style="margin-top:10px;">${lignes}</div>
+        </div>`;
+        return;
+    }
+
+    c.innerHTML = `<div style="text-align:center;padding:1.5rem;color:rgba(255,255,255,.7);">🎭 Mime — en attente du lancement…</div>`;
 }
 
-function submitGuess() {
-    const guessInput = document.getElementById('guessInput');
-    if (guessInput && guessInput.value.trim() !== '') {
-        MimeDessineModule._sendPlayerAction('mimedessine:guess', { guess: guessInput.value.trim() });
-        guessInput.value = ''; // Clear input after guessing
-    }
+function _miniScores() {
+    const sc = _state.scoreManche || {};
+    return Object.keys(sc).length
+        ? Object.entries(sc).map(([p, v]) =>
+            `<span style="background:rgba(255,255,255,.08);border-radius:20px;padding:4px 12px;font-size:.78rem;color:rgba(255,255,255,.8);">${esc(p)} : ${v}</span>`).join('')
+        : '';
 }
+
+// ── Timer ────────────────────────────────────────────────────
+function _startTimer() {
+    _stopTimer();
+    const upd = () => {
+        const el = $('mime-timer');
+        if (!el || !_state.tsTourEnd) return;
+        const reste = Math.max(0, Math.round((_state.tsTourEnd - Date.now()) / 1000));
+        const m = String(Math.floor(reste / 60)).padStart(2, '0');
+        const s = String(reste % 60).padStart(2, '0');
+        el.textContent = `⏱️ ${m}:${s}`;
+        if (reste <= 0) _stopTimer();
+    };
+    upd();
+    _timerIv = setInterval(upd, 500);
+}
+function _stopTimer() { if (_timerIv) { clearInterval(_timerIv); _timerIv = null; } }
 
 export { MimeDessineModule };
