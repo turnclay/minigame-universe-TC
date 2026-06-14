@@ -20,6 +20,7 @@ import * as justeprixHandler from './games/justeprix.js';
 import * as morpionHandler   from './games/morpion.js';
 import * as puissance4Handler from './games/puissance4.js';
 import * as memoireHandler   from './games/memoire.js';
+import * as mimedessineHandler from './games/mimedessine.js'; // Import the new game handler
 
 const JEU_HANDLERS = {
     quiz      : quizHandler,
@@ -30,6 +31,7 @@ const JEU_HANDLERS = {
     morpion   : morpionHandler,
     puissance4: puissance4Handler,
     memoire   : memoireHandler,
+    mimedessine: mimedessineHandler, // Add the new game handler
 };
 
 const PSEUDO_REGEX    = /^[a-zA-Z0-9_-]{2,20}$/;
@@ -82,7 +84,34 @@ function broadcastToHost(wss, partieId, type, payload = {}) {
     console.log(`[WS] 📢 broadcast (host) ${type} → ${count} clients`);
 }
 
-const helpers = { broadcastToGame, broadcastToPlayers, broadcastToHost, send };
+// New helper: send to a specific pseudo in a game
+function sendToPseudo(wss, partieId, pseudo, type, payload = {}) {
+    let sent = false;
+    const msg = JSON.stringify({ type, payload });
+    wss.clients.forEach(c => {
+        if (c.readyState === 1 && c._partieId === partieId && c._pseudo === pseudo) {
+            try { c.send(msg); sent = true; }
+            catch (e) { console.warn(`[WS] sendToPseudo send() échoué (${type}/${pseudo}):`, e.message); }
+        }
+    });
+    if (sent) console.log(`[WS] ✉️ sendToPseudo ${type} → ${pseudo} (${partieId})`);
+}
+
+// New helper: send to all clients in a game except a specific pseudo
+function sendToAllExcept(wss, partieId, pseudoToExclude, type, payload = {}) {
+    let count = 0;
+    const msg = JSON.stringify({ type, payload });
+    wss.clients.forEach(c => {
+        if (c.readyState === 1 && c._partieId === partieId && c._pseudo !== pseudoToExclude) {
+            try { c.send(msg); count++; }
+            catch (e) { console.warn(`[WS] sendToAllExcept send() échoué (${type}/${c._pseudo || 'anon'}):`, e.message); }
+        }
+    });
+    console.log(`[WS] 📢 sendToAllExcept ${type} → ${count} clients (excl. ${pseudoToExclude}) (${partieId})`);
+}
+
+
+const helpers = { broadcastToGame, broadcastToPlayers, broadcastToHost, send, sendToPseudo, sendToAllExcept };
 
 // ─────────────────────────────────────────────────────
 // HELPERS MÉTIER
