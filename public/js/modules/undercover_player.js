@@ -27,10 +27,71 @@ const esc = s => String(s ?? '')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const ROLE_CFG = {
-    Civil:       { icon: '🟢', label: 'Civil',        color: '#4ade80', conseil: 'Décris ton mot sans le dire. Repère l\'imposteur !' },
-    Undercover:  { icon: '🔴', label: 'Undercover',   color: '#f87171', conseil: 'Ton mot est légèrement différent. Fonds-toi dans la masse !' },
-    MisterWhite: { icon: '🎩', label: 'Mister White', color: '#fbbf24', conseil: 'Pas de mot. Écoute et improvise !' },
+    Civil:       { cls: 'civil',      icon: '🟢', label: 'Civil',        color: '#4ade80', glow: 'radial-gradient(circle at 50% 0%,rgba(74,222,128,.4) 0%,transparent 65%)',  conseil: 'Tu es un <strong>Civil</strong>. Décris ton mot sans le dire. Repère l\'imposteur !' },
+    Undercover:  { cls: 'undercover', icon: '🔴', label: 'Undercover',   color: '#f87171', glow: 'radial-gradient(circle at 50% 0%,rgba(248,113,113,.4) 0%,transparent 65%)', conseil: 'Tu es l\'<strong>Undercover</strong>. Ton mot est légèrement différent. Fonds-toi dans la masse !' },
+    MisterWhite: { cls: 'mw',         icon: '🎩', label: 'Mister White', color: '#fbbf24', glow: 'radial-gradient(circle at 50% 0%,rgba(251,191,36,.4) 0%,transparent 65%)',  conseil: 'Tu es le <strong>Mister White</strong>. Pas de mot. Écoute et improvise !' },
 };
+const _cfg = role => ROLE_CFG[role] || { cls: 'civil', icon: '❓', label: role || '—', color: '#fff', glow: '', conseil: '' };
+
+// ── CSS des cartes (la page invité ne charge pas style.css) ──
+// Repris à l'identique du CSS injecté côté hôte pour une carte cohérente.
+function _injectCSS() {
+    if (document.getElementById('uc-player-card-css')) return;
+    const s = document.createElement('style');
+    s.id = 'uc-player-card-css';
+    s.textContent = `
+.uc-distrib-wrap-player { display:flex; flex-direction:column; align-items:center; gap:14px; padding:18px 12px 24px; }
+.uc-distrib-titre-player { margin:0; font-size:1.1rem; font-weight:800; color:#fff; text-align:center; }
+.uc-waiting-player { font-size:.85rem; color:rgba(255,255,255,.45); text-align:center; margin:.25rem 0 0; }
+
+.uc-carte-slot { display:flex; flex-direction:column; align-items:center; gap:8px; }
+.uc-carte-nom { font-size:.72rem; font-weight:700; letter-spacing:.07em; color:rgba(255,255,255,.45); text-transform:uppercase; }
+.uc-carte-nom--moi { color:#c4b5fd; }
+
+.uc-scene { border-radius:16px; width:120px; height:168px; perspective:900px; }
+.uc-scene--moi { width:200px; height:280px; cursor:pointer; outline:none; -webkit-tap-highlight-color:transparent; }
+.uc-scene--moi:focus-visible { box-shadow:0 0 0 3px rgba(167,139,250,.6); border-radius:16px; }
+
+.uc-card3d { width:100%; height:100%; position:relative; transform-style:preserve-3d; transition:transform .65s cubic-bezier(.4,0,.2,1); border-radius:16px; }
+.uc-card3d--flip { transform:rotateY(180deg); }
+.uc-card3d--vu { box-shadow:0 0 0 2px rgba(74,222,128,.55), 0 0 16px rgba(74,222,128,.2); }
+
+.uc-face { position:absolute; inset:0; border-radius:16px; backface-visibility:hidden; -webkit-backface-visibility:hidden; overflow:hidden; }
+
+.uc-dos { background:linear-gradient(150deg,#1e1240 0%,#0b0718 100%); border:1.5px solid rgba(167,139,250,.22); display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:0 10px 32px rgba(0,0,0,.5); }
+.uc-dos-inner { display:flex; flex-direction:column; align-items:center; gap:8px; user-select:none; }
+.uc-dos-logo { font-size:2.6rem; filter:drop-shadow(0 0 12px rgba(167,139,250,.6)); animation:ucp-float 3s ease-in-out infinite; }
+@keyframes ucp-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+.uc-dos-label { font-size:.62rem; font-weight:800; letter-spacing:.2em; color:rgba(167,139,250,.45); text-transform:uppercase; }
+.uc-dos-hint { position:absolute; bottom:12px; font-size:.62rem; font-weight:700; letter-spacing:.12em; color:rgba(255,255,255,.28); text-transform:uppercase; animation:ucp-blink 2.4s ease-in-out infinite; }
+@keyframes ucp-blink { 0%,100%{opacity:.28} 50%{opacity:.7} }
+
+.uc-face-front { transform:rotateY(180deg); border:1.5px solid rgba(255,255,255,.1); box-shadow:0 10px 32px rgba(0,0,0,.5); display:flex; align-items:stretch; }
+.uc-face-front--civil      { background:linear-gradient(160deg,#0d2218 0%,#060e0b 100%); border-color:rgba(74,222,128,.28); }
+.uc-face-front--undercover { background:linear-gradient(160deg,#22100d 0%,#0e0606 100%); border-color:rgba(248,113,113,.28); }
+.uc-face-front--mw         { background:linear-gradient(160deg,#21180a 0%,#0e0d05 100%); border-color:rgba(251,191,36,.28); }
+.uc-face-glow { position:absolute; inset:0; pointer-events:none; border-radius:14px; }
+.uc-face-inner { position:relative; z-index:1; width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:18px 12px; box-sizing:border-box; }
+.uc-role-icon { font-size:2.2rem; line-height:1; }
+.uc-role-name { font-size:.95rem; font-weight:900; letter-spacing:.04em; text-transform:uppercase; text-align:center; }
+.uc-sep { width:32px; height:1.5px; background:rgba(255,255,255,.1); border-radius:2px; }
+
+.uc-mot-bloc { display:flex; flex-direction:column; align-items:center; gap:4px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:10px 12px; width:100%; box-sizing:border-box; text-align:center; }
+.uc-mot-mw  { border-color:rgba(251,191,36,.18); background:rgba(251,191,36,.04); }
+.uc-mot-lab { font-size:.55rem; font-weight:800; letter-spacing:.2em; color:rgba(255,255,255,.35); text-transform:uppercase; }
+.uc-mot-val { font-size:1.25rem; font-weight:900; color:#fff; word-break:break-word; }
+.uc-mot-sub { font-size:.66rem; color:rgba(251,191,36,.65); font-style:italic; }
+.uc-theme-pill { font-size:.64rem; font-weight:600; color:rgba(255,255,255,.4); background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07); border-radius:14px; padding:2px 10px; }
+
+.uc-confirm-bloc { width:200px; }
+.uc-conseil { font-size:.8rem; color:rgba(255,255,255,.6); text-align:center; line-height:1.6; margin:0 0 10px; }
+.uc-conseil strong { color:rgba(255,255,255,.92); }
+.uc-vu-msg { font-size:.85rem; color:rgba(74,222,128,.9); text-align:center; padding:8px 0; margin:0; }
+.uc-btn-ok { display:block; width:100%; padding:12px; background:linear-gradient(135deg,#059669,#047857); border:none; border-radius:12px; color:#fff; font-size:.9rem; font-weight:800; cursor:pointer; font-family:inherit; box-shadow:0 3px 12px rgba(5,150,105,.3); transition:transform .15s, box-shadow .15s; }
+.uc-btn-ok:hover { transform:translateY(-2px); box-shadow:0 5px 18px rgba(5,150,105,.45); }
+    `;
+    document.head.appendChild(s);
+}
 
 export const UndercoverPlayerModule = {
 
@@ -56,6 +117,7 @@ export const UndercoverPlayerModule = {
         this._myRole = null; this._myMot = null; this._theme = null;
         this._roleVu = false; this._state = null; this._voted = false; this._mwSent = false;
 
+        _injectCSS();
         this._renderAttente('Distribution des rôles en cours…');
 
         // Demander son rôle privé (utile surtout en reconnexion / arrivée tardive)
@@ -142,51 +204,106 @@ export const UndercoverPlayerModule = {
     _renderDistribution() {
         if (!this._myRole) { this._renderAttente('Distribution des rôles en cours…'); return; }
 
-        const cfg = ROLE_CFG[this._myRole] || ROLE_CFG.Civil;
-        const theme = this._theme
-            ? `<div style="font-size:.82rem;color:rgba(255,255,255,.6);background:rgba(167,139,250,.12);
-                 border:1px solid rgba(167,139,250,.25);border-radius:20px;padding:5px 14px;">🏷️ ${esc(this._theme)}</div>`
-            : '';
-        const motBloc = this._myMot !== null
-            ? `<div style="text-align:center;margin-top:.5rem;">
-                   <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);">Ton mot</div>
-                   <div style="font-size:1.7rem;font-weight:900;color:#fff;">${esc(this._myMot)}</div>
-               </div>`
-            : `<div style="text-align:center;margin-top:.5rem;">
-                   <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);">Ton mot</div>
-                   <div style="font-size:1.4rem;font-weight:900;color:#fbbf24;">???</div>
-                   <div style="font-size:.78rem;color:rgba(255,255,255,.5);">Pas de mot — improvise !</div>
-               </div>`;
+        const role = this._myRole;
+        const mot  = this._myMot; // null pour Mister White
+        const cfg  = _cfg(role);
 
+        const motHTML = mot !== null
+            ? `<div class="uc-mot-bloc"><span class="uc-mot-lab">TON MOT</span><span class="uc-mot-val">${esc(mot)}</span></div>`
+            : `<div class="uc-mot-bloc uc-mot-mw"><span class="uc-mot-lab">TON MOT</span><span class="uc-mot-val">???</span><span class="uc-mot-sub">Pas de mot — improvise !</span></div>`;
+        const themeHTML = this._theme ? `<div class="uc-theme-pill">🏷️ ${esc(this._theme)}</div>` : '';
+
+        // ── État « rôle déjà mémorisé » : carte retournée + verrouillée ──
         if (this._roleVu) {
             this._setHTML(`
-                <div style="display:flex;flex-direction:column;align-items:center;gap:1rem;padding:2rem 1rem;text-align:center;">
-                    <div style="font-size:2.4rem;">${cfg.icon}</div>
-                    <div style="font-size:1.1rem;font-weight:800;color:${cfg.color};">${cfg.label}</div>
-                    ${motBloc}
-                    <p style="color:#86efac;font-weight:700;margin:.5rem 0 0;">✅ Rôle mémorisé</p>
-                    <p style="color:rgba(255,255,255,.45);font-size:.85rem;margin:0;">En attente du lancement du débat par l'hôte…</p>
+                <div class="uc-distrib-wrap-player">
+                    <h2 class="uc-distrib-titre-player">Ta carte</h2>
+                    <div class="uc-carte-slot" data-pseudo="${esc(this._pseudo)}">
+                        <div class="uc-carte-nom uc-carte-nom--moi">👤 Moi</div>
+                        <div class="uc-scene uc-scene--moi" aria-hidden="true">
+                            <div class="uc-card3d uc-card3d--flip uc-card3d--vu">
+                                <div class="uc-face uc-dos">
+                                    <div class="uc-dos-inner"><span class="uc-dos-logo">🕵️</span><span class="uc-dos-label">UNDERCOVER</span></div>
+                                </div>
+                                <div class="uc-face uc-face-front uc-face-front--${cfg.cls}">
+                                    <div class="uc-face-glow" style="background:${cfg.glow}"></div>
+                                    <div class="uc-face-inner">
+                                        <div class="uc-role-icon">${cfg.icon}</div>
+                                        <div class="uc-role-name" style="color:${cfg.color}">${cfg.label}</div>
+                                        <div class="uc-sep"></div>
+                                        ${motHTML}
+                                        ${themeHTML}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="uc-confirm-bloc"><p class="uc-vu-msg">✅ Rôle mémorisé !</p></div>
+                    </div>
+                    <p class="uc-waiting-player">En attente du lancement du débat par l'hôte…</p>
                 </div>`);
             return;
         }
 
+        // ── Carte cliquable : flip → conseil + bouton « C'est noté » ──
         this._setHTML(`
-            <div style="display:flex;flex-direction:column;align-items:center;gap:1rem;padding:1.5rem 1rem;text-align:center;">
-                <h2 style="margin:0;font-size:1.15rem;">Ta carte</h2>
-                ${theme}
-                <div style="background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.1);border-radius:16px;
-                    padding:1.25rem 1.5rem;min-width:240px;max-width:320px;width:100%;">
-                    <div style="font-size:2.4rem;">${cfg.icon}</div>
-                    <div style="font-size:1.2rem;font-weight:900;color:${cfg.color};margin-top:.25rem;">${cfg.label}</div>
-                    ${motBloc}
+            <div class="uc-distrib-wrap-player">
+                <h2 class="uc-distrib-titre-player">Appuie sur ta carte</h2>
+                <div class="uc-carte-slot" data-pseudo="${esc(this._pseudo)}">
+                    <div class="uc-carte-nom uc-carte-nom--moi">👤 Moi</div>
+                    <div class="uc-scene uc-scene--moi" id="uc-p-scene" role="button" tabindex="0">
+                        <div class="uc-card3d" id="uc-p-card">
+                            <div class="uc-face uc-dos">
+                                <div class="uc-dos-inner"><span class="uc-dos-logo">🕵️</span><span class="uc-dos-label">UNDERCOVER</span></div>
+                                <span class="uc-dos-hint">Appuie pour révéler</span>
+                            </div>
+                            <div class="uc-face uc-face-front uc-face-front--${cfg.cls}">
+                                <div class="uc-face-glow" style="background:${cfg.glow}"></div>
+                                <div class="uc-face-inner">
+                                    <div class="uc-role-icon">${cfg.icon}</div>
+                                    <div class="uc-role-name" style="color:${cfg.color}">${cfg.label}</div>
+                                    <div class="uc-sep"></div>
+                                    ${motHTML}
+                                    ${themeHTML}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="uc-confirm-bloc" id="uc-p-confirm" hidden>
+                        <p class="uc-conseil">${cfg.conseil}</p>
+                        <button class="uc-btn-ok" id="uc-p-btnok">✅ C'est noté</button>
+                    </div>
                 </div>
-                <p style="color:rgba(255,255,255,.6);font-size:.85rem;max-width:300px;margin:.25rem 0 0;">${cfg.conseil}</p>
-                <button id="ucp-role-vu" style="margin-top:.5rem;padding:12px 28px;border:none;border-radius:10px;
-                    background:linear-gradient(135deg,#6a5af9,#8a2be2);color:#fff;font-weight:700;font-size:.95rem;
-                    cursor:pointer;font-family:inherit;">✅ C'est noté</button>
             </div>`);
 
-        $('ucp-role-vu')?.addEventListener('click', () => {
+        const scene   = $('uc-p-scene');
+        const card    = $('uc-p-card');
+        const confirm = $('uc-p-confirm');
+        let flipped   = false;
+
+        const flip = () => {
+            if (flipped) return;
+            flipped = true;
+            card?.classList.add('uc-card3d--flip');
+            if (confirm) {
+                setTimeout(() => {
+                    confirm.hidden = false;
+                    confirm.style.opacity    = '0';
+                    confirm.style.transform  = 'translateY(10px)';
+                    confirm.style.transition = 'opacity .35s, transform .35s';
+                    requestAnimationFrame(() => {
+                        confirm.style.opacity   = '1';
+                        confirm.style.transform = 'translateY(0)';
+                    });
+                }, 650);
+            }
+        };
+
+        scene?.addEventListener('click', flip);
+        scene?.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); }
+        });
+
+        $('uc-p-btnok')?.addEventListener('click', () => {
             this._roleVu = true;
             this._send('undercover:role_vu', {});
             this._renderDistribution();
