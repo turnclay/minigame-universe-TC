@@ -19,7 +19,7 @@ import * as lmlHandler       from './games/lml.js';
 import * as justeprixHandler from './games/justeprix.js';
 import * as morpionHandler   from './games/morpion.js';
 import * as puissance4Handler from './games/puissance4.js';
-import * as memoireHandler   from './games/memoire.js';
+import * * as memoireHandler   from './games/memoire.js';
 import * as mimedessineHandler from './games/mimedessine.js'; // Import the new game handler
 
 const JEU_HANDLERS = {
@@ -88,6 +88,7 @@ function broadcastToHost(wss, partieId, type, payload = {}) {
 function sendToPseudo(wss, partieId, pseudo, type, payload = {}) {
     let sent = false;
     const msg = JSON.stringify({ type, payload });
+
     wss.clients.forEach(c => {
         if (c.readyState === 1 && c._partieId === partieId && c._pseudo === pseudo) {
             try { c.send(msg); sent = true; }

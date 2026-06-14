@@ -23,7 +23,7 @@
 //
 // Events serveur → clients :
 //   MIMEDESSSINE_DEFI          { config, phase, manche, drawerPseudo, scores } (all)
-//   MIMEDESSSINE_PHASE         { phase, manche, tsPhaseEnd, motADevinerRevele } (all)
+//   MIMEDESSSINE_PHASE         { phase, manche, tsPhaseEnd, motADevinerRevele, drawerPseudo, motADeviner } (all)
 //   MIMEDESSSINE_MOT_A_DEVINER { mot } (drawer only)
 //   MIMEDESSSINE_DRAWING_DATA  { data } (all except drawer)
 //   MIMEDESSSINE_GUESS_IN      { pseudo, guess, correct, scoreGuesseur, scoreDessinateur, allGuessed } (host)
@@ -135,6 +135,14 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
                 sendToPseudo(wss, partieId, s.drawerPseudo, 'MIMEDESSSINE_MOT_A_DEVINER', { mot: s.motADeviner });
             }
 
+            // Broadcast the phase change to all clients
+            broadcastToGame(wss, partieId, 'MIMEDESSSINE_PHASE', {
+                phase: s.phase,
+                manche: s.manche,
+                drawerPseudo: s.drawerPseudo, // Include drawerPseudo for client UI logic
+            });
+
+            // Also broadcast MIMEDESSSINE_DEFI for general game state update (config, scores etc.)
             broadcastToGame(wss, partieId, 'MIMEDESSSINE_DEFI', {
                 config       : s.config,
                 phase        : s.phase,
@@ -155,6 +163,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
                 manche: s.manche,
                 tsPhaseEnd: s.tsPhaseEnd,
                 motADevinerRevele: s.motADevinerRevele,
+                drawerPseudo: s.drawerPseudo, // Added for consistency
             });
             console.log(`[MIMEDESSSINE] ▶️ Début du dessin. Fin dans ${s.config.tempsDessin / 1000}s. Phase: ${s.phase}`);
             break;
@@ -171,6 +180,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
                 tsPhaseEnd: s.tsPhaseEnd,
                 motADevinerRevele: s.motADevinerRevele,
                 motADeviner: s.motADeviner, // Reveal the word to everyone
+                drawerPseudo: s.drawerPseudo, // Added for consistency
             });
             console.log(`[MIMEDESSSINE] 💡 Mot révélé par l'hôte: "${s.motADeviner}". Phase: ${s.phase}`);
             break;
@@ -186,6 +196,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
                 tsPhaseEnd: s.tsPhaseEnd,
                 motADevinerRevele: s.motADevinerRevele,
                 motADeviner: s.motADeviner,
+                drawerPseudo: s.drawerPseudo, // Added for consistency
             });
             console.log(`[MIMEDESSSINE] 🏁 Résultats forcés par l'hôte. Phase: ${s.phase}`);
             break;
@@ -281,11 +292,12 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
                     tsPhaseEnd: s.tsPhaseEnd,
                     motADevinerRevele: s.motADevinerRevele,
                     motADeviner: s.motADeviner,
+                    drawerPseudo: s.drawerPseudo, // Added for consistency
                 });
                 console.log(`[MIMEDESSSINE] 🎉 Tous ont deviné ! Mot: "${s.motADeviner}". Phase: ${s.phase}`);
             }
 
-            console.log(`[MIMEDESSSINE] 💬 ${pseudo} a deviné "${guess}" (${correct ? 'correct' : 'incorrect'})`);
+            console.log(`[MIMEDESSSINE] 💬 ${pseudo}: a deviné "${guess}" (${correct ? 'correct' : 'incorrect'})`);
             break;
         }
 
