@@ -4,7 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="73d891ed-7cb8-4a2e-b43e-d24a9aad95e0" name="Changes" comment="" />
+    <list default="true" id="73d891ed-7cb8-4a2e-b43e-d24a9aad95e0" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/public/js/modules/mime_player.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/mime_player.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/games/mimedessine.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/games/mimedessine.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/ws-handler.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/ws-handler.js" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />

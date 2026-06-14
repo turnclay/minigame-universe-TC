@@ -17,7 +17,7 @@ import * as petitbacHandler  from './games/petitbac.js';
 import * as penduHandler     from './games/pendu.js';
 import * as lmlHandler       from './games/lml.js';
 import * as justeprixHandler from './games/justeprix.js';
-import * as morpionHandler   from './games/morpion.js';
+import * * as morpionHandler   from './games/morpion.js';
 import * as puissance4Handler from './games/puissance4.js';
 import * as memoireHandler   from './games/memoire.js';
 import * as mimedessineHandler from './games/mimedessine.js'; // Import the new game handler
