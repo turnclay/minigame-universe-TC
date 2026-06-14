@@ -219,43 +219,60 @@ export const Player = {
             if (el) el.textContent = (this.scoreLocal ?? 0) + ' pt' + ((this.scoreLocal ?? 0) > 1 ? 's' : '');
         });
 
-        // ── Relay des events de jeu vers le module invité actif ────────
-        // Dispatcher central enregistré une seule fois dès Player.init()
-        // (pas de listener dupliqué). Pour chaque event :
-        //   - si le module expose _on<EVENT> (Quiz, historique) → appelé ;
-        //   - sinon → délégation générique via onWsEvent(evt, payload)
-        //     (Petit Bac, Pendu, Maxi Lettres, Juste Prix).
-        // Un event non géré par le module courant est ignoré par son switch
-        // → aucun effet de bord inter-jeux. Avant P5.5, seuls les QUIZ_*
-        // étaient relayés : les jeux P5 côté invité ne recevaient jamais
-        // leurs events et restaient bloqués sur l'écran d'attente.
-        const gameEvents = [
-            // Quiz
-            'QUIZ_QUESTION','QUIZ_CORRECTION','QUIZ_END','QUIZ_INDICE',
-            'QUIZ_ANSWER_ACK','QUIZ_RESPONSE_IN','QUIZ_TIMER_EXPIRED','QUIZ_CAN_NEXT',
-            // Petit Bac
-            'PETITBAC_MANCHE_START','PETITBAC_REVELATION','PETITBAC_ANSWER_ACK','PETITBAC_TIMER_EXPIRED',
-            // Pendu
-            'PENDU_MOT_START','PENDU_REVELATION','PENDU_ANSWER_ACK','PENDU_RESULT_IN','PENDU_TIMER_EXPIRED',
-            // Maxi Lettres
-            'LML_MANCHE_START','LML_REVELATION','LML_ANSWER_ACK','LML_TIMER_EXPIRED',
-            // Juste Prix
-            'JUSTEPRIX_PRODUIT_START','JUSTEPRIX_REVELATION','JUSTEPRIX_ANSWER_ACK','JUSTEPRIX_TIMER_EXPIRED',
-            // Memoire
-            'MEMOIRE_DEFI','MEMOIRE_PHASE','MEMOIRE_RESULT_ACK',
-            // Mime Dessine
-            'MIMEDESSSINE_DEFI', 'MIMEDESSSINE_PHASE', 'MIMEDESSSINE_MOT_A_DEVINER',
-            'MIMEDESSSINE_DRAWING_DATA', 'MIMEDESSSINE_GUESS_IN', 'MIMEDESSSINE_GUESS_ACK',
-        ];
+// ── Relay des events de jeu vers le module invité actif ────────
+// Dispatcher central enregistré une seule fois dès Player.init()
+// (pas de listener dupliqué). Pour chaque event :
+//   - si le module expose _on<EVENT> (Quiz, historique) → appelé ;
+//   - sinon → délégation générique via onWsEvent(evt, payload)
+//     (Petit Bac, Pendu, Maxi Lettres, Juste Prix).
+// Un event non géré par le module courant est ignoré par son switch
+// → aucun effet de bord inter-jeux. Avant P5.5, seuls les QUIZ_*
+// étaient relayés : les jeux P5 côté invité ne recevaient jamais
+// leurs events et restaient bloqués sur l'écran d'attente.
+
+const gameEvents = [
+    // Quiz
+    'QUIZ_QUESTION','QUIZ_CORRECTION','QUIZ_END','QUIZ_INDICE',
+    'QUIZ_ANSWER_ACK','QUIZ_RESPONSE_IN','QUIZ_TIMER_EXPIRED','QUIZ_CAN_NEXT',
+
+    // Petit Bac
+    'PETITBAC_MANCHE_START','PETITBAC_REVELATION','PETITBAC_ANSWER_ACK','PETITBAC_TIMER_EXPIRED',
+
+    // Pendu
+    'PENDU_MOT_START','PENDU_REVELATION','PENDU_ANSWER_ACK','PENDU_RESULT_IN','PENDU_TIMER_EXPIRED',
+
+    // Maxi Lettres
+    'LML_MANCHE_START','LML_REVELATION','LML_ANSWER_ACK','LML_TIMER_EXPIRED',
+
+    // Juste Prix
+    'JUSTEPRIX_PRODUIT_START','JUSTEPRIX_REVELATION','JUSTEPRIX_ANSWER_ACK','JUSTEPRIX_TIMER_EXPIRED',
+
+    // Mémoire
+    'MEMOIRE_DEFI','MEMOIRE_PHASE','MEMOIRE_RESULT_ACK',
+
+    // Mime Dessine
+    'MIMEDESSSINE_DEFI','MIMEDESSSINE_PHASE','MIMEDESSSINE_MOT_A_DEVINER',
+    'MIMEDESSSINE_DRAWING_DATA','MIMEDESSSINE_GUESS_IN','MIMEDESSSINE_GUESS_ACK',
+];
+
 gameEvents.forEach(evt => {
     socket.on(evt, payload => {
+
+        // Handler spécifique : _on<EVENT>
         if (this.module && typeof this.module['_on' + evt] === 'function') {
             this.module['_on' + evt](payload);
-        } else if (this.module) {
-            this.module.onWsEvent?.(evt, payload);
+            return;
         }
+
+        // Handler générique
+        if (this.module && typeof this.module.onWsEvent === 'function') {
+            this.module.onWsEvent(evt, payload);
+        }
+
+        // Sinon : event ignoré (normal)
     });
 });
+
 
         // ── Fin de partie ──────────────────────────────────────
         socket.on('GAME_ENDED', ({ snapshot }) => {
