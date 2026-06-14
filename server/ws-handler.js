@@ -21,6 +21,7 @@ import * as morpionHandler   from './games/morpion.js';
 import * as puissance4Handler from './games/puissance4.js';
 import * as memoireHandler   from './games/memoire.js';
 import * as mimedessineHandler from './games/mimedessine.js'; // Import the new game handler
+import * as undercoverHandler from './games/undercover.js';
 
 const JEU_HANDLERS = {
     quiz      : quizHandler,
@@ -32,6 +33,7 @@ const JEU_HANDLERS = {
     puissance4: puissance4Handler,
     memoire   : memoireHandler,
     mimedessine: mimedessineHandler, // Add the new game handler
+    undercover: undercoverHandler,
 };
 
 const PSEUDO_REGEX    = /^[a-zA-Z0-9_-]{2,20}$/;

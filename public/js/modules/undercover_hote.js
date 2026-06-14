@@ -12,6 +12,8 @@
 
 import { GameState } from '../core/state.js';
 import { signalDemarrage } from '../core/signal.js';
+import { socket } from '../core/socket.js';
+import HostSession from '../core/host_session.js';
 
 // ──────────────────────────────────────────────────────────────
 // CLÉS LOCALSTORAGE
@@ -82,32 +84,133 @@ const S = {
     _pseudoHote:      '',
     _partieTs:        0,
     _voteRoundTs:     0,
+    _phase:           null,
+    _wsBound:         false,
+    _suiviTotal:      0,
+    _onTousVus:       null,
 };
 
 export function getState() { return { ...S }; }
 
 // ──────────────────────────────────────────────────────────────
-// PUBLICATION
+// PUBLICATION — WebSocket (source de vérité = serveur, cf. CLAUDE.md)
+// L'état PUBLIC (sans rôles privés) est diffusé à tous les invités.
+// Le rôle PRIVÉ de chaque invité est envoyé UNIQUEMENT à lui.
+// Les anciennes fonctions localStorage sont conservées (no-op legacy)
+// mais ne sont plus la source de vérité.
 // ──────────────────────────────────────────────────────────────
-export function publierEtat(etat) {
-    const sid = getSid(); if (sid) localStorage.setItem(cleE(), etat);
+export function publierEtat() { /* legacy localStorage — neutralisé (WS) */ }
+export function publierEtatJeu() { /* legacy localStorage — neutralisé (WS) */ }
+
+function _wsSend(action, data) {
+    try { socket.send('HOST_ACTION', { action, data: data || {} }); }
+    catch (e) { console.error('[UC-HOTE] WS send', action, e); }
 }
 
-export function publierEtatJeu(p) {
-    const sid = getSid(); if (!sid) return;
-    localStorage.setItem(cleQ(), JSON.stringify({
-        phase:p.phase, roles:p.roles||{}, mots:p.mots||{civil:'',undercover:''},
-        theme:p.theme||'', joueursEnJeu:p.joueursEnJeu||[],
-        voteOuvert:p.voteOuvert||false, elimine:p.elimine||null,
-        finMessage:p.finMessage||null, finGagnant:p.finGagnant||null,
-        ts:Date.now(),
-    }));
+function _tallyPublic() {
+    const t = {};
+    Object.entries(S._votes).forEach(([votant, cible]) => {
+        if (S.joueursEnJeu.includes(votant) && S.joueursEnJeu.includes(cible)) {
+            t[cible] = (t[cible] || 0) + 1;
+        }
+    });
+    return t;
+}
+
+function _etatPublic(phase) {
+    const enFin     = phase === 'fin';
+    const attenteMW = !!(S.elimine && S.roles[S.elimine] === 'MisterWhite' && !S.finMessage);
+    return {
+        phase,
+        theme        : S.theme,
+        joueurs      : Object.keys(S.roles),
+        joueursEnJeu : [...S.joueursEnJeu],
+        voteOuvert   : S.voteOuvert,
+        votesPublics : _tallyPublic(),
+        votants      : Object.keys(S._votes),
+        elimine      : S.elimine,
+        elimineRole  : S.elimine ? (S.roles[S.elimine] || null) : null,
+        attenteMW,
+        finMessage   : S.finMessage,
+        finGagnant   : S.finGagnant,
+        rolesReveles : enFin ? { ...S.roles } : null,
+        motsReveles  : enFin ? { civil: S.mots.civil, undercover: S.mots.undercover } : null,
+        pseudoHote   : S._pseudoHote,
+        ts           : Date.now(),
+    };
+}
+
+function _publierEtatPublic() {
+    if (!S._phase) return;
+    _wsSend('undercover:state', _etatPublic(S._phase));
+}
+
+function _publierRolePrive(pseudo) {
+    if (!pseudo || pseudo === S._pseudoHote) return; // l'hôte voit sa carte localement
+    const role = S.roles[pseudo];
+    if (!role) return;
+    const mot = role === 'MisterWhite' ? null
+              : role === 'Undercover'  ? S.mots.undercover
+              : S.mots.civil;
+    _wsSend('undercover:role', { pseudo, role, mot, theme: S.theme });
+}
+
+function _publierTousRolesPrives() {
+    Object.keys(S.roles).forEach(p => _publierRolePrive(p));
 }
 
 function _pub(phase) {
-    publierEtatJeu({ phase, roles:S.roles, mots:S.mots, theme:S.theme,
-        joueursEnJeu:S.joueursEnJeu, voteOuvert:S.voteOuvert,
-        elimine:S.elimine, finMessage:S.finMessage, finGagnant:S.finGagnant });
+    S._phase = phase;
+    _publierEtatPublic();
+}
+
+// ── Écoute des actions invités (role_vu / vote / mw_guess / resync) ──
+function _enrVoteRemote(pseudo, cible) {
+    if (!S.voteOuvert || !cible) return;
+    if (!S.joueursEnJeu.includes(pseudo)) return;
+    if (!S.joueursEnJeu.includes(cible))  return;
+    if (S._votes[pseudo]) return;
+    S._votes[pseudo] = cible;
+    _majTally();
+    _publierEtatPublic(); // tally en direct pour tous
+}
+
+function _onPlayerActionWS(payload) {
+    const { pseudo, action, data } = payload || {};
+    if (!action || !action.startsWith('undercover:')) return;
+    const cmd = action.split(':')[1];
+
+    if (cmd === 'role_vu') {
+        if (S.joueursEnJeu.includes(pseudo) && !S._rolesVus.has(pseudo)) {
+            S._rolesVus.add(pseudo);
+            _majSuivi(S._suiviTotal || S.joueursEnJeu.length, S._onTousVus);
+        }
+    } else if (cmd === 'vote') {
+        _enrVoteRemote(pseudo, data && data.cible);
+    } else if (cmd === 'mw_guess') {
+        if (S.elimine && S.roles[S.elimine] === 'MisterWhite' && !S.finMessage) {
+            verifierDevinetteMW(S.elimine, (data && data.mot) || '');
+        }
+    } else if (cmd === 'resync_role') {
+        _publierRolePrive(pseudo);
+        _publierEtatPublic();
+    }
+}
+
+function _onPlayerJoinedWS() {
+    // Un invité (re)joint / recharge → renvoi de l'état public + son rôle privé
+    _publierEtatPublic();
+    _publierTousRolesPrives();
+}
+
+function _brancherWS() {
+    socket.off('PLAYER_ACTION', _onPlayerActionWS);
+    socket.on('PLAYER_ACTION', _onPlayerActionWS);
+    socket.off('PLAYER_JOINED', _onPlayerJoinedWS);
+    socket.on('PLAYER_JOINED', _onPlayerJoinedWS);
+    socket.off('PLAYER_RECONNECTED', _onPlayerJoinedWS);
+    socket.on('PLAYER_RECONNECTED', _onPlayerJoinedWS);
+    S._wsBound = true;
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -141,7 +244,9 @@ export async function initialiserPartie({ joueurs, nbUndercover=1, nbMisterWhite
     if (!GameState.scores) GameState.scores = {};
     joueurs.forEach(j => { if (GameState.scores[j] === undefined) GameState.scores[j] = 0; });
 
+    _brancherWS();
     _pub('distribution');
+    _publierTousRolesPrives();
     console.log('[UC] Partie init | mots:', S.mots);
 }
 
@@ -327,11 +432,16 @@ export function afficherDistribution(pseudoHote, onTousVus) {
         if (typeof onTousVus === 'function') onTousVus();
     };
 
+    // Mémoriser le total + callback pour le suivi WS des role_vu
+    S._suiviTotal = total;
+    S._onTousVus  = onTousVus;
+
     // ── 5. Flip de la carte de l'hôte ─────────────────────────
     _branquerFlip(pseudoHote, total, onTousVus);
 
-    // ── 6. Écouter les role_vu des invités ─────────────────────
-    _ecouterRolesVus(total, onTousVus);
+    // ── 6. (Re)publier l'état + les rôles privés (invités déjà chargés) ──
+    _pub('distribution');
+    _publierTousRolesPrives();
 }
 
 
@@ -374,7 +484,7 @@ function _branquerFlip(pseudo, total, onTousVus) {
     });
 
     btnOk?.addEventListener('click', () => {
-        ajouterActionInvite(pseudo, 'role_vu', {});
+        // L'hôte marque sa propre carte localement (pas de WS nécessaire)
         S._rolesVus.add(pseudo);
         _majSuivi(total, onTousVus);
 
@@ -565,23 +675,14 @@ export function ouvrirVote() {
     }
 
     _bindBtn('undercover-voter', '✅ Valider les votes', () => _validerVotes());
-    _ecouterVotes();
+    // Les votes des invités arrivent désormais via WS (_onPlayerActionWS)
 }
 
 function _enrVote(pseudo, cible) {
     if (S._votes[pseudo]) return;
     S._votes[pseudo] = cible;
-    // Écriture directe avec ts >= _voteRoundTs
-    const sid = getSid();
-    if (sid) {
-        const cle = `partie_reponses_${sid}`;
-        let arr = []; try { arr = JSON.parse(localStorage.getItem(cle) || '[]'); } catch {}
-        if (!Array.isArray(arr)) arr = [];
-        arr = arr.filter(a => !(a.pseudo === pseudo && a.action === 'vote'));
-        arr.push({ pseudo, action: 'vote', data: { cible }, ts: Date.now() });
-        localStorage.setItem(cle, JSON.stringify(arr));
-    }
     _majTally();
+    _publierEtatPublic(); // diffuser le tally à tous (hôte + invités)
 }
 
 function _majTally() {
@@ -925,6 +1026,11 @@ export function bindBoutonDemarrer(onTousVus) {
         // 2) Tirage des rôles
         // ───────────────────────────────────────────────
         await initialiserPartie({ joueurs, nbUndercover: nbUC, nbMisterWhite: nbMW });
+
+        // 2b) Démarrer la partie côté serveur → les invités reçoivent
+        //     GAME_STARTED et chargent le module invité undercover_player.js.
+        try { HostSession.notifierDemarrage(); }
+        catch (e) { console.error('[UC] notifierDemarrage:', e); }
 
         // ───────────────────────────────────────────────
         // 3) Signal start + état en cours

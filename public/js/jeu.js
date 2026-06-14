@@ -25,6 +25,7 @@ import                           './modules/morpion_player.js';
 import                           './modules/puissance4_player.js';
 import                           './modules/memoire_player.js';
 import                           './modules/mime_player.js';
+import                           './modules/undercover_player.js';
 
 // ── DOM utils ──────────────────────────────────────────────────
 const $      = id => document.getElementById(id);
