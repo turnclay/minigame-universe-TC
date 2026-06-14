@@ -14,6 +14,9 @@
 
 <!-- ═══════════════════════════════════════════════════════
      NAVBAR INVITÉ
+     Masquée (opacity:0, pointer-events:none) par défaut.
+     Rendue visible via navbar.classList.add('visible')
+     dans jeu.js après JOIN_OK.
 ═══════════════════════════════════════════════════════ -->
 <nav class="invite-navbar" id="invite-navbar" aria-label="Navigation invité">
   <button class="invite-nav-btn" id="btn-home-permanent"
@@ -25,8 +28,20 @@
 
 <!-- ═══════════════════════════════════════════════════════
      PHASE 1 — IDENTIFICATION
-     Visible au chargement. Masquée par player.js après JOIN_OK.
-     IDs lus par jeu.js : #id-meta-*, #id-pseudo, #btn-join, #id-etat
+     Visible au chargement.
+     Masquée par jeu.js après JOIN_OK.
+
+     IDs utilisés par jeu.js :
+       #id-meta-nom   — nom de la partie
+       #id-meta-jeu   — nom du jeu (ex : QUIZ)
+       #id-meta-hote  — pseudo de l'hôte
+       #id-meta-date  — date de création
+       #id-meta-id    — partieId
+       #id-row-hote   — ligne hôte (cachée si absent)
+       #id-row-date   — ligne date (cachée par défaut)
+       #id-pseudo     — champ pseudo (lu par jeu.js)
+       #btn-join      — bouton rejoindre (lu par jeu.js)
+       #id-etat       — zone messages d'état / erreurs
 ═══════════════════════════════════════════════════════ -->
 <div id="phase-identification">
   <div class="id-card">
@@ -69,7 +84,10 @@
 
     </div>
 
-    <!-- Formulaire pseudo : jeu.js lit #id-pseudo et #btn-join -->
+    <!-- Formulaire pseudo
+         jeu.js lit directement #id-pseudo et #btn-join.
+         Si pseudo est déjà dans l'URL, jeu.js appelle
+         _demarrer() sans afficher ce bloc. -->
     <div id="id-corps">
       <input
         id="id-pseudo"
@@ -96,11 +114,15 @@
 
 <!-- ═══════════════════════════════════════════════════════
      PHASE 2 — JEU
-     Masquée au chargement. Affichée après JOIN_OK / GAME_STARTED.
+     Masquée au chargement (display:none via jeu.js).
+     Affichée après JOIN_OK → _basculerVersJeu().
+
+     Structure :
        .jeu-header   — barre fixe en haut (pseudo, partie, badge)
-       #jeu-contenu  — contenu dynamique (attente / countdown / jeu / fin)
+       #jeu-contenu  — contenu dynamique :
+                         attente / countdown / jeu / fin
 ═══════════════════════════════════════════════════════ -->
-<div id="phase-jeu" hidden>
+<div id="phase-jeu">
 
   <header class="jeu-header">
     <div class="jeu-header-left">
