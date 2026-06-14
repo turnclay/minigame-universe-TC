@@ -1,5 +1,5 @@
 // ======================================================
-// 🎭 server/games/mimedessine.js — v3.0 (WS, tours auto — hôte + invités)
+// 🎭 server/games/mimedessine.js — v3.1 (WS, tours auto — mot privé au mimeur)
 // ======================================================
 // Source de vérité = serveur. Modèle :
 //   - Liste ordonnée de participants (hôte d'abord, puis invités).
@@ -82,9 +82,14 @@ function _payloadPhase(partieId, s) {
 function _diffuser(wss, partieId, s, helpers) {
     const { broadcastToGame, broadcastToHost, sendToPseudo } = helpers;
     broadcastToGame(wss, partieId, 'MIMEDESSSINE_PHASE', _payloadPhase(partieId, s));
-    if (s.phase === 'tour' && s.mot) {
-        if (s.participant) sendToPseudo(wss, partieId, s.participant, 'MIMEDESSSINE_MOT_A_DEVINER', { mot: s.mot, categorie: s.categorie });
-        broadcastToHost(wss, partieId, 'MIMEDESSSINE_MOT_A_DEVINER', { mot: s.mot, categorie: s.categorie });
+    if (s.phase === 'tour' && s.mot && s.participant) {
+        // Le mot va UNIQUEMENT au mimeur actif.
+        sendToPseudo(wss, partieId, s.participant, 'MIMEDESSSINE_MOT_A_DEVINER', { mot: s.mot, categorie: s.categorie });
+        // …et à l'hôte SEULEMENT s'il est lui-même le mimeur (participants[0] = hôte).
+        // Si un invité mime, l'hôte devine : il ne doit jamais voir le mot.
+        if (s.participant === s.participants[0]) {
+            broadcastToHost(wss, partieId, 'MIMEDESSSINE_MOT_A_DEVINER', { mot: s.mot, categorie: s.categorie });
+        }
     }
     broadcastToGame(wss, partieId, 'SCORES_UPDATE', { scores: store.getScores(partieId) || {} });
 }

@@ -1,6 +1,6 @@
 /**
  * ============================================
- * 🎭 mimedessine.js — v11.0 (WS, tours AUTO — hôte+invités, sans « Commencer »)
+ * 🎭 mimedessine.js — v12.0 (WS, tours AUTO — hôte devineur sans mot ni validation)
  * ============================================
  * Modèle : tous les joueurs (hôte EN TÊTE, puis invités) miment à tour de rôle.
  *   - Quand c'est le tour de l'HÔTE → son écran (#mimer-content) affiche le mot
@@ -100,14 +100,12 @@ function _render() {
 }
 
 function _btnSuivant() {
-    const dernier = (_state.index || 0) >= (_state.nbParticipants || _participants().length) - 1;
-    return dernier
-        ? `<button id="mimer-classement" class="btn-secondary">🏆 Classement final</button>`
-        : `<button id="mimer-suivant" class="btn-secondary">➡️ Participant suivant</button>`;
+    // Toujours « Participant suivant » : après le dernier joueur, le serveur
+    // bascule automatiquement vers le classement final (aucun bouton dédié).
+    return `<button id="mimer-suivant" class="btn-primary btn-large">➡️ Participant suivant</button>`;
 }
 function _wireSuivant() {
     $('mimer-suivant')?.addEventListener('click', () => _envoyer('suivant'));
-    $('mimer-classement')?.addEventListener('click', () => _envoyer('classement'));
 }
 
 function _renderMenu(c) {
@@ -141,27 +139,21 @@ function _renderTour(c) {
                 <button id="mimer-passer" class="btn-secondary btn-large">➡️ Passer</button>
                 <button id="mimer-fin" class="btn-warning btn-large">⏹ Finir ma manche</button>
             </div>
-            <div style="margin-top:4px;">${_btnSuivant()}</div>
         </div>`;
         $('mimer-trouve')?.addEventListener('click', () => _envoyer('trouve'));
         $('mimer-passer')?.addEventListener('click', () => _envoyer('passer'));
         $('mimer-fin')?.addEventListener('click', () => _envoyer('fin_manche'));
     } else {
+        // Hôte DEVINEUR : il ne voit que le thème, jamais le mot, et n'a
+        // rien à valider ni à forcer. Il devine à voix haute comme les autres.
         c.innerHTML = `
         <div class="mimer-mot-affiche" style="text-align:center;display:flex;flex-direction:column;gap:14px;max-width:560px;margin:0 auto;">
             <h2 class="mimer-participant" style="color:#fbbf24;">🎭 ${esc(_state.participant || '')} mime !</h2>
             <div class="mimer-categorie-mini" style="color:#c4b5fd;font-weight:700;">Thème : ${esc(_state.categorie || '')}</div>
-            <div class="mimer-mot-carte"><h2 style="margin:0;">${esc(_mot || '…')}</h2>
-                <p style="font-size:.8rem;color:rgba(255,255,255,.5);margin:.3rem 0 0;">(mot visible par toi, hôte — pour valider)</p></div>
+            <p style="color:rgba(255,255,255,.75);">Devine le mot à voix haute. 🗣️</p>
             <div id="mimer-hote-scores" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">${_miniScores()}</div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
-                <button id="mimer-fin" class="btn-secondary">⏹ Forcer la fin de manche</button>
-                ${_btnSuivant()}
-            </div>
         </div>`;
-        $('mimer-fin')?.addEventListener('click', () => _envoyer('fin_manche'));
     }
-    _wireSuivant();
 }
 
 function _renderFin(c) {
