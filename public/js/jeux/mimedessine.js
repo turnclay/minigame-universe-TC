@@ -1,10 +1,10 @@
 /**
  * ============================================
- * 🎭 mimedessine.js — v10.0 (WS, tours — HÔTE AUSSI JOUEUR/PARTICIPANT)
+ * 🎭 mimedessine.js — v11.0 (WS, tours AUTO — hôte+invités, sans « Commencer »)
  * ============================================
  * Modèle : tous les joueurs (hôte EN TÊTE, puis invités) miment à tour de rôle.
  *   - Quand c'est le tour de l'HÔTE → son écran (#mimer-content) affiche le mot
- *     + Commencer / Trouvé / Passer / Fin de manche (il est scoré comme les autres).
+ *     + Trouvé / Passer / Fin de manche (manche démarrée auto ; il est scoré comme les autres).
  *   - Quand c'est le tour d'un INVITÉ → l'hôte OBSERVE (mot visible pour
  *     validation + scores) ; l'invité pilote depuis son écran (mime_player.js).
  *   - « Participant suivant » (hôte) fait tourner les joueurs.
@@ -91,11 +91,11 @@ function _render() {
     const c = $('mimer-content');
     if (!c) return;
     switch (_state.phase) {
-        case 'accueil':     _renderAccueil(c); break;
+        case 'attente':     _renderAttente(c); break;
         case 'tour':        _renderTour(c);    break;
         case 'fin_manche':  _renderFin(c);     break;
         case 'classement':  _renderClassement(c); break;
-        default:            _renderMenu(c);
+        default:            _renderAttente(c);
     }
 }
 
@@ -116,23 +116,16 @@ function _renderMenu(c) {
         ${n ? 'Préparation du jeu…' : "En attente de joueurs…"}</div>`;
 }
 
-function _renderAccueil(c) {
-    const tour = `Tour ${(_state.index||0)+1} / ${_state.nbParticipants||_participants().length}`;
-    const estHote = _hostActif();
+function _renderAttente(c) {
+    const n = _participants().length;
     c.innerHTML = `
-    <div class="mimer-accueil" style="text-align:center;display:flex;flex-direction:column;gap:14px;max-width:520px;margin:0 auto;">
-        <div class="mimer-tour-info">${esc(tour)}</div>
-        <h2 class="mimer-participant" style="color:#00d4ff;">👤 ${esc(_state.participant || '—')}</h2>
-        ${estHote
-            ? `<p class="mimer-instruction">🎭 <strong>C'est ton tour !</strong> Lance ta manche : un mot s'affichera, mime-le et fais-le deviner.</p>
-               <button id="mimer-commencer" class="btn-primary btn-large">🚀 Commencer ma manche</button>`
-            : `<p class="mimer-instruction">En attente que <strong>${esc(_state.participant || '')}</strong> démarre sa manche depuis son écran…</p>
-               <div class="dot-loader" style="justify-content:center;"><span></span><span></span><span></span></div>`}
+    <div class="mimer-accueil" style="text-align:center;display:flex;flex-direction:column;gap:16px;max-width:520px;margin:0 auto;">
+        <h2 class="mimer-participant" style="color:#00d4ff;">🎭 Mime — ${n} joueur${n>1?'s':''}</h2>
+        <p class="mimer-instruction">${n ? "Clique pour démarrer : la manche du 1er joueur s'ouvre automatiquement sur son écran." : "En attente de joueurs…"}</p>
         <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">${_miniScores()}</div>
-        ${_btnSuivant()}
+        <button id="mimer-demarrer" class="btn-primary btn-large" ${n ? '' : 'disabled'}>▶️ Démarrer la partie</button>
     </div>`;
-    if (estHote) $('mimer-commencer')?.addEventListener('click', () => _envoyer('commencer'));
-    _wireSuivant();
+    $('mimer-demarrer')?.addEventListener('click', () => _envoyer('suivant'));
 }
 
 function _renderTour(c) {

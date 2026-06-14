@@ -1,25 +1,23 @@
 // ======================================================
-// 🎭 server/games/mimedessine.js — v2.1 (WS, tours invités — hôte observateur)
+// 🎭 server/games/mimedessine.js — v3.0 (WS, tours auto — hôte + invités)
 // ======================================================
 // Source de vérité = serveur. Modèle :
 //   - Liste ordonnée de participants (hôte d'abord, puis invités).
-//   - Chacun joue une manche à son tour : un thème + un mot s'affichent
-//     sur l'écran du participant ACTIF (qui mime) ; les autres devinent à
-//     voix haute. Boutons Trouvé / Passer / Finir la manche.
-//   - "Participant suivant" passe au joueur suivant ; même dispositif
-//     répliqué sur l'écran de l'invité devenu actif.
-//   - Le serveur tire les mots (anti-répétition de catégorie), fait
-//     autorité sur les scores (store) et le minuteur (tsTourEnd).
+//   - L'hôte fait tourner les joueurs via « Participant suivant » : chaque
+//     appui DÉMARRE automatiquement la manche du joueur suivant (aucun bouton
+//     « Commencer »). Le mimeur voit le mot sur SON écran et pilote
+//     Trouvé / Passer / Fin de manche ; les autres devinent ; l'hôte observe.
+//   - Le serveur tire les mots (anti-répétition de catégorie), fait autorité
+//     sur la rotation, le minuteur (tsTourEnd) et les scores (store).
 //
-// Phases : menu → accueil → tour → fin_manche → classement
+// Phases : attente → tour → fin_manche → (tour → fin_manche …) → classement
 //
 // Actions hôte (HOST_ACTION) :
 //   mimedessine:config     { participants[], motsParCategorie{cat:[mots]}, duree? }
-//   mimedessine:commencer  {}                  (démarre la manche du participant courant)
-//   mimedessine:trouve     {}                  (si l'hôte est le participant actif)
-//   mimedessine:passer     {}                  (idem)
-//   mimedessine:fin_manche {}                  (hôte : termine/force la manche)
-//   mimedessine:suivant    {}                  (participant suivant)
+//   mimedessine:suivant    {}   (démarre le tour du joueur suivant / 1er joueur)
+//   mimedessine:trouve     {}   (si l'hôte est le participant actif)
+//   mimedessine:passer     {}   (idem)
+//   mimedessine:fin_manche {}   (hôte : termine/force la manche en cours)
 //   mimedessine:classement {}
 //   mimedessine:rejouer    {}
 //
@@ -42,8 +40,8 @@ function _get(partieId) { return sessions.get(partieId) || null; }
 
 function _creer(partieId) {
     const s = {
-        phase: 'menu', manche: 0,
-        participants: [], index: 0, participant: null,
+        phase: 'attente', manche: 0,
+        participants: [], index: -1, participant: null,
         motsParCategorie: {}, categories: [],
         derniereCategorie: null, categorie: null, mot: null,
         motsManche: [], scoreManche: {},
@@ -83,9 +81,7 @@ function _payloadPhase(partieId, s) {
 
 function _diffuser(wss, partieId, s, helpers) {
     const { broadcastToGame, broadcastToHost, sendToPseudo } = helpers;
-    // État de tour (mot masqué) à tous
     broadcastToGame(wss, partieId, 'MIMEDESSSINE_PHASE', _payloadPhase(partieId, s));
-    // Le mot au participant actif + à l'hôte (validation)
     if (s.phase === 'tour' && s.mot) {
         if (s.participant) sendToPseudo(wss, partieId, s.participant, 'MIMEDESSSINE_MOT_A_DEVINER', { mot: s.mot, categorie: s.categorie });
         broadcastToHost(wss, partieId, 'MIMEDESSSINE_MOT_A_DEVINER', { mot: s.mot, categorie: s.categorie });
@@ -101,6 +97,18 @@ function _armerTimer(wss, partieId, s, helpers) {
         if (!cur || cur.phase !== 'tour') return;
         _finManche(wss, partieId, cur, helpers);
     }, s.duree);
+}
+
+// Démarre automatiquement la manche du participant courant.
+function _demarrerTour(wss, partieId, s, helpers) {
+    s.phase = 'tour';
+    s.motsManche = [];
+    s.derniereCategorie = null;
+    s.tsTourEnd = Date.now() + s.duree;
+    _nouveauMot(s);
+    _diffuser(wss, partieId, s, helpers);
+    _armerTimer(wss, partieId, s, helpers);
+    console.log(`[MIMEDESSSINE] ▶️ tour auto de ${s.participant}`);
 }
 
 // ─────────────────────────────────────────────────────
@@ -132,51 +140,44 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             s.motsParCategorie  = data.motsParCategorie || {};
             s.categories        = Object.keys(s.motsParCategorie);
             s.duree             = data.duree || DUREE_DEFAUT;
-            s.index             = 0;
-            s.participant       = s.participants[0] || null;
-            s.manche            = 1;
+            s.index             = -1;
+            s.participant       = null;
+            s.manche            = 0;
             s.derniereCategorie = null;
             s.categorie = null; s.mot = null;
             s.motsManche = []; s.scoreManche = {};
             s.participants.forEach(p => { s.scoreManche[p] = 0; });
             s.tsTourEnd = null;
-            s.phase = 'accueil';
+            s.phase = 'attente';
             _diffuser(wss, partieId, s, helpers);
             console.log(`[MIMEDESSSINE] ⚙️ config — ${s.participants.length} participant(s)`);
             break;
         }
 
-        case 'commencer': _commencer(wss, partieId, s, helpers); break;
-
-        case 'trouve':     _trouve(wss, partieId, s, helpers, s.participant); break;
-        case 'passer':     _passer(wss, partieId, s, helpers); break;
-        case 'fin_manche': _finManche(wss, partieId, s, helpers); break;
-
         case 'suivant': {
             _clearTimer(s);
-            if (s.index < s.participants.length - 1) {
-                s.index++;
-                s.participant = s.participants[s.index];
-                s.manche = s.index + 1;
-                s.phase = 'accueil';
-                s.derniereCategorie = null;
-                s.categorie = null; s.mot = null;
-                s.motsManche = [];
-                s.tsTourEnd = null;
-                _diffuser(wss, partieId, s, helpers);
-                console.log(`[MIMEDESSSINE] ⏭️ participant suivant: ${s.participant}`);
+            const next = s.index + 1;
+            if (next < s.participants.length) {
+                s.index = next;
+                s.participant = s.participants[next];
+                s.manche = next + 1;
+                _demarrerTour(wss, partieId, s, helpers);
+                console.log(`[MIMEDESSSINE] ⏭️ tour de ${s.participant}`);
             } else {
                 _classement(wss, partieId, s, helpers);
             }
             break;
         }
 
+        case 'trouve':     _trouve(wss, partieId, s, helpers, s.participant); break;
+        case 'passer':     _passer(wss, partieId, s, helpers); break;
+        case 'fin_manche': _finManche(wss, partieId, s, helpers); break;
         case 'classement': _classement(wss, partieId, s, helpers); break;
 
         case 'rejouer': {
             _clearTimer(s);
-            s.index = 0; s.participant = s.participants[0] || null;
-            s.manche = 1; s.phase = 'accueil';
+            s.index = -1; s.participant = null;
+            s.manche = 0; s.phase = 'attente';
             s.derniereCategorie = null; s.categorie = null; s.mot = null;
             s.motsManche = [];
             s.scoreManche = {}; s.participants.forEach(p => { s.scoreManche[p] = 0; });
@@ -195,10 +196,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
 export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, helpers) {
     const cmd = action.split(':')[1];
     const s = _get(partieId);
-    if (!s || pseudo !== s.participant) return;
-
-    if (cmd === 'commencer') { _commencer(wss, partieId, s, helpers); return; }
-    if (s.phase !== 'tour') return;
+    if (!s || s.phase !== 'tour' || pseudo !== s.participant) return;
 
     switch (cmd) {
         case 'trouve':     _trouve(wss, partieId, s, helpers, pseudo); break;
@@ -225,17 +223,6 @@ function _passer(wss, partieId, s, helpers) {
     if (s.phase !== 'tour') return;
     _nouveauMot(s);
     _diffuser(wss, partieId, s, helpers);
-}
-
-function _commencer(wss, partieId, s, helpers) {
-    if (s.phase !== 'accueil') return;
-    s.phase = 'tour';
-    s.motsManche = [];
-    s.tsTourEnd = Date.now() + s.duree;
-    _nouveauMot(s);
-    _diffuser(wss, partieId, s, helpers);
-    _armerTimer(wss, partieId, s, helpers);
-    console.log(`[MIMEDESSSINE] ▶️ manche de ${s.participant}`);
 }
 
 function _finManche(wss, partieId, s, helpers) {
