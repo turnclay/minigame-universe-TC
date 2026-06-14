@@ -12,47 +12,97 @@ let isDrawing = false;
 let lastX = 0;
 let lastY = 0;
 
-export function initMimePlayer(initialState) {
-    console.log("[MIME_PLAYER] Initializing with state:", initialState);
-    currentGameState = initialState;
-    playerPseudo = getPlayerPseudo(); // Get current player's pseudo
-    renderPlayerUI();
-}
+const MimeDessineModule = {
+    _session: null,
+    _socket: null,
 
-export function handleMimeEvent(type, payload) {
-    console.log(`[MIME_PLAYER] Received event: ${type}`, payload);
-    switch (type) {
-        case 'MIMEDESSSINE_DEFI':
-        case 'MIMEDESSSINE_PHASE':
-            currentGameState = { ...currentGameState, ...payload };
-            renderPlayerUI();
-            break;
-        case 'MIMEDESSSINE_MOT_A_DEVINER':
-            // Only the drawer receives this
-            if (playerPseudo === currentGameState.drawerPseudo) {
-                currentGameState.motADeviner = payload.mot;
-                renderPlayerUI(); // Update UI to show the word to draw
-            }
-            break;
-        case 'MIMEDESSSINE_DRAWING_DATA':
-            // Guessers receive drawing data
-            if (playerPseudo !== currentGameState.drawerPseudo && currentGameState.phase === 'dessin') {
-                drawReceivedData(payload.data);
-            }
-            break;
-        case 'MIMEDESSSINE_GUESS_ACK':
-            // Handle feedback for player's guess
-            console.log("[MIME_PLAYER] Guess ACK:", payload.status);
-            // Optionally update UI based on guess status (e.g., show "Correct!" or "Try again")
-            break;
-        case 'SCORES_UPDATE':
-            // Update scores display if needed
-            console.log("[MIME_PLAYER] Scores updated:", payload.scores);
-            break;
-        default:
-            console.warn(`[MIME_PLAYER] Unhandled event type: ${type}`);
+    initPlayer(session, sock, gameState, snapshot) {
+        this._session = session;
+        this._socket = sock;
+        playerPseudo = getPlayerPseudo(); // Ensure playerPseudo is set
+
+        console.log("[MIMEDESSINE_MODULE] Initializing with state:", gameState);
+        currentGameState = gameState; // Use gameState from server for initial render
+        renderPlayerUI();
+    },
+
+    destroy() {
+        // Clean up event listeners, canvas, etc.
+        if (canvas) {
+            canvas.removeEventListener('mousedown', startDrawing);
+            canvas.removeEventListener('mousemove', draw);
+            canvas.removeEventListener('mouseup', stopDrawing);
+            canvas.removeEventListener('mouseout', stopDrawing);
+        }
+        const clearButton = document.getElementById('clearCanvas');
+        if (clearButton) {
+            clearButton.removeEventListener('click', clearCanvas);
+        }
+        const submitGuessButton = document.getElementById('submitGuess');
+        if (submitGuessButton) {
+            submitGuessButton.removeEventListener('click', submitGuess);
+        }
+        const guessInput = document.getElementById('guessInput');
+        if (guessInput) {
+            guessInput.removeEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    submitGuess();
+                }
+            });
+        }
+        gameContainer.innerHTML = ''; // Clear game content
+        currentGameState = null;
+        canvas = null;
+        ctx = null;
+        isDrawing = false;
+        lastX = 0;
+        lastY = 0;
+    },
+
+    onHostAction(action, data) {
+        // Mime Dessine doesn't have generic host actions relayed to players in this way,
+        // specific game events are handled by onWsEvent.
+        console.log("[MIMEDESSINE_MODULE] Host action received (ignored):", action, data);
+    },
+
+    onScores(scores) {
+        // Update scores display if needed
+        console.log("[MIMEDESSINE_MODULE] Scores updated:", scores);
+        // Optionally update UI to reflect new scores
+    },
+
+    onWsEvent(type, payload) {
+        console.log(`[MIMEDESSINE_MODULE] Received event: ${type}`, payload);
+        switch (type) {
+            case 'MIMEDESSSINE_DEFI':
+            case 'MIMEDESSSINE_PHASE':
+                currentGameState = { ...currentGameState, ...payload };
+                renderPlayerUI();
+                break;
+            case 'MIMEDESSSINE_MOT_A_DEVINER':
+                // Only the drawer receives this
+                if (playerPseudo === currentGameState.drawerPseudo) {
+                    currentGameState.motADeviner = payload.mot;
+                    renderPlayerUI(); // Update UI to show the word to draw
+                }
+                break;
+            case 'MIMEDESSSINE_DRAWING_DATA':
+                // Guessers receive drawing data
+                if (playerPseudo !== currentGameState.drawerPseudo && currentGameState.phase === 'dessin') {
+                    drawReceivedData(payload.data);
+                }
+                break;
+            case 'MIMEDESSSINE_GUESS_ACK':
+                // Handle feedback for player's guess
+                console.log("[MIMEDESSINE_MODULE] Guess ACK:", payload.status);
+                // Optionally update UI based on guess status (e.g., show "Correct!" or "Try again")
+                break;
+            // SCORES_UPDATE is handled by onScores directly from Player module
+            default:
+                console.warn(`[MIMEDESSINE_MODULE] Unhandled event type: ${type}`);
+        }
     }
-}
+};
 
 function renderPlayerUI() {
     if (!gameContainer || !currentGameState || !playerPseudo) return;
@@ -75,7 +125,7 @@ function renderPlayerUI() {
         }
     } else if (phase === 'dessin') {
         if (isDrawer) {
-            htmlContent += `<p>Dessine: <strong>${currentGameState.motADeviner}</strong></p>`;
+            htmlContent += `<p>Dessine: <strong>${currentGameState.motADeviner || 'Chargement du mot...'}</strong></p>`;
             htmlContent += `<div class="drawing-area">
                                 <canvas id="drawingCanvas" width="600" height="400" style="border:1px solid #000;"></canvas>
                                 <button id="clearCanvas">Effacer</button>
@@ -204,3 +254,5 @@ function submitGuess() {
         guessInput.value = ''; // Clear input after guessing
     }
 }
+
+export { MimeDessineModule };

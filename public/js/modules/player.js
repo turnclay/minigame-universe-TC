@@ -250,7 +250,7 @@ export const Player = {
         gameEvents.forEach(evt => {
             socket.on(evt, payload => {
                 if (this.module && typeof this.module['_on' + evt] === 'function') {
-                    this.module['_on' + evt](payload);
+                    this.module'_on' + evt;
                 } else if (this.module) {
                     this.module.onWsEvent?.(evt, payload);
                 }
@@ -1138,6 +1138,11 @@ const QuizModule = {
 
 // Enregistrer le module quiz
 JeuRegistry.register('quiz', QuizModule);
+
+// Import the MimeDessineModule
+import { MimeDessineModule } from './mime_player.js';
+// Register the MimeDessineModule
+JeuRegistry.register('mimedessine', MimeDessineModule);
 
 // Exporter JeuRegistry pour permettre l'ajout de modules depuis d'autres fichiers
 export { JeuRegistry };
