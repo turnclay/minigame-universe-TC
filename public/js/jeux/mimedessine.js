@@ -1,12 +1,14 @@
 /**
  * ============================================
- * 🎭 mimedessine.js — v8.0 (WS, mime « présentiel » tour par tour, SANS dessin)
+ * 🎭 mimedessine.js — v10.0 (WS, tours — HÔTE AUSSI JOUEUR/PARTICIPANT)
  * ============================================
- * Hôte ORCHESTRATEUR (autorité serveur = server/games/mimedessine.js).
- * Flux : accueil → (Commencer) → tour [thème + mot + Trouvé/Passer/Finir]
- *        → fin_manche [Participant suivant] → … → classement → Rejouer.
- * Quand un invité est le participant actif, le même dispositif s'affiche
- * sur SON écran (mime_player.js) ; l'hôte voit le mot (validation) + scores.
+ * Modèle : tous les joueurs (hôte EN TÊTE, puis invités) miment à tour de rôle.
+ *   - Quand c'est le tour de l'HÔTE → son écran (#mimer-content) affiche le mot
+ *     + Commencer / Trouvé / Passer / Fin de manche (il est scoré comme les autres).
+ *   - Quand c'est le tour d'un INVITÉ → l'hôte OBSERVE (mot visible pour
+ *     validation + scores) ; l'invité pilote depuis son écran (mime_player.js).
+ *   - « Participant suivant » (hôte) fait tourner les joueurs.
+ * Autorité serveur = server/games/mimedessine.js.
  */
 
 import { socket }    from "../core/socket.js";
@@ -25,22 +27,21 @@ let _timerIv=null;
 
 const DUREE = 180000;
 
-// ── Identité hôte / participants ─────────────────────────────
+// ── Participants = TOUS les joueurs (hôte inclus, en tête) ───
 const _hostPseudo   = () => (GameState.joueurs || [])[0] || null;
 const _participants = () => (GameState.joueurs || []).filter(p => p && typeof p === 'string');
 const _hostActif    = () => _state.participant && _state.participant === _hostPseudo();
 
 // ============================================================
 export async function initialiserMimer() {
-    console.log('[MIMEDESSINE] Initialisation (WS mime tour par tour)');
+    console.log('[MIMEDESSINE] Initialisation (WS tours — hôte aussi joueur)');
     _mot = null; _stopTimer();
     await _chargerDonnees();
     _brancherSocket();
 
-    const participants = _participants();
     socket.send('HOST_ACTION', {
         action: 'mimedessine:config',
-        data: { participants, motsParCategorie: _motsParCat, duree: DUREE },
+        data: { participants: _participants(), motsParCategorie: _motsParCat, duree: DUREE },
     });
 }
 window.initialiserMimer = initialiserMimer;
@@ -78,7 +79,6 @@ function _brancherSocket() {
     });
 }
 
-// ── Émissions ────────────────────────────────────────────────
 const _envoyer = (cmd, data = {}) => {
     try { socket.send('HOST_ACTION', { action: 'mimedessine:' + cmd, data }); }
     catch (e) { console.error('[MIMEDESSINE] send', cmd, e.message); }
@@ -99,56 +99,76 @@ function _render() {
     }
 }
 
+function _btnSuivant() {
+    const dernier = (_state.index || 0) >= (_state.nbParticipants || _participants().length) - 1;
+    return dernier
+        ? `<button id="mimer-classement" class="btn-secondary">🏆 Classement final</button>`
+        : `<button id="mimer-suivant" class="btn-secondary">➡️ Participant suivant</button>`;
+}
+function _wireSuivant() {
+    $('mimer-suivant')?.addEventListener('click', () => _envoyer('suivant'));
+    $('mimer-classement')?.addEventListener('click', () => _envoyer('classement'));
+}
+
 function _renderMenu(c) {
-    c.innerHTML = `<div style="text-align:center;padding:1rem;color:rgba(255,255,255,.7);">
-        Préparation du jeu… ${_participants().length ? '' : '(en attente d\u2019invités)'}</div>`;
+    const n = _participants().length;
+    c.innerHTML = `<div style="text-align:center;padding:1.5rem;color:rgba(255,255,255,.7);">
+        ${n ? 'Préparation du jeu…' : "En attente de joueurs…"}</div>`;
 }
 
 function _renderAccueil(c) {
     const tour = `Tour ${(_state.index||0)+1} / ${_state.nbParticipants||_participants().length}`;
-    const actif = _state.participant;
     const estHote = _hostActif();
     c.innerHTML = `
     <div class="mimer-accueil" style="text-align:center;display:flex;flex-direction:column;gap:14px;max-width:520px;margin:0 auto;">
         <div class="mimer-tour-info">${esc(tour)}</div>
-        <h2 class="mimer-participant" style="color:#00d4ff;">👤 ${esc(actif || '—')}</h2>
-        <p class="mimer-instruction">${estHote ? "C'est ton tour !" : `C'est le tour de <strong>${esc(actif || '')}</strong>`}</p>
-        <p class="mimer-regles">⏱️ 3 minutes · 🎯 les autres devinent · 🚫 pas 2× la même catégorie d'affilée</p>
-        <button id="mimer-demarrer" class="btn-primary btn-large">🚀 Commencer la manche</button>
+        <h2 class="mimer-participant" style="color:#00d4ff;">👤 ${esc(_state.participant || '—')}</h2>
+        ${estHote
+            ? `<p class="mimer-instruction">🎭 <strong>C'est ton tour !</strong> Lance ta manche : un mot s'affichera, mime-le et fais-le deviner.</p>
+               <button id="mimer-commencer" class="btn-primary btn-large">🚀 Commencer ma manche</button>`
+            : `<p class="mimer-instruction">En attente que <strong>${esc(_state.participant || '')}</strong> démarre sa manche depuis son écran…</p>
+               <div class="dot-loader" style="justify-content:center;"><span></span><span></span><span></span></div>`}
+        <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">${_miniScores()}</div>
+        ${_btnSuivant()}
     </div>`;
-    $('mimer-demarrer')?.addEventListener('click', () => _envoyer('commencer'));
+    if (estHote) $('mimer-commencer')?.addEventListener('click', () => _envoyer('commencer'));
+    _wireSuivant();
 }
 
 function _renderTour(c) {
     const estHote = _hostActif();
-    const scores = _miniScores();
-
     if (estHote) {
         c.innerHTML = `
         <div class="mimer-mot-affiche" style="text-align:center;display:flex;flex-direction:column;gap:14px;max-width:560px;margin:0 auto;">
             <div class="mimer-categorie-mini" style="color:#c4b5fd;font-weight:700;">${esc(_state.categorie || '')}</div>
             <div class="mimer-mot-carte"><h2 style="margin:0;">${esc(_mot || '…')}</h2></div>
+            <p style="color:rgba(255,255,255,.6);font-size:.85rem;">Mime ce mot — les autres devinent à voix haute.</p>
             <div class="mimer-actions" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
                 <button id="mimer-trouve" class="btn-success btn-large">✅ Trouvé !</button>
                 <button id="mimer-passer" class="btn-secondary btn-large">➡️ Passer</button>
                 <button id="mimer-fin" class="btn-warning btn-large">⏹ Finir ma manche</button>
             </div>
+            <div style="margin-top:4px;">${_btnSuivant()}</div>
         </div>`;
         $('mimer-trouve')?.addEventListener('click', () => _envoyer('trouve'));
         $('mimer-passer')?.addEventListener('click', () => _envoyer('passer'));
         $('mimer-fin')?.addEventListener('click', () => _envoyer('fin_manche'));
     } else {
         c.innerHTML = `
-        <div class="mimer-accueil" style="text-align:center;display:flex;flex-direction:column;gap:14px;max-width:560px;margin:0 auto;">
-            <h2 class="mimer-participant" style="color:#fbbf24;">🎭 ${esc(_state.participant || '')} joue !</h2>
+        <div class="mimer-mot-affiche" style="text-align:center;display:flex;flex-direction:column;gap:14px;max-width:560px;margin:0 auto;">
+            <h2 class="mimer-participant" style="color:#fbbf24;">🎭 ${esc(_state.participant || '')} mime !</h2>
             <div class="mimer-categorie-mini" style="color:#c4b5fd;font-weight:700;">Thème : ${esc(_state.categorie || '')}</div>
             <div class="mimer-mot-carte"><h2 style="margin:0;">${esc(_mot || '…')}</h2>
                 <p style="font-size:.8rem;color:rgba(255,255,255,.5);margin:.3rem 0 0;">(mot visible par toi, hôte — pour valider)</p></div>
-            <div id="mimer-hote-scores" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">${scores}</div>
-            <button id="mimer-fin" class="btn-secondary">⏹ Forcer la fin de manche</button>
+            <div id="mimer-hote-scores" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">${_miniScores()}</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+                <button id="mimer-fin" class="btn-secondary">⏹ Forcer la fin de manche</button>
+                ${_btnSuivant()}
+            </div>
         </div>`;
         $('mimer-fin')?.addEventListener('click', () => _envoyer('fin_manche'));
     }
+    _wireSuivant();
 }
 
 function _renderFin(c) {
@@ -162,7 +182,6 @@ function _renderFin(c) {
             <span style="font-weight:700;color:${m.trouve ? '#16a34a' : '#999'};">${m.trouve ? '✅ ' : '❌ '}${esc(m.mot)}</span>
             <span style="font-size:.72rem;color:#888;white-space:nowrap;">${esc(m.categorie || '')}</span></li>`).join('')
         : '<li style="color:#999;font-style:italic;padding:8px 0;">Aucun mot passé</li>';
-    const encore = (_state.index || 0) < (_state.nbParticipants || _participants().length) - 1;
 
     c.innerHTML = `
     <div class="mimer-fin" style="max-width:560px;margin:0 auto;text-align:center;">
@@ -173,12 +192,9 @@ function _renderFin(c) {
             <p style="color:#444;margin:.2rem 0;">mot${pl} deviné${pl} sur ${total}</p>
             <ul style="list-style:none;padding:12px 16px;margin:14px 0 0;text-align:left;background:rgba(0,0,0,.04);border-radius:12px;max-height:180px;overflow-y:auto;">${liste}</ul>
         </div>
-        ${encore
-            ? `<button id="mimer-suivant" class="btn-primary btn-large" style="margin-top:14px;">➡️ Participant suivant</button>`
-            : `<button id="mimer-classement" class="btn-primary btn-large" style="margin-top:14px;">🏆 Voir le classement final</button>`}
+        <div style="margin-top:14px;">${_btnSuivant()}</div>
     </div>`;
-    $('mimer-suivant')?.addEventListener('click', () => _envoyer('suivant'));
-    $('mimer-classement')?.addEventListener('click', () => _envoyer('classement'));
+    _wireSuivant();
 }
 
 function _renderClassement(c) {

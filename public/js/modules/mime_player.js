@@ -1,5 +1,5 @@
 // ============================================================
-// /js/modules/mime_player.js — v3.0 (WS, mime « présentiel » tour par tour)
+// /js/modules/mime_player.js — v4.0 (WS, tours invités — mimeur pilote sa manche)
 // ============================================================
 // Écran invité miroir du participant ACTIF (rendu dans #jeu-contenu).
 //   - Si je suis le participant actif → thème + mot + Trouvé / Passer / Finir.
@@ -75,12 +75,14 @@ function _render() {
     const actif = _estActif();
 
     if (_state.phase === 'accueil') {
-        c.innerHTML = `<div style="text-align:center;padding:1.5rem;display:flex;flex-direction:column;gap:12px;">
+        c.innerHTML = `<div style="text-align:center;padding:1.5rem;display:flex;flex-direction:column;gap:14px;max-width:480px;margin:0 auto;">
             <h2 style="color:#c4b5fd;margin:0;">Tour ${(_state.index||0)+1} / ${_state.nbParticipants||'—'}</h2>
             ${actif
-                ? `<p style="color:#fff;">🎭 <strong>C'est ton tour !</strong> Prépare-toi à mimer. L'hôte va lancer la manche.</p>`
-                : `<p style="color:rgba(255,255,255,.75);">C'est le tour de <strong>${esc(_state.participant || '')}</strong>.</p>`}
+                ? `<p style="color:#fff;">🎭 <strong>C'est ton tour !</strong> Quand tu es prêt·e, lance ta manche : un mot va s'afficher, mime-le et fais-le deviner.</p>
+                   <button id="mime-commencer" class="btn-primary btn-large">🚀 Commencer ma manche</button>`
+                : `<p style="color:rgba(255,255,255,.75);">C'est le tour de <strong>${esc(_state.participant || '')}</strong>. Prépare-toi à deviner !</p>`}
         </div>`;
+        if (actif) $('mime-commencer')?.addEventListener('click', () => MimeDessineModule._send('commencer'));
         return;
     }
 

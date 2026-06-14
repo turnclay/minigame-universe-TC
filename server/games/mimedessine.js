@@ -1,5 +1,5 @@
 // ======================================================
-// 🎭 server/games/mimedessine.js — v2.0 (WS, mime « présentiel » tour par tour)
+// 🎭 server/games/mimedessine.js — v2.1 (WS, tours invités — hôte observateur)
 // ======================================================
 // Source de vérité = serveur. Modèle :
 //   - Liste ordonnée de participants (hôte d'abord, puis invités).
@@ -146,17 +146,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             break;
         }
 
-        case 'commencer': {
-            if (s.phase !== 'accueil') break;
-            s.phase = 'tour';
-            s.motsManche = [];
-            s.tsTourEnd = Date.now() + s.duree;
-            _nouveauMot(s);
-            _diffuser(wss, partieId, s, helpers);
-            _armerTimer(wss, partieId, s, helpers);
-            console.log(`[MIMEDESSSINE] ▶️ manche de ${s.participant}`);
-            break;
-        }
+        case 'commencer': _commencer(wss, partieId, s, helpers); break;
 
         case 'trouve':     _trouve(wss, partieId, s, helpers, s.participant); break;
         case 'passer':     _passer(wss, partieId, s, helpers); break;
@@ -205,7 +195,10 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
 export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, helpers) {
     const cmd = action.split(':')[1];
     const s = _get(partieId);
-    if (!s || s.phase !== 'tour' || pseudo !== s.participant) return;
+    if (!s || pseudo !== s.participant) return;
+
+    if (cmd === 'commencer') { _commencer(wss, partieId, s, helpers); return; }
+    if (s.phase !== 'tour') return;
 
     switch (cmd) {
         case 'trouve':     _trouve(wss, partieId, s, helpers, pseudo); break;
@@ -232,6 +225,17 @@ function _passer(wss, partieId, s, helpers) {
     if (s.phase !== 'tour') return;
     _nouveauMot(s);
     _diffuser(wss, partieId, s, helpers);
+}
+
+function _commencer(wss, partieId, s, helpers) {
+    if (s.phase !== 'accueil') return;
+    s.phase = 'tour';
+    s.motsManche = [];
+    s.tsTourEnd = Date.now() + s.duree;
+    _nouveauMot(s);
+    _diffuser(wss, partieId, s, helpers);
+    _armerTimer(wss, partieId, s, helpers);
+    console.log(`[MIMEDESSSINE] ▶️ manche de ${s.participant}`);
 }
 
 function _finManche(wss, partieId, s, helpers) {
