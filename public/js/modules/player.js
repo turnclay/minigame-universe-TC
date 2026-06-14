@@ -1143,6 +1143,9 @@ JeuRegistry.register('quiz', QuizModule);
 import { MimeDessineModule } from './mime_player.js';
 // Register the MimeDessineModule
 JeuRegistry.register('mimedessine', MimeDessineModule);
+// Le jeu mime tourne sous la clé 'mimer' (section #mimer / GAME_INITIALIZERS) :
+// on enregistre le module sous les DEUX clés pour que JeuRegistry.get() le trouve.
+JeuRegistry.register('mimer', MimeDessineModule);
 
 // Exporter JeuRegistry pour permettre l'ajout de modules depuis d'autres fichiers
 export { JeuRegistry };
