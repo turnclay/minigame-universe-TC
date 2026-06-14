@@ -1,7 +1,7 @@
 // C:/Users/clayt/PycharmProjects/MiniGameV2/public/js/modules/mime_player.js
 
-import { sendPlayerAction } from '../websocket.js';
-import { getPlayerPseudo } from '../player.js'; // Assuming player.js provides this
+// No direct import for sendPlayerAction, it will use the socket passed to initPlayer
+import { getPlayerPseudo } from './player.js'; // Correct path for player.js
 
 const gameContainer = document.getElementById('game-container'); // Main game area
 let currentGameState = null;
@@ -12,13 +12,18 @@ let isDrawing = false;
 let lastX = 0;
 let lastY = 0;
 
+// Add a module-level variable to hold the socket instance
+let _socket = null;
+
 const MimeDessineModule = {
     _session: null,
-    _socket: null,
+    _socket: null, // This will hold the socket instance
 
     initPlayer(session, sock, gameState, snapshot) {
         this._session = session;
-        this._socket = sock;
+        this._socket = sock; // Assign the socket here
+        _socket = sock; // Also assign to the module-level variable for use in helper functions
+
         playerPseudo = getPlayerPseudo(); // Ensure playerPseudo is set
 
         console.log("[MIMEDESSINE_MODULE] Initializing with state:", gameState);
@@ -99,7 +104,16 @@ const MimeDessineModule = {
                 break;
             // SCORES_UPDATE is handled by onScores directly from Player module
             default:
-                console.warn(`[MIMEDESSINE_MODULE] Unhandled event type: ${type}`);
+                console.warn(`[MIMEDESSSINE_MODULE] Unhandled event type: ${type}`);
+        }
+    },
+
+    // Helper function to send player actions
+    _sendPlayerAction(action, data) {
+        if (_socket) {
+            _socket.send('PLAYER_ACTION', { action, data });
+        } else {
+            console.error("[MIMEDESSSINE_MODULE] Socket not initialized for sending action:", action);
         }
     }
 };
@@ -212,9 +226,9 @@ function draw(e) {
     ctx.stroke();
     [lastX, lastY] = [e.offsetX, e.offsetY];
 
-    // Send drawing data to server
-    sendPlayerAction('mimedessine:drawing_update', {
-        data: getDrawingData() // Implement a function to get current drawing data
+    // Send drawing data to server using the module's socket
+    MimeDessineModule._sendPlayerAction('mimedessine:drawing_update', {
+        data: getDrawingData()
     });
 }
 
@@ -224,7 +238,7 @@ function stopDrawing() {
 
 function clearCanvas() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    sendPlayerAction('mimedessine:drawing_update', { data: [] }); // Clear drawing on server
+    MimeDessineModule._sendPlayerAction('mimedessine:drawing_update', { data: [] }); // Clear drawing on server
 }
 
 function getDrawingData() {
@@ -250,7 +264,7 @@ function drawReceivedData(data) {
 function submitGuess() {
     const guessInput = document.getElementById('guessInput');
     if (guessInput && guessInput.value.trim() !== '') {
-        sendPlayerAction('mimedessine:guess', { guess: guessInput.value.trim() });
+        MimeDessineModule._sendPlayerAction('mimedessine:guess', { guess: guessInput.value.trim() });
         guessInput.value = ''; // Clear input after guessing
     }
 }
