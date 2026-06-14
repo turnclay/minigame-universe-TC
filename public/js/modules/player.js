@@ -202,7 +202,7 @@ export const Player = {
         });
 
         // Exposer Player sur window pour accès global (ex: _afficherCorrection)
-        window.Player = this;
+        window.Player = Player;
 
         // ── Relay vers module jeu actif ────────────────────────
         socket.on('HOST_ACTION', ({ action, data }) => {
