@@ -74,6 +74,8 @@ const MODULES_WS_HOTE = [
     '../modules/pendu_hote.js',
     '../modules/lml_hote.js',
     '../modules/justeprix_hote.js',
+    '../modules/undercover_hote.js',  // L2 — listeners WS propres à purger
+    '../jeux/mimedessine.js',         // L2 (hygiène) — voir §3 optionnel
 ];
 
 export function resetEtatJeuxHote() {

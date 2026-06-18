@@ -75,6 +75,7 @@ const HostSession = {
                 setPartieId(partieId);
 
                 import('../modules/invite.js').then(m => {
+                    if (typeof m.setServerJoinUrl === 'function') m.setServerJoinUrl(joinUrl);
                     m.afficherBlocInvitation();
                 }).catch(err => console.warn('[HOST] ⚠️ Erreur import invite.js:', err.message));
 
@@ -93,6 +94,7 @@ const HostSession = {
                 setPartieId(partieId);
 
                 import('../modules/invite.js').then(m => {
+                    if (typeof m.setServerJoinUrl === 'function') m.setServerJoinUrl(joinUrl);
                     m.afficherBlocInvitation();
                 }).catch(err => console.warn('[HOST] ⚠️ Erreur invite.js:', err.message));
 

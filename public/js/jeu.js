@@ -15,6 +15,7 @@
 
 import { socket }           from './core/socket.js';
 import { Player }           from './modules/player.js';
+import Musique              from './core/musique.js'; // AJOUTÉ
 // Import à effet de bord : enregistre les modules jeu dans JeuRegistry.
 // Chaque jeu WS doit être listé ici pour que JeuRegistry.get(jeu) le trouve.
 import                           './modules/petitbac_player.js';
@@ -160,6 +161,9 @@ const JeuApp = {
         // Exposer sur window pour compatibilité modules existants
         window.JeuApp    = this;
         window.jeuSocket = socket;
+
+        Musique.init();
+        Musique.bindBouton('btn-music-invite', { on: '🔊', off: '🔇' });
 
         // Enregistrer les listeners Player AVANT de connecter le socket.
         // Si socket.connect() est appelé en premier, __connected__ peut

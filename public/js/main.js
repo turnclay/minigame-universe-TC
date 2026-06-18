@@ -1,6 +1,7 @@
 // /js/main.js
 
 import HostSession from './core/host_session.js';
+import Musique from "./core/musique.js"; // AJOUTÉ
 
 import { $, $$, show, hide } from "./core/dom.js";
 import { GameState } from "./core/state.js";
@@ -147,16 +148,9 @@ function _toastErreur(message) {
 }
 
 function lancerMusique() {
-    const audio = document.getElementById("bg-music");
-    if (!audio) return;
-    audio.volume = 0.4;
-
-    const toggle = document.getElementById("toggle-music");
-    if (!toggle) return;
-    toggle.onclick = function() {
-        if (audio.paused) { audio.play(); toggle.textContent = "🔊"; }
-        else { audio.pause(); toggle.textContent = "🔇"; }
-    };
+    Musique.init();
+    // Le bouton principal suit l'état global (icône + aria) et le bascule au clic.
+    Musique.bindBouton('toggle-music', { on: '🔊', off: '🔇' });
 }
 
 function initSplashScreen() {
@@ -616,6 +610,7 @@ function initAppliqueGlobale() {
     initModeCards();
     initStartSolo();
     masquerUndercoverComplet();
+    lancerMusique();              // ← AJOUT : initialise la musique globale
     initNavigation();
     console.log('[INIT] 📍 UI et navigation initialisées');
 

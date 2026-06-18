@@ -3,6 +3,17 @@
 import { GameState } from '../core/state.js';
 import { getPartieId, setPartieId, clearPartieId } from '../core/partie_id.js';
 
+// URL d'invitation canonique fournie par le serveur (GAME_CREATED / HOST_REJOINED).
+// Source unique : porte le code court. Le builder legacy ci-dessous n'est plus
+// qu'un fallback si le serveur n'a (pas encore) fourni d'URL.
+let _serverJoinUrl = null;
+
+/** Hôte → enregistre le joinUrl serveur (chemin relatif, ex: /jeu?…&code=…). */
+export function setServerJoinUrl(url) {
+    _serverJoinUrl = url || null;
+    if (_serverJoinUrl) console.log('[INVITE] 🔗 joinUrl serveur enregistré :', _serverJoinUrl);
+}
+
 // Les 3 fonctions ci-dessous restent exportées pour compat avec leurs
 // appelants (parties.js, host_session.js, etc.). Elles délèguent toutes
 // au helper unique core/partie_id.js — plus aucun accès localStorage
@@ -23,11 +34,20 @@ export function setPartieSessionId(id) {
 
 export function resetPartieSessionId() {
     clearPartieId();
+    _serverJoinUrl = null;          // éviter de réutiliser une URL périmée
     _viderBlocStatique();
     console.log('[INVITE] 🧹 partieSessionId réinitialisé');
 }
 
 export function construireLienInvitation() {
+    // 1) Priorité absolue : URL canonique serveur (avec code court).
+    if (_serverJoinUrl) {
+        return _serverJoinUrl.startsWith('http')
+            ? _serverJoinUrl
+            : `${window.location.origin}${_serverJoinUrl}`;
+    }
+
+    // 2) Fallback legacy (serveur indisponible) — conservé pour robustesse.
     const id = getPartieSessionId();
     if (!id) {
         console.warn('[INVITE] ⚠️ Pas de partieId — lien non généré');
@@ -40,7 +60,7 @@ export function construireLienInvitation() {
         hote      : (GameState.joueurs || [])[0] || '',
         createdAt : Date.now(),
     });
-    return `${window.location.origin}/jeu.html?${params.toString()}`;
+    return `${window.location.origin}/jeu?${params.toString()}`; // /jeu (aligné serveur), plus /jeu.html
 }
 
 const JEUX_LABELS = {

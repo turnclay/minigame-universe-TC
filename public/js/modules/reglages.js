@@ -4,6 +4,7 @@
 // ============================================
 import { getPlayers } from '../core/storage.js';
 import { GameState }  from '../core/state.js';
+import Musique from '../core/musique.js'; // AJOUTÉ
 
 // ======================================================
 // 🎨 DÉFINITION DES THÈMES
@@ -304,25 +305,8 @@ export function afficherReglages() {
         });
     });
 
-    // ── Toggle musique ─────────────────────────────────
-    const toggleMusic = document.getElementById("toggle-music-reglages");
-    const audio = document.getElementById("bg-music");
-
-    if (toggleMusic && audio) {
-        // Sync état initial
-        toggleMusic.classList.toggle("on", !audio.muted);
-
-        toggleMusic.addEventListener("click", () => {
-            audio.muted = !audio.muted;
-            toggleMusic.classList.toggle("on", !audio.muted);
-
-            // Sync avec le bouton principal
-            const btnMusicPrincipal = document.getElementById("toggle-music");
-            if (btnMusicPrincipal) {
-                btnMusicPrincipal.textContent = audio.muted ? "🔇" : "🔊";
-            }
-        });
-    }
+    // ── Toggle musique (état global persistant) ─────────
+    Musique.bindBouton('toggle-music-reglages', { classeOn: 'on' });
 
     // ── Reset scores ───────────────────────────────────
     const btnReset = document.getElementById("btn-reset-scores");

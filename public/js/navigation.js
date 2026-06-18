@@ -1103,25 +1103,22 @@ function _ouvrirReglagesInvite() {
     panel.setAttribute('aria-label', 'Réglages');
 
     panel.innerHTML = `
-        <div class="reglages-header">
-            <h2 class="reglages-title">⚙️ Réglages</h2>
-            <button class="reglages-close" id="reglages-close" aria-label="Fermer">✖</button>
-        </div>
-        <div class="reglages-body">
-            <div class="reglages-section">
-                <h3 class="reglages-section-title">🔊 Audio</h3>
-                <div class="reglages-row" style="opacity:.35;filter:grayscale(100%);">
-                    <span class="reglages-row-label" style="text-decoration:line-through;">Musique</span>
-                    <button class="toggle-switch" disabled
-                        style="cursor:not-allowed;pointer-events:none;">
-                        <span class="toggle-switch-knob"></span>
-                    </button>
+                <div class="reglages-header">
+                    <h2 class="reglages-title">⚙️ Réglages</h2>
+                    <button class="reglages-close" id="reglages-close" aria-label="Fermer">✖</button>
                 </div>
-                <p style="font-size:.75rem;color:rgba(255,255,255,.35);margin-top:4px;">
-                    🚧 Fonctionnalité bientôt disponible
-                </p>
-            </div>
-        </div>`;
+                <div class="reglages-body">
+                    <div class="reglages-section">
+                        <h3 class="reglages-section-title">🔊 Audio</h3>
+                        <div class="reglages-row">
+                            <span class="reglages-row-label">Musique</span>
+                            <button class="toggle-switch" id="toggle-music-invite-reglages"
+                                aria-label="Activer ou couper la musique">
+                                <span class="toggle-switch-knob"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
 
     document.body.appendChild(panel);
 
@@ -1143,6 +1140,10 @@ function _ouvrirReglagesInvite() {
 
     document.getElementById('reglages-close')?.addEventListener('click', fermer);
     overlay.addEventListener('click', fermer);
+
+    import('./core/musique.js').then(({ default: Musique }) => {
+        Musique.bindBouton('toggle-music-invite-reglages', { classeOn: 'on' });
+    });
 }
 
 // ── Stats invité (lecture seule, dans un panneau modal) ─

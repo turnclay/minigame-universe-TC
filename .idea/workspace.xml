@@ -6,6 +6,17 @@
   <component name="ChangeListManager">
     <list default="true" id="73d891ed-7cb8-4a2e-b43e-d24a9aad95e0" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/jeu.html" beforeDir="false" afterPath="$PROJECT_DIR$/public/jeu.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/core/cleanup.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/core/cleanup.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/core/host_session.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/core/host_session.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/jeu.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/jeu.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/jeux/mimedessine.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/jeux/mimedessine.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/main.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/modules/invite.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/invite.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/modules/reglages.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/reglages.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/modules/undercover_hote.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/undercover_hote.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/navigation.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/navigation.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -15,7 +26,7 @@
   <component name="CopilotChats">
     <option name="panelChat">
       <chat>
-        <option name="activeSessionId" value="9f544331-091f-4739-8759-68258972f105" />
+        <option name="activeSessionId" value="a232a851-cc69-4f29-87e3-adfe122e5016" />
         <option name="sessions">
           <session>
             <option name="chatType" value="PANEL" />
@@ -118,6 +129,15 @@
             <option name="modelValue" value="claude-opus-4-7" />
             <option name="targetType" value="LOCAL" />
           </session>
+          <session>
+            <option name="chatType" value="PANEL" />
+            <option name="id" value="a232a851-cc69-4f29-87e3-adfe122e5016" />
+            <option name="modeId" value="Agent" />
+            <option name="modelProviderName" value="Anthropic" />
+            <option name="modelType" value="byok_family" />
+            <option name="modelValue" value="claude-opus-4-7" />
+            <option name="targetType" value="LOCAL" />
+          </session>
         </option>
         <option name="type" value="PANEL" />
       </chat>
@@ -181,23 +201,23 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "DefaultHtmlFileTemplate": "HTML File",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.Ollama.executor": "Run",
-    "Python.ollama_analyse_jeu.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "main",
-    "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "C:/Users/clayt/PycharmProjects/MiniGameV2",
-    "settings.editor.selected.configurable": "com.github.copilot.settings.customization.CustomizationConfigurable",
-    "to.speed.mode.migration.done": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.Ollama.executor&quot;: &quot;Run&quot;,
+    &quot;Python.ollama_analyse_jeu.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/clayt/PycharmProjects/MiniGameV2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.github.copilot.settings.customization.CustomizationConfigurable&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>

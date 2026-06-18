@@ -213,6 +213,16 @@ function _brancherWS() {
     S._wsBound = true;
 }
 
+// Purge des listeners WS — appelée à GAME_ENDED via cleanup.resetEtatJeuxHote().
+// Évite que les handlers undercover continuent de répondre pendant un autre jeu.
+export function nettoyerPartieInvites() {
+    socket.off('PLAYER_ACTION', _onPlayerActionWS);
+    socket.off('PLAYER_JOINED', _onPlayerJoinedWS);
+    socket.off('PLAYER_RECONNECTED', _onPlayerJoinedWS);
+    S._wsBound = false;
+    console.log('[UNDERCOVER_HOTE] 🧹 Listeners WS purgés');
+}
+
 // ──────────────────────────────────────────────────────────────
 // INITIALISATION
 // ──────────────────────────────────────────────────────────────

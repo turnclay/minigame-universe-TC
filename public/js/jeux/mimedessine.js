@@ -62,21 +62,31 @@ async function _chargerDonnees() {
 }
 
 // ── Socket ───────────────────────────────────────────────────
+function _onPhaseWS(p) {
+    _state = { ..._state, ...p };
+    if (p.phase !== 'tour') _mot = null;
+    _render();
+    if (p.phase === 'tour' && p.tsTourEnd) _startTimer(); else _stopTimer();
+}
+function _onMotWS(p) {
+    _mot = p.mot || null;
+    if (_state.phase === 'tour') _render();
+}
 function _brancherSocket() {
     if (socket._mimeHoteBound) return;
     socket._mimeHoteBound = true;
+    socket.off('MIMEDESSSINE_PHASE', _onPhaseWS);
+    socket.on('MIMEDESSSINE_PHASE', _onPhaseWS);
+    socket.off('MIMEDESSSINE_MOT_A_DEVINER', _onMotWS);
+    socket.on('MIMEDESSSINE_MOT_A_DEVINER', _onMotWS);
+}
 
-    socket.on('MIMEDESSSINE_PHASE', (p) => {
-        _state = { ..._state, ...p };
-        if (p.phase !== 'tour') _mot = null;
-        _render();
-        if (p.phase === 'tour' && p.tsTourEnd) _startTimer(); else _stopTimer();
-    });
-
-    socket.on('MIMEDESSSINE_MOT_A_DEVINER', (p) => {
-        _mot = p.mot || null;
-        if (_state.phase === 'tour') _render();
-    });
+// Purge — appelée à GAME_ENDED via cleanup.resetEtatJeuxHote().
+export function nettoyerPartieInvites() {
+    socket.off('MIMEDESSSINE_PHASE', _onPhaseWS);
+    socket.off('MIMEDESSSINE_MOT_A_DEVINER', _onMotWS);
+    socket._mimeHoteBound = false;
+    console.log('[MIMEDESSINE] 🧹 Listeners WS purgés');
 }
 
 const _envoyer = (cmd, data = {}) => {
