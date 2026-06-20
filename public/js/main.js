@@ -1,7 +1,6 @@
 // /js/main.js
 
 import HostSession from './core/host_session.js';
-import Musique from "./core/musique.js"; // AJOUTÉ
 
 import { $, $$, show, hide } from "./core/dom.js";
 import { GameState } from "./core/state.js";
@@ -148,9 +147,16 @@ function _toastErreur(message) {
 }
 
 function lancerMusique() {
-    Musique.init();
-    // Le bouton principal suit l'état global (icône + aria) et le bascule au clic.
-    Musique.bindBouton('toggle-music', { on: '🔊', off: '🔇' });
+    const audio = document.getElementById("bg-music");
+    if (!audio) return;
+    audio.volume = 0.4;
+
+    const toggle = document.getElementById("toggle-music");
+    if (!toggle) return;
+    toggle.onclick = function() {
+        if (audio.paused) { audio.play(); toggle.textContent = "🔊"; }
+        else { audio.pause(); toggle.textContent = "🔇"; }
+    };
 }
 
 function initSplashScreen() {
@@ -364,7 +370,7 @@ function lancerJeuLocal(game) {
     masquerUndercoverComplet();
     masquerModules();
     show("container");
-    show("scoreboard");
+    // show("scoreboard"); // retiré : scoreboard via bouton 🏆 (panneau latéral)
     afficherScoreboard();
 
     const key  = game.toLowerCase();
@@ -459,7 +465,7 @@ function initStartSolo() {
             ucBindBouton(() => {
                 const jeu = document.getElementById("undercover");
                 if (jeu) { jeu.hidden = false; jeu.style.display = "block"; }
-                show("scoreboard");
+                // show("scoreboard"); // retiré : scoreboard via bouton 🏆 (panneau latéral)
                 afficherScoreboard();
             });
             return;
@@ -503,7 +509,7 @@ function lancerJeu(game, options = {}) {
     masquerUndercoverComplet();
     masquerModules();
     show("container");
-    show("scoreboard");
+    // show("scoreboard"); // retiré : scoreboard via bouton 🏆 (panneau latéral)
     afficherScoreboard();
 
     const key  = game.toLowerCase();
@@ -610,7 +616,6 @@ function initAppliqueGlobale() {
     initModeCards();
     initStartSolo();
     masquerUndercoverComplet();
-    lancerMusique();              // ← AJOUT : initialise la musique globale
     initNavigation();
     console.log('[INIT] 📍 UI et navigation initialisées');
 

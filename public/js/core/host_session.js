@@ -3,6 +3,7 @@
 import { GameState } from './state.js';
 import { socket } from './socket.js';
 import { getPartieId, setPartieId, clearPartieId } from './partie_id.js';
+import { addPlayer } from './storage.js';
 
 // Callbacks injectés par main.js pour éviter les dépendances circulaires
 let _cbRestaurerBouton = null;
@@ -18,6 +19,7 @@ const HostSession = {
     _creationEnCours : false,
     _partieStarted   : false,
     _wsHandlersAdded : false,
+    _endingPartieId  : null,   // anti-race : partie en cours de fermeture
 
     reset() {
         this._partieId        = null;
@@ -66,6 +68,7 @@ const HostSession = {
 
             socket.on('HOST_REJOINED', ({ partieId, snapshot, joinUrl }) => {
                 console.log('[HOST] ✅ Rejoin host OK —', partieId);
+                this._endingPartieId = null;   // partie réintégrée : marqueur anti-race purgé
                 this._partieId        = partieId;
                 this._snapshot        = snapshot;
                 this._creationEnCours = false;
@@ -83,6 +86,7 @@ const HostSession = {
 
             socket.on('GAME_CREATED', ({ partieId, snapshot, joinUrl }) => {
                 console.log('[HOST] ✅ Partie créée —', partieId);
+                this._endingPartieId = null;   // nouvelle partie active : marqueur anti-race purgé
 
                 this._partieId        = partieId;
                 this._snapshot        = snapshot;
@@ -191,6 +195,13 @@ const HostSession = {
             });
 
             socket.on('GAME_ENDED', () => {
+                // Anti-race : ignorer un GAME_ENDED obsolète si une NOUVELLE partie est déjà active
+                // (le GAME_ENDED tardif de l'ancienne partie ne doit pas effacer la nouvelle).
+                if (this._endingPartieId && this._partieId && this._partieId !== this._endingPartieId) {
+                    console.log('[HOST] ⏭️ GAME_ENDED obsolète ignoré (nouvelle partie active)');
+                    return;
+                }
+                this._endingPartieId = null;
                 console.log('[HOST] 🏁 Partie terminée (WS)');
 
                 this._partieId        = null;
@@ -332,6 +343,7 @@ const HostSession = {
 
     terminer() {
         if (!this._authenticated || !this._partieId) return;
+        this._endingPartieId = this._partieId;   // anti-race : mémorise la partie qu'on ferme
         try {
             socket.send('HOST_END_GAME');
             console.log('[HOST] 📤 HOST_END_GAME');
@@ -342,6 +354,7 @@ const HostSession = {
 
     _syncJoueurRejoint(pseudo) {
         if (!pseudo) return;
+        try { addPlayer(pseudo); } catch {}   // enregistre le joueur pour #liste-joueurs (prochaines parties)
         if (!GameState.joueurs.includes(pseudo)) {
             GameState.joueurs.push(pseudo);
             GameState.scores[pseudo] = GameState.scores[pseudo] ?? 0;

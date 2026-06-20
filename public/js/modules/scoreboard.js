@@ -191,6 +191,11 @@ export function afficherScoreboard() {
     rendreClassement('score-list', GameState.scores || {}, { cumul: true, controles: true });
 }
 
+// Scores de la partie en cours (instance live GameState) — pour le panneau hôte 🏆.
+export function getScoresPartie() {
+    return GameState.scores || {};
+}
+
 // ======================================================
 // 👁️ MASQUER / AFFICHER LE BLOC SCOREBOARD
 // ======================================================

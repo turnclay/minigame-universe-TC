@@ -14,8 +14,8 @@
 // ================================================================
 
 import { socket }           from './core/socket.js';
+import { getPlayers, addPlayer } from './core/storage.js';
 import { Player }           from './modules/player.js';
-import Musique              from './core/musique.js'; // AJOUTÉ
 // Import à effet de bord : enregistre les modules jeu dans JeuRegistry.
 // Chaque jeu WS doit être listé ici pour que JeuRegistry.get(jeu) le trouve.
 import                           './modules/petitbac_player.js';
@@ -136,6 +136,7 @@ const JeuApp = {
                 if (etat) etat.textContent = 'Lettres, chiffres, tiret ou underscore uniquement.';
                 input.focus(); return;
             }
+            try { addPlayer(p); } catch {}   // enregistre le pseudo pour la liste déroulante (prochaines fois)
             btn.disabled    = true;
             btn.textContent = '⏳ Connexion…';
             input.disabled  = true;
@@ -152,6 +153,25 @@ const JeuApp = {
         btn.replaceWith(btn.cloneNode(true));
         $('btn-join').addEventListener('click', valider);
 
+        // 2ᵉ moyen de rejoindre : liste déroulante des joueurs enregistrés sur cet appareil.
+        const selJoueurs = $('liste-joueurs-invite');
+        if (selJoueurs) {
+            const enregistres = getPlayers();
+            selJoueurs.innerHTML = '<option value="" disabled selected>— Choisir un joueur enregistré —</option>';
+            enregistres.forEach(nom => {
+                const o = document.createElement('option');
+                o.value = nom; o.textContent = nom;
+                selJoueurs.appendChild(o);
+            });
+            selJoueurs.style.display = enregistres.length ? '' : 'none';
+            selJoueurs.addEventListener('change', () => {
+                const choix = selJoueurs.value;
+                if (!choix) return;
+                input.value = choix;   // remplit le champ puis rejoint directement
+                valider();
+            });
+        }
+
         setTimeout(() => input.focus(), 100);
     },
 
@@ -161,9 +181,6 @@ const JeuApp = {
         // Exposer sur window pour compatibilité modules existants
         window.JeuApp    = this;
         window.jeuSocket = socket;
-
-        Musique.init();
-        Musique.bindBouton('btn-music-invite', { on: '🔊', off: '🔇' });
 
         // Enregistrer les listeners Player AVANT de connecter le socket.
         // Si socket.connect() est appelé en premier, __connected__ peut

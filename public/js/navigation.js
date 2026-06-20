@@ -138,14 +138,21 @@ function _resetSessionComplete() {
     // 1. Nettoyer localStorage
     nettoyerSession();
 
-    // 2. Réinitialiser HostSession WS (fermer la partie serveur + reset état)
+    // 2. Réinitialiser HostSession WS (fermer la partie serveur + reset COMPLET des drapeaux)
+    //    terminer() AVANT reset() : terminer a besoin de _partieId et mémorise _endingPartieId ;
+    //    reset() remet ensuite _partieStarted / _creationEnCours / _pendingGame... à zéro,
+    //    ce qui débloque la création d'une nouvelle partie sans rechargement de page.
     try {
         if (window.HostSession) {
             if (typeof window.HostSession.terminer === 'function') {
-                window.HostSession.terminer(); // HOST_END_GAME si partie active
+                window.HostSession.terminer(); // HOST_END_GAME tant que _partieId existe
             }
-            window.HostSession._partieId = null;
-            window.HostSession._snapshot = null;
+            if (typeof window.HostSession.reset === 'function') {
+                window.HostSession.reset();    // reset complet des drapeaux en mémoire
+            } else {
+                window.HostSession._partieId = null;
+                window.HostSession._snapshot = null;
+            }
         }
     } catch {}
 
@@ -1035,7 +1042,10 @@ export function initNavbarInvite() {
         btnHome.addEventListener('click', () => {
             const enJeu = !document.getElementById('phase-jeu')?.hidden;
             if (enJeu && !confirm("Quitter la partie en cours et revenir à l'accueil ?")) return;
-            window.location.href = '/';
+            // Nettoyer la session avant de quitter (état sain si on repasse hôte sur /).
+            import('./core/cleanup.js').then(m => m.nettoyerSession?.()).finally(() => {
+                window.location.href = '/';
+            });
         });
     }
 
@@ -1063,13 +1073,55 @@ export function initBoutonScores() {
     const btn = document.getElementById('btn-scores-permanent');
     if (!btn || btn.dataset.bound) return;
     btn.dataset.bound = '1';
-    btn.addEventListener('click', () => {
-        import('./modules/scoreboard.js').then(m => {
-            const sb = document.getElementById('scoreboard');
-            if (sb) sb.classList.toggle('reduit');
-            m.afficherScoreboard();
-        }).catch(() => {});
-    });
+    btn.addEventListener('click', () => _ouvrirScoresHote());
+}
+
+// Panneau latéral des scores HÔTE (même UX que l'invité, avec contrôles +/-).
+function _ouvrirScoresHote() {
+    document.getElementById('scores-hote-panel')?.remove();
+    document.getElementById('scores-hote-overlay')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'scores-hote-overlay';
+    overlay.className = 'reglages-overlay';
+    document.body.appendChild(overlay);
+
+    const panel = document.createElement('div');
+    panel.id = 'scores-hote-panel';
+    panel.className = 'reglages-panel';
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-label', 'Tableau des scores');
+    panel.innerHTML = `
+        <div class="reglages-header">
+            <h2 class="reglages-title">🏆 Scores</h2>
+            <button class="reglages-close" id="scores-hote-close" aria-label="Fermer">✖</button>
+        </div>
+        <div class="reglages-body">
+            <div id="scores-hote-list" class="score-list" role="list"></div>
+        </div>`;
+    document.body.appendChild(panel);
+    requestAnimationFrame(() => { panel.classList.add('open'); overlay.classList.add('open'); });
+
+    import('./modules/scoreboard.js').then(m => {
+        const rendre = () => m.rendreClassement('scores-hote-list', m.getScoresPartie(), { cumul: true, controles: true });
+        rendre();
+        // +/- : délégation locale sur la liste du panneau.
+        document.getElementById('scores-hote-list')?.addEventListener('click', (e) => {
+            const b = e.target.closest('[data-action]');
+            if (!b) return;
+            const { action, nom } = b.dataset;
+            if (!nom) return;
+            m.modifierScore(nom, action === 'plus' ? 1 : -1);
+            rendre();
+        });
+    }).catch(() => {});
+
+    const fermer = () => {
+        panel.classList.remove('open'); overlay.classList.remove('open');
+        setTimeout(() => { panel.remove(); overlay.remove(); }, 350);
+    };
+    document.getElementById('scores-hote-close')?.addEventListener('click', fermer);
+    overlay.addEventListener('click', fermer);
 }
 
 // ======================================================
