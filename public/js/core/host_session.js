@@ -75,7 +75,6 @@ const HostSession = {
                 setPartieId(partieId);
 
                 import('../modules/invite.js').then(m => {
-                    if (typeof m.setServerJoinUrl === 'function') m.setServerJoinUrl(joinUrl);
                     m.afficherBlocInvitation();
                 }).catch(err => console.warn('[HOST] ⚠️ Erreur import invite.js:', err.message));
 
@@ -94,7 +93,6 @@ const HostSession = {
                 setPartieId(partieId);
 
                 import('../modules/invite.js').then(m => {
-                    if (typeof m.setServerJoinUrl === 'function') m.setServerJoinUrl(joinUrl);
                     m.afficherBlocInvitation();
                 }).catch(err => console.warn('[HOST] ⚠️ Erreur invite.js:', err.message));
 
@@ -183,7 +181,13 @@ const HostSession = {
             });
 
             socket.on('SCORES_UPDATE', ({ scores }) => {
-                console.log('[HOST] 📊 Scores mis à jour:', scores);
+                // Serveur = autorité du board de partie.
+                if (scores && typeof scores === 'object') {
+                    GameState.scores = { ...scores };
+                }
+                import('../modules/scoreboard.js')
+                    .then(m => m.afficherScoreboard())
+                    .catch(() => {});
             });
 
             socket.on('GAME_ENDED', () => {

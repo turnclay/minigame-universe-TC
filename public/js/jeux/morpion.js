@@ -4,7 +4,7 @@
 
 import { $, $$, show, hide } from "../core/dom.js";
 import { GameState } from "../core/state.js";
-import { ajouterPoints } from "../modules/scoreboard.js";
+import { ajouterPoints, crediterScore } from "../modules/scoreboard.js";
 import { socket } from "../core/socket.js";
 
 // ── Module hôte (chargé dynamiquement pour ne pas bloquer) ──
@@ -824,12 +824,8 @@ initConfigListeners() {
         if (grille) { grille.style.opacity = '1'; grille.style.pointerEvents = 'none'; }
 
         setTimeout(() => {
-            // Attribuer les points via le module hôte (sync globaux)
-            if (this._hoteActif && _crediterPoints) {
-                _crediterPoints(gagnants, 3);
-            } else {
-                gagnants.forEach(nomJoueur => ajouterPoints(nomJoueur, 3));
-            }
+            // Crédit unifié : serveur si partie WS active (→ invités), sinon local (solo).
+            gagnants.forEach(nomJoueur => crediterScore(nomJoueur, 3, 'morpion'));
             console.log("[MORPION] Victoire:", gagnants);
         }, 100);
     }

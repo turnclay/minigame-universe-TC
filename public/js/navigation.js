@@ -1019,7 +1019,99 @@ export function initNavigation() {
     initBoutonRetour();
     initBoutonMenu();
     initMenuActions();
+    initBoutonScores();
     console.log('[NAV] ✅ Navigation initialisée (une fois)');
+}
+
+// ======================================================
+// 📱 NAVBAR INVITÉ — câblage des boutons de jeu.html
+// Appelée par player.js._initNavbar(). Logique 100 % invité.
+// ======================================================
+export function initNavbarInvite() {
+    // 🏠 Accueil — quitte la partie et revient à l'accueil public.
+    const btnHome = document.getElementById('btn-home-permanent');
+    if (btnHome && !btnHome.dataset.bound) {
+        btnHome.dataset.bound = '1';
+        btnHome.addEventListener('click', () => {
+            const enJeu = !document.getElementById('phase-jeu')?.hidden;
+            if (enJeu && !confirm("Quitter la partie en cours et revenir à l'accueil ?")) return;
+            window.location.href = '/';
+        });
+    }
+
+    // ☰ Menu — ouvre le panneau invité (Réglages + Statistiques).
+    const btnMenu = document.getElementById('btn-menu-permanent');
+    if (btnMenu && !btnMenu.dataset.bound) {
+        btnMenu.dataset.bound = '1';
+        btnMenu.addEventListener('click', () => _ouvrirMenuInvite());
+    }
+
+    // 🏆 Scores — panneau classement invité (lecture seule).
+    const btnScores = document.getElementById('btn-scores-invite');
+    if (btnScores && !btnScores.dataset.bound) {
+        btnScores.dataset.bound = '1';
+        btnScores.addEventListener('click', () => _ouvrirScoresInvite());
+    }
+
+    console.log('[NAV] ✅ Navbar invité câblée');
+}
+
+// ======================================================
+// 🏆 BOUTON SCORES PERMANENT — HÔTE
+// ======================================================
+export function initBoutonScores() {
+    const btn = document.getElementById('btn-scores-permanent');
+    if (!btn || btn.dataset.bound) return;
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', () => {
+        import('./modules/scoreboard.js').then(m => {
+            const sb = document.getElementById('scoreboard');
+            if (sb) sb.classList.toggle('reduit');
+            m.afficherScoreboard();
+        }).catch(() => {});
+    });
+}
+
+// ======================================================
+// 🏆 PANNEAU SCORES INVITÉ (lecture seule)
+// ======================================================
+function _ouvrirScoresInvite() {
+    document.getElementById('scores-invite-panel')?.remove();
+    document.getElementById('scores-invite-overlay')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'scores-invite-overlay';
+    overlay.className = 'reglages-overlay';
+    document.body.appendChild(overlay);
+
+    const panel = document.createElement('div');
+    panel.id = 'scores-invite-panel';
+    panel.className = 'reglages-panel';
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-label', 'Tableau des scores');
+    panel.innerHTML = `
+        <div class="reglages-header">
+            <h2 class="reglages-title">🏆 Scores</h2>
+            <button class="reglages-close" id="scores-invite-close" aria-label="Fermer">✖</button>
+        </div>
+        <div class="reglages-body">
+            <div id="scores-invite-list" class="score-list" role="list"></div>
+        </div>`;
+    document.body.appendChild(panel);
+    requestAnimationFrame(() => { panel.classList.add('open'); overlay.classList.add('open'); });
+
+    import('./modules/scoreboard.js').then(m => {
+        const scores = window.Player?.derniersScores || {};
+        const moi    = window.Player?.session?.pseudo || null;
+        m.rendreClassement('scores-invite-list', scores, { cumul: false, controles: false, moi });
+    }).catch(() => {});
+
+    const fermer = () => {
+        panel.classList.remove('open'); overlay.classList.remove('open');
+        setTimeout(() => { panel.remove(); overlay.remove(); }, 350);
+    };
+    document.getElementById('scores-invite-close')?.addEventListener('click', fermer);
+    overlay.addEventListener('click', fermer);
 }
 
 // ── Construire et ouvrir le menu invité ────────────────
@@ -1058,6 +1150,11 @@ function _ouvrirMenuInvite() {
 
             <hr class="invite-menu-separator">
 
+            <button class="invite-menu-item" id="imenu-reglages">
+                <span class="invite-menu-item-icon">⚙️</span>
+                <span class="invite-menu-item-label">Réglages</span>
+            </button>
+
             <button class="invite-menu-item" id="imenu-stats">
                 <span class="invite-menu-item-icon">📊</span>
                 <span class="invite-menu-item-label">Statistiques</span>
@@ -1085,6 +1182,11 @@ function _ouvrirMenuInvite() {
 
     // ── Réglages (sans reset scores / joueurs) ──────────
     // ── Statistiques ────────────────────────────────────
+    document.getElementById('imenu-reglages')?.addEventListener('click', () => {
+        fermer();
+        _ouvrirReglagesInvite();
+    });
+
     document.getElementById('imenu-stats')?.addEventListener('click', () => {
         fermer();
         _ouvrirStatsInvite();
@@ -1103,22 +1205,25 @@ function _ouvrirReglagesInvite() {
     panel.setAttribute('aria-label', 'Réglages');
 
     panel.innerHTML = `
-                <div class="reglages-header">
-                    <h2 class="reglages-title">⚙️ Réglages</h2>
-                    <button class="reglages-close" id="reglages-close" aria-label="Fermer">✖</button>
+        <div class="reglages-header">
+            <h2 class="reglages-title">⚙️ Réglages</h2>
+            <button class="reglages-close" id="reglages-close" aria-label="Fermer">✖</button>
+        </div>
+        <div class="reglages-body">
+            <div class="reglages-section">
+                <h3 class="reglages-section-title">🔊 Audio</h3>
+                <div class="reglages-row" style="opacity:.35;filter:grayscale(100%);">
+                    <span class="reglages-row-label" style="text-decoration:line-through;">Musique</span>
+                    <button class="toggle-switch" disabled
+                        style="cursor:not-allowed;pointer-events:none;">
+                        <span class="toggle-switch-knob"></span>
+                    </button>
                 </div>
-                <div class="reglages-body">
-                    <div class="reglages-section">
-                        <h3 class="reglages-section-title">🔊 Audio</h3>
-                        <div class="reglages-row">
-                            <span class="reglages-row-label">Musique</span>
-                            <button class="toggle-switch" id="toggle-music-invite-reglages"
-                                aria-label="Activer ou couper la musique">
-                                <span class="toggle-switch-knob"></span>
-                            </button>
-                        </div>
-                    </div>
-                </div>`;
+                <p style="font-size:.75rem;color:rgba(255,255,255,.35);margin-top:4px;">
+                    🚧 Fonctionnalité bientôt disponible
+                </p>
+            </div>
+        </div>`;
 
     document.body.appendChild(panel);
 
@@ -1140,10 +1245,6 @@ function _ouvrirReglagesInvite() {
 
     document.getElementById('reglages-close')?.addEventListener('click', fermer);
     overlay.addEventListener('click', fermer);
-
-    import('./core/musique.js').then(({ default: Musique }) => {
-        Musique.bindBouton('toggle-music-invite-reglages', { classeOn: 'on' });
-    });
 }
 
 // ── Stats invité (lecture seule, dans un panneau modal) ─

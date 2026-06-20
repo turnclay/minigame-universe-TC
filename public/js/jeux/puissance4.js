@@ -7,7 +7,7 @@
  */
 
 import { GameState } from "../core/state.js";
-import { modifierScore } from "../modules/scoreboard.js";
+import { modifierScore, crediterScore } from "../modules/scoreboard.js";
 import { socket } from "../core/socket.js";
 
 // ── Module hôte (chargé dynamiquement) ──
@@ -330,18 +330,14 @@ function afficherVictoire(gagnant, cellulesGagnantes = []) {
     _gagnant = gagnant; _matchNul = false;
     _publierEtatCourant();
 
-    // Ajouter des points au gagnant
-    if (_hoteActif) {
-        _crediterPoints([gagnant], 4);
-    } else if (GameState.mode === "solo") {
-        modifierScore(gagnant, 4);
-    } else if (GameState.mode === "team") {
+    // Crédit unifié : crediterScore route serveur(WS)/local(solo). Sémantique team préservée.
+    if (GameState.mode === "team") {
         const equipeGagnante = GameState.equipes.find(eq =>
             eq.joueurs.includes(gagnant)
         );
-        if (equipeGagnante) {
-            modifierScore(equipeGagnante.nom, 10);
-        }
+        if (equipeGagnante) crediterScore(equipeGagnante.nom, 10, 'puissance4');
+    } else {
+        crediterScore(gagnant, 4, 'puissance4');
     }
 
     // Afficher le bouton rejouer

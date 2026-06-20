@@ -6,6 +6,7 @@
 import { $, show, hide } from "../core/dom.js";
 import { GameState } from "../core/state.js";
 import { ajouterPointsGlobaux, enregistrerPerformance, getScoresGlobaux } from "../core/storage.js";
+import { socket } from "../core/socket.js";
 
 // ======================================================
 // ➕ AJOUTER DES POINTS (partie en cours + global)
@@ -34,6 +35,31 @@ export function ajouterPoints(nom, points) {
     ajouterPointsGlobaux(nom, points, jeu);
 
     _scheduleRender();
+}
+
+// ======================================================
+// 🎯 CRÉDIT UNIFIÉ — serveur (WS) ou local (solo)
+// ======================================================
+// Source de vérité du board de partie = serveur (SCORES_UPDATE).
+// - Partie WS active  → HOST_ADD_POINTS → store → broadcast SCORES_UPDATE
+//                       (hôte ET invités dérivent leur board de cet event).
+// - Hors WS (solo)    → board local via ajouterPoints().
+// Dans tous les cas, le cumul inter-parties (scores_globaux) est alimenté
+// pour les statistiques long terme — distinct du board de partie.
+export function crediterScore(nom, points, jeu) {
+    if (!nom || typeof points !== "number" || points === 0) return;
+
+    // Cumul long terme (stats) — toujours, indépendant du board de partie.
+    try { ajouterPointsGlobaux(nom, points, jeu || GameState.jeuActuel || "inconnu"); } catch {}
+
+    const enWS = !!localStorage.getItem("ws_partie_id") && socket?.connected;
+    if (enWS) {
+        // Serveur autoritatif.
+        socket.send("HOST_ADD_POINTS", { cible: nom, points });
+    } else {
+        // Solo / hors-WS : board local.
+        ajouterPoints(nom, points);
+    }
 }
 
 // ======================================================
@@ -73,57 +99,96 @@ export function registerSuccess(jeu, joueur, points = 3) {
 }
 
 // ======================================================
-// 📊 AFFICHER LE SCOREBOARD (score partie + score global)
+// 🎨 CSS DU SCOREBOARD (injecté une seule fois)
 // ======================================================
 
-export function afficherScoreboard() {
-    const liste = $("score-list");
-    if (!liste) return;
+function _injecterStyle() {
+    if (document.getElementById('scoreboard-style')) return;
+    const s = document.createElement('style');
+    s.id = 'scoreboard-style';
+    s.textContent = `
+        .score-sep    { color: rgba(255,255,255,.3); font-weight: 400; }
+        .score-global { color: rgba(255,255,255,.45); font-size: .8em; font-weight: 600; }
+        .score-entry  { display:flex; align-items:center; gap:8px; }
+        .score-rang   { width:1.6em; text-align:center; font-weight:700; opacity:.9; flex:0 0 auto; }
+        .score-name   { flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .score-points { flex:0 0 auto; white-space:nowrap; }
+        .score-moi    { background:rgba(167,139,250,.12); border-radius:10px; }
+        .score-moi .score-name { font-weight:700; color:#c4b5fd; }
+    `;
+    document.head.appendChild(s);
+}
 
-    const scores  = GameState.scores || {};
-    const entrees = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+// ======================================================
+// 📊 RENDU COMMUN D'UN CLASSEMENT (hôte + invité)
+// ======================================================
+// Rend un classement trié dans l'élément #elId à partir d'un objet
+// scores { pseudo: points } quelconque (typiquement issu du serveur).
+//   opts.cumul     : bool  → affiche le cumul global (scores_globaux)
+//   opts.controles : bool  → affiche les boutons +/- (hôte uniquement)
+//   opts.moi       : string → surligne l'entrée du joueur courant
+export function rendreClassement(elId, scores, opts = {}) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+
+    const entrees = Object.entries(scores || {}).sort((a, b) => b[1] - a[1]);
 
     if (entrees.length === 0) {
-        liste.innerHTML = '<p style="opacity:.5;font-size:.85rem;text-align:center;padding:8px;">Aucun score</p>';
+        el.innerHTML = '<p style="opacity:.5;font-size:.85rem;text-align:center;padding:8px;">Aucun score</p>';
         return;
     }
 
-    // Injecter le CSS une seule fois
-    if (!document.getElementById('scoreboard-style')) {
-        const s = document.createElement('style');
-        s.id = 'scoreboard-style';
-        s.textContent = `
-            .score-sep    { color: rgba(255,255,255,.3); font-weight: 400; }
-            .score-global { color: rgba(255,255,255,.45); font-size: .8em; font-weight: 600; }
-        `;
-        document.head.appendChild(s);
+    _injecterStyle();
+
+    // Cumul global : relecture fraîche du localStorage (source long terme).
+    let cumuls = {};
+    if (opts.cumul) {
+        try {
+            const raw = localStorage.getItem('scores_globaux');
+            if (raw) cumuls = JSON.parse(raw);
+        } catch {
+            try { cumuls = getScoresGlobaux() || {}; } catch {}
+        }
     }
 
-    // ✅ FIX : relecture fraîche du localStorage à chaque rendu,
-    // en parsant directement depuis la source pour éviter tout cache mémoire.
-    let scoresGlobaux = {};
-    try {
-        const raw = localStorage.getItem('scores_globaux');
-        if (raw) scoresGlobaux = JSON.parse(raw);
-    } catch(e) {
-        // Fallback sur la fonction utilitaire si la clé change
-        try { scoresGlobaux = getScoresGlobaux() || {}; } catch {}
-    }
+    const medailles = ['🥇', '🥈', '🥉'];
 
-    liste.innerHTML = entrees.map(([nom, pts]) => {
-        // ✅ FIX : lecture individuelle par nom — pas de référence partagée
-        const cumul = (scoresGlobaux[nom] && typeof scoresGlobaux[nom].total === 'number')
-            ? scoresGlobaux[nom].total
-            : (typeof scoresGlobaux[nom] === 'number' ? scoresGlobaux[nom] : 0);
+    el.innerHTML = entrees.map(([nom, pts], i) => {
+        const estMoi = opts.moi && nom === opts.moi;
+
+        const cumul = opts.cumul
+            ? ((cumuls[nom] && typeof cumuls[nom].total === 'number')
+                ? cumuls[nom].total
+                : (typeof cumuls[nom] === 'number' ? cumuls[nom] : 0))
+            : null;
+
+        const blocCumul = (cumul !== null)
+            ? `&nbsp;<span class="score-sep">/</span>&nbsp;<span class="score-global">${cumul}</span>`
+            : '';
+
+        const ctrl = opts.controles
+            ? `<button class="score-btn" data-action="minus" data-nom="${escHtml(nom)}" aria-label="Retirer un point">–</button>`
+            + `<button class="score-btn" data-action="plus"  data-nom="${escHtml(nom)}" aria-label="Ajouter un point">+</button>`
+            : '';
 
         return `
-            <div class="score-entry" role="listitem">
-                <span class="score-name">${escHtml(nom)}</span>
-                <span class="score-points">${pts}&nbsp;<span class="score-sep">/</span>&nbsp;<span class="score-global">${cumul}</span>&nbsp;pts</span>
+            <div class="score-entry${estMoi ? ' score-moi' : ''}" role="listitem">
+                <span class="score-rang">${medailles[i] || (i + 1) + '.'}</span>
+                <span class="score-name">${escHtml(nom)}${estMoi ? ' <em style="opacity:.6;">(toi)</em>' : ''}</span>
+                <span class="score-points">${pts}${blocCumul}&nbsp;pts</span>
+                ${ctrl}
             </div>
         `;
     }).join("");
+}
 
+// ======================================================
+// 📊 AFFICHER LE SCOREBOARD HÔTE
+// ======================================================
+// Board de partie HÔTE : dérive de GameState.scores (alimenté par
+// SCORES_UPDATE côté host_session) + cumul global + contrôles +/-.
+export function afficherScoreboard() {
+    rendreClassement('score-list', GameState.scores || {}, { cumul: true, controles: true });
 }
 
 // ======================================================

@@ -210,6 +210,7 @@ export const Player = {
         });
 
         socket.on('SCORES_UPDATE', ({ scores }) => {
+            this.derniersScores = scores || {};   // board complet (pour le panneau 🏆 invité)
             if (scores && this.session?.pseudo) {
                 this.scoreLocal = scores[this.session.pseudo] ?? this.scoreLocal;
             }
@@ -217,6 +218,15 @@ export const Player = {
             // Mettre à jour l'affichage du score si visible
             const el = document.getElementById('p-mes-points');
             if (el) el.textContent = (this.scoreLocal ?? 0) + ' pt' + ((this.scoreLocal ?? 0) > 1 ? 's' : '');
+            // Rafraîchir le panneau scores invité s'il est ouvert
+            const liste = document.getElementById('scores-invite-list');
+            if (liste) {
+                import('./modules/scoreboard.js').then(m =>
+                    m.rendreClassement('scores-invite-list', this.derniersScores, {
+                        cumul: false, controles: false, moi: this.session?.pseudo
+                    })
+                ).catch(() => {});
+            }
         });
 
         // ── Relay des events de jeu vers le module invité actif ────────
