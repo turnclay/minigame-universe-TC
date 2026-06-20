@@ -8058,3 +8058,12 @@ select:focus-visible {
     transform: translateY(0);
     opacity: 1;
 }
+/* ============================================
+   🏆 PANNEAU SCORES HÔTE
+   Réutilise .reglages-panel/.reglages-overlay (reglages.css), mais sur
+   index.html la .top-nav-bar est à z-index:9999 et recouvrait l'en-tête
+   + la croix du panneau. On repasse ce panneau (et son overlay) au-dessus.
+   Ciblé par id → n'affecte pas le panneau de réglages global.
+============================================ */
+#scores-hote-overlay { z-index: 10000; }
+#scores-hote-panel   { z-index: 10001; }
