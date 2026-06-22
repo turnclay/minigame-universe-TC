@@ -24,6 +24,11 @@ let partieTerminee = false;
 let themeVisible   = false;
 let _resultEnvoye  = false;
 
+// Normalise une lettre : retire les accents (É→E, Ç→C…) pour matcher le clavier A-Z.
+function _normLettre(c) {
+    return String(c || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
 // ── Stubs module hôte (panneau invités) ────────────────────────
 let _injecterPanneauHote = () => {};
 let _hoteActif           = false;
@@ -58,12 +63,15 @@ function _onMotStart(payload) {
         Object.assign(GameState.scores, payload.scores);
     }
 
-    // Révéler 1ère + dernière lettre (et toutes leurs occurrences)
-    const reveler = new Set([motSecret[0], motSecret[motSecret.length - 1]]);
+    // Révéler 1ère + dernière lettre (toutes occurrences, accents normalisés)
+    const reveler = new Set([
+        _normLettre(motSecret[0]),
+        _normLettre(motSecret[motSecret.length - 1])
+    ]);
     for (let i = 0; i < motSecret.length; i++) {
-        if (reveler.has(motSecret[i])) {
-            motAffiche[i] = motSecret[i];
-            lettresUsees.add(motSecret[i]);
+        if (reveler.has(_normLettre(motSecret[i]))) {
+            motAffiche[i] = motSecret[i];                // révèle la lettre accentuée
+            lettresUsees.add(_normLettre(motSecret[i])); // mémorise la lettre de base
         }
     }
 
@@ -167,11 +175,16 @@ function jouerLettre(lettre) {
     const btn = document.querySelector(`[data-lettre="${lettre}"]`);
     if (btn) btn.disabled = true;
 
-    if (motSecret.includes(lettre)) {
-        if (btn) btn.classList.add('correcte');
-        for (let i = 0; i < motSecret.length; i++) {
-            if (motSecret[i] === lettre) motAffiche[i] = lettre;
+    // Comparaison sans accents : « E » révèle É/È/Ê… et affiche la lettre accentuée.
+    let trouve = false;
+    for (let i = 0; i < motSecret.length; i++) {
+        if (_normLettre(motSecret[i]) === lettre) {
+            motAffiche[i] = motSecret[i];
+            trouve = true;
         }
+    }
+    if (trouve) {
+        if (btn) btn.classList.add('correcte');
         _afficherMot();
         if (!motAffiche.includes('_')) _terminerPartie(true);
     } else {
