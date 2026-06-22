@@ -26,6 +26,9 @@ const DESSINS = [
     `<svg viewBox="0 0 200 250" style="width:140px;height:auto;"><line x1="10" y1="230" x2="150" y2="230" stroke="#fff" stroke-width="4"/><line x1="50" y1="230" x2="50" y2="20" stroke="#fff" stroke-width="4"/><line x1="50" y1="20" x2="130" y2="20" stroke="#fff" stroke-width="4"/><line x1="130" y1="20" x2="130" y2="50" stroke="#fff" stroke-width="2"/><circle cx="130" cy="70" r="20" stroke="#fff" stroke-width="3" fill="none"/><line x1="130" y1="90" x2="130" y2="150" stroke="#fff" stroke-width="3"/><line x1="130" y1="100" x2="100" y2="120" stroke="#fff" stroke-width="3"/><line x1="130" y1="100" x2="160" y2="120" stroke="#fff" stroke-width="3"/><line x1="130" y1="150" x2="110" y2="190" stroke="#fff" stroke-width="3"/><line x1="130" y1="150" x2="150" y2="190" stroke="#fff" stroke-width="3"/></svg>`,
 ];
 
+// Normalise une lettre (retire les accents) pour matcher le clavier A-Z.
+const _pNorm = c => String(c || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
 const PenduModule = {
     _session       : null,
     _socket        : null,
@@ -98,12 +101,15 @@ const PenduModule = {
         this._theme     = String(payload.theme     || '').toUpperCase();
         this._motAffiche = Array(this._motSecret.length).fill('_');
 
-        // Révéler 1ère + dernière
-        const reveler = new Set([this._motSecret[0], this._motSecret[this._motSecret.length - 1]]);
+        // Révéler 1ère + dernière (accents normalisés)
+        const reveler = new Set([
+            _pNorm(this._motSecret[0]),
+            _pNorm(this._motSecret[this._motSecret.length - 1])
+        ]);
         for (let i = 0; i < this._motSecret.length; i++) {
-            if (reveler.has(this._motSecret[i])) {
+            if (reveler.has(_pNorm(this._motSecret[i]))) {
                 this._motAffiche[i] = this._motSecret[i];
-                this._lettresUsees.add(this._motSecret[i]);
+                this._lettresUsees.add(_pNorm(this._motSecret[i]));
             }
         }
         this._afficherJeu(payload.manche || 1);
@@ -204,7 +210,7 @@ const PenduModule = {
         if (!el) return;
         el.innerHTML = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(l => {
             const used = this._lettresUsees.has(l);
-            const inMot = used && this._motSecret.includes(l);
+            const inMot = used && Array.from(this._motSecret).some(c => _pNorm(c) === l);
             const bg    = used
                 ? (inMot ? 'rgba(34,197,94,.25)' : 'rgba(239,68,68,.25)')
                 : 'rgba(255,255,255,.08)';
@@ -238,10 +244,14 @@ const PenduModule = {
     _jouerLettre(l) {
         if (this._lettresUsees.has(l) || this._termine) return;
         this._lettresUsees.add(l);
-        if (this._motSecret.includes(l)) {
-            for (let i = 0; i < this._motSecret.length; i++) {
-                if (this._motSecret[i] === l) this._motAffiche[i] = l;
+        let trouve = false;
+        for (let i = 0; i < this._motSecret.length; i++) {
+            if (_pNorm(this._motSecret[i]) === l) {
+                this._motAffiche[i] = this._motSecret[i];
+                trouve = true;
             }
+        }
+        if (trouve) {
             if (!this._motAffiche.includes('_')) this._terminer(true);
         } else {
             this._nbErreurs++;

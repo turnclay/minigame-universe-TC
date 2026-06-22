@@ -52,15 +52,48 @@ body{font-family:var(--font-secondary);background:var(--gradient-background);bac
 .id-meta-val{font-size:.88rem;font-weight:600;color:var(--neon-cyan)}
 .id-meta-mono{font-family:monospace;font-size:.72rem;opacity:.55;color:white}
 #id-corps{margin-bottom:var(--space-sm)}
-.id-input-pseudo,.select-primary{width:100%;padding:12px 16px;background:var(--glass-light);border:1.5px solid var(--glass-border-medium);border-radius:var(--radius-md);color:white;font-size:1rem;font-family:var(--font-secondary);font-weight:600;outline:none;transition:border-color .2s,box-shadow .2s;margin-bottom:10px}
+.id-input-pseudo{width:100%;padding:12px 16px;background:var(--glass-light);border:1.5px solid var(--glass-border-medium);border-radius:var(--radius-md);color:white;font-size:1rem;font-family:var(--font-secondary);font-weight:600;outline:none;transition:border-color .2s,box-shadow .2s;margin-bottom:10px}
 .id-input-pseudo::placeholder{color:rgba(255,255,255,.3);font-weight:400}
 .id-input-pseudo:focus{border-color:var(--neon-cyan);box-shadow:0 0 0 3px rgba(0,212,255,.2)}
+.select-primary{
+    width:100%;
+    padding:12px 44px 12px 16px;
+    background-color:var(--glass-light);
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2300d4ff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 16px center;
+    background-size:14px;
+    border:1.5px solid var(--glass-border-medium);
+    border-radius:var(--radius-md);
+    color:white;
+    font-size:1rem;
+    font-family:var(--font-secondary);
+    font-weight:600;
+    outline:none;
+    cursor:pointer;
+    transition:border-color .2s,box-shadow .2s;
+    margin-bottom:10px;
+    -webkit-appearance:none;
+    -moz-appearance:none;
+    appearance:none;
+}
+.select-primary:focus{
+    border-color:var(--neon-cyan);
+    box-shadow:0 0 0 3px rgba(0,212,255,.2);
+}
+.select-primary option{
+    background:#15102a;
+    color:white;
+    font-weight:600;
+}
+.select-primary option[disabled]{
+    color:rgba(255,255,255,.4);
+}
 .id-btn-rejoindre{width:100%;padding:13px;background:var(--gradient-button);border:none;border-radius:var(--radius-md);color:white;font-size:1rem;font-weight:700;cursor:pointer;font-family:var(--font-secondary);transition:transform .15s,box-shadow .15s;box-shadow:0 4px 18px rgba(138,43,226,.35)}
 .id-btn-rejoindre:hover{transform:translateY(-2px);box-shadow:0 8px 26px rgba(138,43,226,.55)}
 .id-etat{font-size:.85rem;font-weight:600;min-height:1.4em;color:#f87171;margin-top:6px}
 .id-back-link{display:inline-block;margin-top:var(--space-md);font-size:.8rem;color:rgba(255,255,255,.35);text-decoration:none;transition:color .2s}
 .id-back-link:hover{color:rgba(255,255,255,.65)}
-
 
 /* ── 3. PHASE JEU ──────────────────────────────────────────── */
 #phase-jeu{display:flex;flex-direction:column;min-height:100vh;padding-top:80px}

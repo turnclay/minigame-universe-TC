@@ -167,8 +167,7 @@ const JeuApp = {
             selJoueurs.addEventListener('change', () => {
                 const choix = selJoueurs.value;
                 if (!choix) return;
-                input.value = choix;   // remplit le champ puis rejoint directement
-                valider();
+                input.value = choix;   // remplit le champ ; l'invité valide via le bouton Rejoindre
             });
         }
 

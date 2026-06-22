@@ -1,317 +1,285 @@
-// ======================================================
-// 🎮 server/games/pendu.js — v1.0 (P5.2)
-// ======================================================
-// Migration du Pendu en WS-server-driven (patron petitbac/quiz).
-//
-// Mécanique : tous les joueurs (hôte + invités) jouent le MÊME mot
-// en parallèle sur leur propre écran. Chacun a son propre clavier,
-// ses propres erreurs, son propre dessin. À la fin de SA partie
-// chacun envoie son résultat ; l'hôte révèle quand tous ont fini.
-//
-// Actions hôte (HOST_ACTION) :
-//   pendu:load     → démarre une session, tire le 1er mot.
-//   pendu:result   → soumet le résultat hôte (data.victoire, data.erreurs).
-//   pendu:reveal   → force la révélation (avant que tous aient fini).
-//   pendu:next_mot → relance avec un nouveau mot.
-//
-// Action joueur (PLAYER_ACTION) :
-//   pendu:result   → soumet son résultat (data.victoire, data.erreurs).
-//
-// Events serveur → clients :
-//   PENDU_MOT_START   { motSecret, theme, manche, scores }
-//   PENDU_RESULT_IN   { pseudo, nbResults, nbJoueurs, allDone }   (host)
-//   PENDU_REVELATION  { resultats[], scores, manche }
-//   PENDU_CAN_NEXT    { manche }                                   (host)
-//   PENDU_RESULT_ACK  { status: 'ok'|'already'|'too_late'|'invalid' }
-// ======================================================
+// ============================================================
+// /js/jeux/pendu.js — v2.0 WS-server-driven (P5.2)
+// ============================================================
+// Le serveur tire le mot et le diffuse via PENDU_MOT_START.
+// Chaque écran (hôte + invités) joue le mot en parallèle avec
+// sa propre logique locale (clavier, erreurs, dessin). À la fin
+// chacun envoie son résultat. L'hôte révèle quand il le souhaite.
+// ============================================================
 
-import store from '../store.js';
-import fs    from 'fs/promises';
-import path  from 'path';
-import { fileURLToPath } from 'url';
+import { $ } from '../core/dom.js';
+import { GameState } from '../core/state.js';
+import { socket } from '../core/socket.js';
+import { afficherScoreboard } from '../modules/scoreboard.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname  = path.dirname(__filename);
-
-const sessions = new Map();
-
-const POINTS_BASE = 10;   // doit rester aligné avec le client (affichage)
 const MAX_ERREURS = 7;
 
-// ─────────────────────────────────────────────────────
-// Chargement banque de mots (server/data/pendu.json)
-// ─────────────────────────────────────────────────────
+// ── État local de la partie hôte (joue en parallèle) ───────────
+let motSecret      = '';
+let themeActuel    = '';
+let motAffiche     = [];
+let lettresUsees   = new Set();
+let nombreErreurs  = 0;
+let partieTerminee = false;
+let themeVisible   = false;
+let _resultEnvoye  = false;
 
-const PENDU_PATH     = path.join(__dirname, '..', 'data', 'pendu.json');
-const PENDU_FALLBACK = '/data/pendu.json'; // Render disk en prod
-let _motsCache = null;
+// Normalise une lettre : retire les accents (É→E, Ç→C…) pour matcher le clavier A-Z.
+function _normLettre(c) {
+    return String(c || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
 
-async function _chargerMotsDisque() {
-    if (_motsCache) return _motsCache;
-    const candidates = [PENDU_PATH];
-    if (process.env.NODE_ENV === 'production') candidates.unshift(PENDU_FALLBACK);
+// ── Stubs module hôte (panneau invités) ────────────────────────
+let _injecterPanneauHote = () => {};
+let _hoteActif           = false;
 
-    for (const p of candidates) {
+async function chargerModuleHote() {
+    try {
+        const m = await import('../modules/pendu_hote.js');
+        _injecterPanneauHote = m.injecterPanneauHote || (() => {});
+        _hoteActif = true;
+        console.log('[PENDU] ✅ Module hôte chargé');
+        return true;
+    } catch (e) {
+        console.warn('[PENDU] ⚠️ pendu_hote.js indisponible :', e.message);
+        return false;
+    }
+}
+
+// ── Handlers events serveur ───────────────────────────────────
+
+function _onMotStart(payload) {
+    motSecret      = String(payload.motSecret || '').toUpperCase();
+    themeActuel    = String(payload.theme     || '').toUpperCase();
+    themeVisible   = false;
+    partieTerminee = false;
+    _resultEnvoye  = false;
+    motAffiche     = Array(motSecret.length).fill('_');
+    lettresUsees.clear();
+    nombreErreurs  = 0;
+
+    if (payload.scores) {
+        GameState.scores = GameState.scores || {};
+        Object.assign(GameState.scores, payload.scores);
+    }
+
+    // Révéler 1ère + dernière lettre (toutes occurrences, accents normalisés)
+    const reveler = new Set([
+        _normLettre(motSecret[0]),
+        _normLettre(motSecret[motSecret.length - 1])
+    ]);
+    for (let i = 0; i < motSecret.length; i++) {
+        if (reveler.has(_normLettre(motSecret[i]))) {
+            motAffiche[i] = motSecret[i];                // révèle la lettre accentuée
+            lettresUsees.add(_normLettre(motSecret[i])); // mémorise la lettre de base
+        }
+    }
+
+    _afficherMot();
+    _afficherDessin();
+    _afficherTheme();
+    _creerClavier();
+
+    const nb = $('pendu-nb-erreurs'); if (nb) nb.textContent = '0';
+    const tgl = $('pendu-theme-toggle');
+    if (tgl) { tgl.textContent = '🎯 Afficher le thème'; tgl.disabled = false; }
+    const btnR = $('pendu-rejouer'); if (btnR) btnR.hidden = true;
+
+    // Désactiver bouton "Afficher résultats"
+    const btnRes = document.getElementById('pendu-btn-resultats');
+    if (btnRes) { btnRes.disabled = true; btnRes.style.opacity = '0.4'; btnRes.style.cursor = 'not-allowed'; }
+
+    setTimeout(() => {
+        document.querySelectorAll('.btn-lettre').forEach(b => {
+            if (lettresUsees.has(b.dataset.lettre)) {
+                b.disabled = true;
+                b.classList.add('correcte');
+            }
+        });
+    }, 50);
+
+    console.log(`[PENDU] 🎲 Manche ${payload.manche} — mot caché reçu`);
+}
+
+function _onRevelation(payload) {
+    if (payload.scores) {
+        GameState.scores = GameState.scores || {};
+        Object.assign(GameState.scores, payload.scores);
+    }
+    try { afficherScoreboard(); } catch {}
+
+    // Activer "Nouveau mot"
+    const btnR = $('pendu-rejouer');
+    if (btnR) {
+        btnR.hidden     = false;
+        btnR.textContent = '🔄 Nouveau mot';
+        btnR.onclick = () => {
+            try { socket.send('HOST_ACTION', { action: 'pendu:next_mot', data: {} }); }
+            catch (err) { console.error('[PENDU] send next_mot:', err.message); }
+        };
+    }
+}
+
+// ── Affichage ─────────────────────────────────────────────────
+
+function _afficherMot() {
+    const el = $('pendu-mot'); if (!el) return;
+    el.innerHTML = motAffiche.map(l => `<span class="lettre-case">${l}</span>`).join('');
+}
+
+function _afficherTheme() {
+    const el = $('pendu-theme-display'); if (!el) return;
+    if (themeVisible) { el.textContent = themeActuel; el.style.display = 'block'; }
+    else { el.textContent = ''; el.style.display = 'none'; }
+}
+
+function _toggleTheme() {
+    themeVisible = !themeVisible;
+    _afficherTheme();
+    const btn = $('pendu-theme-toggle');
+    if (btn) btn.textContent = themeVisible ? '🔒 Masquer le thème' : '🎯 Afficher le thème';
+}
+
+function _creerClavier() {
+    const el = $('pendu-clavier'); if (!el) return;
+    el.innerHTML = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(l =>
+        `<button class="btn-lettre" data-lettre="${l}" aria-label="${l}">${l}</button>`
+    ).join('');
+    el.querySelectorAll('.btn-lettre').forEach(b => {
+        b.addEventListener('click', () => {
+            if (!partieTerminee) jouerLettre(b.dataset.lettre);
+        });
+    });
+}
+
+const DESSINS = [
+    `<svg viewBox="0 0 200 250" class="pendu-svg"><line x1="10" y1="230" x2="150" y2="230" stroke="#fff" stroke-width="4"/></svg>`,
+    `<svg viewBox="0 0 200 250" class="pendu-svg"><line x1="10" y1="230" x2="150" y2="230" stroke="#fff" stroke-width="4"/><line x1="50" y1="230" x2="50" y2="20" stroke="#fff" stroke-width="4"/></svg>`,
+    `<svg viewBox="0 0 200 250" class="pendu-svg"><line x1="10" y1="230" x2="150" y2="230" stroke="#fff" stroke-width="4"/><line x1="50" y1="230" x2="50" y2="20" stroke="#fff" stroke-width="4"/><line x1="50" y1="20" x2="130" y2="20" stroke="#fff" stroke-width="4"/></svg>`,
+    `<svg viewBox="0 0 200 250" class="pendu-svg"><line x1="10" y1="230" x2="150" y2="230" stroke="#fff" stroke-width="4"/><line x1="50" y1="230" x2="50" y2="20" stroke="#fff" stroke-width="4"/><line x1="50" y1="20" x2="130" y2="20" stroke="#fff" stroke-width="4"/><line x1="130" y1="20" x2="130" y2="50" stroke="#fff" stroke-width="2"/></svg>`,
+    `<svg viewBox="0 0 200 250" class="pendu-svg"><line x1="10" y1="230" x2="150" y2="230" stroke="#fff" stroke-width="4"/><line x1="50" y1="230" x2="50" y2="20" stroke="#fff" stroke-width="4"/><line x1="50" y1="20" x2="130" y2="20" stroke="#fff" stroke-width="4"/><line x1="130" y1="20" x2="130" y2="50" stroke="#fff" stroke-width="2"/><circle cx="130" cy="70" r="20" stroke="#fff" stroke-width="3" fill="none"/></svg>`,
+    `<svg viewBox="0 0 200 250" class="pendu-svg"><line x1="10" y1="230" x2="150" y2="230" stroke="#fff" stroke-width="4"/><line x1="50" y1="230" x2="50" y2="20" stroke="#fff" stroke-width="4"/><line x1="50" y1="20" x2="130" y2="20" stroke="#fff" stroke-width="4"/><line x1="130" y1="20" x2="130" y2="50" stroke="#fff" stroke-width="2"/><circle cx="130" cy="70" r="20" stroke="#fff" stroke-width="3" fill="none"/><line x1="130" y1="90" x2="130" y2="150" stroke="#fff" stroke-width="3"/></svg>`,
+    `<svg viewBox="0 0 200 250" class="pendu-svg"><line x1="10" y1="230" x2="150" y2="230" stroke="#fff" stroke-width="4"/><line x1="50" y1="230" x2="50" y2="20" stroke="#fff" stroke-width="4"/><line x1="50" y1="20" x2="130" y2="20" stroke="#fff" stroke-width="4"/><line x1="130" y1="20" x2="130" y2="50" stroke="#fff" stroke-width="2"/><circle cx="130" cy="70" r="20" stroke="#fff" stroke-width="3" fill="none"/><line x1="130" y1="90" x2="130" y2="150" stroke="#fff" stroke-width="3"/><line x1="130" y1="100" x2="100" y2="120" stroke="#fff" stroke-width="3"/><line x1="130" y1="100" x2="160" y2="120" stroke="#fff" stroke-width="3"/><line x1="130" y1="150" x2="110" y2="190" stroke="#fff" stroke-width="3"/><line x1="130" y1="150" x2="150" y2="190" stroke="#fff" stroke-width="3"/></svg>`
+];
+
+function _afficherDessin() {
+    const el = $('pendu-dessin'); if (!el) return;
+    el.innerHTML = DESSINS[Math.min(nombreErreurs, 6)];
+}
+
+// ── Logique locale ──────────────────────────────────────────
+
+function jouerLettre(lettre) {
+    if (lettresUsees.has(lettre) || partieTerminee) return;
+    lettresUsees.add(lettre);
+    const btn = document.querySelector(`[data-lettre="${lettre}"]`);
+    if (btn) btn.disabled = true;
+
+    // Comparaison sans accents : « E » révèle É/È/Ê… et affiche la lettre accentuée.
+    let trouve = false;
+    for (let i = 0; i < motSecret.length; i++) {
+        if (_normLettre(motSecret[i]) === lettre) {
+            motAffiche[i] = motSecret[i];
+            trouve = true;
+        }
+    }
+    if (trouve) {
+        if (btn) btn.classList.add('correcte');
+        _afficherMot();
+        if (!motAffiche.includes('_')) _terminerPartie(true);
+    } else {
+        if (btn) btn.classList.add('incorrecte');
+        nombreErreurs++;
+        const nb = $('pendu-nb-erreurs'); if (nb) nb.textContent = nombreErreurs;
+        _afficherDessin();
+        if (nombreErreurs >= MAX_ERREURS) _terminerPartie(false);
+    }
+}
+
+function _terminerPartie(victoire) {
+    if (partieTerminee) return;
+    partieTerminee = true;
+    themeVisible   = true;
+    _afficherTheme();
+    document.querySelectorAll('.btn-lettre').forEach(b => b.disabled = true);
+    const tgl = $('pendu-theme-toggle'); if (tgl) tgl.disabled = true;
+
+    const joueur   = GameState.joueurs?.[0] || null;
+    const penduMot = $('pendu-mot');
+    const pseudo   = joueur || 'Hôte';
+
+    if (victoire) {
+        if (penduMot) penduMot.innerHTML = `
+            <div class="message-victoire">
+                🎉 ${pseudo ? `Bravo ${pseudo} !` : 'Bravo !'}<br>
+                Le mot était : <strong>${motSecret}</strong><br>
+                <em class="theme-info">Thème : ${themeActuel}</em>
+            </div>`;
+    } else {
+        if (penduMot) penduMot.innerHTML = `
+            <div class="message-defaite">
+                😢 ${pseudo ? `Perdu ${pseudo} !` : 'Perdu !'}<br>
+                Le mot était : <strong>${motSecret}</strong><br>
+                <em class="theme-info">Thème : ${themeActuel}</em>
+            </div>`;
+    }
+
+    // Soumettre le résultat au serveur (idempotent côté serveur)
+    if (!_resultEnvoye) {
+        _resultEnvoye = true;
         try {
-            const raw    = await fs.readFile(p, 'utf-8');
-            const propre = raw.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
-            const data   = JSON.parse(propre);
-            if (!Array.isArray(data) || !data.length) continue;
-            _motsCache = data
-                .filter(e => e && e.MOT && e.THEME)
-                .map(e => ({ mot: String(e.MOT).toUpperCase(), theme: String(e.THEME).toUpperCase() }));
-            console.log(`[PENDU] 📚 ${_motsCache.length} mot(s) chargé(s) depuis ${p}`);
-            return _motsCache;
+            socket.send('HOST_ACTION', {
+                action: 'pendu:result',
+                data: { pseudo: joueur, victoire, erreurs: nombreErreurs },
+            });
+            console.log(`[PENDU] 📨 Résultat hôte envoyé : victoire=${victoire}, erreurs=${nombreErreurs}`);
         } catch (err) {
-            if (err.code !== 'ENOENT') console.warn(`[PENDU] ⚠️ ${p}:`, err.message);
+            console.error('[PENDU] send result:', err.message);
         }
     }
-    return null;
 }
 
-// ─────────────────────────────────────────────────────
-// Sessions
-// ─────────────────────────────────────────────────────
+// ── Abonnements WS ──────────────────────────────────────────
 
-function _getSession(partieId) { return sessions.get(partieId) || null; }
-
-function _creerSession(partieId) {
-    const s = {
-        phase             : 'idle',
-        motSecret         : null,
-        theme             : null,
-        manche            : 0,
-        tsDebut           : null,
-        resultats         : {},        // { pseudo: { victoire, erreurs, points, ts } }
-        revelationEnCours : false,
-        motsJoues         : new Set(), // pour éviter de retirer le même mot
-    };
-    sessions.set(partieId, s);
-    return s;
-}
-
-function _tirerMot(s, banque) {
-    const dispo = banque.filter(m => !s.motsJoues.has(m.mot));
-    const pool  = dispo.length ? dispo : banque; // recycle si tout joué
-    const m     = pool[Math.floor(Math.random() * pool.length)];
-    s.motsJoues.add(m.mot);
-    return m;
-}
-
-function _calculerPoints(victoire, erreurs) {
-    if (!victoire) return 0;
-    return Math.max(1, POINTS_BASE - Math.max(0, Math.min(MAX_ERREURS, erreurs | 0)));
-}
-
-// ─────────────────────────────────────────────────────
-// API publique
-// ─────────────────────────────────────────────────────
-
-export function getSessionState(partieId) {
-    const s = _getSession(partieId);
-    if (!s) return null;
-    const base = { phase: s.phase, manche: s.manche };
-    if (s.phase === 'jeu') {
-        return {
-            ...base,
-            motSecret  : s.motSecret,
-            theme      : s.theme,
-            tsDebut    : s.tsDebut,
-            nbResults  : Object.keys(s.resultats).length,
-        };
-    }
-    if (s.phase === 'resultats') {
-        return {
-            ...base,
-            motSecret : s.motSecret,
-            theme     : s.theme,
-            resultats : _payloadRevelation(s),
-            scores    : store.getScores(partieId) || {},
-        };
-    }
-    return base;
-}
-
-export function detruireSession(partieId) {
-    sessions.delete(partieId);
-    console.log(`[PENDU] 🗑️ Session détruite: ${partieId}`);
-}
-
-// ─────────────────────────────────────────────────────
-// HOST ACTIONS
-// ─────────────────────────────────────────────────────
-
-export function handleHostAction(wss, ws, partieId, action, data, helpers) {
-    const { broadcastToGame, broadcastToHost, send } = helpers;
-    const cmd = action.split(':')[1];
-
-    switch (cmd) {
-
-        case 'load':
-        case 'next_mot': {
-            // .then()/.catch() pour garder la fonction synchrone (pattern quiz)
-            // → le try/catch ws-handler capture les erreurs synchrones,
-            //   le .catch gère les erreurs async (lecture disque).
-            _chargerMotsDisque().then(banque => {
-                if (!banque || !banque.length) {
-                    return send(ws, 'ERROR', {
-                        code   : 'PENDU_BAD_STATE',
-                        message: 'Banque de mots introuvable côté serveur.',
-                    });
-                }
-
-                let s = _getSession(partieId);
-                if (!s) s = _creerSession(partieId);
-
-                const m = _tirerMot(s, banque);
-                s.manche++;
-                s.phase             = 'jeu';
-                s.motSecret         = m.mot;
-                s.theme             = m.theme;
-                s.tsDebut           = Date.now();
-                s.resultats         = {};
-                s.revelationEnCours = false;
-
-                broadcastToGame(wss, partieId, 'PENDU_MOT_START', {
-                    motSecret : s.motSecret,
-                    theme     : s.theme,
-                    manche    : s.manche,
-                    scores    : store.getScores(partieId) || {},
-                });
-                console.log(`[PENDU] 🎲 Manche ${s.manche} — mot: "${s.motSecret}" (${s.theme})`);
-            }).catch(err => {
-                console.error('[PENDU] ❌ load/next_mot:', err);
-                send(ws, 'ERROR', { code: 'PENDU_BAD_STATE', message: 'Erreur serveur lecture banque.' });
-            });
-            break;
+function _abonnerEvenements() {
+    socket.on('PENDU_MOT_START',  payload => { try { _onMotStart(payload); }  catch (e) { console.warn('[PENDU] MOT_START', e.message); } });
+    socket.on('PENDU_REVELATION', payload => { try { _onRevelation(payload); } catch (e) { console.warn('[PENDU] REVELATION', e.message); } });
+    socket.on('SCORES_UPDATE', ({ scores }) => {
+        if (scores) {
+            GameState.scores = GameState.scores || {};
+            Object.assign(GameState.scores, scores);
         }
-
-        case 'result': {
-            const s = _getSession(partieId);
-            if (!s || s.phase !== 'jeu') {
-                return send(ws, 'PENDU_RESULT_ACK', { status: 'too_late' });
-            }
-            const partie = store.getPartie(partieId);
-            const pseudo = (data.pseudo && String(data.pseudo).trim()) || partie?.hostPseudo || null;
-            if (!pseudo) return send(ws, 'PENDU_RESULT_ACK', { status: 'invalid' });
-            if (s.resultats[pseudo] !== undefined) {
-                return send(ws, 'PENDU_RESULT_ACK', { status: 'already' });
-            }
-
-            const victoire = !!data.victoire;
-            const erreurs  = Math.max(0, Math.min(MAX_ERREURS, (data.erreurs | 0)));
-            const points   = _calculerPoints(victoire, erreurs);
-            s.resultats[pseudo] = { victoire, erreurs, points, ts: Date.now() };
-
-            send(ws, 'PENDU_RESULT_ACK', { status: 'ok' });
-
-            const nbJoueurs  = (partie?.joueurs || []).length;
-            const nbResults  = Object.keys(s.resultats).length;
-            broadcastToHost(wss, partieId, 'PENDU_RESULT_IN', {
-                pseudo, nbResults, nbJoueurs,
-                allDone: nbResults >= nbJoueurs,
-            });
-            console.log(`[PENDU] 🎮 Résultat hôte ${pseudo}: victoire=${victoire}, pts=${points}`);
-            break;
-        }
-
-        case 'reveal': {
-            const s = _getSession(partieId);
-            if (!s || s.phase !== 'jeu') {
-                return send(ws, 'ERROR', { code: 'PENDU_BAD_STATE', message: 'Pas de manche en cours.' });
-            }
-            _declencherRevelation(wss, partieId, s, helpers, 'host');
-            break;
-        }
-
-        default:
-            console.warn(`[PENDU] ⚠️ Action host inconnue: ${cmd}`);
-    }
-}
-
-// ─────────────────────────────────────────────────────
-// PLAYER ACTIONS
-// ─────────────────────────────────────────────────────
-
-export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, helpers) {
-    const { broadcastToHost, send } = helpers;
-    const cmd = action.split(':')[1];
-
-    switch (cmd) {
-        case 'result': {
-            const s = _getSession(partieId);
-            if (!s || s.phase !== 'jeu') {
-                return send(ws, 'PENDU_RESULT_ACK', { status: 'too_late' });
-            }
-            if (!pseudo || pseudo === 'null' || pseudo === 'undefined') {
-                return send(ws, 'PENDU_RESULT_ACK', { status: 'invalid' });
-            }
-            if (s.resultats[pseudo] !== undefined) {
-                return send(ws, 'PENDU_RESULT_ACK', { status: 'already' });
-            }
-
-            const victoire = !!data.victoire;
-            const erreurs  = Math.max(0, Math.min(MAX_ERREURS, (data.erreurs | 0)));
-            const points   = _calculerPoints(victoire, erreurs);
-            s.resultats[pseudo] = { victoire, erreurs, points, ts: Date.now() };
-
-            send(ws, 'PENDU_RESULT_ACK', { status: 'ok' });
-
-            const partie     = store.getPartie(partieId);
-            const nbJoueurs  = (partie?.joueurs || []).length;
-            const nbResults  = Object.keys(s.resultats).length;
-            broadcastToHost(wss, partieId, 'PENDU_RESULT_IN', {
-                pseudo, nbResults, nbJoueurs,
-                allDone: nbResults >= nbJoueurs,
-            });
-            console.log(`[PENDU] 🎮 Résultat ${pseudo}: victoire=${victoire}, pts=${points}`);
-            break;
-        }
-
-        default:
-            console.warn(`[PENDU] ⚠️ Action joueur inconnue: ${cmd}`);
-    }
-}
-
-// ─────────────────────────────────────────────────────
-// Révélation
-// ─────────────────────────────────────────────────────
-
-function _payloadRevelation(s) {
-    return Object.entries(s.resultats)
-        .filter(([p]) => p && p !== 'null' && p !== 'undefined')
-        .sort((a, b) => (b[1].points || 0) - (a[1].points || 0))
-        .map(([pseudo, data]) => ({
-            pseudo,
-            victoire : !!data.victoire,
-            erreurs  : data.erreurs || 0,
-            points   : data.points  || 0,
-        }));
-}
-
-function _declencherRevelation(wss, partieId, s, helpers, source) {
-    if (s.revelationEnCours) return;
-    s.revelationEnCours = true;
-
-    const { broadcastToGame, broadcastToHost } = helpers;
-    const liste = _payloadRevelation(s);
-
-    liste.forEach(r => {
-        if (r.points > 0) store.modifierScore(partieId, r.pseudo, r.points);
+        try { afficherScoreboard(); } catch {}
     });
-
-    s.phase = 'resultats';
-    const scores = store.getScores(partieId) || {};
-
-    broadcastToGame(wss, partieId, 'PENDU_REVELATION', {
-        motSecret : s.motSecret,
-        theme     : s.theme,
-        resultats : liste,
-        scores,
-        manche    : s.manche,
-    });
-    broadcastToGame(wss, partieId, 'SCORES_UPDATE', { scores });
-    broadcastToHost(wss, partieId, 'PENDU_CAN_NEXT', { manche: s.manche });
-
-    console.log(`[PENDU] 🎯 Révélation manche ${s.manche} — source: ${source}`);
 }
+
+// ── Initialisation principale ───────────────────────────────
+
+export async function initialiserPendu() {
+    console.log('[PENDU] Initialisation WS');
+    _abonnerEvenements();
+    const hoteActif = await chargerModuleHote();
+    if (hoteActif) _injecterPanneauHote();
+
+    // Listener clavier global (une seule fois — idempotent via flag DOM)
+    if (!document._penduKeydownInstalled) {
+        document._penduKeydownInstalled = true;
+        document.addEventListener('keydown', e => {
+            if ($('pendu')?.hidden || partieTerminee) return;
+            const l = e.key.toUpperCase();
+            if (/^[A-Z]$/.test(l) && !lettresUsees.has(l)) jouerLettre(l);
+        });
+    }
+
+    $('pendu-theme-toggle')?.addEventListener('click', _toggleTheme);
+
+    try {
+        socket.send('HOST_ACTION', { action: 'pendu:load', data: {} });
+        console.log('[PENDU] 📡 pendu:load envoyé');
+    } catch (err) {
+        console.error('[PENDU] send load:', err.message);
+        alert('Impossible de démarrer le Pendu. Vérifie la connexion.');
+    }
+}
+
+window.initialiserPendu = initialiserPendu;
