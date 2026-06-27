@@ -5,7 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="73d891ed-7cb8-4a2e-b43e-d24a9aad95e0" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/server/games/pendu.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/games/pendu.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/JEUX.md" beforeDir="false" afterPath="$PROJECT_DIR$/JEUX.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Patch l2 l3 l4.MD" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Plan f1 f2 navbar scoreboard.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/QA.md" beforeDir="false" afterPath="$PROJECT_DIR$/QA.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pipeline/memoire.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/jeux/petitbac.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/jeux/petitbac.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/modules/petitbac_hote.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/petitbac_hote.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/modules/petitbac_player.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/petitbac_player.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/games/petitbac.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/games/petitbac.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -127,6 +136,15 @@
             <option name="modelValue" value="claude-opus-4-7" />
             <option name="targetType" value="LOCAL" />
           </session>
+          <session>
+            <option name="chatType" value="PANEL" />
+            <option name="id" value="82b9f49a-d9eb-48a4-aa4a-6f31e0c422cd" />
+            <option name="modeId" value="Agent" />
+            <option name="modelProviderName" value="Anthropic" />
+            <option name="modelType" value="byok_family" />
+            <option name="modelValue" value="claude-opus-4-7" />
+            <option name="targetType" value="LOCAL" />
+          </session>
         </option>
         <option name="type" value="PANEL" />
       </chat>
@@ -166,6 +184,9 @@
     </excluded-from-favorite>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/server/games/petitbac.js" root0="FORCE_HIGHLIGHTING" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;customColor&quot;: &quot;&quot;,
   &quot;associatedIndex&quot;: 3
@@ -203,7 +224,7 @@
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;C:/Users/clayt/PycharmProjects/MiniGameV2&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.github.copilot.settings.customization.CustomizationConfigurable&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;ml.llm.LLMConfigurable&quot;,
     &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
   }
 }</component>

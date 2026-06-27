@@ -1,24 +1,21 @@
-// /js/modules/petitbac_hote.js — v2.0 WS-server-driven (P5.1)
+// /js/modules/petitbac_hote.js — v2.0 (résultats détaillés + bouton ?)
 // ============================================================
 // Plus aucun accès localStorage. Toutes les données viennent des
 // events WS serveur. Ce module gère uniquement le PANNEAU HÔTE
-// (suivi des soumissions invités + bouton "Révéler résultats").
+// (suivi des soumissions invités + bouton "Révéler résultats" +
+// affichage détaillé statut/points/définition à la révélation).
 //
-// Données en mémoire mises à jour par les events WS du module
-// jeu (public/js/jeux/petitbac.js) :
-//   - _reponsesRecues : { pseudo: { score? } }     ← PETITBAC_RESPONSE_IN
-//   - _resultatsManche : [{ pseudo, reponses, score }] ← PETITBAC_REVELATION
-//
-// Pattern handlers stockés + socket.off pour cleanup propre,
-// comme quiz_hote.js (FIX B).
+// v2.0 : la révélation porte désormais r.details = { cat:{ val, statut,
+// points } }. Le panneau affiche le détail par catégorie avec un
+// bouton « ? » (définition Wiktionnaire) sur chaque mot.
 // ============================================================
 
 import { GameState }    from '../core/state.js';
 import { socket }       from '../core/socket.js';
 import HostSession      from '../core/host_session.js';
 
-let _reponsesRecues   = {};   // { pseudo: { score } }  (live, depuis RESPONSE_IN)
-let _resultatsManche  = [];   // [{ pseudo, reponses, score }] (depuis REVELATION)
+let _reponsesRecues   = {};   // { pseudo: { ts } }  (live, depuis RESPONSE_IN)
+let _resultatsManche  = [];   // [{ pseudo, score, details }] (depuis REVELATION)
 let _wsListenersActifs = false;
 
 // Handlers WS stockés pour cleanup (socket.off)
@@ -28,6 +25,29 @@ let _hRevelation  = null;
 let _hCanNext     = null;
 let _hError       = null;
 
+// ── Helpers définition / statut ─────────────────────────────
+const lienDef = mot =>
+    `https://fr.wiktionary.org/w/index.php?search=${encodeURIComponent(String(mot || '').trim())}`;
+
+function _styleStatut(statut) {
+    switch (statut) {
+        case 'unique':   return { color:'#86efac', icon:'✅', badge:'+2' };
+        case 'double':   return { color:'#fde047', icon:'✅', badge:'+1' };
+        case 'invalide': return { color:'#fca5a5', icon:'❌', badge:'0' };
+        default:         return { color:'rgba(255,255,255,.35)', icon:'—', badge:'' };
+    }
+}
+
+function _btnDef(mot) {
+    if (!mot) return '';
+    return `<a href="${lienDef(mot)}" target="_blank" rel="noopener noreferrer"
+        title="Définition / vérifier le mot"
+        style="flex:none;display:inline-flex;align-items:center;justify-content:center;
+        width:18px;height:18px;border-radius:50%;text-decoration:none;
+        background:rgba(167,139,250,.18);border:1px solid rgba(167,139,250,.4);
+        color:#c4b5fd;font-size:.68rem;font-weight:800;line-height:1;">?</a>`;
+}
+
 function _nbJoueursTotal() {
     const snapJoueurs = HostSession?._snapshot?.joueurs;
     return Array.isArray(snapJoueurs) ? snapJoueurs.length : 1;
@@ -36,7 +56,7 @@ function _nbJoueursTotal() {
 function _pseudoHote() { return GameState?.joueurs?.[0] || 'Hôte'; }
 
 // ────────────────────────────────────────────────────────────
-// Listeners WS — branchés une seule fois par session quiz.
+// Listeners WS
 // ────────────────────────────────────────────────────────────
 
 function _initWsListeners() {
@@ -47,7 +67,6 @@ function _initWsListeners() {
         _reponsesRecues  = {};
         _resultatsManche = [];
         _refreshPanneau();
-        // Réinitialiser le bouton "Révéler"
         const btn = document.getElementById('pb-btn-resultats');
         if (btn) {
             btn.disabled       = true;
@@ -63,7 +82,6 @@ function _initWsListeners() {
         if (!pseudo || pseudo === 'null' || pseudo === 'undefined') return;
         if (!_reponsesRecues[pseudo]) _reponsesRecues[pseudo] = { ts: Date.now() };
         _refreshPanneau({ nbReponses, nbJoueurs });
-        // Si tous ont soumis, activer le bouton "Révéler"
         if (allAnswered) _activerBoutonReveler('✅ Tous ont soumis — Révéler');
     };
 
@@ -73,7 +91,6 @@ function _initWsListeners() {
     };
 
     _hCanNext = () => {
-        // Désactiver "Révéler" après révélation faite
         const btn = document.getElementById('pb-btn-resultats');
         if (btn) {
             btn.disabled       = true;
@@ -147,21 +164,40 @@ function _afficherResultatsPanneau() {
     const container = document.getElementById('pb-invites-reponses');
     if (!container) return;
     const hote = _pseudoHote();
+
     container.innerHTML = _resultatsManche
         .slice().sort((a, b) => (b.score || 0) - (a.score || 0))
         .map(r => {
-            const sc     = r.score || 0;
-            const isHote = r.pseudo === hote;
-            const bg     = sc > 0 ? 'rgba(34,197,94,.15)' : 'rgba(255,255,255,.06)';
-            const bd     = sc > 0 ? 'rgba(34,197,94,.35)' : 'rgba(255,255,255,.12)';
-            return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;
-                background:${bg};border:1px solid ${bd};border-radius:10px;margin-bottom:6px;flex-wrap:wrap;">
-                <span style="font-weight:700;font-size:.85rem;color:${isHote ? '#c4b5fd' : '#a78bfa'};min-width:80px;">
-                    ${isHote ? '🎮 ' : ''}${_escHtml(r.pseudo)}</span>
-                <span style="flex:1;font-size:.82rem;color:rgba(255,255,255,.6);">
-                    ${sc} bonne${sc !== 1 ? 's' : ''} réponse${sc !== 1 ? 's' : ''}</span>
-                <span style="font-weight:700;font-size:.82rem;color:#86efac;">
-                    +${sc} pt${sc !== 1 ? 's' : ''} ✅</span>
+            const sc      = r.score || 0;
+            const isHote  = r.pseudo === hote;
+            const details = r.details || {};
+
+            // Chips par catégorie non vide.
+            const chips = Object.entries(details)
+                .filter(([, d]) => d && String(d.val || '').trim())
+                .map(([, d]) => {
+                    const st  = _styleStatut(d.statut);
+                    const val = String(d.val || '').trim();
+                    return `<span style="display:inline-flex;align-items:center;gap:5px;
+                        padding:3px 8px;border-radius:8px;font-size:.78rem;
+                        background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+                        color:${st.color};">
+                        <span>${st.icon}</span><span style="color:#fff;">${_escHtml(val)}</span>
+                        ${st.badge ? `<span style="opacity:.8;">${st.badge}</span>` : ''}
+                        ${_btnDef(val)}
+                    </span>`;
+                }).join('');
+
+            return `<div style="padding:10px 12px;border-radius:10px;margin-bottom:8px;
+                background:${sc > 0 ? 'rgba(34,197,94,.1)' : 'rgba(255,255,255,.05)'};
+                border:1px solid ${sc > 0 ? 'rgba(34,197,94,.3)' : 'rgba(255,255,255,.12)'};">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:${chips ? '8px' : '0'};">
+                    <span style="font-weight:700;font-size:.85rem;color:${isHote ? '#c4b5fd' : '#a78bfa'};min-width:80px;">
+                        ${isHote ? '🎮 ' : ''}${_escHtml(r.pseudo)}</span>
+                    <span style="flex:1;"></span>
+                    <span style="font-weight:800;font-size:.82rem;color:#86efac;">+${sc} pt${sc !== 1 ? 's' : ''}</span>
+                </div>
+                ${chips ? `<div style="display:flex;flex-wrap:wrap;gap:6px;">${chips}</div>` : ''}
             </div>`;
         }).join('');
 }

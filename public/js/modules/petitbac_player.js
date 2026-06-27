@@ -1,15 +1,16 @@
 // ============================================================
-// /js/modules/petitbac_player.js — v1.0 (P5.1)
+// /js/modules/petitbac_player.js — v2.0 (dico + unicité + bouton ?)
 // ============================================================
 // Module invité Petit Bac. Auto-enregistré dans JeuRegistry de
 // player.js. Reçoit les events WS, affiche l'UI dans #jeu-contenu,
 // soumet les réponses du joueur via PLAYER_ACTION.
 //
-// Interface JeuRegistry (cf player.js) :
-//   initPlayer(session, socket, gameState, snapshot)
-//   destroy()
-//   onWsEvent(eventName, payload)   ← relais générique fourni
-//   onScores(scores)                ← relais SCORES_UPDATE
+// v2.0 :
+//   ✅ Révélation lit r.details (statut/points) au lieu de recalculer.
+//   ✅ Statuts : unique(+2) / double(+1) / invalide(0) / vide(0).
+//   ✅ Bouton « ? » par mot → recherche/définition sur le Wiktionnaire.
+//   ✅ Pré-check visuel « bonne lettre » pendant la saisie (UX, non
+//      autoritaire — la vérité reste serveur).
 // ============================================================
 
 import { JeuRegistry } from './player.js';
@@ -18,6 +19,35 @@ const $   = id => document.getElementById(id);
 const esc = s => String(s ?? '')
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+// Lien de définition/recherche (Wiktionnaire FR).
+const lienDef = mot =>
+    `https://fr.wiktionary.org/w/index.php?search=${encodeURIComponent(String(mot || '').trim())}`;
+
+// Première lettre ASCII majuscule (gère accents/casse) — pré-check saisie.
+const premiereLettre = v => String(v || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'').charAt(0).toUpperCase();
+
+// Présentation d'un statut serveur.
+function _styleStatut(statut) {
+    switch (statut) {
+        case 'unique':   return { color:'#86efac', icon:'✅', badge:'+2' };
+        case 'double':   return { color:'#fde047', icon:'✅', badge:'+1 · doublon' };
+        case 'invalide': return { color:'#fca5a5', icon:'❌', badge:'+0' };
+        default:         return { color:'rgba(255,255,255,.4)', icon:'—', badge:'' };
+    }
+}
+
+// Petit bouton « ? » HTML (ouvre la définition dans un nouvel onglet).
+function _btnDef(mot) {
+    if (!mot) return '';
+    return `<a href="${esc(lienDef(mot))}" target="_blank" rel="noopener noreferrer"
+        title="Définition / vérifier le mot"
+        style="flex:none;display:inline-flex;align-items:center;justify-content:center;
+        width:20px;height:20px;border-radius:50%;text-decoration:none;
+        background:rgba(167,139,250,.18);border:1px solid rgba(167,139,250,.4);
+        color:#c4b5fd;font-size:.72rem;font-weight:800;line-height:1;">?</a>`;
+}
 
 const PetitbacModule = {
     _session       : null,
@@ -38,7 +68,6 @@ const PetitbacModule = {
 
         this._afficherEcranAttente();
 
-        // Re-hydrater depuis gameState si partie déjà en cours (rejoin)
         if (gameState) {
             if (gameState.phase === 'jeu' && gameState.lettre) {
                 this._onMancheStart({
@@ -62,8 +91,6 @@ const PetitbacModule = {
 
     destroy() { this._arreterTimer(); },
 
-    // Relais générique depuis player.js (events QUIZ_* historiques).
-    // On gère ici les events PETITBAC_* explicitement.
     onWsEvent(evt, payload) {
         switch (evt) {
             case 'PETITBAC_MANCHE_START':  this._onMancheStart(payload);  break;
@@ -200,13 +227,26 @@ const PetitbacModule = {
 
         $('pbp-btn-send')?.addEventListener('click', () => this._soumettre(false));
 
-        // Uppercase première lettre au fil de la saisie
+        // Saisie : majuscule 1re lettre + pré-check « bonne lettre » (visuel).
         this._categories.forEach(c => {
             const inp = $(`pbp-input-${c.id}`);
-            inp?.addEventListener('input', (e) => {
+            if (!inp) return;
+            inp.addEventListener('input', (e) => {
                 if (e.target.value.length === 1) e.target.value = e.target.value.toUpperCase();
+                this._majIndiceLettre(e.target);
             });
         });
+    },
+
+    // Bordure verte/rouge selon la 1re lettre (indice, non bloquant).
+    _majIndiceLettre(input) {
+        const v = input.value.trim();
+        if (!v) {
+            input.style.borderColor = 'rgba(255,255,255,.18)';
+            return;
+        }
+        const ok = premiereLettre(v) === String(this._lettre || '').toUpperCase();
+        input.style.borderColor = ok ? 'rgba(34,197,94,.6)' : 'rgba(239,68,68,.6)';
     },
 
     _afficherAttenteRevelation() {
@@ -216,7 +256,6 @@ const PetitbacModule = {
             btn.textContent = '⏳ Réponses soumises — en attente';
             btn.style.opacity = '0.6';
         }
-        // Verrouiller tous les champs
         this._categories.forEach(c => {
             const inp = $(`pbp-input-${c.id}`);
             if (inp) inp.disabled = true;
@@ -226,36 +265,42 @@ const PetitbacModule = {
     _afficherResultats(payload) {
         const cont = $('jeu-contenu');
         if (!cont) return;
-        const moi = this._session?.pseudo;
-        const moiRes = (payload.reponses || []).find(r => r.pseudo === moi);
+        const moi    = this._session?.pseudo;
+        const liste  = Array.isArray(payload.reponses) ? payload.reponses : [];
+        const moiRes = liste.find(r => r.pseudo === moi);
 
-        const lignes = (payload.reponses || [])
+        // Classement (par score).
+        const lignes = liste
             .slice().sort((a, b) => (b.score || 0) - (a.score || 0))
             .map(r => {
                 const isMe = r.pseudo === moi;
-                const bg   = (r.score || 0) > 0 ? 'rgba(34,197,94,.15)' : 'rgba(255,255,255,.06)';
-                const bd   = (r.score || 0) > 0 ? 'rgba(34,197,94,.35)' : 'rgba(255,255,255,.12)';
+                const sc   = r.score || 0;
+                const bg   = sc > 0 ? 'rgba(34,197,94,.15)' : 'rgba(255,255,255,.06)';
+                const bd   = sc > 0 ? 'rgba(34,197,94,.35)' : 'rgba(255,255,255,.12)';
                 return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;
                     background:${bg};border:1px solid ${bd};border-radius:10px;margin-bottom:6px;">
                     <span style="font-weight:700;font-size:.85rem;color:${isMe ? '#c4b5fd' : '#fff'};min-width:80px;">
                         ${isMe ? '👤 ' : ''}${esc(r.pseudo)}</span>
-                    <span style="flex:1;font-size:.82rem;color:rgba(255,255,255,.6);">
-                        ${r.score || 0} bonne${(r.score || 0) !== 1 ? 's' : ''} réponse${(r.score || 0) !== 1 ? 's' : ''}</span>
-                    <span style="font-weight:700;font-size:.82rem;color:#86efac;">+${r.score || 0} pt${(r.score || 0) !== 1 ? 's' : ''}</span>
+                    <span style="flex:1;"></span>
+                    <span style="font-weight:800;font-size:.85rem;color:#86efac;">+${sc} pt${sc !== 1 ? 's' : ''}</span>
                 </div>`;
             }).join('');
 
-        const mesReponses = (moiRes?.reponses) || {};
+        // Détail « Mes réponses » avec statut + bouton ?.
+        const mesDetails = (moiRes && moiRes.details) || {};
         const detail = this._categories.map(c => {
-            const val = String(mesReponses[c.id] || '').trim();
-            const ok  = val.length > 0 && val.charAt(0).toUpperCase() === payload.lettre;
-            const color = ok ? '#86efac' : (val ? '#fca5a5' : 'rgba(255,255,255,.4)');
-            const icon  = ok ? '✅' : (val ? '❌' : '—');
-            return `<div style="display:flex;gap:8px;align-items:center;padding:5px 10px;
+            const d   = mesDetails[c.id] || { val: '', statut: 'vide', points: 0 };
+            const st  = _styleStatut(d.statut);
+            const val = String(d.val || '').trim();
+            return `<div style="display:flex;gap:8px;align-items:center;padding:6px 10px;
                 background:rgba(255,255,255,.04);border-radius:6px;margin-bottom:4px;font-size:.85rem;">
                 <span style="min-width:24px;">${c.icon}</span>
                 <span style="flex:1;color:rgba(255,255,255,.7);">${esc(c.label)}</span>
-                <span style="color:${color};font-weight:600;">${icon} ${esc(val) || '—'}</span>
+                <span style="color:${st.color};font-weight:600;display:flex;align-items:center;gap:6px;">
+                    <span>${st.icon}</span><span>${esc(val) || '—'}</span>
+                    ${st.badge ? `<span style="font-size:.7rem;opacity:.85;">${st.badge}</span>` : ''}
+                    ${val ? _btnDef(val) : ''}
+                </span>
             </div>`;
         }).join('');
 
@@ -304,7 +349,7 @@ const PetitbacModule = {
                 action: 'petitbac:answer',
                 data: { reponses },
             });
-            this._aSoumis = true; // sera reconfirmé par PETITBAC_ANSWER_ACK
+            this._aSoumis = true;
         } catch (err) {
             console.error('[PBP] send answer:', err.message);
         }
@@ -342,7 +387,7 @@ const PetitbacModule = {
     },
 
     // ─────────────────────────────────────────────────────
-    // Toast minimaliste (réutilise le container global créé par player.js)
+    // Toast minimaliste
     // ─────────────────────────────────────────────────────
 
     _afficherToast(msg, type = 'info') {
@@ -366,4 +411,4 @@ const PetitbacModule = {
 };
 
 JeuRegistry.register('petitbac', PetitbacModule);
-console.log('[PBP] ✅ PetitbacModule enregistré dans JeuRegistry');
+console.log('[PBP] ✅ PetitbacModule v2.0 enregistré dans JeuRegistry');

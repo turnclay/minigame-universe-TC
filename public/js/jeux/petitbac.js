@@ -1,9 +1,13 @@
 // ============================================================
-// /js/jeux/petitbac.js — v2.0 WS-server-driven (P5.1)
+// /js/jeux/petitbac.js — v2.1 WS-server-driven
 // ============================================================
 // Toute la logique métier (tirage de lettre, timer, scoring,
-// révélation) est désormais SERVEUR. Ce module ne gère plus que
-// l'affichage hôte et l'envoi/réception des actions WS.
+// révélation) est SERVEUR. Ce module gère l'affichage hôte et
+// l'envoi/réception des actions WS.
+//
+// v2.1 : pré-check visuel « bonne lettre » pendant la saisie hôte
+// (indice non bloquant — la vérité reste serveur). Le scoring,
+// l'unicité et le dico sont gérés côté serveur.
 // ============================================================
 
 import { GameState } from '../core/state.js';
@@ -23,6 +27,10 @@ let _viderPanneau                   = () => {};
 let _injecterPanneauHote            = () => {};
 let _afficherReponsesInvitesSurHote = () => {};
 let _hoteActif                      = false;
+
+// Première lettre ASCII majuscule (gère accents/casse).
+const _premiereLettre = v => String(v || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'').charAt(0).toUpperCase();
 
 async function chargerModuleHote() {
     try {
@@ -49,7 +57,6 @@ function _onMancheStart(payload) {
     _dureeMs        = payload.dureeMs || 120_000;
     _reponseSoumise = false;
 
-    // Mettre à jour les scores depuis le serveur
     if (payload.scores) {
         GameState.scores = GameState.scores || {};
         Object.assign(GameState.scores, payload.scores);
@@ -80,7 +87,6 @@ function _onRevelation(payload) {
     }
     try { afficherScoreboard(); } catch {}
 
-    // Activer le bouton "Nouvelle manche" (reuse petitbac-valider)
     const btn = document.getElementById('petitbac-valider');
     if (btn) {
         btn.disabled    = false;
@@ -92,7 +98,6 @@ function _onRevelation(payload) {
         };
     }
 
-    // Panneau résultats (rempli par petitbac_hote.js via event)
     try { _afficherReponsesInvitesSurHote('pb-invites-reponses', reponses); } catch {}
 
     console.log(`[PETITBAC] 🎯 Révélation manche ${manche} — lettre: ${lettre}`);
@@ -100,7 +105,6 @@ function _onRevelation(payload) {
 
 function _onTimerExpired({ nbReponses, nbJoueurs }) {
     console.log(`[PETITBAC] ⏱ Timer expiré — ${nbReponses}/${nbJoueurs}`);
-    // L'hôte peut maintenant cliquer "Révéler" même si tout le monde n'a pas soumis.
     const btn = document.getElementById('pb-btn-resultats');
     if (btn) {
         btn.disabled       = false;
@@ -133,9 +137,18 @@ function _afficherCategories() {
         if (input) {
             input.addEventListener('input', (e) => {
                 if (e.target.value.length === 1) e.target.value = e.target.value.toUpperCase();
+                _majIndiceLettre(e.target);
             });
         }
     });
+}
+
+// Bordure verte/rouge selon la 1re lettre (indice, non bloquant).
+function _majIndiceLettre(input) {
+    const v = (input.value || '').trim();
+    if (!v) { input.style.borderColor = ''; return; }
+    const ok = _premiereLettre(v) === String(_lettreActuelle || '').toUpperCase();
+    input.style.borderColor = ok ? 'rgba(34,197,94,.6)' : 'rgba(239,68,68,.6)';
 }
 
 function _demarrerTimerVisuel() {
@@ -205,7 +218,6 @@ function _soumettreReponsesHote() {
         console.error('[PETITBAC] ❌ send host_answer:', err.message);
     }
 
-    // Désactiver le bouton "Valider" et activer "Révéler" (panneau hôte)
     const btn = document.getElementById('petitbac-valider');
     if (btn) {
         btn.disabled    = true;
@@ -220,7 +232,6 @@ function _abonnerEvenements() {
     socket.on('PETITBAC_REVELATION',    payload => { try { _onRevelation(payload); }   catch (e) { console.warn('[PETITBAC] REVELATION', e.message); } });
     socket.on('PETITBAC_TIMER_EXPIRED', payload => { try { _onTimerExpired(payload); } catch (e) { console.warn('[PETITBAC] TIMER_EXPIRED', e.message); } });
     socket.on('PETITBAC_RESPONSE_IN',   payload => {
-        // Délégué au module hôte pour mise à jour du panneau
         try { _afficherReponsesInvitesSurHote('pb-invites-reponses'); } catch {}
     });
     socket.on('SCORES_UPDATE', ({ scores }) => {
@@ -240,7 +251,6 @@ export async function initialiserPetitBac() {
     const hoteActif = await chargerModuleHote();
     if (hoteActif) _injecterPanneauHote();
 
-    // Réinitialiser l'UI
     const elL = document.getElementById('petitbac-lettre-actuelle');
     if (elL) elL.textContent = '—';
     const t = document.getElementById('petitbac-timer');
@@ -248,7 +258,6 @@ export async function initialiserPetitBac() {
     const container = document.getElementById('petitbac-categories');
     if (container) container.innerHTML = '';
 
-    // Demander au serveur de démarrer une session + tirer la 1re lettre
     try {
         socket.send('HOST_ACTION', { action: 'petitbac:load', data: {} });
         console.log('[PETITBAC] 📡 petitbac:load envoyé');
@@ -258,7 +267,6 @@ export async function initialiserPetitBac() {
     }
 }
 
-// Compat : appelée par le registry main.js (window.initialiserPetitBac).
 export function resetJeu() {
     _arreterTimerVisuel();
     _lettreActuelle = '';
@@ -266,5 +274,4 @@ export function resetJeu() {
     _reponseSoumise = false;
 }
 
-// Expose pour le registry GAME_INIT_FNS de main.js (compat window.*)
 window.initialiserPetitBac = initialiserPetitBac;
