@@ -204,6 +204,15 @@ function handleMessage(wss, ws, type, payload) {
             // Si l'hôte joue aussi (hostJoue=true), on lui passe son pseudo
             // pour rehydrater sa main privée (UNO). Sinon, état public seul.
             const hostPlayerPseudo = (partie.hostJoue && partie.hostPseudo) ? partie.hostPseudo : null;
+            // Restaurer ws._pseudo après reconnexion hôte joueur — sinon
+            // sendToPseudo ne le retrouve pas et UNO_HAND ne lui parvient pas.
+            if (hostPlayerPseudo) {
+                const joueurHote = partie.joueurs.find(
+                    j => j.pseudo.toLowerCase() === hostPlayerPseudo.toLowerCase()
+                );
+                ws._pseudo = hostPlayerPseudo;
+                ws._equipe = joueurHote?.equipe || null;
+            }
             const gameState = getGameState(partieId, partie.jeu, hostPlayerPseudo);
             send(ws, 'HOST_REJOINED', {
                 partieId,
@@ -258,6 +267,11 @@ function handleMessage(wss, ws, type, payload) {
                     equipe : equipe || null,
                     statut : 'host-player',
                 });
+                // Attacher le pseudo à la socket hôte → indispensable pour que
+                // sendToPseudo() (UNO_HAND, Undercover role privé, etc.)
+                // atteigne l'hôte qui joue. Sinon main/rôle privé invisible.
+                ws._pseudo = hostPseudo;
+                ws._equipe = equipe || null;
             }
 
             ws._partieId = partie.id;
@@ -295,6 +309,16 @@ function handleMessage(wss, ws, type, payload) {
                         equipe : equipe || null,
                         statut : 'host-player',
                     });
+                }
+                // Garantir ws._pseudo sur la socket hôte au cas où HOST_CREATE_GAME
+                // n'aurait pas eu hostJoue=true (cas où l'hôte rejoint sa partie
+                // comme joueur seulement au moment du démarrage).
+                if (!ws._pseudo) {
+                    const joueurHote = partie.joueurs.find(
+                        j => j.pseudo.toLowerCase() === partie.hostPseudo.toLowerCase()
+                    );
+                    ws._pseudo = partie.hostPseudo;
+                    ws._equipe = joueurHote?.equipe || null;
                 }
             }
 
