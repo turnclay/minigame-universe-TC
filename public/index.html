@@ -223,6 +223,11 @@
         <span class="game-name">Puissance 4</span>
       </button>
 
+     <button class="game-btn" data-game="uno" role="listitem">
+      <span class="game-icon" aria-hidden="true">🃏</span>
+      <span class="game-name">UNO</span>
+    </button>
+
     </div>
   </section>
 
@@ -859,6 +864,23 @@
       <div id="puissance4-grille" class="puissance4-grille" role="grid"></div>
       <button id="puissance4-rejouer" class="btn-secondary">Nouvelle partie</button>
     </section>
+
+    <!-- ============================================ -->
+    <!-- 🃏 UNO -->
+    <!-- ============================================ -->
+<section id="uno" class="screen" hidden aria-labelledby="uno-title">
+
+  <h1 id="uno-title" class="section-title">
+    UNO <span aria-hidden="true">🃏</span>
+  </h1>
+
+  <!-- Contenu dynamique injecté par uno_hote.js ou uno_player.js -->
+  <div id="uno-contenu" class="jeu-contenu">
+    <!-- Le module UNO remplira cette zone -->
+  </div>
+
+</section>
+
 
   </main>
 

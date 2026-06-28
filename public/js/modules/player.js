@@ -257,6 +257,18 @@ export const Player = {
             'MIMEDESSSINE_DEFI', 'MIMEDESSSINE_PHASE', 'MIMEDESSSINE_MOT_A_DEVINER',
             'MIMEDESSSINE_DRAWING_DATA', 'MIMEDESSSINE_GUESS_IN', 'MIMEDESSSINE_GUESS_ACK',
         ];
+                // UNO
+    'UNO_STATE',
+    'UNO_HAND',
+    'UNO_TURN',
+    'UNO_EFFECT',
+    'UNO_UNO_SAID',
+    'UNO_PENALTY',
+    'UNO_WINNER',
+    'UNO_COLOR_CHOSEN',
+    'UNO_CHOOSE_COLOR',
+    'UNO_DRAW_PLAYABLE',
+];
         gameEvents.forEach(evt => {
             socket.on(evt, payload => {
                 if (this.module && typeof this.module['_on' + evt] === 'function') {

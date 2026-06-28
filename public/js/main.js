@@ -44,6 +44,7 @@ import "./jeux/petitbac.js";
 import "./jeux/lml.js";
 import "./jeux/justeprix.js";
 import "./jeux/quiz.js";
+import "./jeux/uno.js";
 
 import { socket } from "./core/socket.js";
 import { setJoueursCallbacks } from "./modules/joueurs.js";
@@ -65,6 +66,7 @@ const GAME_INITIALIZERS = {
     blindtest:"initialiserBlindTest", pendu:"initialiserPendu",
     memoire:"initialiserMemoire", petitbac:"initialiserPetitBac",
     morpion:"initialiserMorpion", puissance4:"initialiserPuissance4"
+    uno:"initialiserUno", uno:"initialiserUno",
 };
 
 const REGLES_JEUX = {
@@ -78,6 +80,7 @@ const REGLES_JEUX = {
     memoire:"Teste ta mémoire !",
     morpion:"Aligne 3 symboles identiques !",
     puissance4:"Aligne 4 jetons de ta couleur !"
+    uno:"Débarrasse‑toi de toutes tes cartes en jouant les bonnes couleurs, chiffres ou effets !"
 };
 
 const hideAll = (ids) => ids.forEach(hide);
@@ -341,7 +344,7 @@ const GAME_INIT_FNS = {
     morpion    : ()     => { if (typeof window.initialiserMorpion === 'function') window.initialiserMorpion(); },
     lml        : ()     => { if (typeof window.initialiserLML === 'function') window.initialiserLML(); },
     justeprix  : ()     => { if (typeof window.initialiserJustePrix === 'function') window.initialiserJustePrix(); },
-    'juste prix': ()    => { if (typeof window.initialiserJustePrix === 'function') window.initialiserJustePrix(); },
+    uno        : ()     => { if (typeof window.initialiserUno === 'function') window.initialiserUno(); },
 };
 
 function _callGameInit(key) {

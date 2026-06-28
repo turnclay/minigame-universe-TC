@@ -22,6 +22,7 @@ import * as puissance4Handler from './games/puissance4.js';
 import * as memoireHandler   from './games/memoire.js';
 import * as mimedessineHandler from './games/mimedessine.js'; // Import the new game handler
 import * as undercoverHandler from './games/undercover.js';
+import * as unoHandler from './games/uno.js';
 
 const JEU_HANDLERS = {
     quiz      : quizHandler,
@@ -34,6 +35,7 @@ const JEU_HANDLERS = {
     memoire   : memoireHandler,
     mimedessine: mimedessineHandler, // Add the new game handler
     undercover: undercoverHandler,
+    uno: unoHandler,
 };
 
 const PSEUDO_REGEX    = /^[a-zA-Z0-9_-]{2,20}$/;
