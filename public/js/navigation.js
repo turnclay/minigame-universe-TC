@@ -30,7 +30,7 @@ function demanderQuitterPartie() {
 function estEcranJeu(ecran) {
     return [
         "undercover", "quiz", "justeprix", "lml", "mimer",
-        "pendu", "petitbac", "memoire", "morpion", "puissance4"
+        "pendu", "petitbac", "memoire", "morpion", "puissance4", "uno"
     ].includes(ecran);
 }
 
@@ -89,7 +89,7 @@ export function naviguerVers(section, depuis = null) {
         "home", "choix-jeu", "choix-mode", "form-solo", "form-equipes",
         "container", "liste-parties", "quiz", "justeprix", "undercover",
         "undercover-config", "undercover-distribution", "lml", "mimer",
-        "pendu", "petitbac", "memoire", "morpion", "puissance4",
+        "pendu", "petitbac", "memoire", "morpion", "puissance4", "uno",
         "stats-dashboard", "gestion-joueurs-panel", "gestion-equipes-panel"
     ];
     tousLesEcrans.forEach(id => hide(id));
@@ -109,7 +109,7 @@ export function naviguerVersAccueil() {
         "choix-jeu", "choix-mode", "form-solo", "form-equipes", "container",
         "liste-parties", "quiz", "justeprix", "undercover", "undercover-config",
         "undercover-distribution", "lml", "mimer", "pendu", "petitbac",
-        "memoire", "morpion", "puissance4", "stats-dashboard",
+        "memoire", "morpion", "puissance4", "uno", "stats-dashboard",
         "gestion-joueurs-panel", "gestion-equipes-panel"
     ];
     tousLesEcrans.forEach(id => hide(id));
@@ -210,7 +210,7 @@ function getEcranActuel() {
     const ecrans = [
         "home", "choix-jeu", "choix-mode", "form-solo", "form-equipes",
         "liste-parties", "undercover-config", "undercover", "quiz", "justeprix",
-        "lml", "mimer", "pendu", "petitbac", "memoire", "morpion", "puissance4",
+        "lml", "mimer", "pendu", "petitbac", "memoire", "morpion", "puissance4", "uno",
         "stats-dashboard", "gestion-joueurs-panel", "gestion-equipes-panel"
     ];
     for (const ecran of ecrans) {
@@ -323,6 +323,7 @@ const JEUX_META = {
     memoire:    { label: "Mémoire Flash",    icon: "🧠", color: "#8b5cf6" },
     morpion:    { label: "Morpion",          icon: "⭕", color: "#84cc16" },
     puissance4: { label: "Puissance 4",      icon: "🔴", color: "#fb923c" },
+    uno:        { label: "UNO",              icon: "🃏", color: "#ef4444" },
 };
 
 function calculerStats() {

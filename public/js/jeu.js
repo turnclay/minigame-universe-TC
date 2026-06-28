@@ -91,7 +91,7 @@ const JeuApp = {
             quiz:'❓ Quiz', justeprix:'💰 Juste Prix', undercover:'🕵️ Undercover',
             lml:'📖 Maxi Lettres', mimer:'🎭 Mimer', mimedessine:'🎭 Mimer',
             pendu:'🪢 Pendu', petitbac:'📝 Petit Bac', memoire:'🧠 Mémoire',
-            morpion:'⭕ Morpion', puissance4:'🔴 Puissance 4'
+            morpion:'⭕ Morpion', puissance4:'🔴 Puissance 4', uno:'🃏 UNO'
         };
         setText('id-meta-nom',  session.partieNom || '—');
         setText('id-meta-jeu',  session.jeu

@@ -76,6 +76,7 @@ const MODULES_WS_HOTE = [
     '../modules/justeprix_hote.js',
     '../modules/undercover_hote.js',  // L2 — listeners WS propres à purger
     '../jeux/mimedessine.js',         // L2 (hygiène) — voir §3 optionnel
+    '../jeux/uno.js',                 // UNO : socket.off() des 11 handlers UNO_*
 ];
 
 export function resetEtatJeuxHote() {

@@ -64,6 +64,13 @@ const UnoPlayerModule = {
 
         if (gameState) {
             this._etat = gameState;
+            // Reconnexion : le serveur a inclus la main privée dans gameState._hand
+            // (cf. server/games/uno.js#getSessionState). Rehydrate avant le rendu
+            // pour que l'invité reprenne avec ses cartes immédiatement visibles.
+            if (gameState._hand) {
+                this._main        = gameState._hand.main || [];
+                this._jouablesIdx = gameState._hand.jouablesIdx || [];
+            }
             this._afficherEtat();
         }
     },

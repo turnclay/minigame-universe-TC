@@ -56,7 +56,7 @@ const FADE_DURATION   = 800;
 
 const ALL_MODULES = [
     "quiz","justeprix","undercover","lml","mimer",
-    "blindtest","pendu","petitbac","memoire","morpion","puissance4"
+    "blindtest","pendu","petitbac","memoire","morpion","puissance4","uno"
 ];
 
 const GAME_INITIALIZERS = {
@@ -194,7 +194,7 @@ export function afficherAccueilJeux() {
 function masquerModules() {
     const modules = [
         "quiz","justeprix","undercover","lml","mimer","pendu",
-        "petitbac","memoire","morpion","puissance4","blindtest"
+        "petitbac","memoire","morpion","puissance4","blindtest","uno"
     ];
     modules.forEach(m => hide(m));
 }

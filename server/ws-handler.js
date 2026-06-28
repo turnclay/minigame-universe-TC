@@ -157,10 +157,12 @@ function trouverPartie(partieId, nomPartie) {
     return null;
 }
 
-function getGameState(partieId, jeu) {
+function getGameState(partieId, jeu, pseudo) {
     const handler = JEU_HANDLERS[jeu];
     if (!handler?.getSessionState) return null;
-    try { return handler.getSessionState(partieId); }
+    // pseudo est optionnel : les handlers qui n'ont pas de main privée
+    // (quiz, lml, etc.) l'ignorent. UNO l'utilise pour rehydrater la main.
+    try { return handler.getSessionState(partieId, pseudo); }
     catch (err) { console.error(`[WS] getGameState erreur (${jeu}):`, err.message); return null; }
 }
 
@@ -199,7 +201,10 @@ function handleMessage(wss, ws, type, payload) {
             }
             ws._partieId = partieId;
             store.setHostSocket(partieId, ws);
-            const gameState = getGameState(partieId, partie.jeu);
+            // Si l'hôte joue aussi (hostJoue=true), on lui passe son pseudo
+            // pour rehydrater sa main privée (UNO). Sinon, état public seul.
+            const hostPlayerPseudo = (partie.hostJoue && partie.hostPseudo) ? partie.hostPseudo : null;
+            const gameState = getGameState(partieId, partie.jeu, hostPlayerPseudo);
             send(ws, 'HOST_REJOINED', {
                 partieId,
                 snapshot  : store.snapshotPartie(partieId),
@@ -424,7 +429,9 @@ function handleMessage(wss, ws, type, payload) {
                     ws._joinedAt = Date.now();
                     store.setJoueurSocket(partie.id, joueurExistant.pseudo, ws);
 
-                    const gameState = getGameState(partie.id, partie.jeu);
+                    // pseudo transmis pour que les jeux à main privée (UNO)
+                    // puissent rehydrater la main du joueur dans gameState.
+                    const gameState = getGameState(partie.id, partie.jeu, joueurExistant.pseudo);
                     send(ws, 'REJOIN_OK', {
                         pseudo    : joueurExistant.pseudo,
                         equipe    : joueurExistant.equipe,
@@ -499,7 +506,8 @@ function handleMessage(wss, ws, type, payload) {
             ws._joinedAt = Date.now();
             store.setJoueurSocket(partieId, joueurExistant.pseudo, ws);
 
-            const gameState = getGameState(partieId, partie.jeu);
+            // pseudo transmis pour rehydratation de main privée (UNO).
+            const gameState = getGameState(partieId, partie.jeu, joueurExistant.pseudo);
             send(ws, 'REJOIN_OK', {
                 pseudo    : joueurExistant.pseudo,
                 equipe    : joueurExistant.equipe,

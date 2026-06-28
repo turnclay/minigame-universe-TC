@@ -259,10 +259,23 @@ function _publicState(s, partieId) {
 // API PUBLIQUE
 // ─────────────────────────────────────────────────────
 
-export function getSessionState(partieId) {
+// Reconnexion (REJOIN_OK) : si pseudo est fourni et qu'il a une main dans
+// la session, on l'inclut dans `_hand` pour que le client puisse rehydrater
+// sa main privée. Le reste du payload reste public (cartesParJoueur, défausse,
+// tour…) → identique à ce que tous les autres clients voient.
+export function getSessionState(partieId, pseudo) {
     const s = _getSession(partieId);
     if (!s) return null;
-    return _publicState(s, partieId);
+    const base = _publicState(s, partieId);
+    if (pseudo && s.mains[pseudo]) {
+        base._hand = {
+            main       : s.mains[pseudo],
+            jouablesIdx: s.mains[pseudo]
+                .map((c, i) => _carteJouable(s, c) ? i : -1)
+                .filter(i => i >= 0),
+        };
+    }
+    return base;
 }
 
 export function detruireSession(partieId) {

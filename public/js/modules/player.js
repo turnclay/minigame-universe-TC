@@ -55,7 +55,7 @@ function jeuIcon(jeu) {
     const m = {
         quiz:'❓', justeprix:'💰', undercover:'🕵️', lml:'📖', mimer:'🎭',
         mimedessine:'🎭', pendu:'🪢', petitbac:'📝', memoire:'🧠',
-        morpion:'⭕', puissance4:'🔴'
+        morpion:'⭕', puissance4:'🔴', uno:'🃏'
     };
     return m[(jeu || '').toLowerCase()] || '🎮';
 }
@@ -322,7 +322,7 @@ export const Player = {
             quiz:'❓ Quiz', justeprix:'💰 Juste Prix', undercover:'🕵️ Undercover',
             lml:'📖 Maxi Lettres', mimer:'🎭 Mimer', mimedessine:'🎭 Mimer',
             pendu:'🪢 Pendu', petitbac:'📝 Petit Bac', memoire:'🧠 Mémoire',
-            morpion:'⭕ Morpion', puissance4:'🔴 Puissance 4'
+            morpion:'⭕ Morpion', puissance4:'🔴 Puissance 4', uno:'🃏 UNO'
         };
         setText('id-meta-nom',  s.partieNom || '—');
         setText('id-meta-jeu',  s.jeu ? (LABELS[s.jeu.toLowerCase()] || s.jeu.toUpperCase()) : '—');

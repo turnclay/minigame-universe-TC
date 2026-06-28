@@ -38,6 +38,11 @@ let _attenteCouleur  = false;
 let _drawPlayable    = null; // { carte, index }
 let _hostPseudo      = null;
 
+// Références aux handlers WS — conservées pour pouvoir faire socket.off()
+// lors d'un enchaînement de parties (cleanup.js → nettoyerPartieInvites).
+// Sans ça, chaque initialiserUno() empilerait un nouveau listener par event.
+let _wsHandlers = null;
+
 const $ = id => document.getElementById(id);
 
 // ── Couleurs UNO ────────────────────────────────────────────
@@ -424,63 +429,67 @@ function _branchementsChoixCouleur() {
 // ─────────────────────────────────────────────────────
 
 function _abonnerEvents() {
-    socket.on('UNO_STATE', payload => {
-        _etat           = payload;
-        _attenteCouleur = payload.attenteCouleur || false;
-        _renderEtat();
-        try { afficherScoreboard(); } catch {}
-    });
+    // Si des handlers précédents sont restés (relance UNO sans navigation),
+    // on les retire AVANT d'en ré-enregistrer — sinon empilement silencieux.
+    nettoyerPartieInvites();
 
-    socket.on('UNO_HAND', payload => {
-        if (!_hostPseudo) return;
-        _mainHote    = payload.main || [];
-        _jouablesIdx = payload.jouablesIdx || [];
-        _renderMainHote();
-    });
+    _wsHandlers = {
+        UNO_STATE: payload => {
+            _etat           = payload;
+            _attenteCouleur = payload.attenteCouleur || false;
+            _renderEtat();
+            try { afficherScoreboard(); } catch {}
+        },
+        UNO_HAND: payload => {
+            if (!_hostPseudo) return;
+            _mainHote    = payload.main || [];
+            _jouablesIdx = payload.jouablesIdx || [];
+            _renderMainHote();
+        },
+        UNO_TURN: payload => {
+            if (!_etat) return;
+            _etat.tourActuel    = payload.tourActuel;
+            _etat.couleurActive = payload.couleurActive;
+            _etat.accumulateur  = payload.accumulateur || 0;
+        },
+        UNO_EFFECT: payload => _afficherToastEffect(payload),
+        UNO_UNO_SAID: ({ joueur }) =>
+            _afficherToastEffect({ effet: `🔔 UNO annoncé par ${joueur} !`, joueur }),
+        UNO_PENALTY: ({ joueur, nb, raison }) =>
+            _afficherToastEffect({ effet: `⚠️ ${joueur} pioche ${nb} (${raison})`, joueur }),
+        UNO_COLOR_CHOSEN: ({ couleur, joueur }) => {
+            _attenteCouleur = false;
+            _afficherToastEffect({ effet: `🎨 ${joueur} choisit ${couleur}`, joueur });
+        },
+        UNO_CHOOSE_COLOR: () => {
+            _attenteCouleur = true;
+            if (_hostPseudo) _renderMainHote();
+        },
+        UNO_DRAW_PLAYABLE: payload => {
+            _drawPlayable = payload;
+            if (_hostPseudo) _renderMainHote();
+        },
+        UNO_WINNER: payload => {
+            _etat = { ..._etat, ...payload, gagnant: payload.gagnant };
+            _renderVictoire(payload.gagnant);
+        },
+        SCORES_UPDATE: ({ scores }) => {
+            if (_etat) _etat.scores = scores;
+            try { afficherScoreboard(); } catch {}
+        },
+    };
 
-    socket.on('UNO_TURN', payload => {
-        if (!_etat) return;
-        _etat.tourActuel    = payload.tourActuel;
-        _etat.couleurActive = payload.couleurActive;
-        _etat.accumulateur  = payload.accumulateur || 0;
-    });
+    for (const [evt, fn] of Object.entries(_wsHandlers)) socket.on(evt, fn);
+}
 
-    socket.on('UNO_EFFECT', payload => {
-        _afficherToastEffect(payload);
-    });
-
-    socket.on('UNO_UNO_SAID', ({ joueur }) => {
-        _afficherToastEffect({ effet: `🔔 UNO annoncé par ${joueur} !`, joueur });
-    });
-
-    socket.on('UNO_PENALTY', ({ joueur, nb, raison }) => {
-        _afficherToastEffect({ effet: `⚠️ ${joueur} pioche ${nb} (${raison})`, joueur });
-    });
-
-    socket.on('UNO_COLOR_CHOSEN', ({ couleur, joueur }) => {
-        _attenteCouleur = false;
-        _afficherToastEffect({ effet: `🎨 ${joueur} choisit ${couleur}`, joueur });
-    });
-
-    socket.on('UNO_CHOOSE_COLOR', () => {
-        _attenteCouleur = true;
-        if (_hostPseudo) _renderMainHote();
-    });
-
-    socket.on('UNO_DRAW_PLAYABLE', payload => {
-        _drawPlayable = payload;
-        if (_hostPseudo) _renderMainHote();
-    });
-
-    socket.on('UNO_WINNER', payload => {
-        _etat = { ..._etat, ...payload, gagnant: payload.gagnant };
-        _renderVictoire(payload.gagnant);
-    });
-
-    socket.on('SCORES_UPDATE', ({ scores }) => {
-        if (_etat) _etat.scores = scores;
-        try { afficherScoreboard(); } catch {}
-    });
+// Désabonnement explicite — appelé par cleanup.js#resetEtatJeuxHote et
+// par _abonnerEvents() lui-même (idempotent). Évite que SCORES_UPDATE
+// continue à mettre à jour _etat d'une partie UNO terminée pendant qu'un
+// autre jeu tourne.
+export function nettoyerPartieInvites() {
+    if (!_wsHandlers) return;
+    for (const [evt, fn] of Object.entries(_wsHandlers)) socket.off(evt, fn);
+    _wsHandlers = null;
 }
 
 // ─────────────────────────────────────────────────────
@@ -537,7 +546,13 @@ export async function initialiserUno() {
     _jouablesIdx    = [];
     _attenteCouleur = false;
     _drawPlayable   = null;
-    _hostPseudo     = GameState?.joueurs?.[0] || null;
+
+    // Source de vérité serveur : snapshot.hostPseudo (réplique store.snapshotPartie).
+    // Présent uniquement si l'hôte joue (hostJoue = true) — sinon null et l'hôte
+    // n'affiche pas de main. GameState.joueurs est conservé comme fallback de
+    // dernier recours (cas où le snapshot n'aurait pas encore été reçu).
+    const snap = window.HostSession?._snapshot || null;
+    _hostPseudo = snap?.hostPseudo || GameState?.joueurs?.[0] || null;
 
     _injecterPanneau();
     _abonnerEvents();
