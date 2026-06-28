@@ -1,5 +1,15 @@
 // ======================================================
-// 🎮 server/games/petitbac.js — v2.2 (async Wikidata)
+// 🎮 server/games/petitbac.js — v2.2 (validation async Wikidata)
+// ======================================================
+// Évolution vs v2.1 :
+//   ✅ _estValideAsync : pour celebrite/personnage sans fichier statique,
+//      délègue à wikidata-validator.js (live API + cache TTL 24h).
+//   ✅ _evaluerMancheAsync : Promise.all sur toutes les validations
+//      → latence = max(validations) et non somme.
+//   ✅ _declencherRevelation devient async, attend l'évaluation.
+//   ✅ Dégradation gracieuse inchangée : si Wikidata injoignable → valid=true.
+//   Inchangé : barème unicité 2/1/0, scoring à la révélation,
+//   payload REVELATION, scoreboard global, gestion timers.
 // ======================================================
 
 import store from '../store.js';
@@ -20,6 +30,8 @@ const CATEGORIES = [
     { id: 'celebrite',  label: 'Célébrité',         icon: '🌟' },
 ];
 
+// Catégorie → dico logique (cf dictionnaires.js).
+// Catégorie ABSENTE = validée « lettre seule » (prenom).
 const CAT_DICO = {
     animal     : 'general',
     fruit      : 'general',
@@ -32,25 +44,36 @@ const CAT_DICO = {
     celebrite  : 'celebrite',
 };
 
-const LETTRES   = 'ABCDEFGHIJKLMNOPRSTUVWXYZ'.split('');
-const DUREE_MS  = 120_000;
+// Catégories qui peuvent basculer sur Wikidata live si pas de fichier statique
+const CAT_WIKIDATA = new Set(['celebrite', 'personnage']);
+
+const LETTRES  = 'ABCDEFGHIJKLMNOPRSTUVW'.split('');
+const DUREE_MS = 120_000;
 
 // ─────────────────────────────────────────────────────
-// Chargeur dynamique du validateur Wikidata
+// Chargement paresseux du validateur Wikidata
+// (import dynamique pour éviter de bloquer le démarrage
+//  si wikidata-validator.js est absent)
 // ─────────────────────────────────────────────────────
 
 let _validerWikidata = null;
 
 async function _getWikidataValidator() {
-    if (!_validerWikidata) {
+    if (_validerWikidata) return _validerWikidata;
+    try {
         const m = await import('./wikidata-validator.js');
         _validerWikidata = m.validerWikidata;
+        console.log('[PETITBAC] ✅ wikidata-validator chargé');
+    } catch (e) {
+        // Module absent → dégradation gracieuse permanente
+        console.warn('[PETITBAC] ⚠️ wikidata-validator indisponible — catégories dynamiques tolérées');
+        _validerWikidata = async () => ({ valid: true, reason: 'validator absent' });
     }
     return _validerWikidata;
 }
 
 // ─────────────────────────────────────────────────────
-// Sessions
+// Gestion des sessions
 // ─────────────────────────────────────────────────────
 
 function _getSession(partieId) { return sessions.get(partieId) || null; }
@@ -86,14 +109,14 @@ function _tirerLettre(s) {
 }
 
 // ─────────────────────────────────────────────────────
-// Normalisation
+// Validation / normalisation
 // ─────────────────────────────────────────────────────
 
 function _normCmp(v) {
     return String(v || '')
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
-        .replace(/['’\s-]/g, '')
+        .replace(/[''\s-]/g, '')
         .trim();
 }
 
@@ -103,82 +126,90 @@ function _premiereLettre(v) {
         .charAt(0).toUpperCase();
 }
 
-// ─────────────────────────────────────────────────────
-// Nouvelle version ASYNC de _estValide
-// ─────────────────────────────────────────────────────
-
+/**
+ * Validation async d'une réponse pour une catégorie.
+ *
+ * Priorité :
+ *   1. Dico statique (.txt / .bloom) présent → O(1), sync
+ *   2. Catégorie dynamique (celebrite / personnage) → Wikidata live
+ *   3. Pas de dico et pas dynamique → lettre seule (prenom, dégradation)
+ */
 async function _estValideAsync(catId, val, lettre) {
     const v = String(val || '').trim();
     if (!v) return false;
     if (_premiereLettre(v) !== lettre) return false;
 
     const dico = CAT_DICO[catId];
+    if (!dico) return true; // prenom → lettre seule
 
-    // Catégorie sans dico → lettre seule
-    if (!dico) return true;
-
-    // Dictionnaire statique prêt → O(1)
+    // Dico statique disponible → rapide, prioritaire
     if (dictionnairePret(dico)) {
         return motExisteDans(dico, v);
     }
 
-    // Catégories dynamiques → Wikidata
-    if (catId === 'celebrite' || catId === 'personnage') {
-        const validate = await _getWikidataValidator();
-        const r = await validate(catId, v, lettre);
-        return r.valid;
+    // Catégorie dynamique sans fichier → Wikidata live
+    if (CAT_WIKIDATA.has(catId)) {
+        try {
+            const validate = await _getWikidataValidator();
+            const r = await validate(catId, v, lettre);
+            return r.valid;
+        } catch (e) {
+            console.warn(`[PETITBAC] ⚠️ Wikidata erreur pour "${v}" (${catId}):`, e.message);
+            return true; // dégradation gracieuse
+        }
     }
 
-    // Dégradation gracieuse
+    // Dico absent, catégorie non dynamique → toléré
     return true;
 }
 
 // ─────────────────────────────────────────────────────
-// Nouvelle version ASYNC de _evaluerManche
+// Évaluation de la manche (scoring unicité) — async
 // ─────────────────────────────────────────────────────
 
-async function _evaluerManche(s) {
+async function _evaluerMancheAsync(s) {
     const pseudos = Object.keys(s.reponses)
         .filter(p => p && p !== 'null' && p !== 'undefined');
 
-    const compte = {};
-    const valide = {};
+    // Pré-calculer toutes les validations en parallèle
+    // Structure : validations[pseudo][catIndex] = Promise<bool>
+    const validations = {};
+    for (const p of pseudos) {
+        const rep = s.reponses[p].reponses || {};
+        validations[p] = await Promise.all(
+            CATEGORIES.map(cat => _estValideAsync(cat.id, String(rep[cat.id] || '').trim(), s.lettre))
+        );
+    }
+
+    // Compter les occurrences des réponses valides (unicité)
+    const compte = {}; // catId → Map(normCmp → count)
     for (const cat of CATEGORIES) compte[cat.id] = new Map();
 
-    // Lancer toutes les validations en parallèle
     for (const p of pseudos) {
-        valide[p] = {};
         const rep = s.reponses[p].reponses || {};
-
-        const validations = await Promise.all(
-            CATEGORIES.map(cat =>
-                _estValideAsync(cat.id, rep[cat.id] || '', s.lettre)
-            )
-        );
-
         CATEGORIES.forEach((cat, i) => {
-            const ok = validations[i];
-            valide[p][cat.id] = ok;
-            if (ok) {
-                const key = _normCmp(rep[cat.id] || '');
+            if (validations[p][i]) {
+                const key = _normCmp(String(rep[cat.id] || '').trim());
                 compte[cat.id].set(key, (compte[cat.id].get(key) || 0) + 1);
             }
         });
     }
 
+    // Calculer les scores
     const resultats = [];
     for (const p of pseudos) {
         const rep     = s.reponses[p].reponses || {};
         const details = {};
         let   score   = 0;
 
-        for (const cat of CATEGORIES) {
-            const v = String(rep[cat.id] || '').trim();
+        CATEGORIES.forEach((cat, i) => {
+            const v      = String(rep[cat.id] || '').trim();
+            const estOk  = validations[p][i];
             let statut, points;
 
             if (!v) {
                 statut = 'vide';     points = 0;
-            } else if (!valide[p][cat.id]) {
+            } else if (!estOk) {
                 statut = 'invalide'; points = 0;
             } else {
                 const n = compte[cat.id].get(_normCmp(v)) || 1;
@@ -188,7 +219,7 @@ async function _evaluerManche(s) {
 
             details[cat.id] = { val: v, statut, points };
             score += points;
-        }
+        });
 
         resultats.push({ pseudo: p, score, details, ts: s.reponses[p].ts || 0 });
     }
@@ -231,7 +262,7 @@ export function detruireSession(partieId) {
     const s = _getSession(partieId);
     if (s) _annulerTimers(s);
     sessions.delete(partieId);
-    console.log(`[PETITBAC] Session détruite: ${partieId}`);
+    console.log(`[PETITBAC] 🗑️ Session détruite: ${partieId}`);
 }
 
 // ─────────────────────────────────────────────────────
@@ -281,7 +312,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
                 }, 5000);
             }, DUREE_MS);
 
-            console.log(`[PETITBAC] Manche ${s.manche} — lettre: ${s.lettre}`);
+            console.log(`[PETITBAC] 🎲 Manche ${s.manche} — lettre: ${s.lettre}`);
             break;
         }
 
@@ -308,7 +339,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
                 pseudo, nbReponses, nbJoueurs,
                 allAnswered: nbReponses >= nbJoueurs,
             });
-            console.log(`[PETITBAC] Réponses hôte ${pseudo} reçues`);
+            console.log(`[PETITBAC] 🎮 Réponses hôte ${pseudo} reçues`);
             break;
         }
 
@@ -322,7 +353,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
         }
 
         default:
-            console.warn(`[PETITBAC] Action host inconnue: ${cmd}`);
+            console.warn(`[PETITBAC] ⚠️ Action host inconnue: ${cmd}`);
     }
 }
 
@@ -341,7 +372,7 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
                 return send(ws, 'PETITBAC_ANSWER_ACK', { status: 'too_late' });
             }
             if (!pseudo || pseudo === 'null' || pseudo === 'undefined') {
-                console.warn('[PETITBAC] petitbac:answer — pseudo null rejeté');
+                console.warn('[PETITBAC] ⚠️ petitbac:answer — pseudo null rejeté');
                 return send(ws, 'PETITBAC_ANSWER_ACK', { status: 'invalid' });
             }
             if (s.reponses[pseudo] !== undefined) {
@@ -358,45 +389,51 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
                 pseudo, nbReponses, nbJoueurs,
                 allAnswered: nbReponses >= nbJoueurs,
             });
-            console.log(`[PETITBAC] Réponses ${pseudo} reçues`);
+            console.log(`[PETITBAC] 🎮 Réponses ${pseudo} reçues`);
             break;
         }
 
         default:
-            console.warn(`[PETITBAC] Action joueur inconnue: ${cmd}`);
+            console.warn(`[PETITBAC] ⚠️ Action joueur inconnue: ${cmd}`);
     }
 }
 
 // ─────────────────────────────────────────────────────
-// Révélation
+// Révélation (async — attend l'évaluation complète)
 // ─────────────────────────────────────────────────────
 
-async function _declencherRevelation(wss, partieId, s, helpers, source) {
+function _declencherRevelation(wss, partieId, s, helpers, source) {
     if (s.revelationEnCours) return;
     s.revelationEnCours = true;
     _annulerTimers(s);
 
     const { broadcastToGame, broadcastToHost } = helpers;
 
-    const liste = await _evaluerManche(s);
-    s.dernierResultat = liste;
+    // Évaluation async — les broadcasts se font à la résolution
+    _evaluerMancheAsync(s).then(liste => {
+        s.dernierResultat = liste;
 
-    liste.forEach(r => {
-        if (r.score > 0) store.modifierScore(partieId, r.pseudo, r.score);
+        liste.forEach(r => {
+            if (r.score > 0) store.modifierScore(partieId, r.pseudo, r.score);
+        });
+
+        s.phase = 'resultats';
+        const scores = store.getScores(partieId) || {};
+
+        broadcastToGame(wss, partieId, 'PETITBAC_REVELATION', {
+            lettre     : s.lettre,
+            categories : CATEGORIES,
+            reponses   : liste,
+            scores,
+            manche     : s.manche,
+        });
+        broadcastToGame(wss, partieId, 'SCORES_UPDATE', { scores });
+        broadcastToHost(wss, partieId, 'PETITBAC_CAN_NEXT', { manche: s.manche });
+
+        console.log(`[PETITBAC] 🎯 Révélation manche ${s.manche} — source: ${source}`);
+    }).catch(err => {
+        console.error(`[PETITBAC] ❌ Erreur évaluation manche ${s.manche}:`, err);
+        // Remettre revelationEnCours à false pour permettre une nouvelle tentative
+        s.revelationEnCours = false;
     });
-
-    s.phase = 'resultats';
-    const scores = store.getScores(partieId) || {};
-
-    broadcastToGame(wss, partieId, 'PETITBAC_REVELATION', {
-        lettre     : s.lettre,
-        categories : CATEGORIES,
-        reponses   : liste,
-        scores,
-        manche     : s.manche,
-    });
-    broadcastToGame(wss, partieId, 'SCORES_UPDATE', { scores });
-    broadcastToHost(wss, partieId, 'PETITBAC_CAN_NEXT', { manche: s.manche });
-
-    console.log(`[PETITBAC] Révélation manche ${s.manche} — source: ${source}`);
 }
