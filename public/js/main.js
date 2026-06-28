@@ -65,7 +65,7 @@ const GAME_INITIALIZERS = {
     lml:"initialiserLML", mimer:"initialiserMimer",
     blindtest:"initialiserBlindTest", pendu:"initialiserPendu",
     memoire:"initialiserMemoire", petitbac:"initialiserPetitBac",
-    morpion:"initialiserMorpion", puissance4:"initialiserPuissance4"
+    morpion:"initialiserMorpion", puissance4:"initialiserPuissance4",
     uno:"initialiserUno", uno:"initialiserUno",
 };
 
