@@ -221,14 +221,23 @@ function _appliquerEffet(s, carte, couleurChoisie) {
     }
 }
 
+// Scoring simplifié : 1er = 3 pts, 2e = 2 pts, 3e = 1 pt, suivants = 0 pt.
+// Classement par nombre de cartes restantes (le moins = mieux). Le gagnant
+// (main vide) reçoit toujours 3 pts. Égalités → ordre stable (insertion).
 function _calculerScores(s, gagnant) {
-    // Le gagnant marque la somme des points dans les mains adverses
-    let total = 0;
-    for (const [pseudo, main] of Object.entries(s.mains)) {
-        if (pseudo === gagnant) continue;
-        for (const c of main) total += (VALEUR_POINTS[c.valeur] || 0);
-    }
-    return { [gagnant]: total };
+    const POINTS = [3, 2, 1];
+    const classement = s.joueurs
+        .map(pseudo => ({
+            pseudo,
+            cartes: pseudo === gagnant ? 0 : (s.mains[pseudo]?.length ?? 999),
+        }))
+        .sort((a, b) => a.cartes - b.cartes);
+
+    const delta = {};
+    classement.forEach((j, i) => {
+        delta[j.pseudo] = POINTS[i] || 0;
+    });
+    return delta;
 }
 
 // ─────────────────────────────────────────────────────
@@ -248,6 +257,10 @@ function _publicState(s, partieId) {
         cartesParJoueur: Object.fromEntries(
             s.joueurs.map(j => [j, s.mains[j]?.length ?? 0])
         ),
+        // Liste des pseudos ayant annoncé UNO (Set → Array pour JSON).
+        // Le client s'en sert pour afficher l'icône ⚠️ UNO! ou le bouton
+        // ✖ CONTRE UNO! selon que le joueur a annoncé ou non.
+        unoAnnonces  : Array.from(s.unoAnnonces || []),
         pioches      : s.pioche.length,
         derniereCarteDefausse: s.defausse[s.defausse.length - 1] || null,
         gagnant      : s.gagnant,
@@ -317,21 +330,32 @@ function _finirPartie(wss, partieId, s, gagnant, helpers) {
     s.phase   = 'terminee';
     s.gagnant = gagnant;
 
-    const scores = _calculerScores(s, gagnant);
-    for (const [pseudo, pts] of Object.entries(scores)) {
-        store.modifierScore(partieId, pseudo, pts);
+    const delta = _calculerScores(s, gagnant);
+    for (const [pseudo, pts] of Object.entries(delta)) {
+        if (pts > 0) store.modifierScore(partieId, pseudo, pts);
     }
+
+    // Classement pour affichage UI (déjà trié par cartes restantes asc)
+    const classement = s.joueurs
+        .map(pseudo => ({
+            pseudo,
+            cartes: pseudo === gagnant ? 0 : (s.mains[pseudo]?.length ?? 0),
+            delta : delta[pseudo] || 0,
+        }))
+        .sort((a, b) => a.cartes - b.cartes);
 
     const scoresFinaux = store.getScores(partieId);
     const { broadcastToGame } = helpers;
 
     broadcastToGame(wss, partieId, 'UNO_WINNER', {
         gagnant,
-        scores : scoresFinaux,
-        mains  : s.mains,
+        scores     : scoresFinaux,
+        delta,                  // {pseudo: pts attribués cette partie}
+        classement,             // [{pseudo, cartes, delta}]
+        mains      : s.mains,
     });
     broadcastToGame(wss, partieId, 'SCORES_UPDATE', { scores: scoresFinaux });
-    console.log(`[UNO] 🏆 Gagnant: ${gagnant} (+${scores[gagnant] || 0}pts)`);
+    console.log(`[UNO] 🏆 Gagnant: ${gagnant} (+${delta[gagnant] || 0}pts) — delta:`, delta);
 }
 
 // ─────────────────────────────────────────────────────
@@ -367,27 +391,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
         }
 
         case 'challenge_uno': {
-            // L'hôte déclare qu'un joueur n'a pas annoncé UNO
-            const { cible } = data;
-            const s = _getSession(partieId);
-            if (!s) return send(ws, 'ERROR', { code: 'UNO_NO_SESSION' });
-            if (!cible || !s.mains[cible]) return send(ws, 'ERROR', { code: 'UNO_PLAYER_NOT_FOUND' });
-
-            if (s.mains[cible].length === 1 && !s.unoAnnonces.has(cible)) {
-                // Pénalité : +2
-                const penalite = _piocher(s, 2);
-                s.mains[cible].push(...penalite);
-                s.unoAnnonces.delete(cible);
-
-                broadcastToGame(wss, partieId, 'UNO_PENALTY', {
-                    joueur : cible,
-                    nb     : 2,
-                    raison : 'UNO non annoncé',
-                });
-                _annoncer(wss, partieId, s, helpers, `⚠️ Pénalité UNO sur ${cible}`);
-            } else {
-                send(ws, 'UNO_ERROR', { message: 'Challenge invalide — UNO bien annoncé ou plus d\'1 carte.' });
-            }
+            _traiterChallenge(wss, ws, partieId, data, helpers);
             break;
         }
 
@@ -608,16 +612,75 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
         // ── DIRE UNO ──────────────────────────────────
         case 'say_uno': {
             if (s.mains[pseudo]?.length === 1) {
+                if (s.unoAnnonces.has(pseudo)) {
+                    return send(ws, 'UNO_ERROR', { message: 'UNO déjà annoncé.' });
+                }
                 s.unoAnnonces.add(pseudo);
                 broadcastToGame(wss, partieId, 'UNO_UNO_SAID', { joueur: pseudo });
+                _broadcastState(wss, partieId, s, helpers);  // refresh UI immédiat
                 console.log(`[UNO] 🔔 UNO annoncé par ${pseudo}`);
             } else {
-                send(ws, 'UNO_ERROR', { message: 'UNO impossible (tu as plus d\'une carte).' });
+                send(ws, 'UNO_ERROR', { message: 'UNO impossible (tu n\'as pas exactement 1 carte).' });
             }
+            break;
+        }
+
+        // ── CONTESTER UNO ─────────────────────────────
+        // Tout joueur peut contester (pas seulement l'hôte). La logique est
+        // factorisée avec handleHostAction → _traiterChallenge.
+        case 'challenge_uno': {
+            _traiterChallenge(wss, ws, partieId, data, helpers);
             break;
         }
 
         default:
             console.warn(`[UNO] ⚠️ Action joueur inconnue: ${cmd}`);
+    }
+}
+
+// ─────────────────────────────────────────────────────
+// CHALLENGE UNO — partagé hôte/joueur
+// ─────────────────────────────────────────────────────
+// Émet :
+//   - UNO_CHALLENGE_OK { joueur, contestePar?, nb, raison } à tous quand
+//     la pénalité est appliquée.
+//   - UNO_PENALTY     { joueur, nb, raison } pour compat UI existante (logs).
+//   - UNO_ERROR       { message } au contestataire si invalide.
+function _traiterChallenge(wss, ws, partieId, data, helpers) {
+    const { send, broadcastToGame } = helpers;
+    const { cible } = data || {};
+    const s = _getSession(partieId);
+    if (!s) return send(ws, 'UNO_ERROR', { message: 'Partie UNO non démarrée.' });
+    if (!cible || !s.mains[cible]) {
+        return send(ws, 'UNO_ERROR', { message: 'Joueur ciblé introuvable.' });
+    }
+
+    const contestePar = ws._pseudo || (ws._isHost ? 'hôte' : null);
+
+    // Auto-contestation interdite
+    if (contestePar && cible === contestePar) {
+        return send(ws, 'UNO_ERROR', { message: 'Tu ne peux pas te contester toi-même.' });
+    }
+
+    if (s.mains[cible].length === 1 && !s.unoAnnonces.has(cible)) {
+        const penalite = _piocher(s, 2);
+        s.mains[cible].push(...penalite);
+        s.unoAnnonces.delete(cible);
+
+        broadcastToGame(wss, partieId, 'UNO_CHALLENGE_OK', {
+            joueur      : cible,
+            contestePar : contestePar,
+            nb          : 2,
+            raison      : 'UNO non annoncé',
+        });
+        // Compatibilité : UNO_PENALTY reste émis pour l'UI hôte qui logge.
+        broadcastToGame(wss, partieId, 'UNO_PENALTY', {
+            joueur : cible,
+            nb     : 2,
+            raison : 'UNO non annoncé',
+        });
+        _annoncer(wss, partieId, s, helpers, `⚠️ Pénalité UNO sur ${cible} (contesté par ${contestePar || '?'})`);
+    } else {
+        send(ws, 'UNO_ERROR', { message: 'Challenge invalide — UNO déjà annoncé ou cible n\'a pas 1 carte.' });
     }
 }

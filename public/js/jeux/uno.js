@@ -126,7 +126,8 @@ function _renderEtat() {
 
     const { joueurs, tourActuel, couleurActive, valeurActive,
             cartesParJoueur, derniereCarteDefausse, attenteCouleur,
-            accumulateur, gagnant } = _etat;
+            accumulateur, gagnant, unoAnnonces = [] } = _etat;
+    const unoSet = new Set(unoAnnonces);
 
     if (gagnant) { _renderVictoire(gagnant); return; }
 
@@ -152,12 +153,19 @@ function _renderEtat() {
     }
 
     // ── Joueurs + leurs cartes ───────────────────────
+    // Règles affichage :
+    //   - badge ⚠️ UNO! si nb=1 ET joueur a annoncé UNO (présent dans unoSet)
+    //   - bouton "Contester UNO" si nb=1 ET PAS annoncé (et pas l'hôte lui-même)
     const joueursHtml = joueurs.map(j => {
         const nb    = cartesParJoueur[j] || 0;
         const estLui = j === tourActuel;
+        const aDitUno = unoSet.has(j);
         const bg    = estLui ? 'rgba(0,212,255,.15)' : 'rgba(255,255,255,.05)';
         const bd    = estLui ? '1.5px solid rgba(0,212,255,.5)' : '1px solid rgba(255,255,255,.1)';
-        const unoWarn = nb === 1 ? '⚠️ UNO !' : '';
+        const unoBadge = (nb === 1 && aDitUno)
+            ? '<span style="color:#fbbf24;font-size:.8rem;font-weight:700;">⚠️ UNO !</span>'
+            : '';
+        const peutContester = nb === 1 && !aDitUno && j !== _hostPseudo;
         return `
             <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;
                 border-radius:12px;background:${bg};border:${bd};margin-bottom:6px;
@@ -165,13 +173,13 @@ function _renderEtat() {
                 <span style="font-weight:700;font-size:.95rem;color:${estLui ? '#00d4ff' : 'white'};
                     flex:1;">${estLui ? '▶️ ' : ''}${_esc(j)}</span>
                 <span style="font-size:.8rem;color:rgba(255,255,255,.5);">${nb} carte${nb > 1 ? 's' : ''}</span>
-                ${unoWarn ? `<span style="color:#fbbf24;font-size:.8rem;font-weight:700;">${unoWarn}</span>` : ''}
-                ${j !== _hostPseudo ? `
+                ${unoBadge}
+                ${peutContester ? `
                 <button data-cible="${_esc(j)}" class="uno-challenge-btn"
                     style="padding:4px 10px;background:rgba(239,68,68,.2);
                     border:1px solid rgba(239,68,68,.4);border-radius:8px;
                     color:#fca5a5;font-size:.72rem;cursor:pointer;font-family:inherit;">
-                    Contester UNO
+                    ✖ CONTRE UNO !
                 </button>` : ''}
             </div>`;
     }).join('');
@@ -376,17 +384,37 @@ function _jouerCarteHote(index, carte) {
 function _renderVictoire(gagnant) {
     const cont = $('uno-contenu');
     if (!cont) return;
-    const scores = _etat?.scores || {};
-    const lignes = Object.entries(scores)
-        .sort((a, b) => b[1] - a[1])
-        .map(([nom, pts], i) => `
+    const scores     = _etat?.scores || {};
+    const delta      = _etat?.delta || {};
+    const classement = _etat?.classement || [];
+
+    // Classement par cartes restantes si fourni, sinon fallback sur scores
+    const rangs = (classement.length)
+        ? classement
+        : Object.entries(scores).sort((a,b) => b[1] - a[1])
+            .map(([pseudo]) => ({ pseudo, cartes: null, delta: delta[pseudo] || 0 }));
+
+    const medals = ['🥇','🥈','🥉'];
+    const lignes = rangs.map((r, i) => {
+        const dPts = r.delta || 0;
+        const cum  = scores[r.pseudo] ?? 0;
+        return `
             <div style="display:flex;justify-content:space-between;align-items:center;
                 padding:8px 14px;border-radius:10px;margin-bottom:5px;
-                background:${nom === gagnant ? 'rgba(251,191,36,.15)' : 'rgba(255,255,255,.05)'};
-                border:1px solid ${nom === gagnant ? 'rgba(251,191,36,.4)' : 'rgba(255,255,255,.1)'};">
-                <span>${['🥇','🥈','🥉'][i] || (i+1)+'.'} ${_esc(nom)}</span>
-                <span style="font-weight:800;color:#00d4ff;">${pts} pts</span>
-            </div>`).join('');
+                background:${r.pseudo === gagnant ? 'rgba(251,191,36,.15)' : 'rgba(255,255,255,.05)'};
+                border:1px solid ${r.pseudo === gagnant ? 'rgba(251,191,36,.4)' : 'rgba(255,255,255,.1)'};">
+                <span style="display:flex;align-items:center;gap:8px;">
+                    <span>${medals[i] || (i+1)+'.'} ${_esc(r.pseudo)}</span>
+                    ${r.cartes != null ? `<span style="font-size:.72rem;color:rgba(255,255,255,.5);">${r.cartes} 🃏</span>` : ''}
+                </span>
+                <span style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-weight:800;color:${dPts > 0 ? '#22c55e' : 'rgba(255,255,255,.4)'};">
+                        +${dPts}
+                    </span>
+                    <span style="font-size:.78rem;color:rgba(255,255,255,.5);">(${cum} cumul)</span>
+                </span>
+            </div>`;
+    }).join('');
 
     cont.innerHTML = `
         <div style="text-align:center;padding:20px 0;display:flex;flex-direction:column;gap:16px;">
@@ -394,7 +422,11 @@ function _renderVictoire(gagnant) {
             <h2 style="margin:0;font-size:1.3rem;color:#fbbf24;">
                 ${_esc(gagnant)} remporte la partie !
             </h2>
-            <div style="max-width:360px;margin:0 auto;width:100%;">${lignes}</div>
+            <div style="font-size:.78rem;color:rgba(255,255,255,.45);
+                text-transform:uppercase;letter-spacing:.08em;">
+                Classement · 1ᵉʳ=3pts · 2ᵉ=2pts · 3ᵉ=1pt · suivants=0
+            </div>
+            <div style="max-width:380px;margin:0 auto;width:100%;">${lignes}</div>
             <button id="uno-rejouer"
                 style="padding:12px 28px;background:linear-gradient(135deg,#6a5af9,#8a2be2);
                 border:none;border-radius:12px;color:white;font-size:.95rem;font-weight:700;
@@ -470,7 +502,8 @@ function _abonnerEvents() {
             if (_hostPseudo) _renderMainHote();
         },
         UNO_WINNER: payload => {
-            _etat = { ..._etat, ...payload, gagnant: payload.gagnant };
+            // payload contient gagnant, scores, delta, classement, mains
+            _etat = { ..._etat, ...payload };
             _renderVictoire(payload.gagnant);
         },
         SCORES_UPDATE: ({ scores }) => {
