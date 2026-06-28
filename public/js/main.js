@@ -66,7 +66,7 @@ const GAME_INITIALIZERS = {
     blindtest:"initialiserBlindTest", pendu:"initialiserPendu",
     memoire:"initialiserMemoire", petitbac:"initialiserPetitBac",
     morpion:"initialiserMorpion", puissance4:"initialiserPuissance4",
-    uno:"initialiserUno", uno:"initialiserUno",
+    uno:"initialiserUno", uno:"initialiserUno"
 };
 
 const REGLES_JEUX = {
@@ -79,7 +79,7 @@ const REGLES_JEUX = {
     petitbac:"Mots commençant par la lettre tirée pour chaque catégorie !",
     memoire:"Teste ta mémoire !",
     morpion:"Aligne 3 symboles identiques !",
-    puissance4:"Aligne 4 jetons de ta couleur !"
+    puissance4:"Aligne 4 jetons de ta couleur !",
     uno:"Débarrasse‑toi de toutes tes cartes en jouant les bonnes couleurs, chiffres ou effets !"
 };
 
