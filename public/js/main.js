@@ -66,7 +66,7 @@ const GAME_INITIALIZERS = {
     blindtest:"initialiserBlindTest", pendu:"initialiserPendu",
     memoire:"initialiserMemoire", petitbac:"initialiserPetitBac",
     morpion:"initialiserMorpion", puissance4:"initialiserPuissance4",
-    uno:"initialiserUno", uno:"initialiserUno"
+    uno:"initialiserUno"
 };
 
 const REGLES_JEUX = {
