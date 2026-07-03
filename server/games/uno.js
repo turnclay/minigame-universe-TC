@@ -527,18 +527,20 @@ export function handlePlayerAction(wss, ws, partieId, pseudo, action, data, help
                 return;
             }
 
-            // Appliquer le tour maintenant (le +4 ou joker avance déjà dans play)
-            // Pour +4 : le joueur suivant doit piocher s.accumulateur cartes
             if (s.accumulateur > 0) {
-                const suivant = _joueurActuel(s);
-                const piochees = _piocher(s, s.accumulateur);
-                s.mains[suivant].push(...piochees);
-                broadcastToGame(wss, partieId, 'UNO_EFFECT', {
-                    joueur: suivant, carte: null,
-                    effet : `pioche_${s.accumulateur}`,
-                    nb    : s.accumulateur,
-                });
+                _avancerTour(s);
+                const victime  = _joueurActuel(s);
+                const nb       = s.accumulateur;
+                const piochees = _piocher(s, nb);
+                s.mains[victime].push(...piochees);
                 s.accumulateur = 0;
+
+                broadcastToGame(wss, partieId, 'UNO_EFFECT', {
+                    joueur: victime, carte: null,
+                    effet : `pioche_${nb}`,
+                    nb,
+                });
+
                 _avancerTour(s);
             }
 
