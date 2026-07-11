@@ -3,10 +3,16 @@
   <component name="AutoImportSettings">
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
+  <component name="BackgroundAgentGlobalSettings">
+    <option name="selectedModelId" value="auto" />
+  </component>
   <component name="ChangeListManager">
     <list default="true" id="73d891ed-7cb8-4a2e-b43e-d24a9aad95e0" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/games/uno.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/games/uno.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/arboV2.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tools/scan_project_and_send_to_ai.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -225,9 +231,9 @@
         <option name="modeId" value="Agent" />
         <option name="model">
           <model>
-            <option name="modelProviderName" value="Anthropic" />
-            <option name="modelType" value="byok_family" />
-            <option name="modelValue" value="claude-fable-5" />
+            <option name="modelProviderName" value="OpenAI" />
+            <option name="modelType" value="byok_id" />
+            <option name="modelValue" value="gpt-5.5" />
           </model>
         </option>
         <option name="targetType" value="BACKGROUND" />
@@ -256,7 +262,7 @@
     "git-widget-placeholder": "main",
     "junie.onboarding.icon.badge.shown": "true",
     "last_opened_file_path": "C:/Users/clayt/PycharmProjects/MiniGameV2",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
     "to.speed.mode.migration.done": "true"
   }
 }]]></component>
