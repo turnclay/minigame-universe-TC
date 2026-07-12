@@ -35,14 +35,22 @@ function Get-Tree {
     $count = $items.Count
 
     for ($i = 0; $i -lt $count; $i++) {
-        $item      = $items[$i]
-        $isLast    = ($i -eq $count - 1)
-        $connector = if ($isLast) { '└── ' } else { '├── ' }
+        $item   = $items[$i]
+        $isLast = ($i -eq $count - 1)
+
+        # PowerShell n'accepte pas if() dans une expression → on calcule AVANT
+        if ($isLast) {
+            $connector = '└── '
+            $childPrefix = $Prefix + '    '
+        }
+        else {
+            $connector = '├── '
+            $childPrefix = $Prefix + '│   '
+        }
 
         "$Prefix$connector$($item.Name)" | Out-File -FilePath $tmp -Append -Encoding utf8
 
         if ($item.PSIsContainer) {
-            $childPrefix = $Prefix + (if ($isLast) { '    ' } else { '│   ' })
             Get-Tree -Path $item.FullName -Prefix $childPrefix
         }
     }
@@ -55,7 +63,7 @@ $repoName = Split-Path $projectPath -Leaf
 # Build tree
 Get-Tree -Path $projectPath -Prefix ''
 
-# --- COMPARE & CRÉE / MET À JOUR arbo.txt (créé automatiquement s'il n'existe pas) ---
+# --- COMPARE & CRÉE / MET À JOUR arbo.txt ---
 $fichierExistait = Test-Path $output
 
 $new = (Get-Content $tmp -Raw) -replace "`r`n", "`n"
