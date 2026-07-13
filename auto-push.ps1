@@ -84,6 +84,10 @@ else {
     $arboChanged = $false
 }
 
+# --- MISE À JOUR PROJECT-STATE.md ---
+Write-Host "📄 Mise à jour de PROJECT-STATE.md..."
+powershell -ExecutionPolicy Bypass -File (Join-Path $projectPath "update-agent-state.ps1")
+
 # 🔥 Force un changement pour Render (hack propre)
 Set-Content -Path (Join-Path $projectPath '.render-restart') -Value (Get-Date).ToString()
 

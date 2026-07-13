@@ -1,10 +1,10 @@
-PROJECT-STATE.md (auto-généré par update-agent-state.ps1 — ne pas éditer à la main)
+﻿PROJECT-STATE.md (auto-genere par update-agent-state.ps1 - ne pas editer a la main)
 
-Dernière génération : 2026-07-13T21:53:14.169+02:00
-Commit               : c78b8a5
-Message              : Auto update MiniGameV2
+Derniere generation : 2026-07-13 22:21
+Commit               : c079352c40982bf05751f5e4bae48d32dc0266e9
+Message              : Update DETTE-TECHNIQUE.md: mark UNO resolved and document verification  Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
 
-JEUX ENREGISTRÉS DANS JEU_HANDLERS (server/ws-handler.js, état constaté ce jour)
+JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)
 - quiz
 - petitbac
 - pendu
@@ -15,18 +15,18 @@ JEUX ENREGISTRÉS DANS JEU_HANDLERS (server/ws-handler.js, état constaté ce jo
 - memoire
 - mimedessine
 - undercover
+- uno
 
-Note : uno apparaît dans cette liste — server/ws-handler.js l'importe actuellement dans JEU_HANDLERS (vérifié le 2026-07-13T21:53:14.169+02:00). Voir DETTE-TECHNIQUE.md pour contexte.
+FICHIERS MODIFIES DEPUIS LE PUSH PRECEDENT
+- [Ajoute] DETTE-TECHNIQUE.md
+- [Ajoute] PROJECT-STATE.md
 
-FICHIERS MODIFIÉS DEPUIS LE PUSH PRÉCÉDENT
-Première génération — sera peuplé automatiquement au prochain lancement de auto-push.ps1.
-
-RÉFÉRENCES (ne pas dupliquer leur contenu ici)
+REFERENCES (ne pas dupliquer leur contenu ici)
 - Dette technique    : DETTE-TECHNIQUE.md
 - Conventions agents : CONVENTIONS.md
 - Arborescence       : arbo.txt
 
 PROTOCOLE DE LECTURE (agents CLAUDE / JEUX / QA)
-1. Lire ce fichier en premier, jamais tout le repo par défaut.
-2. Se limiter aux fichiers listés ci-dessus + ceux visés explicitement par la demande.
-3. Audit complet du repo uniquement si demandé explicitement par Clayton.
+1. Lire ce fichier en premier, jamais tout le repo par defaut.
+2. Se limiter aux fichiers listes ci-dessus + ceux vises par la demande.
+3. Audit complet du repo uniquement si demande explicitement par Clayton.

@@ -1,0 +1,76 @@
+file,type,role,imports_keys,exports_keys,ws_events_produced,ws_events_consumed,notes
+server/index.js,server,Entry point HTTP/WS,express http ws,app,—,UPGRADE —,Démarre serveur + WS listener
+server/ws-handler.js,server,Dispatcher WS,ws socket store,—,depends on handler,HOST_ACTION PLAYER_ACTION,Routes messages vers handlers
+server/store.js,server,State & lifecycle,fs/promises,createJoueur getJoueurs modifierScore,PARTIE_CREATED PARTIE_ENDED SCORES_UPDATE,—,Persistent store parties/joueurs/scores
+server/store-data.json,data,Persistent storage,—,—,—,—,Sauvegarde local dev (JSON)
+server/games/pendu.js,game,Pendu handler,store fs path,handleHostAction handlePlayerAction getSessionState,PENDU_MOT_START PENDU_REVELATION PENDU_RESULT_ACK SCORES_UPDATE,HOST_ACTION:pendu:* PLAYER_ACTION:pendu:*,Tirage mots + scoring
+server/games/petitbac.js,game,Petitbac handler,store dictionnaires wikidata-validator,handleHostAction handlePlayerAction getSessionState,PETITBAC_LETTRE_START PETITBAC_REVELATION PETITBAC_RESULT_ACK SCORES_UPDATE,HOST_ACTION:petitbac:* PLAYER_ACTION:petitbac:*,Validation async Wikidata
+server/games/morpion.js,game,Morpion handler (relay),—,handleHostAction handlePlayerAction getSessionState setSessionState,HOST_ACTION:morpion:state HOST_ACTION:morpion:reset,HOST_ACTION:morpion:* PLAYER_ACTION:morpion:*,Host-authoritative relay
+server/games/puissance4.js,game,Puissance4 handler (relay),—,handleHostAction handlePlayerAction getSessionState setSessionState,HOST_ACTION:puissance4:state HOST_ACTION:puissance4:reset,HOST_ACTION:puissance4:* PLAYER_ACTION:puissance4:*,Host-authoritative relay (gravité)
+server/games/uno.js,game,UNO handler,store,handleHostAction handlePlayerAction getSessionState,UNO_STATE UNO_HAND UNO_TURN UNO_EFFECT UNO_UNO_SAID UNO_WINNER SCORES_UPDATE,HOST_ACTION:uno:* PLAYER_ACTION:uno:*,Server-authoritative (deck effets)
+server/games/quiz.js,game,Quiz handler,store fs path,handleHostAction handlePlayerAction getSessionState,QUIZ_QUESTION_START QUIZ_CORRECTION QUIZ_CAN_NEXT SCORES_UPDATE,HOST_ACTION:quiz:* PLAYER_ACTION:quiz:*,Tirage questions (déterministe)
+server/games/justeprix.js,game,Juste Prix handler,store fs path,handleHostAction handlePlayerAction getSessionState,JUSTEPRIX_PRODUIT_START JUSTEPRIX_REVELATION JUSTEPRIX_CAN_NEXT SCORES_UPDATE,HOST_ACTION:justeprix:* PLAYER_ACTION:justeprix:*,Tirage produit + scoring écart
+server/games/memoire.js,game,Mémoire handler,store,handleHostAction handlePlayerAction getSessionState,MEMOIRE_DEFI MEMOIRE_PHASE MEMOIRE_RESULT_IN SCORES_UPDATE,HOST_ACTION:memoire:* PLAYER_ACTION:memoire:*,Génération défis + horloge serveur
+server/games/lml.js,game,LML handler,store fs path,handleHostAction handlePlayerAction getSessionState,LML_MANCHE_START LML_REVELATION LML_CAN_NEXT SCORES_UPDATE,HOST_ACTION:lml:* PLAYER_ACTION:lml:*,Tirage lettres + Lexique validation
+server/games/mimedessine.js,game,Mîme/Dessine handler,store,handleHostAction handlePlayerAction getSessionState,MIMEDESSINE_PHASE MIMEDESSINE_MOT_A_DEVINER SCORES_UPDATE,HOST_ACTION:mimedessine:* PLAYER_ACTION:mimedessine:*,Rotation participants + timeur
+server/games/undercover.js,game,Undercover handler,store,handleHostAction handlePlayerAction getSessionState,UNDERCOVER_ROLES UNDERCOVER_VOTE_IN UNDERCOVER_REVELATION SCORES_UPDATE,HOST_ACTION:undercover:* PLAYER_ACTION:undercover:*,Rôles secrets + vote
+server/games/dictionnaires.js,helper,Validation dicts,fs path,motExisteDans dictionnairePret,—,—,Wrapper dictionnaires statiques (pays villes marques etc)
+server/games/wikidata-validator.js,helper,Wikidata API validator,node-fetch,validerWikidata,—,—,Cache TTL 24h + dégradation gracieuse
+public/js/main.js,client,Entry point hôte,socket state dom cleanup signal,—,JOUEURS_* PHASE_CHANGE PARTIE_* SCORES_UPDATE,HOST_ACTION PLAYER_ACTION,Attache DOMContentLoaded + init listeners
+public/js/jeu.js,client,Entry point invité,socket state dom cleanup player,—,JOUEURS_* PHASE_CHANGE PARTIE_* JEU:*,PLAYER_ACTION,Dispatch vers modules invité
+public/js/navigation.js,client,Navigation globale,socket state dom,—,—,PHASE_CHANGE,Boutons Accueil Réglages Scoreboard (tous)
+public/js/core/socket.js,core,WS singleton,ws,send on off once reconnect,—,réseau,Reconnect backoff + send queue offline
+public/js/core/state.js,core,GameState singleton,—,getState setState,—,broadcast serveur,joueurs scores mode equipes manche
+public/js/core/host_session.js,core,Host snapshot cache,—,getSnapshot setSnapshot,—,——,Snapshots WS pour reconnexion hôte
+public/js/core/cleanup.js,core,Purge listeners + timers,socket dom state,cleanup registerListener registerTimer,——,——,socket.off() + clearTimeout() + DOM purge
+public/js/core/dom.js,core,DOM helpers,—,querySelector removeElement createElement,——,——,QuerySelector caching + safe removal
+public/js/core/signal.js,core,Local event bus,—,signal on off,——,——,Module-to-module comms (local)
+public/js/core/musique.js,core,Music button (global),socket,toggleMusic,——,TOGGLE_MUSIC,Persist localStorage + indépendant jeux
+public/js/core/storage.js,core,localStorage wrapper,—,getJoueurs setJoueurs,——,——,Joueurs invités persistants
+public/js/core/partie_id.js,core,Partie ID getter,—,getPartieId setPartieId,——,——,Track current partieId (anti-pollution)
+public/js/jeux/pendu.js,game,Pendu hôte,socket state pendu_hote (import),—,HOST_ACTION:pendu:load pendu:result pendu:reveal,PENDU_MOT_START PENDU_REVELATION PENDU_RESULT_ACK SCORES_UPDATE,Affiche dessin + révélation hôte
+public/js/jeux/petitbac.js,game,Petitbac hôte,socket state petitbac_hote (import),—,HOST_ACTION:petitbac:load petitbac:propositions,PETITBAC_LETTRE_START PETITBAC_REVELATION SCORES_UPDATE,Tableau résultats + bareme
+public/js/jeux/morpion.js,game,Morpion hôte,socket state morpion_hote (import),—,HOST_ACTION:morpion:state morpion:reset,MORPION events,Plateau + victoire logic + mode avancé
+public/js/jeux/puissance4.js,game,Puissance4 hôte,socket state puissance4_hote (import),—,HOST_ACTION:puissance4:state puissance4:reset,PUISSANCE4 events,Grille + gravité logic
+public/js/jeux/uno.js,game,UNO hôte,socket state uno_player (import),—,HOST_ACTION:uno:load uno:play,UNO_STATE UNO_HAND UNO_TURN SCORES_UPDATE,Main masquée invités + effects
+public/js/jeux/quiz.js,game,Quiz hôte,socket state quiz_hote (import),—,HOST_ACTION:quiz:load quiz:host_answer,QUIZ_QUESTION_START QUIZ_CORRECTION SCORES_UPDATE,Question display + correction
+public/js/jeux/justeprix.js,game,Juste Prix hôte,socket state justeprix_hote (import),—,HOST_ACTION:justeprix:load justeprix:host_answer,JUSTEPRIX_PRODUIT_START JUSTEPRIX_REVELATION SCORES_UPDATE,Produit + fourchette + chrono
+public/js/jeux/lml.js,game,LML hôte,socket state,—,HOST_ACTION:lml:load lml:host_answer,LML_MANCHE_START LML_REVELATION SCORES_UPDATE,Lettres + chrono
+public/js/jeux/memoire.js,game,Mémoire hôte,socket state,—,HOST_ACTION:memoire:defi memoire:phase,MEMOIRE_DEFI MEMOIRE_PHASE SCORES_UPDATE,Défi chooser + countdown launcher
+public/js/jeux/mimedessine.js,game,MîmeDessine hôte,socket state,—,HOST_ACTION:mimedessine:config mimedessine:suivant,MIMEDESSINE_PHASE MIMEDESSINE_MOT_A_DEVINER,Participant manager + word control
+public/js/jeux/undercover.js,game,Undercover hôte,socket state,—,HOST_ACTION:undercover:start undercover:vote,UNDERCOVER_ROLES UNDERCOVER_VOTE_IN,Thème display + voting
+public/js/modules/player.js,module,Invité dispatcher,socket state cleanup,JeuRegistry dispatch,——,JEU:* events,Routes invité vers *_player.js modules
+public/js/modules/pendu_hote.js,module,Pendu hôte panel,socket state dom,—,——,PENDU_REVELATION,Résultats + reveal buttons
+public/js/modules/pendu_player.js,module,Pendu invité UI,socket state,—,PLAYER_ACTION:pendu:result,PENDU_MOT_START PENDU_REVELATION,Clavier + dessin + résultat
+public/js/modules/petitbac_hote.js,module,Petitbac hôte panel,socket state dom,—,——,PETITBAC_REVELATION,Tableau + scoring visual
+public/js/modules/petitbac_player.js,module,Petitbac invité UI,socket state,—,PLAYER_ACTION:petitbac:propositions,PETITBAC_LETTRE_START,Tableau réponses
+public/js/modules/morpion_hote.js,module,Morpion hôte panel,socket state dom storage,—,——,MORPION events,Plateau visual (localStorage sync temp)
+public/js/modules/morpion_player.js,module,Morpion invité UI,socket state,—,——,MORPION events,Plateau read-only
+public/js/modules/puissance4_hote.js,module,Puissance4 hôte panel,socket state dom storage,—,——,PUISSANCE4 events,Grille visual (localStorage sync temp)
+public/js/modules/puissance4_player.js,module,Puissance4 invité UI,socket state,—,——,PUISSANCE4 events,Grille read-only
+public/js/modules/uno_player.js,module,UNO invité UI,socket state,—,PLAYER_ACTION:uno:play uno:draw uno:say_uno,UNO_STATE UNO_HAND UNO_TURN,Main jouable + deck visual
+public/js/modules/quiz_hote.js,module,Quiz hôte panel,socket state dom,—,——,QUIZ_CORRECTION,Correction + points
+public/js/modules/quiz_player.js,module,Quiz invité UI,socket state,—,PLAYER_ACTION:quiz:answer,QUIZ_QUESTION_START QUIZ_CORRECTION,Options réponse + chrono
+public/js/modules/justeprix_hote.js,module,Juste Prix hôte panel,socket state dom storage,—,——,JUSTEPRIX_REVELATION,Produit + prix reveal
+public/js/modules/justeprix_player.js,module,Juste Prix invité UI,socket state,—,PLAYER_ACTION:justeprix:answer,JUSTEPRIX_PRODUIT_START JUSTEPRIX_REVELATION,Input estimation + chrono
+public/js/modules/lml_hote.js,module,LML hôte panel,socket state dom,—,——,LML_REVELATION,Lettres + meilleur mot
+public/js/modules/lml_player.js,module,LML invité UI,socket state,—,PLAYER_ACTION:lml:answer,LML_MANCHE_START LML_REVELATION,Input mot + chrono
+public/js/modules/memoire_hote.js,module,Mémoire hôte panel,socket state dom storage,—,——,MEMOIRE_DEFI MEMOIRE_PHASE,Défi selector + phase launcher
+public/js/modules/memoire_player.js,module,Mémoire invité UI,socket state,—,PLAYER_ACTION:memoire:result,MEMOIRE_DEFI MEMOIRE_PHASE,Game UI (couleurs/cartes/symboles)
+public/js/modules/mimedessine_hote.js,module,MîmeDessine hôte panel,socket state dom,—,——,MIMEDESSINE_PHASE,Participant selector + canvas (mime/draw)
+public/js/modules/mimedessine_player.js,module,MîmeDessine invité UI,socket state,—,——,MIMEDESSINE_PHASE MIMEDESSINE_MOT_A_DEVINER,Guess interface + canvas view
+public/js/modules/undercover_hote.js,module,Undercover hôte panel,socket state dom,—,——,UNDERCOVER_ROLES,Theme display + participant voter
+public/js/modules/undercover_player.js,module,Undercover invité UI,socket state,—,PLAYER_ACTION:undercover:vote,UNDERCOVER_ROLES,Role reveal + voting button
+public/js/modules/invite.js,module,Invite/login form,socket state storage,—,——,——,Connexion invité + pseudo/avatar
+public/js/modules/parties.js,module,Party selector,socket state,—,HOST_ACTION:partie:create HOST_ACTION:partie:join,PARTIE_* events,Crée/rejoint partie
+public/js/modules/joueurs.js,module,Player manager,socket state storage,—,——,JOUEURS_ADD JOUEURS_REMOVE JOUEURS_UPDATE,Affichage joueurs + sync
+public/js/modules/reglages.js,module,Settings panel,socket state storage,—,HOST_ACTION:reglages:* JOUEURS_* updates,——,Hôte: ajout/supp/modif joueur
+public/js/modules/scoreboard.js,module,Score display,state,—,——,SCORES_UPDATE JOUEURS_*,Affichage scores global (tous écrans)
+public/js/modules/statistiques.js,module,Global stats (optional),socket state,—,——,PARTIE_ENDED,Historique parties + stats cumulées
+public/js/modules/equipes.js,module,Teams manager,socket state,—,HOST_ACTION:equipes:*,——,Assignation équipes (optionnel)
+public/css/style.css,style,Global CSS,—,—,——,——,Global styling + games UI
+public/css/gestion.css,style,Settings CSS,—,—,——,——,Players/teams management
+public/css/invite.css,style,Invite CSS,—,—,——,——,Login form styling
+public/css/reglages.css,style,Config CSS,—,—,——,——,Settings panel styling
+public/index.html,shell,Host HTML,—,—,——,——,Host shell (game display)
+public/jeu.html,shell,Guest HTML,—,—,——,——,Guest shell (display invité)
