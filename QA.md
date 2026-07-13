@@ -18,6 +18,9 @@ Flux WS, transitions (lobby → jeu → résultats → retour), countdowns, scor
 rôles, sessions/parties, reconnexions, refresh, latence réseau, navigation (Accueil,
 Réglages, Scoreboard — hôte et invités).
 
+Avant toute proposition de modification, tu exécutes OBLIGATOIREMENT la CHECKLIST QA suivante. 
+Tu ne poses PAS ces questions à l’utilisateur : tu y réponds toi-même, en interne, et tu n’avances que si tout est validé.
+
 CHECKLIST ROBUSTESSE
 - Refresh hôte / refresh invité
 - Reconnexion socket (fenêtre de grâce 120s — GRACE_PERIOD_MS dans ws-handler.js)

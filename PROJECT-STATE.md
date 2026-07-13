@@ -1,8 +1,8 @@
 ﻿PROJECT-STATE.md (auto-genere par update-agent-state.ps1 - ne pas editer a la main)
 
-Derniere generation : 2026-07-13 22:21
-Commit               : c079352c40982bf05751f5e4bae48d32dc0266e9
-Message              : Update DETTE-TECHNIQUE.md: mark UNO resolved and document verification  Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+Derniere generation : 2026-07-13 22:59
+Commit               : ea6922af5201432f1d9e1a0885be260e698c2b62
+Message              : Protect legacy partie keys in cleanup until client migration flag present  Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
 
 JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)
 - quiz
@@ -18,8 +18,26 @@ JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)
 - uno
 
 FICHIERS MODIFIES DEPUIS LE PUSH PRECEDENT
-- [Ajoute] DETTE-TECHNIQUE.md
-- [Ajoute] PROJECT-STATE.md
+- [Modifie] .idea/workspace.xml
+- [Modifie] .render-restart
+- [Modifie] CLAUDE.md
+- [Ajoute] CONVENTIONS.md
+- [Modifie] DETTE-TECHNIQUE.md
+- [Ajoute] DOCUMENTATION-FINAL-SUMMARY.md
+- [Ajoute] FULL-REPO-MATRIX.csv
+- [Ajoute] INDEX-AND-AGENT-GUIDE.md
+- [Modifie] JEUX.md
+- [Modifie] PROJECT-STATE.md
+- [Modifie] QA.md
+- [Ajoute] QUICK-REFERENCE-CARD.md
+- [Ajoute] STAGES-1-6-SUMMARY.md
+- [Modifie] arbo.txt
+- [Modifie] auto-push.ps1
+- [Supprime] fichiers-public-server.txt
+- [Modifie] public/js/core/cleanup.js
+- [Ajoute] public/js/modules/migrations.js
+- [Modifie] public/js/modules/parties.js
+- [Ajoute] update-agent-state.ps1
 
 REFERENCES (ne pas dupliquer leur contenu ici)
 - Dette technique    : DETTE-TECHNIQUE.md

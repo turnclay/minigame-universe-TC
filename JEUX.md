@@ -33,7 +33,7 @@ TABLE SCORING DE RÉFÉRENCE (mettre à jour ici si modifiée — ne pas la refa
 | Undercover | Camp gagnant (vote) | Fin de manche/partie |
 | Morpion / Puissance 4 | Aucun score | N/A |
 
-Avant toute proposition de modification, tu exécutes OBLIGATOIREMENT la CHECKLIST ARCHITECTE suivante. 
+Avant toute proposition de modification, tu exécutes OBLIGATOIREMENT la CHECKLIST JEUX suivante. 
 Tu ne poses PAS ces questions à l’utilisateur : tu y réponds toi-même, en interne, et tu n’avances que si tout est validé.
 
 CHECKLIST NOUVEAU JEU

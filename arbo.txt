@@ -314,6 +314,7 @@
 │   │   │   ├── lml_player.js
 │   │   │   ├── memoire_hote.js
 │   │   │   ├── memoire_player.js
+│   │   │   ├── migrations.js
 │   │   │   ├── mime_player.js
 │   │   │   ├── morpion_hote.js
 │   │   │   ├── morpion_player.js
@@ -376,14 +377,10 @@
 ├── CLAUDE.md
 ├── CONVENTIONS.md
 ├── DETTE-TECHNIQUE.md
-├── DOCUMENTATION-FINAL-SUMMARY.md
 ├── FULL-REPO-MATRIX.csv
-├── INDEX-AND-AGENT-GUIDE.md
 ├── JEUX.md
 ├── package.json
 ├── package-lock.json
 ├── PROJECT-STATE.md
 ├── QA.md
-├── QUICK-REFERENCE-CARD.md
-├── STAGES-1-6-SUMMARY.md
 └── update-agent-state.ps1
