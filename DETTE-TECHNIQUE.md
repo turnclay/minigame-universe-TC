@@ -4,11 +4,9 @@ jamais reformulé dans les 3 agents.
 
 OUVERTE
 
-L1 — parties.js non audité
-signal.js supprimé logiquement, storage.js refactorisé en cache mémoire dérivé du serveur
-(GET /api/parties). Fonctions dépréciées conservées en no-ops loggés en attente d'audit.
-parties.js consomme probablement encore l'ancien schéma (getAllParties() / nomPartie).
-Action : auditer parties.js, puis supprimer physiquement signal.js.
+L1 — parties.js (audit effectué)
+Audit effectué le 2026-07-13T22:37:14+02:00 : public/js/modules/parties.js consulte encore l'ancien schéma (getAllParties(), champ nomPartie) et utilise la clé localStorage minigame_partie_session_id. Le module s'appuie également sur public/js/core/signal.js (présent et importé) pour la coordination host→invité. Résultat : suppression physique de signal.js impossible pour l'instant.
+Action : planifier un refactor minimal de parties.js vers la nouvelle API (sessionId/partieId canonique) + migration one-shot. Voir TODO 'audit-parties-refactor' pour suivi.
 
 RÉSOLUE — UNO réenregistré dans JEU_HANDLERS
 Le 2026-07-13T21:53:14.169+02:00, le fichier server/ws-handler.js a été vérifié et importe désormais server/games/uno.js. Les handlers UNO sont actifs et les actions préfixées "uno:" sont routées vers le handler dédié — le state UNO (deck, mains privées, effets +4) est géré côté serveur.
@@ -35,7 +33,7 @@ PRINCIPES ISSUS DE LA DETTE (à ne pas redémontrer à chaque session)
   "déjà corrigé".
 
 SUR L'HORIZON
-- Suppression physique de signal.js
-- Audit complet de parties.js
+- Suppression physique de signal.js — mise en attente (signal.js est utilisé par des modules clients)
+- Audit complet de parties.js — effectué (voir L1 ci‑dessus)
 - Process de merge pour éviter les régressions répétées sur les mêmes fichiers
 - Amélioration continue de la validation Wikidata (Petit Bac)
