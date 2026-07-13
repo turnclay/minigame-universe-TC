@@ -14,13 +14,24 @@ const PREFIXES_SESSION = [
     'invite_pret_',
 ];
 
-const CLES_EXACTES = [
+const CLES_EXACTES_BASE = [
     'invite_joueur_context',
     'partie:signal',
-    'minigame_partie_session_id',
-    'minigame_partie_id',
-    'ws_partie_id',
 ];
+const LEGACY_KEYS = ['minigame_partie_session_id', 'minigame_partie_id', 'ws_partie_id'];
+const MIGRATION_FLAG = 'migrations_parties_v1_done';
+function getClesExactes() {
+    try {
+        if (localStorage.getItem(MIGRATION_FLAG)) {
+            // Migration applied — safe to remove legacy keys
+            return CLES_EXACTES_BASE.concat(LEGACY_KEYS);
+        }
+    } catch (e) {
+        // localStorage inaccessible — be conservative
+    }
+    // Default: do not delete legacy keys until migration flag present
+    return CLES_EXACTES_BASE;
+}
 
 const CLES_PARASITES = [
     'equipes_enregistrees',
@@ -31,13 +42,14 @@ const CLES_PARASITES = [
 export function nettoyerSession() {
     const keysToDelete = [];
 
-    for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (!k) continue;
-        if (PREFIXES_SESSION.some(p => k.startsWith(p))) keysToDelete.push(k);
-        if (CLES_EXACTES.includes(k))  keysToDelete.push(k);
-        if (CLES_PARASITES.includes(k)) keysToDelete.push(k);
-    }
+    const clesExactes = getClesExactes();
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (!k) continue;
+            if (PREFIXES_SESSION.some(p => k.startsWith(p))) keysToDelete.push(k);
+            if (clesExactes.includes(k))  keysToDelete.push(k);
+            if (CLES_PARASITES.includes(k)) keysToDelete.push(k);
+        }
 
     keysToDelete.forEach(k => localStorage.removeItem(k));
     console.log(`[CLEANUP] ${keysToDelete.length} clé(s) de session supprimée(s)`);
