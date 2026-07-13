@@ -66,7 +66,7 @@ export function remplirSuggestionsParties() {
     datalist.innerHTML = "";
     parties.forEach(p => {
         const option = document.createElement("option");
-        option.value = p.nomPartie;
+    option.value = (p.nomPartie || p.nom || p.partieNom);
         datalist.appendChild(option);
     });
 }
@@ -179,7 +179,7 @@ export function afficherListeParties() {
             <p>${nomJeu} • Mode : ${modeLabel} • Meilleur score : <strong class="best-score-badge">${bestScore}</strong></p>
             ${(() => {
                 if (!participantsLabel) return "";
-                const sid = localStorage.getItem("minigame_partie_session_id");
+                const sid = getPartieSessionId() || localStorage.getItem("minigame_partie_session_id");
                 const cetAppareilEstHote = String(sid) === String(p.id);
                 const noms = participantsLabel.split(", ");
                 const html = noms.map((nom, i) =>
@@ -199,7 +199,7 @@ export function afficherListeParties() {
         const lienInvitation = `${location.origin}${location.pathname.replace(/\/[^/]*$/, '')}/rejoindre.html`
             + `?partieId=${p.id}`
             + `&sessionId=${_sessionIdLien}`
-            + `&partieNom=${encodeURIComponent(p.nomPartie)}`
+            + `&partieNom=${encodeURIComponent(p.nomPartie || p.nom || p.partieNom)}`
             + `&jeu=${encodeURIComponent(p.jeu || '')}`
             + `&createdAt=${p.date || p.id}`;
 
@@ -228,7 +228,7 @@ export function afficherListeParties() {
         btnQR.setAttribute("aria-label", "Afficher le QR Code");
         btnQR.textContent = "📷";
         btnQR.disabled = true;
-        btnQR.addEventListener('click', () => ouvrirModaleQR(lienInvitation, p.nomPartie));
+        btnQR.addEventListener('click', () => ouvrirModaleQR(lienInvitation, p.nomPartie || p.nom || p.partieNom));
         rowLien.appendChild(btnQR);
 
         div.appendChild(rowLien);
@@ -472,7 +472,7 @@ export function chargerPartie(id) {
     // Restaure le GameState depuis la sauvegarde
     GameState.jeuActuel  = partie.jeu;
     GameState.mode       = partie.mode;
-    GameState.partieNom  = partie.nomPartie;
+    GameState.partieNom  = (partie.nomPartie || partie.nom || partie.partieNom);
     GameState.scores     = { ...partie.scores };   // copie des scores sauvegardés
     GameState.partieEnCoursChargee = true;
 
