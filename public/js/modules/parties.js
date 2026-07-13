@@ -1,6 +1,10 @@
 // /js/modules/parties.js
 
 import { $, show, hide } from "../core/dom.js";
+import { migratePartiesToCanonical } from "./migrations.js";
+
+// Run one-shot migration to canonical fields for parties/localStorage
+try { migratePartiesToCanonical(); } catch(e) { console.warn('migration failed', e && e.message); }
 
 // Callback injecté par main.js
 let _cbLancerJeu = null;
