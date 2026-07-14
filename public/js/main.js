@@ -45,7 +45,6 @@ import "./jeux/lml.js";
 import "./jeux/justeprix.js";
 import "./jeux/quiz.js";
 import "./jeux/uno.js";
-import "./jeux/motdepasse.js";
 
 import { socket } from "./core/socket.js";
 import { setJoueursCallbacks } from "./modules/joueurs.js";
@@ -57,7 +56,7 @@ const FADE_DURATION   = 800;
 
 const ALL_MODULES = [
     "quiz","justeprix","undercover","lml","mimer",
-    "blindtest","pendu","petitbac","memoire","morpion","puissance4","uno","motdepasse"
+    "blindtest","pendu","petitbac","memoire","morpion","puissance4","uno"
 ];
 
 const GAME_INITIALIZERS = {
@@ -67,7 +66,7 @@ const GAME_INITIALIZERS = {
     blindtest:"initialiserBlindTest", pendu:"initialiserPendu",
     memoire:"initialiserMemoire", petitbac:"initialiserPetitBac",
     morpion:"initialiserMorpion", puissance4:"initialiserPuissance4",
-    uno:"initialiserUno", motdepasse:"initialiserMotdepasse"
+    uno:"initialiserUno"
 };
 
 const REGLES_JEUX = {
@@ -81,8 +80,7 @@ const REGLES_JEUX = {
     memoire:"Teste ta mémoire !",
     morpion:"Aligne 3 symboles identiques !",
     puissance4:"Aligne 4 jetons de ta couleur !",
-    uno:"Débarrasse‑toi de toutes tes cartes en jouant les bonnes couleurs, chiffres ou effets !",
-    motdepasse:"Retrouve le mot secret à partir de l'indice avant les autres joueurs."
+    uno:"Débarrasse‑toi de toutes tes cartes en jouant les bonnes couleurs, chiffres ou effets !"
 };
 
 const hideAll = (ids) => ids.forEach(hide);
@@ -196,7 +194,7 @@ export function afficherAccueilJeux() {
 function masquerModules() {
     const modules = [
         "quiz","justeprix","undercover","lml","mimer","pendu",
-        "petitbac","memoire","morpion","puissance4","blindtest","uno","motdepasse"
+        "petitbac","memoire","morpion","puissance4","blindtest","uno"
     ];
     modules.forEach(m => hide(m));
 }
@@ -347,7 +345,6 @@ const GAME_INIT_FNS = {
     lml        : ()     => { if (typeof window.initialiserLML === 'function') window.initialiserLML(); },
     justeprix  : ()     => { if (typeof window.initialiserJustePrix === 'function') window.initialiserJustePrix(); },
     uno        : ()     => { if (typeof window.initialiserUno === 'function') window.initialiserUno(); },
-    motdepasse : ()     => { if (typeof window.initialiserMotdepasse === 'function') window.initialiserMotdepasse(); },
 };
 
 function _callGameInit(key) {

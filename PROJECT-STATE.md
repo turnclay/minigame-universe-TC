@@ -1,7 +1,7 @@
 ﻿PROJECT-STATE.md (auto-genere par update-agent-state.ps1 - ne pas editer a la main)
 
-Derniere generation : 2026-07-14 02:32
-Commit               : df34a065f1420379b50bd9b2f4c0a75a30d16319
+Derniere generation : 2026-07-14 02:42
+Commit               : 7cf1a7ee5d958eafddd4965b943857612525cfcd
 Message              : Auto update MiniGameV2
 
 JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)
@@ -16,18 +16,23 @@ JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)
 - mimedessine
 - undercover
 - uno
-- motdepasse
 
 FICHIERS MODIFIES DEPUIS LE PUSH PRECEDENT
+- [Supprime] .continue/prompts/MULTI.md
+- [Modifie] .idea/workspace.xml
 - [Modifie] .render-restart
-- [Supprime] DOCUMENTATION-FINAL-SUMMARY.md
-- [Supprime] INDEX-AND-AGENT-GUIDE.md
-- [Modifie] JEUX.md
 - [Modifie] PROJECT-STATE.md
-- [Modifie] QA.md
-- [Supprime] QUICK-REFERENCE-CARD.md
-- [Supprime] STAGES-1-6-SUMMARY.md
 - [Modifie] arbo.txt
+- [Modifie] public/css/style.css
+- [Modifie] public/index.html
+- [Modifie] public/js/jeu.js
+- [Ajoute] public/js/jeux/motdepasse.js
+- [Modifie] public/js/main.js
+- [Ajoute] public/js/modules/motdepasse_hote.js
+- [Ajoute] public/js/modules/motdepasse_player.js
+- [Modifie] public/js/modules/player.js
+- [Ajoute] server/games/motdepasse.js
+- [Modifie] server/ws-handler.js
 
 REFERENCES (ne pas dupliquer leur contenu ici)
 - Dette technique    : DETTE-TECHNIQUE.md
