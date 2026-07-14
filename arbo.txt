@@ -1,8 +1,6 @@
 ﻿MiniGameV2
 ├── .claude
 ├── .continue
-│   └── prompts
-│       └── MULTI.md
 ├── .idea
 │   ├── inspectionProfiles
 │   │   └── profiles_settings.xml
@@ -298,6 +296,7 @@
 │   │   │   ├── memoire.js
 │   │   │   ├── mimedessine.js
 │   │   │   ├── morpion.js
+│   │   │   ├── motdepasse.js
 │   │   │   ├── pendu.js
 │   │   │   ├── petitbac.js
 │   │   │   ├── puissance4.js
@@ -318,6 +317,8 @@
 │   │   │   ├── mime_player.js
 │   │   │   ├── morpion_hote.js
 │   │   │   ├── morpion_player.js
+│   │   │   ├── motdepasse_hote.js
+│   │   │   ├── motdepasse_player.js
 │   │   │   ├── parties.js
 │   │   │   ├── pendu_hote.js
 │   │   │   ├── pendu_player.js
@@ -356,6 +357,7 @@
 │   │   ├── memoire.js
 │   │   ├── mimedessine.js
 │   │   ├── morpion.js
+│   │   ├── motdepasse.js
 │   │   ├── pendu.js
 │   │   ├── petitbac.js
 │   │   ├── puissance4.js

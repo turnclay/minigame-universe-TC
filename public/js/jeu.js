@@ -28,6 +28,7 @@ import                           './modules/memoire_player.js';
 import                           './modules/mime_player.js';
 import                           './modules/undercover_player.js';
 import                           './modules/uno_player.js';
+import                           './modules/motdepasse_player.js';
 
 
 // ── DOM utils ──────────────────────────────────────────────────
@@ -91,7 +92,8 @@ const JeuApp = {
             quiz:'❓ Quiz', justeprix:'💰 Juste Prix', undercover:'🕵️ Undercover',
             lml:'📖 Maxi Lettres', mimer:'🎭 Mimer', mimedessine:'🎭 Mimer',
             pendu:'🪢 Pendu', petitbac:'📝 Petit Bac', memoire:'🧠 Mémoire',
-            morpion:'⭕ Morpion', puissance4:'🔴 Puissance 4', uno:'🃏 UNO'
+            morpion:'⭕ Morpion', puissance4:'🔴 Puissance 4', uno:'🃏 UNO',
+            motdepasse:'🔐 Mot de passe'
         };
         setText('id-meta-nom',  session.partieNom || '—');
         setText('id-meta-jeu',  session.jeu

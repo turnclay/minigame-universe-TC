@@ -1,8 +1,8 @@
 ﻿PROJECT-STATE.md (auto-genere par update-agent-state.ps1 - ne pas editer a la main)
 
-Derniere generation : 2026-07-13 22:59
-Commit               : ea6922af5201432f1d9e1a0885be260e698c2b62
-Message              : Protect legacy partie keys in cleanup until client migration flag present  Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+Derniere generation : 2026-07-14 02:32
+Commit               : df34a065f1420379b50bd9b2f4c0a75a30d16319
+Message              : Auto update MiniGameV2
 
 JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)
 - quiz
@@ -16,28 +16,18 @@ JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)
 - mimedessine
 - undercover
 - uno
+- motdepasse
 
 FICHIERS MODIFIES DEPUIS LE PUSH PRECEDENT
-- [Modifie] .idea/workspace.xml
 - [Modifie] .render-restart
-- [Modifie] CLAUDE.md
-- [Ajoute] CONVENTIONS.md
-- [Modifie] DETTE-TECHNIQUE.md
-- [Ajoute] DOCUMENTATION-FINAL-SUMMARY.md
-- [Ajoute] FULL-REPO-MATRIX.csv
-- [Ajoute] INDEX-AND-AGENT-GUIDE.md
+- [Supprime] DOCUMENTATION-FINAL-SUMMARY.md
+- [Supprime] INDEX-AND-AGENT-GUIDE.md
 - [Modifie] JEUX.md
 - [Modifie] PROJECT-STATE.md
 - [Modifie] QA.md
-- [Ajoute] QUICK-REFERENCE-CARD.md
-- [Ajoute] STAGES-1-6-SUMMARY.md
+- [Supprime] QUICK-REFERENCE-CARD.md
+- [Supprime] STAGES-1-6-SUMMARY.md
 - [Modifie] arbo.txt
-- [Modifie] auto-push.ps1
-- [Supprime] fichiers-public-server.txt
-- [Modifie] public/js/core/cleanup.js
-- [Ajoute] public/js/modules/migrations.js
-- [Modifie] public/js/modules/parties.js
-- [Ajoute] update-agent-state.ps1
 
 REFERENCES (ne pas dupliquer leur contenu ici)
 - Dette technique    : DETTE-TECHNIQUE.md

@@ -8067,3 +8067,218 @@ select:focus-visible {
 ============================================ */
 #scores-hote-overlay { z-index: 10000; }
 #scores-hote-panel   { z-index: 10001; }
+
+/* ============================================
+   MOT DE PASSE
+============================================ */
+.motdepasse-panel,
+.motdepasse-player-card {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    width: 100%;
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 24px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 16px;
+}
+
+.motdepasse-header h2,
+.motdepasse-reveal h2 {
+    margin: 6px 0;
+    color: #fff;
+}
+
+.motdepasse-header p,
+.motdepasse-muted {
+    color: rgba(255,255,255,.65);
+    font-family: var(--font-secondary);
+}
+
+.motdepasse-badge {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(0,212,255,.13);
+    border: 1px solid rgba(0,212,255,.32);
+    color: #00d4ff;
+    font-size: .78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.motdepasse-form,
+.motdepasse-player-form {
+    display: grid;
+    gap: 14px;
+}
+
+.motdepasse-form label {
+    display: grid;
+    gap: 7px;
+    color: rgba(255,255,255,.72);
+    font-size: .9rem;
+    font-weight: 700;
+}
+
+.motdepasse-form input,
+.motdepasse-form select,
+.motdepasse-player-form input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,.22);
+    background: rgba(255,255,255,.08);
+    color: #fff;
+    font: inherit;
+    outline: none;
+}
+
+.motdepasse-form select option {
+    color: #111827;
+}
+
+.motdepasse-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.motdepasse-round-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.motdepasse-timer {
+    min-width: 72px;
+    text-align: center;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: rgba(0,0,0,.22);
+    color: #fbbf24;
+    font-weight: 900;
+}
+
+.motdepasse-indice {
+    display: grid;
+    gap: 6px;
+    padding: 18px;
+    border-radius: 14px;
+    background: rgba(0,212,255,.08);
+    border: 1px solid rgba(0,212,255,.24);
+}
+
+.motdepasse-indice span {
+    color: rgba(255,255,255,.55);
+    font-size: .78rem;
+    text-transform: uppercase;
+    font-weight: 800;
+}
+
+.motdepasse-indice strong {
+    color: #fff;
+    font-size: 1.25rem;
+}
+
+.motdepasse-progress {
+    display: grid;
+    gap: 8px;
+    color: rgba(255,255,255,.68);
+    font-size: .9rem;
+}
+
+.motdepasse-progress-bar {
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.12);
+    overflow: hidden;
+}
+
+#mdp-host-progress-fill {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, #00d4ff, #8a2be2);
+    transition: width .25s ease;
+}
+
+.motdepasse-answer-list {
+    display: grid;
+    gap: 8px;
+}
+
+.motdepasse-answer-row {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.12);
+}
+
+.motdepasse-answer-row.is-correct {
+    border-color: rgba(34,197,94,.45);
+    background: rgba(34,197,94,.12);
+}
+
+.motdepasse-answer-row em {
+    color: #00d4ff;
+    font-style: normal;
+    font-weight: 800;
+}
+
+.motdepasse-reveal {
+    text-align: center;
+}
+
+.motdepasse-reveal p {
+    margin: 10px 0 0;
+    color: rgba(255,255,255,.55);
+    text-transform: uppercase;
+    font-size: .78rem;
+    font-weight: 800;
+}
+
+.motdepasse-reveal h2 {
+    font-size: clamp(2rem, 8vw, 4rem);
+    color: #00d4ff;
+}
+
+.motdepasse-player-icon {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: #00d4ff;
+}
+
+.motdepasse-result {
+    padding: 14px;
+    border-radius: 12px;
+    background: rgba(239,68,68,.12);
+    border: 1px solid rgba(239,68,68,.25);
+    color: #fecaca;
+    font-weight: 700;
+}
+
+.motdepasse-result.is-correct {
+    background: rgba(34,197,94,.12);
+    border-color: rgba(34,197,94,.32);
+    color: #86efac;
+}
+
+@media (max-width: 560px) {
+    .motdepasse-actions,
+    .motdepasse-player-form {
+        grid-template-columns: 1fr;
+    }
+
+    .motdepasse-answer-row {
+        grid-template-columns: 1fr;
+    }
+}

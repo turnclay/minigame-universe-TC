@@ -55,7 +55,7 @@ function jeuIcon(jeu) {
     const m = {
         quiz:'❓', justeprix:'💰', undercover:'🕵️', lml:'📖', mimer:'🎭',
         mimedessine:'🎭', pendu:'🪢', petitbac:'📝', memoire:'🧠',
-        morpion:'⭕', puissance4:'🔴', uno:'🃏'
+        morpion:'⭕', puissance4:'🔴', uno:'🃏', motdepasse:'🔐'
     };
     return m[(jeu || '').toLowerCase()] || '🎮';
 }
@@ -260,6 +260,9 @@ export const Player = {
     'UNO_STATE','UNO_HAND','UNO_TURN','UNO_EFFECT','UNO_UNO_SAID','UNO_PENALTY',
     'UNO_CHALLENGE_OK','UNO_ERROR','UNO_WINNER','UNO_COLOR_CHOSEN',
     'UNO_CHOOSE_COLOR','UNO_DRAW_PLAYABLE',
+            // Mot de passe
+            'MOTDEPASSE_ROUND_START','MOTDEPASSE_ANSWER_ACK','MOTDEPASSE_ANSWER_IN',
+            'MOTDEPASSE_REVELATION',
 ];
         gameEvents.forEach(evt => {
             socket.on(evt, payload => {
