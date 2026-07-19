@@ -1,7 +1,7 @@
 ﻿PROJECT-STATE.md (auto-genere par update-agent-state.ps1 - ne pas editer a la main)
 
-Derniere generation : 2026-07-14 02:42
-Commit               : 7cf1a7ee5d958eafddd4965b943857612525cfcd
+Derniere generation : 2026-07-19 15:38
+Commit               : 1e42f7376d714705017d7d812ac49f3fe2475ab6
 Message              : Auto update MiniGameV2
 
 JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)
@@ -18,7 +18,6 @@ JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)
 - uno
 
 FICHIERS MODIFIES DEPUIS LE PUSH PRECEDENT
-- [Supprime] .continue/prompts/MULTI.md
 - [Modifie] .idea/workspace.xml
 - [Modifie] .render-restart
 - [Modifie] PROJECT-STATE.md
@@ -26,12 +25,12 @@ FICHIERS MODIFIES DEPUIS LE PUSH PRECEDENT
 - [Modifie] public/css/style.css
 - [Modifie] public/index.html
 - [Modifie] public/js/jeu.js
-- [Ajoute] public/js/jeux/motdepasse.js
+- [Supprime] public/js/jeux/motdepasse.js
 - [Modifie] public/js/main.js
-- [Ajoute] public/js/modules/motdepasse_hote.js
-- [Ajoute] public/js/modules/motdepasse_player.js
+- [Supprime] public/js/modules/motdepasse_hote.js
+- [Supprime] public/js/modules/motdepasse_player.js
 - [Modifie] public/js/modules/player.js
-- [Ajoute] server/games/motdepasse.js
+- [Supprime] server/games/motdepasse.js
 - [Modifie] server/ws-handler.js
 
 REFERENCES (ne pas dupliquer leur contenu ici)

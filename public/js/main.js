@@ -1,6 +1,7 @@
 // /js/main.js
 
 import HostSession from './core/host_session.js';
+import Musique from './core/musique.js';
 
 import { $, $$, show, hide } from "./core/dom.js";
 import { GameState } from "./core/state.js";
@@ -147,19 +148,6 @@ function _toastErreur(message) {
     `;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 5000);
-}
-
-function lancerMusique() {
-    const audio = document.getElementById("bg-music");
-    if (!audio) return;
-    audio.volume = 0.4;
-
-    const toggle = document.getElementById("toggle-music");
-    if (!toggle) return;
-    toggle.onclick = function() {
-        if (audio.paused) { audio.play(); toggle.textContent = "🔊"; }
-        else { audio.pause(); toggle.textContent = "🔇"; }
-    };
 }
 
 function initSplashScreen() {
@@ -620,6 +608,8 @@ function initAppliqueGlobale() {
     initStartSolo();
     masquerUndercoverComplet();
     initNavigation();
+    Musique.init();
+    Musique.bindBouton('toggle-music', { on: '🔊', off: '🔇' });
     console.log('[INIT] 📍 UI et navigation initialisées');
 
     // === ÉTAPE 6 : Initialiser WebSocket et authentification ===

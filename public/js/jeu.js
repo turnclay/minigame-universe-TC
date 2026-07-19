@@ -16,6 +16,7 @@
 import { socket }           from './core/socket.js';
 import { getPlayers, addPlayer } from './core/storage.js';
 import { Player }           from './modules/player.js';
+import Musique              from './core/musique.js';
 // Import à effet de bord : enregistre les modules jeu dans JeuRegistry.
 // Chaque jeu WS doit être listé ici pour que JeuRegistry.get(jeu) le trouve.
 import                           './modules/petitbac_player.js';
@@ -45,6 +46,9 @@ const JeuApp = {
     session: null,
 
     init() {
+        Musique.init();
+        Musique.bindBouton('toggle-music', { on: '🔊', off: '🔇' });
+
         const params    = new URLSearchParams(window.location.search);
         const partieId  = params.get('partieId')  || params.get('sessionId') || null;
         const pseudo    = params.get('pseudo')     || null;

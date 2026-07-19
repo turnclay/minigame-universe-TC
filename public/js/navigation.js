@@ -11,6 +11,7 @@ import {
     getPlayers
 } from "./core/storage.js";
 import { nettoyerSession } from "./core/cleanup.js";
+import Musique from "./core/musique.js";
 
 // Flag pour éviter l'initialisation multiple
 let navigationInitialized = false;
@@ -1265,16 +1266,13 @@ function _ouvrirReglagesInvite() {
         <div class="reglages-body">
             <div class="reglages-section">
                 <h3 class="reglages-section-title">🔊 Audio</h3>
-                <div class="reglages-row" style="opacity:.35;filter:grayscale(100%);">
-                    <span class="reglages-row-label" style="text-decoration:line-through;">Musique</span>
-                    <button class="toggle-switch" disabled
-                        style="cursor:not-allowed;pointer-events:none;">
+                <div class="reglages-row">
+                    <span class="reglages-row-label">Musique</span>
+                    <button class="toggle-switch" id="reglages-toggle-music"
+                        aria-label="Activer/Désactiver la musique">
                         <span class="toggle-switch-knob"></span>
                     </button>
                 </div>
-                <p style="font-size:.75rem;color:rgba(255,255,255,.35);margin-top:4px;">
-                    🚧 Fonctionnalité bientôt disponible
-                </p>
             </div>
         </div>`;
 
@@ -1298,6 +1296,8 @@ function _ouvrirReglagesInvite() {
 
     document.getElementById('reglages-close')?.addEventListener('click', fermer);
     overlay.addEventListener('click', fermer);
+
+    Musique.bindBouton('reglages-toggle-music', { classeOn: 'active' });
 }
 
 // ── Stats invité (lecture seule, dans un panneau modal) ─
