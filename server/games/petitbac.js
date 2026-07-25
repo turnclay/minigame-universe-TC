@@ -31,7 +31,7 @@ const CATEGORIES = [
 ];
 
 // Catégorie → dico logique (cf dictionnaires.js).
-// Catégorie ABSENTE = validée « lettre seule » (prenom).
+// Catégorie ABSENTE = validée « lettre seule » (prenom, celebrite).
 const CAT_DICO = {
     animal     : 'general',
     fruit      : 'general',
@@ -41,11 +41,10 @@ const CAT_DICO = {
     ville      : 'ville',
     marque     : 'marque',
     personnage : 'personnage',
-    celebrite  : 'celebrite',
 };
 
 // Catégories qui peuvent basculer sur Wikidata live si pas de fichier statique
-const CAT_WIKIDATA = new Set(['celebrite', 'personnage']);
+const CAT_WIKIDATA = new Set(['personnage']);
 
 const LETTRES  = 'ABCDEFGHIJKLMNOPRSTUVW'.split('');
 const DUREE_MS = 120_000;
@@ -131,7 +130,7 @@ function _premiereLettre(v) {
  *
  * Priorité :
  *   1. Dico statique (.txt / .bloom) présent → O(1), sync
- *   2. Catégorie dynamique (celebrite / personnage) → Wikidata live
+ *   2. Catégorie dynamique (personnage) → Wikidata live
  *   3. Pas de dico et pas dynamique → lettre seule (prenom, dégradation)
  */
 async function _estValideAsync(catId, val, lettre) {
@@ -301,7 +300,7 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             s.timerHandle = setTimeout(() => {
                 if (s.phase !== 'jeu') return;
                 const nbJoueurs = (store.getPartie(partieId)?.joueurs || []).length;
-                broadcastToHost(wss, partieId, 'PETITBAC_TIMER_EXPIRED', {
+                broadcastToGame(wss, partieId, 'PETITBAC_TIMER_EXPIRED', {
                     nbReponses : Object.keys(s.reponses).length,
                     nbJoueurs,
                 });

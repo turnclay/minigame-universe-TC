@@ -1,7 +1,7 @@
 ﻿PROJECT-STATE.md (auto-genere par update-agent-state.ps1 - ne pas editer a la main)
 
-Derniere generation : 2026-07-19 15:38
-Commit               : 1e42f7376d714705017d7d812ac49f3fe2475ab6
+Derniere generation : 2026-07-25 20:28
+Commit               : 94fad4ef7f5cfac851a00efae38079166ce60ac1
 Message              : Auto update MiniGameV2
 
 JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)
@@ -21,17 +21,10 @@ FICHIERS MODIFIES DEPUIS LE PUSH PRECEDENT
 - [Modifie] .idea/workspace.xml
 - [Modifie] .render-restart
 - [Modifie] PROJECT-STATE.md
-- [Modifie] arbo.txt
-- [Modifie] public/css/style.css
-- [Modifie] public/index.html
+- [Modifie] public/jeu.html
 - [Modifie] public/js/jeu.js
-- [Supprime] public/js/jeux/motdepasse.js
 - [Modifie] public/js/main.js
-- [Supprime] public/js/modules/motdepasse_hote.js
-- [Supprime] public/js/modules/motdepasse_player.js
-- [Modifie] public/js/modules/player.js
-- [Supprime] server/games/motdepasse.js
-- [Modifie] server/ws-handler.js
+- [Modifie] public/js/navigation.js
 
 REFERENCES (ne pas dupliquer leur contenu ici)
 - Dette technique    : DETTE-TECHNIQUE.md
