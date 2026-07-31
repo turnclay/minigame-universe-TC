@@ -351,6 +351,40 @@ export function handleHostAction(wss, ws, partieId, action, data, helpers) {
             break;
         }
 
+        case 'invalidate': {
+            const s = _getSession(partieId);
+            if (!s || s.phase !== 'resultats') {
+                return send(ws, 'ERROR', { code: 'PETITBAC_BAD_STATE', message: 'Aucune révélation en cours.' });
+            }
+            const ciblePseudo = data?.pseudo;
+            const catId       = data?.catId;
+            const r = s.dernierResultat.find(x => x.pseudo === ciblePseudo);
+            if (!r || !r.details?.[catId]) {
+                return send(ws, 'ERROR', { code: 'PETITBAC_INVALID_TARGET', message: 'Réponse introuvable.' });
+            }
+
+            const ancienPoints = r.details[catId].points || 0;
+            r.details[catId] = { ...r.details[catId], statut: 'annule', points: 0 };
+            r.score = Object.values(r.details).reduce((sum, d) => sum + (d.points || 0), 0);
+
+            if (ancienPoints > 0) {
+                store.modifierScore(partieId, ciblePseudo, -ancienPoints);
+            }
+
+            const scores = store.getScores(partieId) || {};
+            broadcastToGame(wss, partieId, 'PETITBAC_REVELATION', {
+                lettre     : s.lettre,
+                categories : CATEGORIES,
+                reponses   : s.dernierResultat,
+                scores,
+                manche     : s.manche,
+            });
+            broadcastToGame(wss, partieId, 'SCORES_UPDATE', { scores });
+
+            console.log(`[PETITBAC] 🚫 Réponse invalidée: ${ciblePseudo}/${catId} (manche ${s.manche})`);
+            break;
+        }
+
         default:
             console.warn(`[PETITBAC] ⚠️ Action host inconnue: ${cmd}`);
     }

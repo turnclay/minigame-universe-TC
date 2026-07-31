@@ -34,6 +34,7 @@ function _styleStatut(statut) {
         case 'unique':   return { color:'#86efac', icon:'✅', badge:'+2' };
         case 'double':   return { color:'#fde047', icon:'✅', badge:'+1' };
         case 'invalide': return { color:'#fca5a5', icon:'❌', badge:'0' };
+        case 'annule':   return { color:'#f87171', icon:'🚫', badge:'annulé' };
         default:         return { color:'rgba(255,255,255,.35)', icon:'—', badge:'' };
     }
 }
@@ -175,9 +176,17 @@ function _afficherResultatsPanneau() {
             // Chips par catégorie non vide.
             const chips = Object.entries(details)
                 .filter(([, d]) => d && String(d.val || '').trim())
-                .map(([, d]) => {
+                .map(([catId, d]) => {
                     const st  = _styleStatut(d.statut);
                     const val = String(d.val || '').trim();
+                    const btnInvalider = d.statut !== 'annule'
+                        ? `<button class="pb-btn-invalidate" data-pseudo="${_escHtml(r.pseudo)}" data-cat="${_escHtml(catId)}"
+                            title="Invalider cette réponse"
+                            style="flex:none;display:inline-flex;align-items:center;justify-content:center;
+                            width:18px;height:18px;border-radius:50%;border:1px solid rgba(248,113,113,.4);
+                            background:rgba(248,113,113,.15);color:#f87171;font-size:.65rem;cursor:pointer;
+                            padding:0;line-height:1;">🚫</button>`
+                        : '';
                     return `<span style="display:inline-flex;align-items:center;gap:5px;
                         padding:3px 8px;border-radius:8px;font-size:.78rem;
                         background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
@@ -185,6 +194,7 @@ function _afficherResultatsPanneau() {
                         <span>${st.icon}</span><span style="color:#fff;">${_escHtml(val)}</span>
                         ${st.badge ? `<span style="opacity:.8;">${st.badge}</span>` : ''}
                         ${_btnDef(val)}
+                        ${btnInvalider}
                     </span>`;
                 }).join('');
 
@@ -252,6 +262,18 @@ export function injecterPanneauHote() {
         try { socket.send('HOST_ACTION', { action: 'petitbac:reveal', data: {} }); }
         catch (err) { console.error('[PB_HOTE] send reveal:', err.message); }
     };
+
+    panneau.addEventListener('click', (e) => {
+        const btn = e.target.closest('.pb-btn-invalidate');
+        if (!btn) return;
+        const { pseudo, cat } = btn.dataset;
+        if (!pseudo || !cat) return;
+        try {
+            socket.send('HOST_ACTION', { action: 'petitbac:invalidate', data: { pseudo, catId: cat } });
+        } catch (err) {
+            console.error('[PB_HOTE] send invalidate:', err.message);
+        }
+    });
 
     if (!document.getElementById('style-pb-btn-pulse')) {
         const s = document.createElement('style');

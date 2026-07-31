@@ -16,7 +16,6 @@ const PREFIXES_SESSION = [
 
 const CLES_EXACTES_BASE = [
     'invite_joueur_context',
-    'partie:signal',
 ];
 const LEGACY_KEYS = ['minigame_partie_session_id', 'minigame_partie_id', 'ws_partie_id'];
 const MIGRATION_FLAG = 'migrations_parties_v1_done';

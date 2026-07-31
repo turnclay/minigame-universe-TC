@@ -4,11 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="BackgroundAgentGlobalSettings">
-    <option name="selectedModelId" value="auto" />
+    <option name="selectedModelId" value="claude-fable-5" />
+    <option name="selectedProviderName" value="Anthropic" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="73d891ed-7cb8-4a2e-b43e-d24a9aad95e0" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/core/signal.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/jeux/undercover.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/modules/petitbac_hote.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/petitbac_hote.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/modules/petitbac_player.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/petitbac_player.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/modules/undercover_hote.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/undercover_hote.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/games/petitbac.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/games/petitbac.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -228,9 +234,8 @@
         <option name="modeId" value="Agent" />
         <option name="model">
           <model>
-            <option name="modelProviderName" value="OpenAI" />
-            <option name="modelType" value="byok_family" />
-            <option name="modelValue" value="gpt-5.5" />
+            <option name="modelType" value="builtin_id" />
+            <option name="modelValue" value="auto" />
           </model>
         </option>
         <option name="targetType" value="BACKGROUND" />

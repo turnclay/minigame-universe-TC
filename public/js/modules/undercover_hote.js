@@ -11,7 +11,6 @@
 // ============================================================
 
 import { GameState } from '../core/state.js';
-import { signalDemarrage } from '../core/signal.js';
 import { socket } from '../core/socket.js';
 import HostSession from '../core/host_session.js';
 
@@ -915,15 +914,6 @@ async function lancerNouvellePartie() {
 
     // Nouveau tirage
     await initialiserPartie({ joueurs, nbUndercover: nbUC, nbMisterWhite: nbMW });
-
-    // Signal de démarrage pour les invités
-    try {
-        const sid = getSid();
-        const { signalDemarrage } = await import('../core/signal.js');
-        signalDemarrage(sid, 'undercover');
-        localStorage.setItem('partie_etat_' + sid, 'en_cours');
-    } catch (e) { console.error('[UC] Signal nouvelle partie :', e); }
-
     // Afficher la distribution
     afficherDistribution(joueurs[0]);
 }
@@ -1041,17 +1031,6 @@ export function bindBoutonDemarrer(onTousVus) {
         //     GAME_STARTED et chargent le module invité undercover_player.js.
         try { HostSession.notifierDemarrage(); }
         catch (e) { console.error('[UC] notifierDemarrage:', e); }
-
-        // ───────────────────────────────────────────────
-        // 3) Signal start + état en cours
-        // ───────────────────────────────────────────────
-        try {
-            const sid = GameState.sessionId;
-            signalDemarrage(sid, "undercover");
-            localStorage.setItem("partie_etat_" + sid, "en_cours");
-        } catch (e) {
-            console.error("[UC] Impossible de publier le signal start :", e);
-        }
 
         freshBtn.disabled  = false;
         freshBtn.innerHTML = orig;

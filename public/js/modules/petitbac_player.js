@@ -34,6 +34,7 @@ function _styleStatut(statut) {
         case 'unique':   return { color:'#86efac', icon:'✅', badge:'+2' };
         case 'double':   return { color:'#fde047', icon:'✅', badge:'+1 · doublon' };
         case 'invalide': return { color:'#fca5a5', icon:'❌', badge:'+0' };
+        case 'annule':   return { color:'#f87171', icon:'🚫', badge:'annulé par l\'hôte' };
         default:         return { color:'rgba(255,255,255,.4)', icon:'—', badge:'' };
     }
 }
@@ -64,7 +65,8 @@ const PetitbacModule = {
         this._session = session;
         this._socket  = sock;
         this._aSoumis = false;
-        this._scores  = (snapshot?.scores) || {};
+        this._scores      = (snapshot?.scores) || {};
+        this._hostPseudo  = snapshot?.hostPseudo || null;
 
         this._afficherEcranAttente();
 
@@ -304,6 +306,26 @@ const PetitbacModule = {
             </div>`;
         }).join('');
 
+        // Détail « Réponses de l'hôte » (visible par tous les invités).
+        const hoteRes     = this._hostPseudo ? liste.find(r => r.pseudo === this._hostPseudo) : null;
+        const showHote    = !!hoteRes && this._hostPseudo !== moi;
+        const hoteDetails = (hoteRes && hoteRes.details) || {};
+        const detailHote  = showHote ? this._categories.map(c => {
+            const d   = hoteDetails[c.id] || { val: '', statut: 'vide', points: 0 };
+            const st  = _styleStatut(d.statut);
+            const val = String(d.val || '').trim();
+            return `<div style="display:flex;gap:8px;align-items:center;padding:6px 10px;
+                background:rgba(255,255,255,.04);border-radius:6px;margin-bottom:4px;font-size:.85rem;">
+                <span style="min-width:24px;">${c.icon}</span>
+                <span style="flex:1;color:rgba(255,255,255,.7);">${esc(c.label)}</span>
+                <span style="color:${st.color};font-weight:600;display:flex;align-items:center;gap:6px;">
+                    <span>${st.icon}</span><span>${esc(val) || '—'}</span>
+                    ${st.badge ? `<span style="font-size:.7rem;opacity:.85;">${st.badge}</span>` : ''}
+                    ${val ? _btnDef(val) : ''}
+                </span>
+            </div>`;
+        }).join('') : '';
+
         cont.innerHTML = `
             <div style="padding:1rem 0;display:flex;flex-direction:column;gap:1rem;">
                 <div style="text-align:center;padding:.7rem;
@@ -320,6 +342,13 @@ const PetitbacModule = {
                     </div>
                     ${detail}
                 </div>
+                ${showHote ? `<div>
+                    <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;
+                        color:rgba(167,139,250,.8);margin-bottom:6px;font-weight:700;">
+                        🎮 Réponses de l'hôte
+                    </div>
+                    ${detailHote}
+                </div>` : ''}
                 <div>
                     <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;
                         color:rgba(167,139,250,.8);margin-bottom:6px;font-weight:700;">

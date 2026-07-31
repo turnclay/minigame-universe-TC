@@ -286,7 +286,6 @@
 │   │   │   ├── host_session.js
 │   │   │   ├── musique.js
 │   │   │   ├── partie_id.js
-│   │   │   ├── signal.js
 │   │   │   ├── socket.js
 │   │   │   ├── state.js
 │   │   │   └── storage.js
@@ -300,7 +299,6 @@
 │   │   │   ├── petitbac.js
 │   │   │   ├── puissance4.js
 │   │   │   ├── quiz.js
-│   │   │   ├── undercover.js
 │   │   │   └── uno.js
 │   │   ├── modules
 │   │   │   ├── equipes.js
