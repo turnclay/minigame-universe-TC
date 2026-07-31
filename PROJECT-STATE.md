@@ -1,7 +1,7 @@
 ﻿PROJECT-STATE.md (auto-genere par update-agent-state.ps1 - ne pas editer a la main)
 
-Derniere generation : 2026-07-31 13:43
-Commit               : b992cca8d0b3bcc21fcc39dcec7e6d768e43eee3
+Derniere generation : 2026-07-31 13:56
+Commit               : 7164d75f700ae5c784ca381b82216a8092819b8f
 Message              : Auto update MiniGameV2
 
 JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)
@@ -21,6 +21,13 @@ FICHIERS MODIFIES DEPUIS LE PUSH PRECEDENT
 - [Modifie] .idea/workspace.xml
 - [Modifie] .render-restart
 - [Modifie] PROJECT-STATE.md
+- [Modifie] arbo.txt
+- [Modifie] public/js/core/cleanup.js
+- [Supprime] public/js/core/signal.js
+- [Supprime] public/js/jeux/undercover.js
+- [Modifie] public/js/modules/petitbac_hote.js
+- [Modifie] public/js/modules/petitbac_player.js
+- [Modifie] public/js/modules/undercover_hote.js
 - [Modifie] server/games/petitbac.js
 
 REFERENCES (ne pas dupliquer leur contenu ici)

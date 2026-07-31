@@ -286,6 +286,7 @@
 │   │   │   ├── host_session.js
 │   │   │   ├── musique.js
 │   │   │   ├── partie_id.js
+│   │   │   ├── signal.js
 │   │   │   ├── socket.js
 │   │   │   ├── state.js
 │   │   │   └── storage.js
