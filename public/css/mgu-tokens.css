@@ -1,0 +1,74 @@
+/*
+  mgu-tokens.css — MiniGame Universe — Design system (Option A : couche additive)
+  Remplace le tokens.css livré précédemment (ne pas garder l'ancienne version).
+
+  Toutes les variables sont préfixées --mgu- : vérifié par audit qu'aucun nom
+  n'entre en collision avec les variables existantes de style.css (--font-display
+  y est déjà pris par "Press Start 2P" — d'où le préfixe systématique).
+
+  Ce fichier ne modifie ni ne supprime aucune variable existante. Chargement
+  après style.css/gestion.css/reglages.css dans index.html.
+*/
+
+:root {
+  /* Surfaces hôte — feutrine */
+  --mgu-feutrine-900: #17352A;
+  --mgu-feutrine-800: #1E4234;
+  --mgu-feutrine-700: #244A3B;
+  --mgu-feutrine-600: #2E5A48;
+  --mgu-feutrine-line: #345947;
+
+  /* Surfaces invité — carton (pas encore utilisé tant que jeu.html n'est pas migré) */
+  --mgu-carton-100: #F2E8CE;
+  --mgu-carton-50: #FAF4E4;
+  --mgu-carton-line: #E2D3AA;
+  --mgu-encre-900: #1E1B16;
+  --mgu-encre-600: #5A5142;
+
+  /* Accent */
+  --mgu-or-500: #E8B23B;
+  --mgu-or-600: #D19B27;
+  --mgu-or-900: #5A4415;
+
+  /* Pions — identité joueur (anciennement "jeton" ; renommé pour éviter la
+     collision avec .p4-jeton / .jeton-equipe déjà utilisés pour les pièces
+     de jeu Puissance 4 et Morpion). Couleur fournie par le serveur (store.js),
+     jamais assignée localement. */
+  --mgu-pion-rouge: #D6484F;
+  --mgu-pion-bleu: #2C6E9E;
+  --mgu-pion-safran: #D97B29;
+  --mgu-pion-prairie: #5FA777;
+  --mgu-pion-violet: #7C5CA8;
+  --mgu-pion-turquoise: #3E9C93;
+
+  /* Radius */
+  --mgu-radius-s: 10px;
+  --mgu-radius-m: 16px;
+  --mgu-radius-l: 22px;
+  --mgu-radius-full: 999px;
+
+  /* Spacing (grille 4px) */
+  --mgu-space-1: 4px;
+  --mgu-space-2: 8px;
+  --mgu-space-3: 12px;
+  --mgu-space-4: 16px;
+  --mgu-space-5: 24px;
+  --mgu-space-6: 32px;
+  --mgu-space-7: 48px;
+  --mgu-space-8: 64px;
+
+  /* Typographie */
+  --mgu-font-display: 'Baloo 2', sans-serif;
+  --mgu-font-body: 'Manrope', sans-serif;
+  --mgu-font-mono: 'IBM Plex Mono', monospace;
+
+  /* Accessibilité */
+  --mgu-focus-ring: 0 0 0 3px var(--mgu-carton-50), 0 0 0 6px var(--mgu-or-500);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.mgu-pilote * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

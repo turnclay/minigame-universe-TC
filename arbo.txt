@@ -19,9 +19,9 @@
 │   │   ├── invite.css
 │   │   ├── mgu-accueil-pilote.css
 │   │   ├── mgu-components.css
+│   │   ├── mgu-tokens.css
 │   │   ├── reglages.css
-│   │   ├── style.css
-│   │   └── tokens.css
+│   │   └── style.css
 │   ├── data
 │   │   ├── ListeMotsMime.xlsx
 │   │   ├── ListeMotsPendu.csv

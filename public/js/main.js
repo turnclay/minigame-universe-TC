@@ -156,8 +156,11 @@ function initSplashScreen() {
 
     if (!splash) {
         // Pas de splash screen → masquer le loader et montrer l'accueil IMMÉDIATEMENT
+        // Option B (fusion Accueil + Choix du jeu) : atterrissage direct sur
+        // choix-jeu. Le hub "home" (Nouvelle partie / Continuer) reste accessible
+        // via le menu ☰ (menu-home) pour la reprise de partie.
         if (loader) loader.hidden = true;
-        show("home");
+        show("choix-jeu");
         return;
     }
 
@@ -167,16 +170,18 @@ function initSplashScreen() {
         splash.classList.add("fade-out");
         setTimeout(() => {
             splash.style.display = "none";
-            // Masquer le loader et afficher l'accueil
+            // Masquer le loader et afficher l'accueil (Option B : choix-jeu direct)
             if (loader) loader.hidden = true;
-            show("home");
-            console.log('[INIT] ✅ Splash disparue, home affichée, loader masqué');
+            show("choix-jeu");
+            console.log('[INIT] ✅ Splash disparue, choix-jeu affiché, loader masqué');
         }, FADE_DURATION);
     }, SPLASH_DURATION.SCREEN);
 }
 
 export function afficherAccueilJeux() {
-    naviguerVers("home", "choix-jeu");
+    // Option B : le bouton Accueil de la nav ramène au choix du jeu (nouvel
+    // écran d'atterrissage), pas au hub. Le hub reste joignable via le menu.
+    naviguerVers("choix-jeu", "home");
 }
 
 function masquerModules() {
