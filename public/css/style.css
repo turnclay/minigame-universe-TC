@@ -1339,8 +1339,8 @@ hr {
 #btn-continuer,
 #charger-joueur,
 #creer-joueur {
-    background: var(--gradient-button);
-    color: white;
+    background: var(--mgu-or-500);
+    color: var(--mgu-or-900);
     box-shadow: var(--shadow-soft);
 }
 
