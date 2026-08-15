@@ -1,0 +1,362 @@
+/*
+  mgu-flux-pilote.css — MiniGame Universe
+  Écrans : Choix du mode, Formulaire solo (+ bloc invitation), Formulaire
+  équipes, Liste des parties. Même principe que mgu-accueil-pilote.css :
+  tout est scopé "body.mgu-pilote", chargé après style.css.
+
+  IMPORTANT — corrige un oubli de la v1 de mgu-accueil-pilote.css : la
+  règle de base ".screen" (style.css l.329) applique le fond glass/blur
+  Aurora à TOUS les écrans (#home, #choix-jeu inclus) — jamais neutralisée
+  jusqu'ici. Elle est corrigée ici une fois pour toutes, donc profite
+  aussi rétroactivement à l'Accueil et au Choix du jeu.
+
+  ".screen" et ".game-screen" partagent la même règle dans style.css mais
+  restent deux classes distinctes : cette feuille ne touche qu'à ".screen"
+  — aucun écran de jeu individuel (.game-screen) n'est affecté.
+*/
+
+/* ---------- Correctif fondation : carte ".screen" ---------- */
+body.mgu-pilote .screen {
+  background: var(--mgu-feutrine-800);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--mgu-feutrine-line);
+  border-radius: var(--mgu-radius-l);
+  box-shadow: none;
+  animation: none;
+}
+
+body.mgu-pilote .screen::before {
+  display: none;
+}
+
+/* ---------- Éléments de formulaire (globaux, actifs seulement en mgu-pilote) ---------- */
+body.mgu-pilote .input-primary,
+body.mgu-pilote .select-primary,
+body.mgu-pilote input[type="text"],
+body.mgu-pilote input[type="number"],
+body.mgu-pilote select {
+  font-family: var(--mgu-font-body);
+  font-weight: 600;
+  color: var(--mgu-carton-50);
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  border-radius: var(--mgu-radius-s);
+  backdrop-filter: none;
+}
+
+body.mgu-pilote .input-primary::placeholder,
+body.mgu-pilote input[type="text"]::placeholder {
+  color: var(--mgu-carton-100);
+  opacity: .5;
+}
+
+body.mgu-pilote .input-primary:focus,
+body.mgu-pilote .select-primary:focus,
+body.mgu-pilote input[type="text"]:focus,
+body.mgu-pilote input[type="number"]:focus,
+body.mgu-pilote select:focus {
+  border-color: var(--mgu-or-500);
+  background: var(--mgu-feutrine-600);
+  box-shadow: var(--mgu-focus-ring);
+}
+
+body.mgu-pilote label {
+  font-family: var(--mgu-font-body);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--mgu-or-500);
+}
+
+body.mgu-pilote .separator,
+body.mgu-pilote hr {
+  border-top: 1px solid var(--mgu-feutrine-line);
+}
+
+body.mgu-pilote .btn-secondary {
+  background: var(--mgu-feutrine-600);
+  color: var(--mgu-carton-50);
+  border: 1px solid var(--mgu-feutrine-line);
+}
+
+body.mgu-pilote .btn-secondary:hover {
+  border-color: var(--mgu-or-500);
+}
+
+body.mgu-pilote .btn-start-game,
+body.mgu-pilote #btn-start-solo {
+  background: var(--mgu-or-500);
+  color: var(--mgu-or-900);
+  font-family: var(--mgu-font-display);
+  box-shadow: none;
+}
+
+body.mgu-pilote .btn-start-game:hover,
+body.mgu-pilote #btn-start-solo:hover {
+  background: var(--mgu-or-600);
+  box-shadow: none;
+}
+
+/* ---------- Choix du mode (#choix-mode) ---------- */
+body.mgu-pilote .mode-container {
+  gap: var(--mgu-space-3);
+}
+
+body.mgu-pilote .mode-card {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  border-radius: var(--mgu-radius-m);
+  padding: var(--mgu-space-5);
+  backdrop-filter: none;
+}
+
+body.mgu-pilote .mode-card::before {
+  background: transparent;
+  opacity: 0;
+}
+
+body.mgu-pilote .mode-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--mgu-or-500);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .25);
+}
+
+body.mgu-pilote .mode-card:hover::before {
+  opacity: 0;
+}
+
+body.mgu-pilote .mode-icon {
+  font-size: 32px;
+  filter: none;
+}
+
+body.mgu-pilote .mode-card-title,
+body.mgu-pilote .mode-card h2 {
+  font-family: var(--mgu-font-display);
+  color: var(--mgu-or-500);
+  font-size: 16px;
+}
+
+body.mgu-pilote .mode-card-description,
+body.mgu-pilote .mode-card p {
+  font-family: var(--mgu-font-body);
+  color: var(--mgu-carton-100);
+  opacity: .85;
+}
+
+body.mgu-pilote .partie-nom {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  border-radius: var(--mgu-radius-m);
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+body.mgu-pilote .partie-nom h2 {
+  font-family: var(--mgu-font-display);
+  color: var(--mgu-or-500);
+  font-size: 16px;
+}
+
+/* ---------- Formulaire solo (#form-solo) ---------- */
+body.mgu-pilote .solo-block {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  border-radius: var(--mgu-radius-m);
+}
+
+body.mgu-pilote .solo-block h2,
+body.mgu-pilote .solo-block h4 {
+  font-family: var(--mgu-font-display);
+  color: var(--mgu-or-500);
+}
+
+body.mgu-pilote .joueurs-selectionnes {
+  background: var(--mgu-feutrine-900);
+  border: 1px solid var(--mgu-feutrine-line);
+  border-radius: var(--mgu-radius-m);
+}
+
+body.mgu-pilote .joueurs-vide {
+  color: var(--mgu-carton-100);
+  opacity: .5;
+}
+
+body.mgu-pilote .joueur-selectionne-item {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  border-radius: var(--mgu-radius-s);
+}
+
+body.mgu-pilote .joueur-selectionne-item:hover {
+  border-color: var(--mgu-or-500);
+}
+
+body.mgu-pilote .joueur-selectionne-item span {
+  color: var(--mgu-carton-50);
+}
+
+body.mgu-pilote .btn-remove-joueur {
+  background: var(--mgu-pion-rouge);
+}
+
+/* Bloc invitation (lien + QR) */
+body.mgu-pilote .bloc-invitation {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  border-radius: var(--mgu-radius-m);
+}
+
+body.mgu-pilote .invite-title {
+  font-family: var(--mgu-font-display);
+  color: var(--mgu-carton-50);
+}
+
+body.mgu-pilote .invite-subtitle {
+  color: var(--mgu-carton-100);
+  opacity: .7;
+}
+
+body.mgu-pilote .invite-meta-label {
+  color: var(--mgu-carton-100);
+  opacity: .7;
+}
+
+body.mgu-pilote .invite-meta-val {
+  color: var(--mgu-or-500);
+}
+
+body.mgu-pilote .invite-id {
+  color: var(--mgu-carton-100) !important;
+  opacity: .6;
+}
+
+body.mgu-pilote .invite-link-input {
+  background: var(--mgu-feutrine-900);
+  border: 1px solid var(--mgu-feutrine-line);
+  color: var(--mgu-carton-50);
+  font-family: var(--mgu-font-mono);
+}
+
+body.mgu-pilote .invite-copy-btn {
+  background: var(--mgu-feutrine-600);
+  border: 1px solid var(--mgu-feutrine-line);
+  color: var(--mgu-or-500);
+}
+
+body.mgu-pilote .invite-copy-btn:hover {
+  background: var(--mgu-feutrine-600);
+  border-color: var(--mgu-or-500);
+}
+
+body.mgu-pilote .invite-copy-confirm {
+  color: var(--mgu-pion-prairie);
+}
+
+/* ---------- Formulaire équipes (#form-equipes) ---------- */
+body.mgu-pilote .eq-create-block {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  border-radius: var(--mgu-radius-m);
+}
+
+body.mgu-pilote .eq-equipe-card {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  border-radius: var(--mgu-radius-m);
+}
+
+body.mgu-pilote .eq-equipe-card:hover {
+  border-color: var(--mgu-or-500);
+}
+
+body.mgu-pilote .eq-equipe-header {
+  border-bottom: 1px solid var(--mgu-feutrine-line);
+}
+
+body.mgu-pilote .eq-equipe-nom {
+  color: var(--mgu-or-500);
+  font-family: var(--mgu-font-display);
+}
+
+body.mgu-pilote .eq-membre-tag {
+  background: var(--mgu-feutrine-600);
+  border: 1px solid var(--mgu-feutrine-line);
+  color: var(--mgu-carton-50);
+}
+
+body.mgu-pilote .eq-toggle-btn {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  color: var(--mgu-carton-100);
+}
+
+body.mgu-pilote .eq-toggle-btn.active {
+  background: var(--mgu-or-500);
+  border-color: var(--mgu-or-500);
+  color: var(--mgu-or-900);
+}
+
+body.mgu-pilote .eq-nombre-btn {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  color: var(--mgu-carton-50);
+}
+
+body.mgu-pilote .eq-nombre-val {
+  color: var(--mgu-or-500);
+}
+
+body.mgu-pilote .eq-empty,
+body.mgu-pilote .eq-empty-membres {
+  color: var(--mgu-carton-100);
+  opacity: .5;
+}
+
+/* ---------- Liste des parties (#liste-parties) ---------- */
+body.mgu-pilote .partie-item {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  border-radius: var(--mgu-radius-m);
+  backdrop-filter: none;
+}
+
+body.mgu-pilote .partie-item:hover {
+  border-color: var(--mgu-or-500);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .25);
+  transform: translateY(-2px);
+}
+
+body.mgu-pilote .partie-item h3 {
+  font-family: var(--mgu-font-display);
+  color: var(--mgu-or-500);
+}
+
+body.mgu-pilote .partie-item p {
+  color: var(--mgu-carton-100);
+}
+
+body.mgu-pilote .date-partie-mini {
+  color: var(--mgu-carton-100);
+  opacity: .6;
+}
+
+body.mgu-pilote .btn-load {
+  background: var(--mgu-or-500);
+  color: var(--mgu-or-900);
+}
+
+body.mgu-pilote .btn-load:hover {
+  background: var(--mgu-or-600);
+}
+
+body.mgu-pilote .btn-delete {
+  background: var(--mgu-pion-rouge);
+}
+
+body.mgu-pilote .btn-retour-parties {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  color: var(--mgu-carton-50);
+  backdrop-filter: none;
+}

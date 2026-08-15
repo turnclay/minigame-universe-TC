@@ -19,6 +19,7 @@
 │   │   ├── invite.css
 │   │   ├── mgu-accueil-pilote.css
 │   │   ├── mgu-components.css
+│   │   ├── mgu-flux-pilote.css
 │   │   ├── mgu-tokens.css
 │   │   ├── reglages.css
 │   │   └── style.css

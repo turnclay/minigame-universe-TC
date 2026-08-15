@@ -97,7 +97,8 @@ export function naviguerVers(section, depuis = null) {
     show(section);
 
     // Design pilote (Option A+C) — activé uniquement sur Accueil et Choix du jeu.
-    document.body.classList.toggle('mgu-pilote', section === "home" || section === "choix-jeu");
+    const MGU_PILOTE_SCREENS = ["home", "choix-jeu", "choix-mode", "form-solo", "form-equipes", "liste-parties"];
+    document.body.classList.toggle('mgu-pilote', MGU_PILOTE_SCREENS.includes(section));
 
     const btnRetour = $("btn-retour-permanent");
     if (btnRetour) btnRetour.hidden = section === "home";
