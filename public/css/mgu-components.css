@@ -1,0 +1,91 @@
+/*
+  mgu-components.css — MiniGame Universe
+  Classes des composants transversaux (Pion, ligne de scoreboard).
+  Nouvelles classes uniquement — aucune ne recouvre un sélecteur existant
+  de style.css (vérifié par audit). Chargement global, sans risque : ces
+  règles ne s'appliquent qu'aux éléments créés par pion.js, qui n'existent
+  pas encore ailleurs dans le DOM.
+*/
+
+.pion {
+  display: inline-block;
+  border-radius: 50%;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .18), 0 2px 5px rgba(0, 0, 0, .3);
+  border: 2px solid rgba(255, 255, 255, .25);
+  flex-shrink: 0;
+}
+.pion--s { width: 16px; height: 16px; border-width: 1px; }
+.pion--m { width: 30px; height: 30px; }
+.pion--l { width: 44px; height: 44px; }
+
+.pion-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--mgu-space-2);
+}
+.pion-item__name {
+  font-family: var(--mgu-font-body);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pion-picker {
+  display: flex;
+  gap: var(--mgu-space-3);
+  flex-wrap: wrap;
+}
+.pion-pick {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  padding: 0;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .15);
+  cursor: pointer;
+}
+.pion-pick[aria-pressed="true"] {
+  border-color: var(--mgu-or-500);
+}
+
+.sb-row {
+  display: flex;
+  align-items: center;
+  gap: var(--mgu-space-3);
+  padding: var(--mgu-space-3) var(--mgu-space-4);
+  border-radius: var(--mgu-radius-m);
+}
+.sb-rank {
+  font-family: var(--mgu-font-display);
+  font-weight: 700;
+  width: 20px;
+  flex-shrink: 0;
+}
+.sb-name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 14px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sb-bar {
+  height: 6px;
+  border-radius: var(--mgu-radius-full);
+  flex: 2;
+  overflow: hidden;
+}
+.sb-bar__fill {
+  height: 100%;
+  border-radius: var(--mgu-radius-full);
+  background: var(--mgu-or-500);
+}
+.sb-pts {
+  font-family: var(--mgu-font-display);
+  font-weight: 700;
+  font-size: 14px;
+  width: 70px;
+  text-align: right;
+  flex-shrink: 0;
+}

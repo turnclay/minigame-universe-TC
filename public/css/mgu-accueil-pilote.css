@@ -1,0 +1,175 @@
+/*
+  mgu-accueil-pilote.css — MiniGame Universe
+  Écran pilote (Option A) : Accueil (#home) + Choix du jeu (#choix-jeu) + barre
+  de navigation permanente (.top-nav-bar), UNIQUEMENT quand <body> porte la
+  classe .mgu-pilote (ajoutée/retirée par navigation.js selon l'écran affiché).
+
+  Aucun sélecteur ici n'est global : tout est préfixé par "body.mgu-pilote",
+  donc aucun autre écran (jeux Aurora Glass restants) n'est affecté. Chargé
+  après style.css/gestion.css/reglages.css : gagne le cascade sans besoin
+  de !important, en plus de la spécificité déjà supérieure (body.classe + #id).
+
+  Ne touche à aucun ID/classe utilisé par main.js ou navigation.js pour le
+  binding d'événements — reskin visuel pur, zéro changement structurel.
+*/
+
+/* ---------- Canevas ---------- */
+body.mgu-pilote {
+  background: var(--mgu-feutrine-900);
+  background-size: auto;
+  animation: none;
+  font-family: var(--mgu-font-body);
+  color: var(--mgu-carton-100);
+}
+
+/* ---------- Barre de navigation permanente ---------- */
+body.mgu-pilote .top-nav-bar {
+  background: var(--mgu-feutrine-800);
+  border-bottom: 1px solid var(--mgu-feutrine-line);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+body.mgu-pilote .btn-retour-permanent,
+body.mgu-pilote .btn-home-permanent,
+body.mgu-pilote .btn-menu-permanent,
+body.mgu-pilote .btn-scores-permanent,
+body.mgu-pilote .btn-music {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  color: var(--mgu-carton-100);
+  box-shadow: none;
+}
+
+body.mgu-pilote .btn-retour-permanent:hover,
+body.mgu-pilote .btn-home-permanent:hover,
+body.mgu-pilote .btn-menu-permanent:hover,
+body.mgu-pilote .btn-scores-permanent:hover,
+body.mgu-pilote .btn-music:hover {
+  border-color: var(--mgu-or-500);
+  color: var(--mgu-or-500);
+  transform: translateY(-1px);
+  box-shadow: none;
+}
+
+/* ---------- Accueil ---------- */
+body.mgu-pilote .main-title,
+body.mgu-pilote #home h1 {
+  font-family: var(--mgu-font-display);
+  font-weight: 700;
+  background: none;
+  -webkit-text-fill-color: var(--mgu-carton-50);
+  color: var(--mgu-carton-50);
+  text-shadow: none;
+  animation: none;
+}
+
+body.mgu-pilote .subtitle,
+body.mgu-pilote #home p {
+  font-family: var(--mgu-font-body);
+  color: var(--mgu-carton-100);
+  opacity: .85;
+}
+
+body.mgu-pilote .hub-card {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+body.mgu-pilote .hub-card::before {
+  background: transparent;
+  opacity: 0;
+}
+
+body.mgu-pilote .hub-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--mgu-or-500);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .25);
+}
+
+body.mgu-pilote .hub-card:hover::before {
+  opacity: 0;
+}
+
+body.mgu-pilote .hub-card-title,
+body.mgu-pilote .hub-card h2 {
+  font-family: var(--mgu-font-display);
+  color: var(--mgu-or-500);
+}
+
+body.mgu-pilote .hub-card-subtitle,
+body.mgu-pilote .hub-card-description,
+body.mgu-pilote .hub-card p {
+  font-family: var(--mgu-font-body);
+  color: var(--mgu-carton-100);
+  opacity: .85;
+}
+
+body.mgu-pilote #home .btn-primary,
+body.mgu-pilote #btn-nouveau-jeu,
+body.mgu-pilote #btn-continuer {
+  background: var(--mgu-or-500);
+  color: var(--mgu-or-900);
+  font-family: var(--mgu-font-display);
+  font-weight: 700;
+  box-shadow: none;
+}
+
+body.mgu-pilote #home .btn-primary:hover,
+body.mgu-pilote #btn-nouveau-jeu:hover,
+body.mgu-pilote #btn-continuer:hover {
+  background: var(--mgu-or-600);
+  box-shadow: none;
+}
+
+/* ---------- Choix du jeu ---------- */
+body.mgu-pilote .section-title {
+  font-family: var(--mgu-font-display);
+  color: var(--mgu-carton-50);
+  text-shadow: none;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+body.mgu-pilote .game-btn {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  font-family: var(--mgu-font-display);
+  color: var(--mgu-carton-50);
+  backdrop-filter: none;
+  box-shadow: none;
+  border-radius: var(--mgu-radius-m);
+}
+
+body.mgu-pilote .game-btn::before {
+  background: transparent;
+  opacity: 0;
+}
+
+body.mgu-pilote .game-btn:hover {
+  transform: translateY(-3px);
+  border-color: var(--mgu-or-500);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .25);
+}
+
+body.mgu-pilote .game-btn:hover::before {
+  opacity: 0;
+}
+
+body.mgu-pilote .game-icon {
+  filter: none;
+}
+
+body.mgu-pilote .game-name {
+  font-family: var(--mgu-font-display);
+}
+
+/* ---------- Accessibilité ---------- */
+body.mgu-pilote button:focus-visible,
+body.mgu-pilote input:focus-visible,
+body.mgu-pilote select:focus-visible {
+  outline: none;
+  box-shadow: var(--mgu-focus-ring);
+}

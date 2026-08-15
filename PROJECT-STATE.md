@@ -1,7 +1,7 @@
 ﻿PROJECT-STATE.md (auto-genere par update-agent-state.ps1 - ne pas editer a la main)
 
-Derniere generation : 2026-07-31 13:56
-Commit               : 7164d75f700ae5c784ca381b82216a8092819b8f
+Derniere generation : 2026-08-15 13:02
+Commit               : 235c570da2a87682cebc81f2bc614b54bc45465e
 Message              : Auto update MiniGameV2
 
 JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)
@@ -22,13 +22,7 @@ FICHIERS MODIFIES DEPUIS LE PUSH PRECEDENT
 - [Modifie] .render-restart
 - [Modifie] PROJECT-STATE.md
 - [Modifie] arbo.txt
-- [Modifie] public/js/core/cleanup.js
-- [Supprime] public/js/core/signal.js
-- [Supprime] public/js/jeux/undercover.js
-- [Modifie] public/js/modules/petitbac_hote.js
-- [Modifie] public/js/modules/petitbac_player.js
-- [Modifie] public/js/modules/undercover_hote.js
-- [Modifie] server/games/petitbac.js
+- [Ajoute] public/js/core/signal.js
 
 REFERENCES (ne pas dupliquer leur contenu ici)
 - Dette technique    : DETTE-TECHNIQUE.md

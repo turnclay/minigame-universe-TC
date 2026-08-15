@@ -96,6 +96,9 @@ export function naviguerVers(section, depuis = null) {
     tousLesEcrans.forEach(id => hide(id));
     show(section);
 
+    // Design pilote (Option A+C) — activé uniquement sur Accueil et Choix du jeu.
+    document.body.classList.toggle('mgu-pilote', section === "home" || section === "choix-jeu");
+
     const btnRetour = $("btn-retour-permanent");
     if (btnRetour) btnRetour.hidden = section === "home";
 }
@@ -117,6 +120,9 @@ export function naviguerVersAccueil() {
 
     masquerScoreboard();
     show("home");
+
+    // Design pilote (Option A+C) — actif sur l'accueil.
+    document.body.classList.add('mgu-pilote');
 
     // Nettoyage session au retour à l'accueil
     // Supprime ws_partie_id, minigame_partie_session_id et toutes les clés de jeu.

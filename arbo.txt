@@ -17,8 +17,11 @@
 │   ├── css
 │   │   ├── gestion.css
 │   │   ├── invite.css
+│   │   ├── mgu-accueil-pilote.css
+│   │   ├── mgu-components.css
 │   │   ├── reglages.css
-│   │   └── style.css
+│   │   ├── style.css
+│   │   └── tokens.css
 │   ├── data
 │   │   ├── ListeMotsMime.xlsx
 │   │   ├── ListeMotsPendu.csv
@@ -286,6 +289,7 @@
 │   │   │   ├── host_session.js
 │   │   │   ├── musique.js
 │   │   │   ├── partie_id.js
+│   │   │   ├── pion.js
 │   │   │   ├── signal.js
 │   │   │   ├── socket.js
 │   │   │   ├── state.js
