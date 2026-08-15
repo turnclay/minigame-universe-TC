@@ -1,7 +1,7 @@
 ﻿PROJECT-STATE.md (auto-genere par update-agent-state.ps1 - ne pas editer a la main)
 
-Derniere generation : 2026-08-15 14:18
-Commit               : 576db9c63f673689de9cca7936522c81285e9bfb
+Derniere generation : 2026-08-15 14:35
+Commit               : eb25b685ea0b385b6658eec1412b8eddd1f8add9
 Message              : Auto update MiniGameV2
 
 JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)
@@ -22,9 +22,10 @@ FICHIERS MODIFIES DEPUIS LE PUSH PRECEDENT
 - [Modifie] .render-restart
 - [Modifie] PROJECT-STATE.md
 - [Modifie] arbo.txt
-- [Ajoute] public/css/mgu-tokens.css
-- [Supprime] public/css/tokens.css
+- [Ajoute] public/css/mgu-flux-pilote.css
+- [Modifie] public/index.html
 - [Modifie] public/js/main.js
+- [Modifie] public/js/navigation.js
 
 REFERENCES (ne pas dupliquer leur contenu ici)
 - Dette technique    : DETTE-TECHNIQUE.md
