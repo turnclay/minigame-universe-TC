@@ -1388,9 +1388,7 @@ hr {
     box-shadow: var(--shadow-glow-cyan);
 }
 
-.btn-icon {
-    font-size: 1.2em;
-}
+
 
 .btn-retour,
 #retour-hub,
