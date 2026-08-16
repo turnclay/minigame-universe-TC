@@ -20,6 +20,7 @@
 │   │   ├── mgu-accueil-pilote.css
 │   │   ├── mgu-components.css
 │   │   ├── mgu-flux-pilote.css
+│   │   ├── mgu-invite-pilote.css
 │   │   ├── mgu-jeux-pilote.css
 │   │   ├── mgu-tokens.css
 │   │   ├── reglages.css

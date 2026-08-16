@@ -1,0 +1,558 @@
+/*
+  mgu-invite-pilote.css — MiniGame Universe
+  Interface invité (jeu.html). Page isolée de index.html — aucun body.mgu-pilote
+  requis ici, le reskin s'applique directement (zéro risque de fuite vers l'hôte).
+
+  Canevas CARTON (clair) — cohérent avec la thèse de design initiale :
+  hôte = feutrine (table de jeu), invité = carton (feuille de score en main).
+
+  IMPORTANT — limite honnête de cette passe CSS-only :
+  Une partie de l'expérience invité (écrans de correction/fin du Quiz vus
+  dans player.js, probablement d'autres jeux aussi) est générée en JS avec
+  des styles inline (style="color:#00d4ff...") directement dans les templates
+  HTML des modules *_player.js. Le CSS ne peut pas overrider ça proprement
+  à l'échelle. Cette feuille couvre tout ce qui est piloté par classe CSS
+  dans invite.css (écran identification, navbar, menu, chrome de jeu partagé,
+  Mémoire, Pendu, Petit Bac). Le reste (Quiz question/correction/fin, et
+  les autres modules *_player.js non audités) reste Aurora Glass — passe
+  JEUX.md nécessaire, fichier par fichier.
+
+  Non couvert, même raison qu'côté hôte : Undercover (.uc-*/.ucd-*, ~50
+  sélecteurs, phase carte/vote/rôle).
+*/
+
+/* ---------- Canevas ---------- */
+body {
+  background: var(--mgu-carton-100);
+  background-size: auto;
+  animation: none;
+  font-family: var(--mgu-font-body);
+  color: var(--mgu-encre-900);
+}
+
+/* ---------- Écran identification ---------- */
+.id-card {
+  background: var(--mgu-carton-50);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--mgu-carton-line);
+  box-shadow: none;
+}
+
+.id-card::before {
+  display: none;
+}
+
+.id-logo {
+  filter: none;
+}
+
+.id-title {
+  font-family: var(--mgu-font-display);
+  font-weight: 700;
+  background: none;
+  -webkit-text-fill-color: var(--mgu-encre-900);
+  color: var(--mgu-encre-900);
+}
+
+.id-subtitle {
+  color: var(--mgu-encre-600);
+}
+
+.id-meta-row {
+  background: var(--mgu-carton-100);
+  border: 1px solid var(--mgu-carton-line);
+}
+
+.id-meta-label {
+  color: var(--mgu-encre-600);
+}
+
+.id-meta-val {
+  color: var(--mgu-or-600);
+}
+
+.id-meta-mono {
+  font-family: var(--mgu-font-mono);
+  color: var(--mgu-encre-600);
+}
+
+.id-input-pseudo,
+.select-primary {
+  background: var(--mgu-carton-100);
+  border: 1.5px solid var(--mgu-carton-line);
+  color: var(--mgu-encre-900);
+  font-family: var(--mgu-font-body);
+}
+
+.id-input-pseudo::placeholder {
+  color: var(--mgu-encre-600);
+  opacity: .5;
+}
+
+.id-input-pseudo:focus,
+.select-primary:focus {
+  border-color: var(--mgu-or-500);
+  box-shadow: var(--mgu-focus-ring);
+}
+
+.select-primary option {
+  background: var(--mgu-carton-50);
+  color: var(--mgu-encre-900);
+}
+
+.id-btn-rejoindre,
+.btn-primary {
+  background: var(--mgu-or-500);
+  color: var(--mgu-or-900);
+  font-family: var(--mgu-font-display);
+  box-shadow: none;
+}
+
+.id-btn-rejoindre:hover,
+.btn-primary:hover {
+  background: var(--mgu-or-600);
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background: var(--mgu-carton-50);
+  border: 1.5px solid var(--mgu-carton-line);
+  color: var(--mgu-encre-900);
+}
+
+.btn-secondary:hover {
+  background: var(--mgu-carton-100);
+}
+
+.id-back-link {
+  color: var(--mgu-encre-600);
+}
+
+/* ---------- Phase jeu — chrome ---------- */
+.jeu-header {
+  background: var(--mgu-carton-50);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom: 1px solid var(--mgu-carton-line);
+  box-shadow: none;
+}
+
+.jeu-pseudo {
+  font-family: var(--mgu-font-display);
+  color: var(--mgu-or-600);
+}
+
+.jeu-partie {
+  color: var(--mgu-encre-600);
+}
+
+.jeu-badge {
+  background: var(--mgu-carton-100);
+  border: 1px solid var(--mgu-carton-line);
+  color: var(--mgu-encre-600);
+}
+
+.jeu-card {
+  background: var(--mgu-carton-50);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--mgu-carton-line);
+  box-shadow: none;
+}
+
+/* ---------- Navbar invité — repositionnée en tab bar basse fixe ---------- */
+.invite-navbar {
+  top: auto;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  transform: translateY(80px);
+  width: 100%;
+  border-radius: 0;
+  justify-content: center;
+  background: var(--mgu-carton-50);
+  border: none;
+  border-top: 1px solid var(--mgu-carton-line);
+  box-shadow: none;
+}
+
+.invite-navbar.visible {
+  transform: translateY(0);
+}
+
+.invite-nav-btn {
+  background: transparent;
+  border: none;
+  color: var(--mgu-encre-900);
+}
+
+.invite-nav-btn:hover {
+  background: var(--mgu-carton-100);
+}
+
+/* ---------- Menu invité (overlay conservé, reskin visuel uniquement) ---------- */
+.invite-menu-panel {
+  background: var(--mgu-feutrine-800);
+  backdrop-filter: none;
+  border-left: 1px solid var(--mgu-feutrine-line);
+  color: var(--mgu-carton-50);
+  font-family: var(--mgu-font-body);
+}
+
+.invite-menu-title {
+  font-family: var(--mgu-font-display);
+  color: var(--mgu-or-500);
+}
+
+.invite-menu-close {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  color: var(--mgu-carton-50);
+}
+
+.invite-menu-item {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  color: var(--mgu-carton-50);
+}
+
+.invite-menu-item:hover {
+  background: var(--mgu-feutrine-600);
+}
+
+.invite-menu-separator {
+  border-top: 1px solid var(--mgu-feutrine-line);
+}
+
+/* ---------- Système invitation (défensif — si utilisé côté invité) ---------- */
+.bloc-invitation {
+  background: var(--mgu-carton-50);
+  border: 1px solid var(--mgu-carton-line);
+}
+
+.invite-title {
+  color: var(--mgu-encre-900);
+  font-family: var(--mgu-font-display);
+}
+
+.invite-subtitle {
+  color: var(--mgu-encre-600);
+}
+
+.invite-meta-item {
+  background: var(--mgu-carton-100);
+  border: 1px solid var(--mgu-carton-line);
+}
+
+.invite-meta-label {
+  color: var(--mgu-encre-600);
+}
+
+.invite-meta-val {
+  color: var(--mgu-or-600);
+}
+
+.invite-link-input {
+  background: var(--mgu-carton-100);
+  border: 1px solid var(--mgu-carton-line);
+  color: var(--mgu-encre-900);
+  font-family: var(--mgu-font-mono);
+}
+
+.invite-copy-btn {
+  background: var(--mgu-carton-100);
+  border: 1.5px solid var(--mgu-carton-line);
+  color: var(--mgu-or-600);
+}
+
+.invite-notif {
+  background: var(--mgu-pion-prairie);
+  border: none;
+  color: white;
+}
+
+/* ---------- Chrome de jeu partagé (Quiz et autres) ---------- */
+.section-title,
+.game-header h2 {
+  font-family: var(--mgu-font-display);
+  color: var(--mgu-encre-900);
+}
+
+.instruction {
+  color: var(--mgu-encre-900);
+}
+
+.score-label {
+  color: var(--mgu-encre-600);
+}
+
+.score-val,
+.quiz-timer {
+  font-family: var(--mgu-font-display);
+  color: var(--mgu-or-600);
+  text-shadow: none;
+}
+
+.quiz-timer.timer-danger {
+  color: var(--mgu-pion-rouge);
+  text-shadow: none;
+}
+
+.jeu-theme {
+  background: var(--mgu-carton-50);
+  border: 1px solid var(--mgu-carton-line);
+  color: var(--mgu-encre-900);
+}
+
+.question-text {
+  color: var(--mgu-encre-900);
+}
+
+.fleche {
+  background: var(--mgu-carton-50);
+  border: 1px solid var(--mgu-carton-line);
+}
+
+.fleche svg {
+  fill: var(--mgu-encre-900);
+}
+
+.fleche:hover:not(:disabled) {
+  background: var(--mgu-carton-100);
+}
+
+.btn-indice {
+  background: var(--mgu-carton-50);
+  border: 1px solid var(--mgu-carton-line);
+  color: var(--mgu-encre-900);
+}
+
+.btn-indice:hover:not(:disabled) {
+  border-color: var(--mgu-or-500);
+}
+
+.indice-text,
+.reponse-text-passive {
+  color: var(--mgu-encre-900);
+}
+
+.reponse-input {
+  background: var(--mgu-carton-50);
+  border: 1.5px solid var(--mgu-carton-line);
+  color: var(--mgu-encre-900);
+}
+
+.reponse-input:focus {
+  border-color: var(--mgu-or-500);
+  box-shadow: var(--mgu-focus-ring);
+}
+
+.btn-valider {
+  background: var(--mgu-pion-prairie);
+  border: none;
+  color: var(--mgu-encre-900);
+}
+
+.btn-passer {
+  background: var(--mgu-carton-100);
+  border: 1px solid var(--mgu-carton-line);
+  color: var(--mgu-encre-600);
+}
+
+.reponse-affichage-label {
+  color: var(--mgu-or-600);
+}
+
+.btn-next-question {
+  background: var(--mgu-or-500);
+  color: var(--mgu-or-900);
+  box-shadow: none;
+}
+
+.btn-next-question:hover {
+  background: var(--mgu-or-600);
+  box-shadow: none;
+}
+
+.input-jeu {
+  background: var(--mgu-carton-50);
+  border: 1.5px solid var(--mgu-carton-line);
+  color: var(--mgu-encre-900);
+}
+
+.input-jeu:focus {
+  border-color: var(--mgu-or-500);
+  box-shadow: var(--mgu-focus-ring);
+}
+
+.feedback.ok {
+  background: rgba(95, 167, 119, .12);
+  border: 1px solid var(--mgu-pion-prairie);
+  color: #2f5f42;
+}
+
+.feedback.error {
+  background: rgba(214, 72, 79, .10);
+  border: 1px solid var(--mgu-pion-rouge);
+  color: #8a2f33;
+}
+
+/* ---------- Mémoire ---------- */
+.memoire-carte {
+  background: var(--mgu-carton-50);
+  border: 2px solid var(--mgu-carton-line);
+}
+
+.memoire-carte:hover {
+  border-color: var(--mgu-or-500);
+}
+
+.carte-back {
+  background: var(--mgu-feutrine-700);
+  color: var(--mgu-carton-50);
+}
+
+.memoire-carte.trouvee {
+  border-color: var(--mgu-pion-prairie);
+}
+
+.memoire-carte.trouvee .carte-front {
+  background: var(--mgu-pion-prairie);
+}
+
+.memoire-status {
+  color: var(--mgu-encre-600);
+}
+
+.memoire-timer {
+  background: var(--mgu-carton-line);
+}
+
+.timer-bar,
+#mem-timer-bar {
+  background: var(--mgu-or-500);
+}
+
+/* ---------- Pendu ---------- */
+.pendu-inv-theme {
+  background: var(--mgu-carton-50);
+  border: 1px solid var(--mgu-carton-line);
+  color: var(--mgu-encre-900);
+  backdrop-filter: none;
+}
+
+.pendu-inv-mot .lettre-case,
+.lettre-case {
+  background: linear-gradient(135deg, var(--mgu-or-500), var(--mgu-or-600));
+  border: 2px solid rgba(255, 255, 255, .3);
+  color: var(--mgu-or-900);
+}
+
+/* ---------- Petit Bac ---------- */
+.pb-inv-titre {
+  color: var(--mgu-encre-600);
+}
+
+.pb-inv-lettre-wrap {
+  background: var(--mgu-carton-50);
+  border: 1px solid var(--mgu-carton-line);
+}
+
+.pb-inv-lettre {
+  background: linear-gradient(135deg, var(--mgu-or-500), var(--mgu-or-600));
+  color: var(--mgu-or-900);
+}
+
+.pb-inv-timer-num {
+  color: var(--mgu-or-600);
+  text-shadow: none;
+  font-family: var(--mgu-font-display);
+}
+
+.pb-inv-timer-num.urgent {
+  color: var(--mgu-pion-rouge);
+  text-shadow: none;
+}
+
+.pb-inv-attente {
+  color: var(--mgu-encre-600);
+}
+
+.pb-inv-cat-card {
+  background: var(--mgu-carton-50);
+  border: 1.5px solid var(--mgu-carton-line);
+}
+
+.pb-inv-cat-card:focus-within {
+  border-color: var(--mgu-or-500);
+  box-shadow: var(--mgu-focus-ring);
+}
+
+.pb-inv-cat-label {
+  color: var(--mgu-encre-900);
+}
+
+.pb-inv-input {
+  background: var(--mgu-carton-100);
+  border: 1.5px solid var(--mgu-carton-line);
+  color: var(--mgu-encre-900);
+}
+
+.pb-inv-input:focus {
+  border-color: var(--mgu-or-500);
+  box-shadow: var(--mgu-focus-ring);
+}
+
+.pb-inv-cat-feedback.valide {
+  color: #2f5f42;
+  background: rgba(95, 167, 119, .12);
+  border: 1px solid var(--mgu-pion-prairie);
+}
+
+.pb-inv-cat-feedback.invalide {
+  color: #8a2f33;
+  background: rgba(214, 72, 79, .10);
+  border: 1px solid var(--mgu-pion-rouge);
+}
+
+.pb-inv-btn-valider {
+  background: var(--mgu-or-500);
+  color: var(--mgu-or-900);
+  box-shadow: none;
+}
+
+.pb-inv-btn-valider:hover:not(:disabled) {
+  background: var(--mgu-or-600);
+  box-shadow: none;
+}
+
+/* ---------- Classement / countdown ---------- */
+.classement-item {
+  background: var(--mgu-carton-50);
+  border: 1px solid var(--mgu-carton-line);
+}
+
+.classement-item.winner {
+  border-color: var(--mgu-or-500);
+  background: rgba(232, 178, 59, .12);
+}
+
+.classement-nom {
+  color: var(--mgu-encre-900);
+}
+
+.classement-score {
+  color: var(--mgu-or-600);
+}
+
+.compte-a-rebours-overlay {
+  background: var(--mgu-feutrine-900);
+}
+
+/* ---------- Accessibilité ---------- */
+button:focus-visible,
+input:focus-visible {
+  outline: none;
+  box-shadow: var(--mgu-focus-ring);
+}

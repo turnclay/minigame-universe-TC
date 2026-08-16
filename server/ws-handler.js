@@ -34,6 +34,11 @@ const JEU_HANDLERS = {
     puissance4: puissance4Handler,
     memoire   : memoireHandler,
     mimedessine: mimedessineHandler, // Add the new game handler
+    // Le bouton client envoie data-game="mimer" (voir index.html games-grid
+    // et jeu.js LABELS) — sans cet alias, JEU_HANDLERS['mimer'] est undefined
+    // et toutes les actions HOST_ACTION/PLAYER_ACTION du jeu Mime & Dessine
+    // tombent en fallback broadcast générique au lieu d'appeler le vrai handler.
+    mimer     : mimedessineHandler,
     undercover: undercoverHandler,
     uno: unoHandler,
 };
