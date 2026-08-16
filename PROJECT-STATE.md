@@ -1,7 +1,7 @@
 ﻿PROJECT-STATE.md (auto-genere par update-agent-state.ps1 - ne pas editer a la main)
 
-Derniere generation : 2026-08-16 21:50
-Commit               : e8765b1d020cf6b0af705de1a1eb8f5e11295028
+Derniere generation : 2026-08-16 22:13
+Commit               : 2ddf4bf902e7354d6a8b1e4ad85a35166c584707
 Message              : Auto update MiniGameV2
 
 JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)
@@ -19,13 +19,13 @@ JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)
 - uno
 
 FICHIERS MODIFIES DEPUIS LE PUSH PRECEDENT
+- [Modifie] .idea/workspace.xml
 - [Modifie] .render-restart
 - [Modifie] PROJECT-STATE.md
 - [Modifie] arbo.txt
-- [Ajoute] minigame-universe-prototype.html
-- [Ajoute] public/css/mgu-jeux-pilote.css
-- [Modifie] public/index.html
-- [Modifie] public/js/main.js
+- [Ajoute] public/css/mgu-invite-pilote.css
+- [Modifie] public/jeu.html
+- [Modifie] server/ws-handler.js
 
 REFERENCES (ne pas dupliquer leur contenu ici)
 - Dette technique    : DETTE-TECHNIQUE.md

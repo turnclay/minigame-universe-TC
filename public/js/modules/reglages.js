@@ -157,25 +157,13 @@ function chargerThemeSauvegarde() {
 // 🎨 APPLICATION DU THÈME
 // ======================================================
 
+// Historique : appliquait un des 6 thèmes néon (Aurora/Sunset/Forest/Ocean/
+// Gold/Cyber) en écrivant les variables --gradient-background/--neon-*
+// directement sur :root. Neutralisé — un seul design system (mgu-*) existe
+// désormais, plus de thème concurrent à sélectionner. Signature et export
+// conservés pour compatibilité avec les appelants existants (no-op).
 export function appliquerTheme(themeId) {
-    const theme = THEMES[themeId];
-    if (!theme) return;
-
-    const root = document.documentElement;
-    Object.entries(theme.vars).forEach(([prop, val]) => {
-        root.style.setProperty(prop, val);
-    });
-
-    // Marquer le thème actif sur le body
-    document.body.dataset.theme = themeId;
-    sauvegarderTheme(themeId);
-
-    // Mettre à jour les cartes dans le panel si ouvert
-    document.querySelectorAll(".theme-card").forEach(card => {
-        card.classList.toggle("active", card.dataset.theme === themeId);
-    });
-
-    console.log(`[REGLAGES] Thème appliqué : ${theme.label}`);
+    return;
 }
 
 export function initThemeSauvegarde() {
