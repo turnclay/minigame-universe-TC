@@ -358,13 +358,13 @@ function _callGameInit(key) {
 }
 
 function lancerJeuLocal(game) {
-    // Sécurité design pilote : le flux home/choix-jeu/choix-mode/formulaires
-    // est en mgu-pilote ; le conteneur de jeu (encore Aurora Glass) ne doit
-    // jamais hériter de cette classe.
-    document.body.classList.remove('mgu-pilote');
+    // Design pilote : les conteneurs de jeu sont maintenant migrés (base
+    // ".game-screen"), la classe reste donc active pendant la partie.
+    document.body.classList.add('mgu-pilote');
     GameState.jeuActuel = game;
 
     nettoyerSession();
+
 
     hideAll(["home","choix-mode","form-solo","form-equipes","choix-jeu","liste-parties"]);
     masquerUndercoverComplet();
@@ -493,8 +493,8 @@ function initStartSolo() {
 function lancerJeu(game, options = {}) {
     const fromLoad       = options.fromLoad === true;
     const tsCountdownEnd = options.tsCountdownEnd || null;
-    // Sécurité design pilote : voir lancerJeuLocal ci-dessus.
-    document.body.classList.remove('mgu-pilote');
+    // Design pilote : voir lancerJeuLocal ci-dessus.
+    document.body.classList.add('mgu-pilote');
     GameState.jeuActuel  = game;
 
     if (game.toLowerCase() === "undercover") return;

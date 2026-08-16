@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MiniGame Universe — Prototype design system</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --feutrine-900:#17352A;
+    --feutrine-800:#1E4234;
+    --feutrine-700:#244A3B;
+    --feutrine-600:#2E5A48;
+    --feutrine-line:#345947;
+
+    --carton-100:#F2E8CE;
+    --carton-50:#FAF4E4;
+    --carton-line:#E2D3AA;
+    --encre-900:#1E1B16;
+    --encre-600:#5A5142;
+
+    --or-500:#E8B23B;
+    --or-600:#D19B27;
+    --or-900:#5A4415;
+
+    --jeton-rouge:#D6484F;
+    --jeton-bleu:#2C6E9E;
+    --jeton-safran:#D97B29;
+    --jeton-prairie:#5FA777;
+    --jeton-violet:#7C5CA8;
+    --jeton-turquoise:#3E9C93;
+
+    --uno-red:#C1272D;
+    --uno-yellow:#F2C94C;
+    --uno-green:#219653;
+    --uno-blue:#2D6CDF;
+    --uno-wild:#211F1C;
+
+    --radius-s:10px;
+    --radius-m:16px;
+    --radius-l:22px;
+    --radius-full:999px;
+
+    --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;
+    --space-5:24px;--space-6:32px;--space-7:48px;--space-8:64px;
+
+    --font-display:'Baloo 2', sans-serif;
+    --font-body:'Manrope', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+
+    --focus-ring: 0 0 0 3px #FAF4E4, 0 0 0 6px var(--or-500);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:#0E241C;
+    font-family:var(--font-body);
+    color:var(--encre-900);
+    -webkit-font-smoothing:antialiased;
+  }
+  button{font-family:inherit;cursor:pointer;}
+  :focus-visible{outline:none;box-shadow:var(--focus-ring);border-radius:var(--radius-s);}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+
+  /* ============ OUTILS PROTOTYPE (hors app) ============ */
+  .proto-toolbar{
+    position:sticky; top:0; z-index:5;
+    background:#0A1B15;
+    border-bottom:1px solid #1D3A2E;
+    padding:var(--space-3) var(--space-5);
+    display:flex; flex-wrap:wrap; gap:var(--space-3);
+    align-items:center;
+  }
+  .proto-label{
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:#7FA593;
+    margin-right:var(--space-2);
+  }
+  .proto-group{display:flex; gap:var(--space-2); flex-wrap:wrap;}
+  .proto-btn{
+    background:transparent;
+    border:1px solid #2C4C3D;
+    color:#CFE3D8;
+    padding:var(--space-2) var(--space-4);
+    border-radius:var(--radius-full);
+    font-size:13px;
+    font-weight:600;
+  }
+  .proto-btn[aria-pressed="true"]{
+    background:var(--or-500);
+    border-color:var(--or-500);
+    color:var(--or-900);
+  }
+  .proto-stage{
+    padding:var(--space-7) var(--space-5) var(--space-8);
+    display:flex;
+    justify-content:center;
+  }
+
+  /* ============ CADRE HÔTE (écran large) ============ */
+  .host-frame{
+    width:100%;
+    max-width:960px;
+    aspect-ratio:16/9;
+    background:var(--feutrine-900);
+    border-radius:var(--radius-l);
+    overflow:hidden;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.5);
+    display:flex;
+    flex-direction:column;
+  }
+  .host-screen{display:none; flex-direction:column; height:100%;}
+  .host-screen.active{display:flex;}
+
+  .host-topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:var(--space-4) var(--space-6);
+    border-bottom:1px solid var(--feutrine-line);
+    flex-shrink:0;
+  }
+  .brand{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:18px;
+    color:var(--carton-50);
+    letter-spacing:.01em;
+  }
+  .code-partie{
+    font-family:var(--font-mono);
+    font-weight:600;
+    font-size:20px;
+    color:var(--or-500);
+    letter-spacing:.15em;
+    background:var(--feutrine-700);
+    padding:var(--space-2) var(--space-4);
+    border-radius:var(--radius-s);
+  }
+  .btn-ghost{
+    background:transparent;
+    border:1px solid var(--feutrine-line);
+    color:var(--carton-100);
+    padding:var(--space-2) var(--space-4);
+    border-radius:var(--radius-full);
+    font-size:13px;
+    font-weight:600;
+  }
+  .btn-ghost:hover{border-color:var(--or-500); color:var(--or-500);}
+
+  .host-body{
+    flex:1;
+    padding:var(--space-6);
+    display:flex;
+    flex-direction:column;
+    overflow:auto;
+  }
+  .host-body--center{align-items:center; justify-content:center; text-align:center;}
+
+  .display-xl{
+    font-family:var(--font-display);
+    font-weight:700;
+    color:var(--carton-50);
+    font-size:clamp(20px,3vw,30px);
+    margin:0 0 var(--space-5);
+  }
+
+  .game-grid{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0,1fr));
+    gap:var(--space-3);
+    width:100%;
+    max-width:760px;
+  }
+  .game-card{
+    background:var(--feutrine-700);
+    border:1px solid var(--feutrine-line);
+    border-radius:var(--radius-m);
+    padding:var(--space-4) var(--space-2);
+    display:flex; flex-direction:column; align-items:center; gap:var(--space-2);
+    color:var(--carton-50);
+  }
+  .game-card:hover{border-color:var(--or-500); transform:translateY(-2px);}
+  .game-card__emoji{font-size:22px;}
+  .game-card__name{font-family:var(--font-display); font-weight:600; font-size:13px;}
+
+  .cta-gold{
+    margin-top:var(--space-6);
+    background:var(--or-500);
+    color:var(--or-900);
+    border:none;
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:15px;
+    padding:var(--space-3) var(--space-6);
+    border-radius:var(--radius-full);
+  }
+  .cta-gold:hover{background:var(--or-600);}
+
+  /* Lobby hôte */
+  .lobby-wait{
+    font-family:var(--font-body);
+    color:var(--carton-100);
+    font-size:14px;
+    margin-bottom:var(--space-5);
+  }
+  .jeton-row{
+    display:flex; gap:var(--space-5); flex-wrap:wrap; justify-content:center;
+    margin-bottom:var(--space-7);
+  }
+  .jeton-item{display:flex; flex-direction:column; align-items:center; gap:var(--space-2);}
+  .jeton{
+    width:44px; height:44px; border-radius:50%;
+    box-shadow:inset 0 -4px 0 rgba(0,0,0,.18), 0 3px 6px rgba(0,0,0,.3);
+    border:2px solid rgba(255,255,255,.25);
+  }
+  .jeton--s{width:16px; height:16px; border-width:1px;}
+  .jeton--rouge{background:var(--jeton-rouge);}
+  .jeton--bleu{background:var(--jeton-bleu);}
+  .jeton--safran{background:var(--jeton-safran);}
+  .jeton--prairie{background:var(--jeton-prairie);}
+  .jeton--violet{background:var(--jeton-violet);}
+  .jeton--turquoise{background:var(--jeton-turquoise);}
+  .jeton-item__name{font-size:12px; color:var(--carton-100); font-weight:600;}
+
+  /* Écran de jeu hôte (générique) */
+  .host-game-bar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:var(--space-3) var(--space-6);
+    border-bottom:1px solid var(--feutrine-line);
+    flex-shrink:0;
+  }
+  .game-title{font-family:var(--font-display); font-weight:600; color:var(--carton-50); font-size:15px;}
+  .timer{
+    font-family:var(--font-display); font-weight:700; font-size:20px; color:var(--or-500);
+  }
+  .host-game-layout{
+    flex:1; display:flex; gap:var(--space-5);
+    padding:var(--space-5) var(--space-6);
+    overflow:hidden;
+  }
+  .zone-jeu{
+    flex:1;
+    background:var(--feutrine-700);
+    border:1px solid var(--feutrine-line);
+    border-radius:var(--radius-m);
+    display:flex; align-items:center; justify-content:center;
+    padding:var(--space-5);
+  }
+  .score-rail{
+    width:180px;
+    flex-shrink:0;
+    display:flex; flex-direction:column; gap:var(--space-3);
+  }
+  .score-rail__title{
+    font-family:var(--font-mono); font-size:11px; letter-spacing:.08em;
+    text-transform:uppercase; color:#7FA593; margin-bottom:var(--space-1);
+  }
+  .score-row{
+    display:flex; align-items:center; gap:var(--space-2);
+    background:var(--feutrine-700);
+    border-radius:var(--radius-s);
+    padding:var(--space-2) var(--space-3);
+  }
+  .score-row__name{flex:1; font-size:13px; color:var(--carton-50); font-weight:600;}
+  .score-row__pts{font-family:var(--font-display); font-weight:700; color:var(--or-500); font-size:14px;}
+
+  .host-controls{
+    display:flex; justify-content:space-between;
+    padding:var(--space-4) var(--space-6);
+    border-top:1px solid var(--feutrine-line);
+    flex-shrink:0;
+  }
+  .btn-primary{
+    background:var(--or-500); color:var(--or-900); border:none;
+    font-family:var(--font-display); font-weight:700; font-size:14px;
+    padding:var(--space-3) var(--space-5); border-radius:var(--radius-full);
+  }
+  .btn-primary:hover{background:var(--or-600);}
+
+  /* Lettre tirée (Petit Bac) */
+  .lettre-tiree{
+    font-family:var(--font-display); font-weight:800; font-size:56px;
+    color:var(--carton-50);
+  }
+
+  /* Grille Puissance 4 */
+  .p4-board{
+    display:grid; grid-template-columns:repeat(7, 34px); gap:6px;
+    background:var(--feutrine-800); padding:var(--space-3); border-radius:var(--radius-s);
+  }
+  .p4-cell{width:34px; height:34px; border-radius:50%; background:var(--feutrine-600);}
+  .p4-cell.r{background:var(--jeton-rouge);}
+  .p4-cell.b{background:var(--jeton-bleu);}
+  .p4-status{margin-top:var(--space-4); font-size:13px; color:var(--carton-100); text-align:center;}
+  .p4-status strong{color:var(--or-500);}
+
+  /* UNO hôte */
+  .uno-table{display:flex; flex-direction:column; align-items:center; gap:var(--space-4);}
+  .uno-card{
+    width:70px; height:100px; border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display); font-weight:800; font-size:28px; color:#fff;
+    box-shadow:0 8px 16px rgba(0,0,0,.35);
+    border:3px solid rgba(255,255,255,.5);
+  }
+  .uno-card.red{background:var(--uno-red);}
+  .uno-card.yellow{background:var(--uno-yellow); color:#3A2C00;}
+  .uno-card.green{background:var(--uno-green);}
+  .uno-card.blue{background:var(--uno-blue);}
+  .uno-players{display:flex; gap:var(--space-4); flex-wrap:wrap; justify-content:center;}
+  .uno-player{
+    display:flex; align-items:center; gap:var(--space-2);
+    background:var(--feutrine-700); border-radius:var(--radius-full);
+    padding:var(--space-2) var(--space-3);
+  }
+  .uno-player__count{
+    font-family:var(--font-mono); font-size:12px; color:var(--carton-50);
+    background:var(--feutrine-600); border-radius:var(--radius-full);
+    padding:1px 8px;
+  }
+  .uno-player.tour{outline:2px solid var(--or-500); outline-offset:2px;}
+
+  /* Scoreboard */
+  .scoreboard-list{width:100%; max-width:520px; display:flex; flex-direction:column; gap:var(--space-3);}
+  .sb-row{
+    display:flex; align-items:center; gap:var(--space-3);
+    background:var(--feutrine-700); border-radius:var(--radius-m);
+    padding:var(--space-3) var(--space-4);
+  }
+  .sb-rank{font-family:var(--font-display); font-weight:700; color:var(--or-500); width:20px;}
+  .sb-name{flex:1; color:var(--carton-50); font-weight:600; font-size:14px;}
+  .sb-pts{font-family:var(--font-display); font-weight:700; color:var(--carton-50); font-size:14px; width:70px; text-align:right;}
+  .sb-bar{
+    height:6px; border-radius:var(--radius-full); background:var(--feutrine-600);
+    flex:2; overflow:hidden;
+  }
+  .sb-bar__fill{height:100%; background:var(--or-500); border-radius:var(--radius-full);}
+
+  /* ============ CADRE INVITÉ (téléphone) ============ */
+  .guest-frame{display:flex; justify-content:center;}
+  .phone-shell{
+    width:360px;
+    height:720px;
+    background:var(--carton-100);
+    border-radius:36px;
+    border:8px solid #0A1B15;
+    overflow:hidden;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.5);
+    display:flex;
+    flex-direction:column;
+  }
+  .guest-screen{display:none; flex-direction:column; height:100%;}
+  .guest-screen.active{display:flex;}
+
+  .guest-header{
+    padding:var(--space-4) var(--space-4) var(--space-3);
+    border-bottom:1px solid var(--carton-line);
+    flex-shrink:0;
+  }
+  .guest-header--min{
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .guest-id{display:flex; align-items:center; gap:var(--space-2);}
+  .guest-id__name{font-family:var(--font-display); font-weight:700; font-size:14px;}
+  .guest-id__pts{font-family:var(--font-mono); font-size:12px; color:var(--encre-600);}
+  .guest-ctx{font-family:var(--font-display); font-weight:600; font-size:13px; color:var(--encre-600);}
+
+  .guest-body{
+    flex:1; padding:var(--space-5) var(--space-4);
+    overflow:auto;
+    display:flex; flex-direction:column; gap:var(--space-4);
+  }
+  .guest-title{font-family:var(--font-display); font-weight:700; font-size:20px; margin:0;}
+
+  .field-label{font-size:12px; font-weight:700; color:var(--encre-600); text-transform:uppercase; letter-spacing:.06em;}
+  .field-input{
+    font-family:var(--font-mono); font-size:18px;
+    background:var(--carton-50); border:1.5px solid var(--carton-line);
+    border-radius:var(--radius-s); padding:var(--space-3) var(--space-3);
+    color:var(--encre-900); width:100%;
+  }
+  .field-input--text{font-family:var(--font-body); font-size:15px;}
+
+  .jeton-picker{display:flex; gap:var(--space-3); flex-wrap:wrap;}
+  .jeton-pick{width:36px; height:36px; border-radius:50%; border:3px solid transparent; padding:0; box-shadow:inset 0 -3px 0 rgba(0,0,0,.15);}
+  .jeton-pick[aria-pressed="true"]{border-color:var(--or-500);}
+
+  .btn-cta{
+    background:var(--or-500); color:var(--or-900); border:none;
+    font-family:var(--font-display); font-weight:700; font-size:15px;
+    padding:var(--space-4); border-radius:var(--radius-m);
+    width:100%; margin-top:auto;
+  }
+  .btn-cta:hover{background:var(--or-600);}
+
+  .guest-players{display:flex; flex-direction:column; gap:var(--space-2);}
+  .guest-player-row{display:flex; align-items:center; gap:var(--space-2); font-size:14px; font-weight:600;}
+
+  .guest-tabbar{
+    display:flex; border-top:1px solid var(--carton-line);
+    flex-shrink:0; background:var(--carton-50);
+  }
+  .guest-tab{
+    flex:1; background:transparent; border:none; padding:var(--space-3) 0;
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    font-family:var(--font-body); font-size:11px; font-weight:700; color:var(--encre-600);
+  }
+  .guest-tab[aria-pressed="true"]{color:var(--or-600);}
+  .guest-tab__dot{width:6px; height:6px; border-radius:50%; background:transparent;}
+  .guest-tab[aria-pressed="true"] .guest-tab__dot{background:var(--or-500);}
+
+  .p4-mini{
+    display:grid; grid-template-columns:repeat(7, 24px); gap:4px;
+    background:var(--feutrine-800); padding:var(--space-2); border-radius:var(--radius-s);
+    align-self:center;
+  }
+  .p4-mini .p4-cell{width:24px; height:24px;}
+  .p4-status--guest{text-align:center; font-size:13px; color:var(--encre-600);}
+
+  .hand{display:flex; justify-content:center; gap:-8px; margin-top:var(--space-2);}
+  .hand .uno-card{width:52px; height:78px; font-size:20px; margin-left:-14px;}
+  .hand .uno-card:first-child{margin-left:0;}
+
+  .settings-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:var(--space-3) 0; border-bottom:1px solid var(--carton-line);
+  }
+  .toggle{
+    width:44px; height:26px; border-radius:var(--radius-full); border:none;
+    background:var(--jeton-prairie); position:relative;
+  }
+  .toggle::after{content:"";position:absolute; top:3px; right:3px; width:20px; height:20px; border-radius:50%; background:#fff;}
+  .btn-danger{
+    background:transparent; border:1.5px solid var(--jeton-rouge); color:var(--jeton-rouge);
+    font-weight:700; font-size:14px; padding:var(--space-3); border-radius:var(--radius-m); width:100%;
+  }
+
+  @media (max-width:1040px){
+    .game-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+  }
+  @media (max-width:720px){
+    .proto-stage{padding:var(--space-5) var(--space-3);}
+    .host-frame{aspect-ratio:auto; min-height:520px;}
+    .host-game-layout{flex-direction:column;}
+    .score-rail{width:100%; flex-direction:row; overflow-x:auto;}
+  }
+</style>
+</head>
+<body>
+
+  <div class="proto-toolbar">
+    <div class="proto-group" role="group" aria-label="Support">
+      <span class="proto-label">Support</span>
+      <button class="proto-btn" data-device="host" aria-pressed="true">Hôte</button>
+      <button class="proto-btn" data-device="guest" aria-pressed="false">Invité</button>
+    </div>
+    <div class="proto-group" data-panel="host" role="group" aria-label="Écran hôte">
+      <span class="proto-label">Écran</span>
+      <button class="proto-btn" data-screen="host-accueil" aria-pressed="true">Accueil</button>
+      <button class="proto-btn" data-screen="host-lobby" aria-pressed="false">Lobby</button>
+      <button class="proto-btn" data-screen="host-jeu-petitbac" aria-pressed="false">Jeu · Petit Bac</button>
+      <button class="proto-btn" data-screen="host-jeu-puissance4" aria-pressed="false">Jeu · Puissance 4</button>
+      <button class="proto-btn" data-screen="host-jeu-uno" aria-pressed="false">Jeu · UNO</button>
+      <button class="proto-btn" data-screen="host-scoreboard" aria-pressed="false">Scoreboard</button>
+    </div>
+    <div class="proto-group" data-panel="guest" role="group" aria-label="Écran invité" hidden>
+      <span class="proto-label">Écran</span>
+      <button class="proto-btn" data-screen="guest-rejoindre" aria-pressed="true">Rejoindre</button>
+      <button class="proto-btn" data-screen="guest-lobby" aria-pressed="false">Lobby</button>
+      <button class="proto-btn" data-screen="guest-jeu-petitbac" aria-pressed="false">Jeu · Petit Bac</button>
+      <button class="proto-btn" data-screen="guest-jeu-puissance4" aria-pressed="false">Jeu · Puissance 4</button>
+      <button class="proto-btn" data-screen="guest-jeu-uno" aria-pressed="false">Jeu · UNO</button>
+      <button class="proto-btn" data-screen="guest-scoreboard" aria-pressed="false">Scoreboard</button>
+      <button class="proto-btn" data-screen="guest-reglages" aria-pressed="false">Réglages</button>
+    </div>
+  </div>
+
+  <div class="proto-stage">
+
+    <!-- ============ HÔTE ============ -->
+    <div class="host-frame" data-frame="host">
+
+      <div id="host-accueil" class="host-screen active">
+        <div class="host-topbar">
+          <span class="brand">MiniGame Universe</span>
+          <button class="btn-ghost">Réglages</button>
+        </div>
+        <div class="host-body host-body--center">
+          <h1 class="display-xl">Choisis un jeu pour la soirée</h1>
+          <div class="game-grid">
+            <button class="game-card"><span class="game-card__emoji">🔤</span><span class="game-card__name">Petit Bac</span></button>
+            <button class="game-card"><span class="game-card__emoji">❓</span><span class="game-card__name">Quiz</span></button>
+            <button class="game-card"><span class="game-card__emoji">🏷️</span><span class="game-card__name">Juste Prix</span></button>
+            <button class="game-card"><span class="game-card__emoji">🖍️</span><span class="game-card__name">Mime &amp; Dessine</span></button>
+            <button class="game-card"><span class="game-card__emoji">🔠</span><span class="game-card__name">Maxi Lettres</span></button>
+            <button class="game-card"><span class="game-card__emoji">🔵</span><span class="game-card__name">Puissance 4</span></button>
+            <button class="game-card"><span class="game-card__emoji">❌</span><span class="game-card__name">Morpion</span></button>
+            <button class="game-card"><span class="game-card__emoji">🕵️</span><span class="game-card__name">Undercover</span></button>
+            <button class="game-card"><span class="game-card__emoji">🧠</span><span class="game-card__name">Mémoire</span></button>
+            <button class="game-card"><span class="game-card__emoji">🎪</span><span class="game-card__name">Pendu</span></button>
+            <button class="game-card"><span class="game-card__emoji">🃏</span><span class="game-card__name">UNO</span></button>
+          </div>
+          <button class="cta-gold">Scoreboard global</button>
+        </div>
+      </div>
+
+      <div id="host-lobby" class="host-screen">
+        <div class="host-topbar">
+          <span class="brand">Petit Bac</span>
+          <span class="code-partie">A3K9</span>
+          <button class="btn-ghost">Réglages</button>
+        </div>
+        <div class="host-body host-body--center">
+          <p class="lobby-wait">En attente de joueurs…</p>
+          <div class="jeton-row">
+            <div class="jeton-item"><div class="jeton jeton--rouge"></div><span class="jeton-item__name">Léa</span></div>
+            <div class="jeton-item"><div class="jeton jeton--bleu"></div><span class="jeton-item__name">Tom</span></div>
+            <div class="jeton-item"><div class="jeton jeton--safran"></div><span class="jeton-item__name">Nino</span></div>
+            <div class="jeton-item"><div class="jeton jeton--prairie"></div><span class="jeton-item__name">Zoé</span></div>
+          </div>
+          <button class="cta-gold">Lancer la partie</button>
+        </div>
+      </div>
+
+      <div id="host-jeu-petitbac" class="host-screen">
+        <div class="host-game-bar">
+          <span class="game-title">Petit Bac · Manche 2/5</span>
+          <span class="timer">00:32</span>
+        </div>
+        <div class="host-game-layout">
+          <div class="zone-jeu"><span class="lettre-tiree">P</span></div>
+          <div class="score-rail">
+            <span class="score-rail__title">Scores</span>
+            <div class="score-row"><div class="jeton jeton--s jeton--rouge"></div><span class="score-row__name">Léa</span><span class="score-row__pts">12</span></div>
+            <div class="score-row"><div class="jeton jeton--s jeton--bleu"></div><span class="score-row__name">Tom</span><span class="score-row__pts">9</span></div>
+            <div class="score-row"><div class="jeton jeton--s jeton--safran"></div><span class="score-row__name">Nino</span><span class="score-row__pts">7</span></div>
+            <div class="score-row"><div class="jeton jeton--s jeton--prairie"></div><span class="score-row__name">Zoé</span><span class="score-row__pts">5</span></div>
+          </div>
+        </div>
+        <div class="host-controls">
+          <button class="btn-ghost">Réglages</button>
+          <button class="btn-primary">Suivant</button>
+        </div>
+      </div>
+
+      <div id="host-jeu-puissance4" class="host-screen">
+        <div class="host-game-bar">
+          <span class="game-title">Puissance 4</span>
+          <span class="timer">—</span>
+        </div>
+        <div class="host-game-layout">
+          <div class="zone-jeu">
+            <div style="display:flex;flex-direction:column;align-items:center;">
+              <div class="p4-board">
+                <div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell"></div>
+                <div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell r"></div><div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell"></div>
+                <div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell b"></div><div class="p4-cell r"></div><div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell"></div>
+                <div class="p4-cell"></div><div class="p4-cell b"></div><div class="p4-cell r"></div><div class="p4-cell b"></div><div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell"></div>
+                <div class="p4-cell"></div><div class="p4-cell r"></div><div class="p4-cell b"></div><div class="p4-cell r"></div><div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell"></div>
+                <div class="p4-cell b"></div><div class="p4-cell r"></div><div class="p4-cell b"></div><div class="p4-cell r"></div><div class="p4-cell b"></div><div class="p4-cell"></div><div class="p4-cell"></div>
+              </div>
+              <p class="p4-status">Tour de <strong>Léa</strong> (jeton rouge)</p>
+            </div>
+          </div>
+          <div class="score-rail">
+            <span class="score-rail__title">Joueurs</span>
+            <div class="score-row"><div class="jeton jeton--s jeton--rouge"></div><span class="score-row__name">Léa</span></div>
+            <div class="score-row"><div class="jeton jeton--s jeton--bleu"></div><span class="score-row__name">Tom</span></div>
+          </div>
+        </div>
+        <div class="host-controls">
+          <button class="btn-ghost">Réglages</button>
+          <button class="btn-primary">Annuler le dernier coup</button>
+        </div>
+      </div>
+
+      <div id="host-jeu-uno" class="host-screen">
+        <div class="host-game-bar">
+          <span class="game-title">UNO</span>
+          <span class="timer">—</span>
+        </div>
+        <div class="host-game-layout">
+          <div class="zone-jeu">
+            <div class="uno-table">
+              <div class="uno-card blue">7</div>
+              <div class="uno-players">
+                <div class="uno-player tour"><div class="jeton jeton--s jeton--rouge"></div><span>Léa</span><span class="uno-player__count">4</span></div>
+                <div class="uno-player"><div class="jeton jeton--s jeton--bleu"></div><span>Tom</span><span class="uno-player__count">6</span></div>
+                <div class="uno-player"><div class="jeton jeton--s jeton--safran"></div><span>Nino</span><span class="uno-player__count">3</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="score-rail">
+            <span class="score-rail__title">Couleur en cours</span>
+            <div class="score-row"><span class="score-row__name">Bleu</span></div>
+          </div>
+        </div>
+        <div class="host-controls">
+          <button class="btn-ghost">Réglages</button>
+          <button class="btn-primary">Passer le tour</button>
+        </div>
+      </div>
+
+      <div id="host-scoreboard" class="host-screen">
+        <div class="host-topbar">
+          <span class="brand">Scoreboard global</span>
+          <button class="btn-ghost">Retour</button>
+        </div>
+        <div class="host-body host-body--center">
+          <div class="scoreboard-list">
+            <div class="sb-row"><span class="sb-rank">1</span><div class="jeton jeton--s jeton--rouge"></div><span class="sb-name">Léa</span><div class="sb-bar"><div class="sb-bar__fill" style="width:92%"></div></div><span class="sb-pts">248 pts</span></div>
+            <div class="sb-row"><span class="sb-rank">2</span><div class="jeton jeton--s jeton--bleu"></div><span class="sb-name">Tom</span><div class="sb-bar"><div class="sb-bar__fill" style="width:74%"></div></div><span class="sb-pts">201 pts</span></div>
+            <div class="sb-row"><span class="sb-rank">3</span><div class="jeton jeton--s jeton--safran"></div><span class="sb-name">Nino</span><div class="sb-bar"><div class="sb-bar__fill" style="width:65%"></div></div><span class="sb-pts">178 pts</span></div>
+            <div class="sb-row"><span class="sb-rank">4</span><div class="jeton jeton--s jeton--prairie"></div><span class="sb-name">Zoé</span><div class="sb-bar"><div class="sb-bar__fill" style="width:41%"></div></div><span class="sb-pts">112 pts</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============ INVITÉ ============ -->
+    <div class="guest-frame" data-frame="guest" hidden>
+      <div class="phone-shell">
+
+        <div id="guest-rejoindre" class="guest-screen active">
+          <div class="guest-header"><span class="brand" style="color:var(--encre-900);">MiniGame Universe</span></div>
+          <div class="guest-body">
+            <span class="field-label">Code de la partie</span>
+            <input class="field-input" value="A3K9" readonly>
+            <span class="field-label">Ton prénom</span>
+            <input class="field-input field-input--text" value="Léa" readonly>
+            <span class="field-label">Choisis ton jeton</span>
+            <div class="jeton-picker">
+              <button class="jeton-pick" style="background:var(--jeton-rouge);" aria-pressed="true"></button>
+              <button class="jeton-pick" style="background:var(--jeton-bleu);" aria-pressed="false"></button>
+              <button class="jeton-pick" style="background:var(--jeton-safran);" aria-pressed="false"></button>
+              <button class="jeton-pick" style="background:var(--jeton-prairie);" aria-pressed="false"></button>
+              <button class="jeton-pick" style="background:var(--jeton-violet);" aria-pressed="false"></button>
+              <button class="jeton-pick" style="background:var(--jeton-turquoise);" aria-pressed="false"></button>
+            </div>
+            <button class="btn-cta">Rejoindre</button>
+          </div>
+        </div>
+
+        <div id="guest-lobby" class="guest-screen">
+          <div class="guest-header guest-header--min">
+            <div class="guest-id"><div class="jeton jeton--s jeton--rouge"></div><span class="guest-id__name">Léa</span></div>
+            <span class="guest-ctx">Petit Bac</span>
+          </div>
+          <div class="guest-body">
+            <h2 class="guest-title">En attente que l'hôte lance la partie…</h2>
+            <span class="field-label">Joueurs dans la partie</span>
+            <div class="guest-players">
+              <div class="guest-player-row"><div class="jeton jeton--s jeton--rouge"></div>Léa</div>
+              <div class="guest-player-row"><div class="jeton jeton--s jeton--bleu"></div>Tom</div>
+              <div class="guest-player-row"><div class="jeton jeton--s jeton--safran"></div>Nino</div>
+            </div>
+          </div>
+          <div class="guest-tabbar">
+            <button class="guest-tab" aria-pressed="true"><span class="guest-tab__dot"></span>Jeu</button>
+            <button class="guest-tab" aria-pressed="false"><span class="guest-tab__dot"></span>Score</button>
+            <button class="guest-tab" aria-pressed="false"><span class="guest-tab__dot"></span>Réglages</button>
+          </div>
+        </div>
+
+        <div id="guest-jeu-petitbac" class="guest-screen">
+          <div class="guest-header">
+            <div class="guest-header--min">
+              <div class="guest-id"><div class="jeton jeton--s jeton--rouge"></div><span class="guest-id__name">Léa</span><span class="guest-id__pts">· 12 pts</span></div>
+              <span class="timer" style="color:var(--or-600);">00:32</span>
+            </div>
+          </div>
+          <div class="guest-body">
+            <h2 class="guest-title">Lettre : P</h2>
+            <span class="field-label">Animal</span>
+            <input class="field-input field-input--text" placeholder="Panthère">
+            <span class="field-label">Fruit</span>
+            <input class="field-input field-input--text" placeholder="Pomme">
+            <span class="field-label">Métier</span>
+            <input class="field-input field-input--text" placeholder="Pâtissier">
+            <button class="btn-cta">Valider</button>
+          </div>
+          <div class="guest-tabbar">
+            <button class="guest-tab" aria-pressed="true"><span class="guest-tab__dot"></span>Jeu</button>
+            <button class="guest-tab" aria-pressed="false"><span class="guest-tab__dot"></span>Score</button>
+            <button class="guest-tab" aria-pressed="false"><span class="guest-tab__dot"></span>Réglages</button>
+          </div>
+        </div>
+
+        <div id="guest-jeu-puissance4" class="guest-screen">
+          <div class="guest-header guest-header--min">
+            <div class="guest-id"><div class="jeton jeton--s jeton--rouge"></div><span class="guest-id__name">Léa</span></div>
+            <span class="guest-ctx">Puissance 4</span>
+          </div>
+          <div class="guest-body">
+            <p class="p4-status--guest">Vue miroir en lecture seule — l'hôte joue au tableau.</p>
+            <div class="p4-mini">
+              <div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell"></div>
+              <div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell r"></div><div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell"></div>
+              <div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell b"></div><div class="p4-cell r"></div><div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell"></div>
+              <div class="p4-cell"></div><div class="p4-cell b"></div><div class="p4-cell r"></div><div class="p4-cell b"></div><div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell"></div>
+              <div class="p4-cell"></div><div class="p4-cell r"></div><div class="p4-cell b"></div><div class="p4-cell r"></div><div class="p4-cell"></div><div class="p4-cell"></div><div class="p4-cell"></div>
+              <div class="p4-cell b"></div><div class="p4-cell r"></div><div class="p4-cell b"></div><div class="p4-cell r"></div><div class="p4-cell b"></div><div class="p4-cell"></div><div class="p4-cell"></div>
+            </div>
+            <p class="p4-status--guest"><strong style="color:var(--jeton-rouge);">Léa</strong> doit jouer</p>
+          </div>
+          <div class="guest-tabbar">
+            <button class="guest-tab" aria-pressed="true"><span class="guest-tab__dot"></span>Jeu</button>
+            <button class="guest-tab" aria-pressed="false"><span class="guest-tab__dot"></span>Score</button>
+            <button class="guest-tab" aria-pressed="false"><span class="guest-tab__dot"></span>Réglages</button>
+          </div>
+        </div>
+
+        <div id="guest-jeu-uno" class="guest-screen">
+          <div class="guest-header guest-header--min">
+            <div class="guest-id"><div class="jeton jeton--s jeton--rouge"></div><span class="guest-id__name">Léa</span></div>
+            <span class="guest-ctx">Couleur : Bleu</span>
+          </div>
+          <div class="guest-body">
+            <h2 class="guest-title">Ta main</h2>
+            <div class="hand">
+              <div class="uno-card red">4</div>
+              <div class="uno-card yellow">9</div>
+              <div class="uno-card green">2</div>
+              <div class="uno-card blue">6</div>
+            </div>
+            <p class="p4-status--guest">C'est ton tour — joue une carte bleue ou pioche.</p>
+            <button class="btn-cta">Piocher une carte</button>
+          </div>
+          <div class="guest-tabbar">
+            <button class="guest-tab" aria-pressed="true"><span class="guest-tab__dot"></span>Jeu</button>
+            <button class="guest-tab" aria-pressed="false"><span class="guest-tab__dot"></span>Score</button>
+            <button class="guest-tab" aria-pressed="false"><span class="guest-tab__dot"></span>Réglages</button>
+          </div>
+        </div>
+
+        <div id="guest-scoreboard" class="guest-screen">
+          <div class="guest-header"><span class="guest-title" style="font-size:16px;">Scoreboard global</span></div>
+          <div class="guest-body">
+            <div class="scoreboard-list">
+              <div class="sb-row" style="background:var(--carton-50); border:1px solid var(--carton-line);">
+                <span class="sb-rank" style="color:var(--or-600);">1</span><div class="jeton jeton--s jeton--rouge"></div>
+                <span class="sb-name" style="color:var(--encre-900);">Léa</span>
+                <div class="sb-bar" style="background:var(--carton-line);"><div class="sb-bar__fill" style="width:92%"></div></div>
+                <span class="sb-pts" style="color:var(--encre-900);">248</span>
+              </div>
+              <div class="sb-row" style="background:var(--carton-50); border:1px solid var(--carton-line);">
+                <span class="sb-rank" style="color:var(--or-600);">2</span><div class="jeton jeton--s jeton--bleu"></div>
+                <span class="sb-name" style="color:var(--encre-900);">Tom</span>
+                <div class="sb-bar" style="background:var(--carton-line);"><div class="sb-bar__fill" style="width:74%"></div></div>
+                <span class="sb-pts" style="color:var(--encre-900);">201</span>
+              </div>
+            </div>
+          </div>
+          <div class="guest-tabbar">
+            <button class="guest-tab" aria-pressed="false"><span class="guest-tab__dot"></span>Jeu</button>
+            <button class="guest-tab" aria-pressed="true"><span class="guest-tab__dot"></span>Score</button>
+            <button class="guest-tab" aria-pressed="false"><span class="guest-tab__dot"></span>Réglages</button>
+          </div>
+        </div>
+
+        <div id="guest-reglages" class="guest-screen">
+          <div class="guest-header"><span class="guest-title" style="font-size:16px;">Réglages</span></div>
+          <div class="guest-body">
+            <div class="settings-row"><span>Musique</span><button class="toggle"></button></div>
+            <div class="settings-row"><span>Contraste renforcé</span><button class="toggle" style="background:var(--carton-line);"></button></div>
+            <div style="margin-top:auto;">
+              <button class="btn-danger">Quitter la partie</button>
+            </div>
+          </div>
+          <div class="guest-tabbar">
+            <button class="guest-tab" aria-pressed="false"><span class="guest-tab__dot"></span>Jeu</button>
+            <button class="guest-tab" aria-pressed="false"><span class="guest-tab__dot"></span>Score</button>
+            <button class="guest-tab" aria-pressed="true"><span class="guest-tab__dot"></span>Réglages</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+<script>
+  const deviceBtns = document.querySelectorAll('[data-device]');
+  const panels = document.querySelectorAll('[data-panel]');
+  const frames = document.querySelectorAll('[data-frame]');
+
+  deviceBtns.forEach(btn => btn.addEventListener('click', () => {
+    deviceBtns.forEach(b => b.setAttribute('aria-pressed', b === btn));
+    const device = btn.dataset.device;
+    panels.forEach(p => p.hidden = p.dataset.panel !== device);
+    frames.forEach(f => f.hidden = f.dataset.frame !== device);
+  }));
+
+  document.querySelectorAll('[data-screen]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const group = btn.closest('.proto-group');
+      group.querySelectorAll('[data-screen]').forEach(b => b.setAttribute('aria-pressed', b === btn));
+      const target = document.getElementById(btn.dataset.screen);
+      target.parentElement.querySelectorAll(':scope > div').forEach(s => s.classList.remove('active'));
+      target.classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>

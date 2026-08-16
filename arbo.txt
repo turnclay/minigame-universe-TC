@@ -20,6 +20,7 @@
 │   │   ├── mgu-accueil-pilote.css
 │   │   ├── mgu-components.css
 │   │   ├── mgu-flux-pilote.css
+│   │   ├── mgu-jeux-pilote.css
 │   │   ├── mgu-tokens.css
 │   │   ├── reglages.css
 │   │   └── style.css
@@ -381,6 +382,7 @@
 ├── DETTE-TECHNIQUE.md
 ├── FULL-REPO-MATRIX.csv
 ├── JEUX.md
+├── minigame-universe-prototype.html
 ├── package.json
 ├── package-lock.json
 ├── PROJECT-STATE.md

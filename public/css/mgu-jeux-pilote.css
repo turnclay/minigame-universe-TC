@@ -1,0 +1,506 @@
+/*
+  mgu-jeux-pilote.css — MiniGame Universe
+  Migration des conteneurs de jeux (périmètre : "CONTENEUR DES JEUX").
+
+  Structure en 2 niveaux :
+  1) FONDATION — mirroir du correctif ".screen" de mgu-flux-pilote.css,
+     appliqué ici à ".game-screen" (même règle de base dans style.css,
+     jamais neutralisée pour les écrans de jeu jusqu'ici). Bénéficie
+     immédiatement aux 11 jeux, y compris ceux non détaillés ci-dessous.
+  2) DÉTAIL PAR JEU — reskin complet pour les jeux audités en profondeur :
+     Quiz, Juste Prix, Maxi Lettres (LML), Pendu, Petit Bac, Mémoire,
+     Puissance 4, et l'écran de configuration Undercover.
+
+  EXPLICITEMENT NON COUVERT dans cette passe (voir message d'accompagnement) :
+  - Undercover : phase débat/vote/élimination (~150 sélecteurs .uc-*,
+    non audités en détail — l'écran garde le reskin de fondation
+    (niveau 1) mais son contenu interne reste Aurora Glass).
+  - Morpion (#morpion-container) et UNO (#uno-contenu) : contenu généré
+    dynamiquement par leurs modules JS respectifs (public/js/jeux/morpion.js,
+    uno.js), non fournis — impossible d'auditer sans risquer de deviner
+    des noms de classes qui n'existent pas.
+  - Mime & Dessine (#mimer-content) : contenu dynamique, wrapper seul touché.
+
+  Scope : "body.mgu-pilote", chargé après style.css/mgu-flux-pilote.css.
+*/
+
+/* ============================================================
+   1) FONDATION — carte ".game-screen" (mirroir de ".screen")
+   ============================================================ */
+
+body.mgu-pilote .game-screen {
+  background: var(--mgu-feutrine-800);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--mgu-feutrine-line);
+  border-radius: var(--mgu-radius-l);
+  box-shadow: none;
+  animation: none;
+}
+
+body.mgu-pilote .game-screen::before {
+  display: none;
+}
+
+body.mgu-pilote .game-container {
+  background: transparent;
+}
+
+/* ============================================================
+   2) CHROME PARTAGÉ (Quiz, Juste Prix, Petit Bac, Mimer...)
+   ============================================================ */
+
+body.mgu-pilote .game-header {
+  margin-bottom: var(--mgu-space-4);
+}
+
+body.mgu-pilote .theme-display,
+body.mgu-pilote .categorie-display,
+body.mgu-pilote #theme-display,
+body.mgu-pilote #jp-categorie {
+  font-family: var(--mgu-font-display);
+  color: var(--mgu-or-500);
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  backdrop-filter: none;
+  text-shadow: none;
+  animation: none;
+}
+
+body.mgu-pilote .timer,
+body.mgu-pilote #timer,
+body.mgu-pilote #jp-timer,
+body.mgu-pilote #petitbac-timer,
+body.mgu-pilote #mimer-timer,
+body.mgu-pilote .timer-lml {
+  font-family: var(--mgu-font-display);
+  color: var(--mgu-or-500);
+  text-shadow: none;
+}
+
+body.mgu-pilote .timer.clignote,
+body.mgu-pilote .clignote,
+body.mgu-pilote #petitbac-timer.clignote {
+  color: var(--mgu-pion-rouge);
+}
+
+body.mgu-pilote .question-text,
+body.mgu-pilote #question {
+  font-family: var(--mgu-font-body);
+  color: var(--mgu-carton-50);
+}
+
+body.mgu-pilote .fleche svg,
+body.mgu-pilote .jp-fleche svg {
+  fill: var(--mgu-carton-100);
+}
+
+body.mgu-pilote .fleche:hover svg,
+body.mgu-pilote .jp-fleche:hover svg {
+  filter: none;
+  fill: var(--mgu-or-500);
+}
+
+body.mgu-pilote .ligne button,
+body.mgu-pilote .btn-indice,
+body.mgu-pilote .btn-reponse {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  color: var(--mgu-carton-50);
+  font-family: var(--mgu-font-body);
+}
+
+body.mgu-pilote .ligne button:hover {
+  background: var(--mgu-feutrine-600);
+  border-color: var(--mgu-or-500);
+}
+
+body.mgu-pilote .indice-text,
+body.mgu-pilote .reponse-text,
+body.mgu-pilote #reponse {
+  color: var(--mgu-carton-50);
+}
+
+body.mgu-pilote .btn-next-question,
+body.mgu-pilote #btn-next,
+body.mgu-pilote #btn-next-jp {
+  background: var(--mgu-or-500);
+  color: var(--mgu-or-900);
+  font-family: var(--mgu-font-display);
+  box-shadow: none;
+}
+
+body.mgu-pilote .btn-next-question:hover,
+body.mgu-pilote #btn-next:hover,
+body.mgu-pilote #btn-next-jp:hover {
+  background: var(--mgu-or-600);
+  box-shadow: none;
+}
+
+/* Zone de réponse texte (Quiz) — aucune règle existante, création propre */
+body.mgu-pilote .reponse-input-wrap {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  border-radius: var(--mgu-radius-m);
+  padding: var(--mgu-space-3);
+}
+
+body.mgu-pilote .quiz-reponse-input,
+body.mgu-pilote .jp-hote-input,
+body.mgu-pilote .lml-hote-input {
+  font-family: var(--mgu-font-body);
+  background: var(--mgu-feutrine-900);
+  border: 1px solid var(--mgu-feutrine-line);
+  color: var(--mgu-carton-50);
+  border-radius: var(--mgu-radius-s);
+}
+
+body.mgu-pilote .quiz-reponse-input:focus,
+body.mgu-pilote .jp-hote-input:focus {
+  border-color: var(--mgu-or-500);
+  box-shadow: var(--mgu-focus-ring);
+}
+
+body.mgu-pilote .btn-verifier.btn-valider,
+body.mgu-pilote #btn-valider-reponse,
+body.mgu-pilote #jp-btn-envoyer-hote,
+body.mgu-pilote #lml-btn-envoyer-hote {
+  background: var(--mgu-pion-prairie);
+  color: var(--mgu-encre-900);
+  border: none;
+  border-radius: var(--mgu-radius-s);
+  font-family: var(--mgu-font-display);
+}
+
+body.mgu-pilote .btn-verifier.btn-afficher,
+body.mgu-pilote .btn-afficher-jp,
+body.mgu-pilote .btn-afficher-lml,
+body.mgu-pilote #btn-afficher-reponse {
+  background: var(--mgu-feutrine-600);
+  color: var(--mgu-carton-100);
+  border: 1px solid var(--mgu-feutrine-line);
+  border-radius: var(--mgu-radius-s);
+  font-family: var(--mgu-font-display);
+}
+
+body.mgu-pilote .verif-resultat {
+  color: var(--mgu-carton-100);
+  font-family: var(--mgu-font-body);
+}
+
+body.mgu-pilote .reponse-affichage-label {
+  color: var(--mgu-or-500);
+  font-family: var(--mgu-font-display);
+  font-size: 13px;
+}
+
+body.mgu-pilote .reponse-text-passive {
+  color: var(--mgu-carton-50);
+}
+
+/* ============================================================
+   3) JUSTE PRIX
+   ============================================================ */
+
+body.mgu-pilote .produit-nom,
+body.mgu-pilote #jp-produit-nom {
+  color: var(--mgu-carton-50);
+  font-family: var(--mgu-font-display);
+}
+
+body.mgu-pilote .produit-description,
+body.mgu-pilote #jp-produit-description {
+  color: var(--mgu-carton-100);
+  text-shadow: none;
+  opacity: .85;
+}
+
+body.mgu-pilote .produit-image,
+body.mgu-pilote #jp-produit-image {
+  box-shadow: none;
+  border: 1px solid var(--mgu-feutrine-line);
+}
+
+body.mgu-pilote .jp-hote-input-row {
+  gap: var(--mgu-space-2);
+}
+
+body.mgu-pilote .jp-euro-prefix {
+  color: var(--mgu-carton-100);
+}
+
+body.mgu-pilote .jp-btn-prix,
+body.mgu-pilote #jp-produit-prix {
+  background: var(--mgu-feutrine-700);
+  border: 2px solid var(--mgu-feutrine-line);
+  color: var(--mgu-carton-50);
+  font-family: var(--mgu-font-display);
+}
+
+body.mgu-pilote .jp-btn-prix:hover,
+body.mgu-pilote #jp-produit-prix:hover {
+  background: var(--mgu-feutrine-600);
+  border-color: var(--mgu-or-500);
+}
+
+body.mgu-pilote .btn-link,
+body.mgu-pilote #jp-produit-lien {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  color: var(--mgu-or-500);
+}
+
+/* ============================================================
+   4) MAXI LETTRES (LML)
+   ============================================================ */
+
+body.mgu-pilote .lml-lettres,
+body.mgu-pilote #lml-lettres {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  box-shadow: none;
+}
+
+body.mgu-pilote .lettre {
+  background: linear-gradient(135deg, var(--mgu-or-500), var(--mgu-or-600));
+  border: 2px solid rgba(255, 255, 255, .2);
+  color: var(--mgu-or-900);
+  text-shadow: none;
+  font-family: var(--mgu-font-display);
+}
+
+body.mgu-pilote .lml-input,
+body.mgu-pilote #lml-input {
+  background: var(--mgu-feutrine-900);
+  border: 2px solid var(--mgu-feutrine-line);
+  color: var(--mgu-carton-50);
+  font-family: var(--mgu-font-mono);
+  backdrop-filter: none;
+}
+
+body.mgu-pilote #lml-input:focus {
+  border-color: var(--mgu-or-500);
+  background: var(--mgu-feutrine-800);
+  box-shadow: none;
+}
+
+body.mgu-pilote .btn-lml,
+body.mgu-pilote #lml-valider,
+body.mgu-pilote #lml-rejouer {
+  background: var(--mgu-or-500);
+  color: var(--mgu-or-900);
+  font-family: var(--mgu-font-display);
+  box-shadow: none;
+}
+
+body.mgu-pilote .btn-lml:hover,
+body.mgu-pilote #lml-valider:hover,
+body.mgu-pilote #lml-rejouer:hover {
+  background: var(--mgu-or-600);
+  box-shadow: none;
+}
+
+body.mgu-pilote .btn-lml-small {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  color: var(--mgu-carton-50);
+}
+
+body.mgu-pilote .lml-resultat,
+body.mgu-pilote #lml-resultat {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  color: var(--mgu-carton-50);
+  text-shadow: none;
+}
+
+/* ============================================================
+   5) PENDU
+   ============================================================ */
+
+body.mgu-pilote .pendu-theme-display {
+  background: var(--mgu-feutrine-700);
+  border: 2px solid var(--mgu-feutrine-line);
+  color: var(--mgu-carton-50);
+}
+
+body.mgu-pilote .pendu-dessin {
+  background: var(--mgu-feutrine-900);
+  border: 2px solid var(--mgu-feutrine-line);
+  box-shadow: none;
+}
+
+body.mgu-pilote .lettre-case {
+  background: linear-gradient(135deg, var(--mgu-or-500), var(--mgu-or-600));
+  border: 2px solid rgba(255, 255, 255, .2);
+  color: var(--mgu-or-900);
+  text-shadow: none;
+  font-family: var(--mgu-font-display);
+}
+
+body.mgu-pilote .pendu-clavier {
+  gap: var(--mgu-space-2);
+}
+
+body.mgu-pilote .btn-lettre {
+  background: var(--mgu-feutrine-700);
+  border: 2px solid var(--mgu-feutrine-line);
+  color: var(--mgu-carton-50);
+  font-family: var(--mgu-font-body);
+}
+
+body.mgu-pilote .btn-lettre:hover:not(:disabled) {
+  background: var(--mgu-feutrine-600);
+  border-color: var(--mgu-or-500);
+}
+
+/* États sémantiques (bonne/mauvaise lettre) conservés en rouge/vert,
+   recolorés sur la palette pion pour rester dans le système */
+body.mgu-pilote .btn-lettre.correcte {
+  background: var(--mgu-pion-prairie);
+  border-color: var(--mgu-pion-prairie);
+  color: var(--mgu-encre-900);
+}
+
+body.mgu-pilote .btn-lettre.incorrecte {
+  background: var(--mgu-pion-rouge);
+  border-color: var(--mgu-pion-rouge);
+  color: white;
+}
+
+body.mgu-pilote .pendu-erreurs {
+  color: var(--mgu-carton-100);
+}
+
+/* Panneau invités Pendu : styles inline dans le HTML (rgba violet Aurora),
+   nécessite !important pour passer devant un style="" — cas isolé. */
+body.mgu-pilote #panneau-invites-pendu {
+  background: var(--mgu-feutrine-700) !important;
+  border-color: var(--mgu-feutrine-line) !important;
+}
+
+/* ============================================================
+   6) PETIT BAC
+   ============================================================ */
+
+body.mgu-pilote .petitbac-lettre {
+  background: var(--mgu-feutrine-700);
+  border: 2px solid var(--mgu-feutrine-line);
+  box-shadow: none;
+  color: var(--mgu-carton-50);
+}
+
+body.mgu-pilote #petitbac-lettre-actuelle {
+  background: var(--mgu-or-500);
+  color: var(--mgu-or-900);
+  text-shadow: none;
+  box-shadow: none;
+  font-family: var(--mgu-font-display);
+}
+
+body.mgu-pilote .petitbac-categorie-card {
+  background: var(--mgu-feutrine-700);
+  backdrop-filter: none;
+  border: 2px solid var(--mgu-feutrine-line);
+}
+
+body.mgu-pilote .petitbac-categorie-card::before {
+  background: transparent;
+  opacity: 0;
+}
+
+body.mgu-pilote .petitbac-categorie-card:hover {
+  border-color: var(--mgu-or-500);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .25);
+}
+
+body.mgu-pilote .petitbac-categorie-card:hover::before {
+  opacity: 0;
+}
+
+/* ============================================================
+   7) MÉMOIRE
+   ============================================================ */
+
+body.mgu-pilote .memoire-points {
+  color: var(--mgu-or-500);
+}
+
+body.mgu-pilote .memoire-carte {
+  background: var(--mgu-feutrine-700);
+  border: 2px solid var(--mgu-feutrine-line);
+}
+
+body.mgu-pilote .memoire-carte:hover {
+  border-color: var(--mgu-or-500);
+}
+
+body.mgu-pilote .carte-back {
+  background: var(--mgu-feutrine-600);
+  color: var(--mgu-carton-100);
+}
+
+body.mgu-pilote .memoire-carte.trouvee {
+  border-color: var(--mgu-pion-prairie);
+}
+
+body.mgu-pilote .memoire-carte.trouvee .carte-front {
+  background: var(--mgu-pion-prairie);
+}
+
+/* ============================================================
+   8) PUISSANCE 4
+   ============================================================ */
+
+body.mgu-pilote .puissance4-status {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  color: var(--mgu-carton-50);
+  box-shadow: none;
+  font-family: var(--mgu-font-display);
+}
+
+body.mgu-pilote .puissance4-status.puissance4-nul {
+  background: var(--mgu-feutrine-600);
+}
+
+body.mgu-pilote .puissance4-grille {
+  background: var(--mgu-feutrine-900);
+  box-shadow: none;
+  border-radius: var(--mgu-radius-l);
+}
+
+body.mgu-pilote .p4-colonne:hover {
+  filter: brightness(1.1);
+}
+
+/* ============================================================
+   9) UNDERCOVER — écran de configuration uniquement
+   (le débat/vote/élimination garde le reskin de fondation seul)
+   ============================================================ */
+
+body.mgu-pilote .config-block {
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+}
+
+body.mgu-pilote .config-block label {
+  color: var(--mgu-carton-50);
+  font-family: var(--mgu-font-body);
+}
+
+body.mgu-pilote .input-number {
+  background: var(--mgu-feutrine-900);
+  border: 1px solid var(--mgu-feutrine-line);
+  color: var(--mgu-carton-50);
+}
+
+body.mgu-pilote .btn-valider-equipes {
+  background: var(--mgu-or-500);
+  color: var(--mgu-or-900);
+  font-family: var(--mgu-font-display);
+}
+
+body.mgu-pilote .btn-valider-equipes:hover {
+  background: var(--mgu-or-600);
+}
