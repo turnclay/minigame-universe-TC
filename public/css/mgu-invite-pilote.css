@@ -22,10 +22,20 @@
 */
 
 /* ---------- Canevas ---------- */
+/* Filet de sécurité : !important pour garantir qu'aucune règle antérieure
+   (héritée d'invite.css, ou un futur ajout) ne puisse réintroduire le
+   dégradé Aurora — ce fond a été signalé incohérent à plusieurs reprises. */
+html,
+body,
+#phase-identification,
+#phase-jeu {
+  background: var(--mgu-carton-100) !important;
+  background-image: none !important;
+  animation: none !important;
+}
+
 body {
-  background: var(--mgu-carton-100);
   background-size: auto;
-  animation: none;
   font-family: var(--mgu-font-body);
   color: var(--mgu-encre-900);
 }

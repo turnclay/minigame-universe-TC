@@ -32,14 +32,14 @@ const COULEURS = [
     { nom:"Rouge",  hex:"#e74c3c" }, { nom:"Bleu",   hex:"#3498db" },
     { nom:"Vert",   hex:"#2ecc71" }, { nom:"Jaune",  hex:"#f39c12" },
     { nom:"Violet", hex:"#9b59b6" }, { nom:"Orange", hex:"#e67e22" },
-    { nom:"Rose",   hex:"#ec407a" }, { nom:"Cyan",   hex:"#00d4ff" },
+    { nom:"Rose",   hex:"#ec407a" }, { nom:"Cyan",   hex:"var(--mgu-pion-turquoise)" },
 ];
 
 const WRAP  = 'padding:1rem 0;display:flex;flex-direction:column;gap:14px;align-items:stretch;';
-const TITRE = 'text-align:center;font-size:1rem;font-weight:800;color:#c4b5fd;';
-const BWRAP = 'height:8px;background:rgba(255,255,255,.08);border-radius:6px;overflow:hidden;';
-const BAR   = 'height:100%;width:0%;background:linear-gradient(90deg,#a78bfa,#00d4ff);';
-const BTN   = 'padding:10px 18px;border-radius:10px;font-weight:700;font-family:inherit;cursor:pointer;border:1.5px solid rgba(167,139,250,.45);background:rgba(167,139,250,.18);color:#fff;';
+const TITRE = 'text-align:center;font-size:1rem;font-weight:800;color:var(--mgu-or-600);';
+const BWRAP = 'height:8px;background:var(--mgu-carton-50);border-radius:6px;overflow:hidden;';
+const BAR   = 'height:100%;width:0%;background:linear-gradient(90deg,var(--mgu-or-600),var(--mgu-or-600));';
+const BTN   = 'padding:10px 18px;border-radius:10px;font-weight:700;font-family:inherit;cursor:pointer;border:1.5px solid rgba(232,178,59,.45);background:rgba(232,178,59,.18);color:var(--mgu-encre-900);';
 
 const MemoireModule = {
     _session:null, _socket:null, _scores:{},
@@ -155,13 +155,13 @@ const MemoireModule = {
                 <div style="${TITRE}">\ud83c\udccf M\u00e9morise les paires</div>
                 <div style="${BWRAP}"><div id="mp-barre" style="${BAR}"></div></div>
                 <div id="mp-grille" style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:8px;"></div>
-                <p id="mp-status" style="text-align:center;font-size:.85rem;color:rgba(255,255,255,.6);">${direct ? '\u00c0 toi !' : 'M\u00e9morise\u2026'}</p>
+                <p id="mp-status" style="text-align:center;font-size:.85rem;color:var(--mgu-encre-600);">${direct ? '\u00c0 toi !' : 'M\u00e9morise\u2026'}</p>
             </div>`;
         const grille = $('mp-grille');
         grille.innerHTML = cartes.map((sym, i) => `
             <div data-index="${i}" data-symbole="${esc(sym)}"
                 style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:1.8rem;
-                background:rgba(167,139,250,.15);border:1.5px solid rgba(167,139,250,.35);border-radius:10px;">
+                background:rgba(232,178,59,.15);border:1.5px solid rgba(232,178,59,.35);border-radius:10px;">
                 <span class="mp-face">${direct ? '?' : esc(sym)}</span></div>`).join('');
 
         if (direct) { this._pairesEnable(gen); return; }
@@ -187,7 +187,7 @@ const MemoireModule = {
                 if (sel.dataset.symbole === carte.dataset.symbole) {
                     this._addTimeout(() => {
                         if (gen !== this._gen) return;
-                        [sel, carte].forEach(c => { c.dataset.ok = '1'; c.style.background = 'rgba(34,197,94,.22)'; });
+                        [sel, carte].forEach(c => { c.dataset.ok = '1'; c.style.background = 'rgba(95,167,119,.22)'; });
                         sel = null; bloque = false;
                         if (--restantes === 0) this._submit(this._erreurs);
                     }, 350);
@@ -213,14 +213,14 @@ const MemoireModule = {
                 <div style="${TITRE}">\ud83d\udd22 Retiens la suite</div>
                 <div style="${BWRAP}"><div id="mp-barre" style="${BAR}"></div></div>
                 <div id="mp-affichage" style="display:${direct ? 'none' : 'flex'};flex-wrap:wrap;gap:8px;justify-content:center;">
-                    ${suite.map(v => `<div style="min-width:44px;padding:10px;border-radius:8px;font-weight:800;font-size:1.3rem;text-align:center;background:rgba(167,139,250,.18);border:1.5px solid rgba(167,139,250,.4);">${esc(v)}</div>`).join('')}
+                    ${suite.map(v => `<div style="min-width:44px;padding:10px;border-radius:8px;font-weight:800;font-size:1.3rem;text-align:center;background:rgba(232,178,59,.18);border:1.5px solid rgba(232,178,59,.4);">${esc(v)}</div>`).join('')}
                 </div>
                 <div id="mp-input" style="display:${direct ? 'flex' : 'none'};flex-direction:column;gap:10px;">
-                    <p style="text-align:center;font-size:.85rem;color:rgba(255,255,255,.6);">Reconstitue la suite :</p>
+                    <p style="text-align:center;font-size:.85rem;color:var(--mgu-encre-600);">Reconstitue la suite :</p>
                     <div id="mp-reponse" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;min-height:40px;"></div>
                     <div id="mp-clavier" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;">${this._clavierSuite(this._config.type)}</div>
                     <div style="display:flex;gap:8px;justify-content:center;">
-                        <button id="mp-effacer" style="${BTN}background:rgba(255,255,255,.1);">\ud83d\uddd1\ufe0f Effacer</button>
+                        <button id="mp-effacer" style="${BTN}background:var(--mgu-carton-50);">\ud83d\uddd1\ufe0f Effacer</button>
                         <button id="mp-valider" style="${BTN}">\u2705 Valider</button>
                     </div>
                 </div>
@@ -241,7 +241,7 @@ const MemoireModule = {
                 if (gen !== this._gen) return;
                 this._reponse.push(b.dataset.val);
                 const it = document.createElement('div');
-                it.style.cssText = 'min-width:36px;padding:6px;border-radius:6px;font-weight:800;text-align:center;background:rgba(255,255,255,.1);';
+                it.style.cssText = 'min-width:36px;padding:6px;border-radius:6px;font-weight:800;text-align:center;background:var(--mgu-carton-50);';
                 it.textContent = b.dataset.val;
                 rep.appendChild(it);
             };
@@ -273,16 +273,16 @@ const MemoireModule = {
             <div style="${WRAP}">
                 <div style="${TITRE}">\ud83c\udfa8 Retiens les couleurs</div>
                 <div style="display:flex;justify-content:center;">
-                    <div id="mp-couleur" style="width:140px;height:140px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;background:transparent;border:1px solid rgba(255,255,255,.1);"></div>
+                    <div id="mp-couleur" style="width:140px;height:140px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--mgu-encre-900);background:transparent;border:1px solid var(--mgu-carton-line);"></div>
                 </div>
                 <div id="mp-input" style="display:${direct ? 'flex' : 'none'};flex-direction:column;gap:10px;">
-                    <p style="text-align:center;font-size:.85rem;color:rgba(255,255,255,.6);">Reconstitue la s\u00e9quence (${couleurs.length}) :</p>
+                    <p style="text-align:center;font-size:.85rem;color:var(--mgu-encre-600);">Reconstitue la s\u00e9quence (${couleurs.length}) :</p>
                     <div id="mp-reponse" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;min-height:36px;"></div>
                     <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
-                        ${COULEURS.map(c => `<button data-nom="${c.nom}" title="${c.nom}" style="width:42px;height:42px;border-radius:10px;border:2px solid rgba(255,255,255,.2);cursor:pointer;background:${c.hex};"></button>`).join('')}
+                        ${COULEURS.map(c => `<button data-nom="${c.nom}" title="${c.nom}" style="width:42px;height:42px;border-radius:10px;border:2px solid var(--mgu-carton-line);cursor:pointer;background:${c.hex};"></button>`).join('')}
                     </div>
                     <div style="display:flex;gap:8px;justify-content:center;">
-                        <button id="mp-effacer" style="${BTN}background:rgba(255,255,255,.1);">\ud83d\uddd1\ufe0f Effacer</button>
+                        <button id="mp-effacer" style="${BTN}background:var(--mgu-carton-50);">\ud83d\uddd1\ufe0f Effacer</button>
                         <button id="mp-valider" style="${BTN}">\u2705 Valider</button>
                     </div>
                 </div>
@@ -322,7 +322,7 @@ const MemoireModule = {
                 const c = COULEURS.find(x => x.nom === btn.dataset.nom);
                 this._reponse.push(c);
                 const it = document.createElement('div');
-                it.style.cssText = `width:30px;height:30px;border-radius:7px;background:${c.hex};border:1px solid rgba(255,255,255,.25);`;
+                it.style.cssText = `width:30px;height:30px;border-radius:7px;background:${c.hex};border:1px solid var(--mgu-carton-line);`;
                 rep.appendChild(it);
             };
         });
@@ -348,13 +348,13 @@ const MemoireModule = {
                 <div id="mp-grid" style="display:grid;grid-template-columns:repeat(${grille},1fr);gap:6px;">
                     ${Array.from({ length: total }, (_, i) => {
                         const pos = positions.find(p => p.position === i);
-                        return `<div data-index="${i}" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:1.6rem;background:rgba(167,139,250,.12);border:1.5px solid rgba(167,139,250,.3);border-radius:9px;cursor:default;"><span class="mp-sym">${(!direct && pos) ? esc(pos.symbole) : ''}</span></div>`;
+                        return `<div data-index="${i}" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:1.6rem;background:rgba(232,178,59,.12);border:1.5px solid rgba(232,178,59,.3);border-radius:9px;cursor:default;"><span class="mp-sym">${(!direct && pos) ? esc(pos.symbole) : ''}</span></div>`;
                     }).join('')}
                 </div>
                 <div id="mp-pool-wrap" style="display:${direct ? 'flex' : 'none'};flex-direction:column;gap:8px;">
-                    <p style="text-align:center;font-size:.85rem;color:rgba(255,255,255,.6);">S\u00e9lectionne un symbole puis clique sa case :</p>
+                    <p style="text-align:center;font-size:.85rem;color:var(--mgu-encre-600);">S\u00e9lectionne un symbole puis clique sa case :</p>
                     <div id="mp-pool" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
-                        ${positions.map(p => `<div data-symbole="${esc(p.symbole)}" style="width:52px;height:52px;display:flex;align-items:center;justify-content:center;font-size:1.7rem;background:rgba(167,139,250,.2);border:2px solid rgba(167,139,250,.4);border-radius:10px;cursor:pointer;">${esc(p.symbole)}</div>`).join('')}
+                        ${positions.map(p => `<div data-symbole="${esc(p.symbole)}" style="width:52px;height:52px;display:flex;align-items:center;justify-content:center;font-size:1.7rem;background:rgba(232,178,59,.2);border:2px solid rgba(232,178,59,.4);border-radius:10px;cursor:pointer;">${esc(p.symbole)}</div>`).join('')}
                     </div>
                 </div>
             </div>`;
@@ -377,7 +377,7 @@ const MemoireModule = {
                 if (gen !== this._gen) return;
                 pool.querySelectorAll('[data-symbole]').forEach(b => b.style.boxShadow = '');
                 selSym = el.dataset.symbole; selEl = el;
-                el.style.boxShadow = '0 0 0 3px rgba(0,212,255,.8)';
+                el.style.boxShadow = '0 0 0 3px rgba(232,178,59,.8)';
             };
         });
 
@@ -388,7 +388,7 @@ const MemoireModule = {
                 const span = caseEl.querySelector('.mp-sym');
                 if (span) span.textContent = selSym;
                 this._symPlace[i] = selSym;          // état en mémoire (pas dans le DOM)
-                caseEl.style.background = 'rgba(0,212,255,.15)';
+                caseEl.style.background = 'rgba(232,178,59,.15)';
                 if (selEl) selEl.remove();
                 selSym = null; selEl = null;
                 if (Object.keys(this._symPlace).length >= total) {
@@ -408,8 +408,8 @@ const MemoireModule = {
             const attendu = positions.find(p => p.position === i);
             const caseEl  = grid.querySelector(`[data-index="${i}"]`);
             if (place && attendu) {
-                if (place === attendu.symbole) { if (caseEl) caseEl.style.background = 'rgba(34,197,94,.22)'; }
-                else { if (caseEl) caseEl.style.background = 'rgba(239,68,68,.22)'; err++; }
+                if (place === attendu.symbole) { if (caseEl) caseEl.style.background = 'rgba(95,167,119,.22)'; }
+                else { if (caseEl) caseEl.style.background = 'rgba(214,72,79,.22)'; err++; }
             } else if (attendu || place) { err++; }
         }
         this._submit(err);
@@ -422,17 +422,17 @@ const MemoireModule = {
         cont.innerHTML = `
             <div style="${WRAP}">
                 <div style="text-align:center;padding:1.2rem;border-radius:14px;
-                    background:${ok ? 'rgba(34,197,94,.12)' : 'rgba(239,68,68,.12)'};
-                    border:1.5px solid ${ok ? 'rgba(34,197,94,.4)' : 'rgba(239,68,68,.3)'};">
+                    background:${ok ? 'rgba(95,167,119,.12)' : 'rgba(214,72,79,.12)'};
+                    border:1.5px solid ${ok ? 'rgba(95,167,119,.4)' : 'rgba(214,72,79,.3)'};">
                     <div style="font-size:2.2rem;">${ok ? '\u2705' : '\u274c'}</div>
-                    <div style="font-weight:800;font-size:1.05rem;margin-top:6px;color:#fff;">
+                    <div style="font-weight:800;font-size:1.05rem;margin-top:6px;color:var(--mgu-encre-900);">
                         ${erreurs === 0 ? 'Score parfait !' : (ok ? 'Bien jou\u00e9 !' : 'Trop d\u2019erreurs')}
                     </div>
-                    <div style="font-size:.9rem;color:rgba(255,255,255,.7);margin-top:4px;">
-                        Erreurs : ${erreurs} / Seuil : ${this._seuil} \u2014 <strong style="color:${ok ? '#86efac' : '#fca5a5'};">${score} pt${score !== 1 ? 's' : ''}</strong>
+                    <div style="font-size:.9rem;color:var(--mgu-encre-600);margin-top:4px;">
+                        Erreurs : ${erreurs} / Seuil : ${this._seuil} \u2014 <strong style="color:${ok ? '#2f5f42' : '#8a2f33'};">${score} pt${score !== 1 ? 's' : ''}</strong>
                     </div>
                 </div>
-                <p style="text-align:center;font-size:.85rem;color:rgba(255,255,255,.5);">En attente des autres joueurs\u2026</p>
+                <p style="text-align:center;font-size:.85rem;color:var(--mgu-encre-600);">En attente des autres joueurs\u2026</p>
             </div>`;
     },
 
@@ -441,9 +441,9 @@ const MemoireModule = {
         cont.innerHTML = `
             <div style="${WRAP}">
                 <div style="text-align:center;padding:1.6rem;border-radius:14px;
-                    background:rgba(167,139,250,.08);border:1.5px solid rgba(167,139,250,.3);">
+                    background:rgba(232,178,59,.08);border:1.5px solid rgba(232,178,59,.3);">
                     <div style="font-size:2rem;">\ud83e\udde0</div>
-                    <div style="font-weight:700;font-size:.95rem;margin-top:8px;color:#c4b5fd;">${esc(msg)}</div>
+                    <div style="font-weight:700;font-size:.95rem;margin-top:8px;color:var(--mgu-or-600);">${esc(msg)}</div>
                 </div>
             </div>`;
     },
@@ -454,7 +454,7 @@ const MemoireModule = {
             <div style="${WRAP}">
                 <div style="${TITRE}">\ud83c\udfc1 ${esc(titre)}</div>
                 <div id="mp-classement" style="display:flex;flex-direction:column;gap:6px;"></div>
-                <p style="text-align:center;font-size:.85rem;color:rgba(255,255,255,.5);">En attente du prochain d\u00e9fi\u2026</p>
+                <p style="text-align:center;font-size:.85rem;color:var(--mgu-encre-600);">En attente du prochain d\u00e9fi\u2026</p>
             </div>`;
         this._renderClassement();
     },
@@ -465,7 +465,7 @@ const MemoireModule = {
         const lignes = Object.entries(this._scores || {})
             .sort((a, b) => (b[1] || 0) - (a[1] || 0));
         if (!lignes.length) {
-            el.innerHTML = `<p style="text-align:center;font-size:.82rem;color:rgba(255,255,255,.4);">Scores en cours\u2026</p>`;
+            el.innerHTML = `<p style="text-align:center;font-size:.82rem;color:var(--mgu-encre-600);">Scores en cours\u2026</p>`;
             return;
         }
         el.innerHTML = lignes.map(([p, pts], i) => {
@@ -473,9 +473,9 @@ const MemoireModule = {
             return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;
                 background:${isMe ? 'rgba(196,181,253,.14)' : 'rgba(255,255,255,.05)'};
                 border:1px solid ${isMe ? 'rgba(196,181,253,.4)' : 'rgba(255,255,255,.1)'};">
-                <span style="min-width:22px;font-weight:800;color:#c4b5fd;">${i + 1}</span>
-                <span style="flex:1;font-weight:700;color:${isMe ? '#c4b5fd' : '#fff'};">${isMe ? '\ud83d\udc64 ' : ''}${esc(p)}</span>
-                <span style="font-weight:800;color:#00d4ff;">${pts} pt${pts !== 1 ? 's' : ''}</span>
+                <span style="min-width:22px;font-weight:800;color:var(--mgu-or-600);">${i + 1}</span>
+                <span style="flex:1;font-weight:700;color:${isMe ? 'var(--mgu-or-600)' : '#fff'};">${isMe ? '\ud83d\udc64 ' : ''}${esc(p)}</span>
+                <span style="font-weight:800;color:var(--mgu-or-600);">${pts} pt${pts !== 1 ? 's' : ''}</span>
             </div>`;
         }).join('');
     },

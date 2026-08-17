@@ -55,7 +55,7 @@ const MorpionModule = {
                 text-align:center;padding:2rem;">
                 <div style="font-size:2.5rem;">⭕</div>
                 <h2 style="margin:0;font-size:1.1rem;">Morpion</h2>
-                <p style="color:rgba(255,255,255,.5);margin:0;">
+                <p style="color:var(--mgu-encre-600);margin:0;">
                     En attente de l'hôte…
                 </p>
             </div>`;
@@ -95,7 +95,7 @@ const MorpionModule = {
                     style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;
                     font-size:1.9rem;font-weight:800;border-radius:10px;
                     background:${v ? 'rgba(255,255,255,.07)' : 'rgba(255,255,255,.03)'};
-                    border:1px solid rgba(255,255,255,.14);color:${col};
+                    border:1px solid var(--mgu-carton-line);color:${col};
                     cursor:${(libre && estMonTour) ? 'pointer' : 'default'};
                     transition:background .15s;">${esc(sym)}</div>`;
             }
@@ -104,7 +104,7 @@ const MorpionModule = {
         const largeur = Math.min(taille * 90, 360);
         cont.innerHTML = `
             <div style="padding:1rem 0;display:flex;flex-direction:column;gap:1rem;align-items:center;">
-                <div style="text-align:center;font-weight:700;font-size:1rem;color:#fff;
+                <div style="text-align:center;font-weight:700;font-size:1rem;color:var(--mgu-encre-900);
                     background:rgba(99,102,241,.18);border:1px solid rgba(99,102,241,.4);
                     border-radius:10px;padding:.6rem 1rem;width:100%;box-sizing:border-box;">
                     ${banniere}
@@ -115,7 +115,7 @@ const MorpionModule = {
                     pointer-events:${estMonTour ? 'auto' : 'none'};">
                     ${cases}
                 </div>
-                <p style="font-size:.8rem;color:rgba(255,255,255,.4);margin:0;text-align:center;">
+                <p style="font-size:.8rem;color:var(--mgu-encre-600);margin:0;text-align:center;">
                     ${sousTitre}
                 </p>
             </div>`;

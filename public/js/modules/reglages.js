@@ -197,28 +197,6 @@ export function afficherReglages() {
         <div class="reglages-body">
 
             <div class="reglages-section">
-                <h3 class="reglages-section-title">🎨 Thème de l'application</h3>
-                <p class="reglages-section-desc">Change les couleurs de toute l'interface en un clic.</p>
-
-                <div class="themes-grid">
-                    ${Object.entries(THEMES).map(([id, t]) => `
-                        <button
-                            class="theme-card ${id === themeActuel ? 'active' : ''}"
-                            data-theme="${id}"
-                            aria-label="Thème ${t.label}"
-                            title="${t.description}"
-                        >
-                            <span class="theme-preview theme-preview--${id}"></span>
-                            <span class="theme-icon">${t.icon}</span>
-                            <span class="theme-label">${t.label}</span>
-                            <span class="theme-desc">${t.description}</span>
-                            ${id === themeActuel ? '<span class="theme-active-badge">✓ Actif</span>' : ''}
-                        </button>
-                    `).join('')}
-                </div>
-            </div>
-
-            <div class="reglages-section">
                 <h3 class="reglages-section-title">🔊 Audio</h3>
                 <div class="reglages-row">
                     <span class="reglages-row-label">Musique</span>
@@ -267,31 +245,6 @@ export function afficherReglages() {
 
     document.getElementById("reglages-close").addEventListener("click", fermer);
     overlay.addEventListener("click", fermer);
-
-    // ── Sélection de thème ─────────────────────────────
-    panel.querySelectorAll(".theme-card").forEach(card => {
-        card.addEventListener("click", () => {
-            const themeId = card.dataset.theme;
-            appliquerTheme(themeId);
-
-            // Mettre à jour les badges actifs
-            panel.querySelectorAll(".theme-card").forEach(c => {
-                const badge = c.querySelector(".theme-active-badge");
-                if (c.dataset.theme === themeId) {
-                    c.classList.add("active");
-                    if (!badge) {
-                        const b = document.createElement("span");
-                        b.className = "theme-active-badge";
-                        b.textContent = "✓ Actif";
-                        c.appendChild(b);
-                    }
-                } else {
-                    c.classList.remove("active");
-                    if (badge) badge.remove();
-                }
-            });
-        });
-    });
 
     // ── Toggle musique (état global persistant) ─────────
     Musique.bindBouton('toggle-music-reglages', { classeOn: 'on' });

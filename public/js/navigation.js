@@ -96,9 +96,9 @@ export function naviguerVers(section, depuis = null) {
     tousLesEcrans.forEach(id => hide(id));
     show(section);
 
-    // Design pilote (Option A+C) — activé uniquement sur Accueil et Choix du jeu.
-    const MGU_PILOTE_SCREENS = ["home", "choix-jeu", "choix-mode", "form-solo", "form-equipes", "liste-parties"];
-    document.body.classList.toggle('mgu-pilote', MGU_PILOTE_SCREENS.includes(section));
+    // Design pilote : actif en permanence sur tout le front (plus de
+    // whitelist d'écrans — tous les conteneurs sont désormais migrés).
+    document.body.classList.add('mgu-pilote');
 
     const btnRetour = $("btn-retour-permanent");
     if (btnRetour) btnRetour.hidden = section === "home";

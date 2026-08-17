@@ -69,7 +69,7 @@ const JeuRegistry = {
 
 // ── Toast ──────────────────────────────────────────────────────
 function toast(msg, type = 'info', duration = 3000) {
-    const C = { success:'#22c55e', error:'#ef4444', warning:'#f59e0b', info:'#00d4ff' };
+    const C = { success:'#22c55e', error:'#ef4444', warning:'#f59e0b', info:'var(--mgu-or-600)' };
     const I = { success:'✅', error:'❌', warning:'⚠️', info:'ℹ️' };
     let c = $('toast-container');
     if (!c) {
@@ -80,7 +80,7 @@ function toast(msg, type = 'info', duration = 3000) {
     const el = document.createElement('div');
     el.style.cssText = [
         'display:flex;gap:.5rem;align-items:flex-start;padding:.65rem .9rem;border-radius:8px',
-        `background:#1e1e2e;color:#fff;border-left:3px solid ${C[type] || C.info}`,
+        `background:#1e1e2e;color:var(--mgu-encre-900);border-left:3px solid ${C[type] || C.info}`,
         'box-shadow:0 4px 16px rgba(0,0,0,.5)',
         'opacity:0;transition:opacity .2s,transform .2s;transform:translateX(12px)',
         'font-size:.88rem;pointer-events:auto'
@@ -98,7 +98,7 @@ function showBanner(msg) {
     let b = $('disconnect-banner');
     if (!b) {
         b = document.createElement('div'); b.id = 'disconnect-banner';
-        b.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#f87171;color:#000;text-align:center;padding:.5rem;font-weight:600;z-index:9999;display:none;font-size:.9rem;';
+        b.style.cssText = 'position:fixed;top:0;left:0;right:0;background:var(--mgu-pion-rouge);color:#000;text-align:center;padding:.5rem;font-weight:600;z-index:9999;display:none;font-size:.9rem;';
         document.body.prepend(b);
     }
     b.textContent = msg; b.style.display = 'block';
@@ -378,14 +378,14 @@ export const Player = {
             if (this._waitingAttempts >= this._waitingMax) {
                 const msg = $('attente-creation-msg');
                 if (msg) msg.innerHTML = `
-                    <p style="color:#f87171;margin:0 0 .75rem;">
+                    <p style="color:var(--mgu-pion-rouge);margin:0 0 .75rem;">
                         L'hôte n'a pas encore créé la partie.<br>
                         Vérifie le lien ou demande à l'hôte.
                     </p>
                     <button onclick="location.reload()"
-                        style="padding:.6rem 1.5rem;background:rgba(0,212,255,.15);
-                               border:1px solid rgba(0,212,255,.4);border-radius:8px;
-                               color:#00d4ff;cursor:pointer;font-family:inherit;">
+                        style="padding:.6rem 1.5rem;background:rgba(232,178,59,.15);
+                               border:1px solid rgba(232,178,59,.4);border-radius:8px;
+                               color:var(--mgu-or-600);cursor:pointer;font-family:inherit;">
                         🔄 Réessayer
                     </button>`;
                 this._waitingForGame = false;
@@ -462,11 +462,11 @@ export const Player = {
         cont.innerHTML = `
             <div style="display:flex;flex-direction:column;align-items:center;
                 justify-content:center;min-height:55vh;text-align:center;padding:2rem;gap:1.5rem;">
-                <div style="background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);
-                    border-radius:12px;padding:.6rem 1.2rem;color:#4ade80;font-size:.85rem;font-weight:600;">
+                <div style="background:rgba(95,167,119,.12);border:1px solid rgba(95,167,119,.3);
+                    border-radius:12px;padding:.6rem 1.2rem;color:#2f5f42;font-size:.85rem;font-weight:600;">
                     ✅ Connecté à la partie
                 </div>
-                <div style="background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.2);
+                <div style="background:rgba(232,178,59,.07);border:1px solid rgba(232,178,59,.2);
                     border-radius:16px;padding:1.5rem 2rem;min-width:260px;max-width:380px;width:100%;">
                     <div style="font-size:3rem;margin-bottom:.5rem;">${icon}</div>
                     <div style="font-size:1.2rem;font-weight:700;margin-bottom:.25rem;">
@@ -475,11 +475,11 @@ export const Player = {
                     <div style="font-size:.85rem;opacity:.6;margin-bottom:1rem;">
                         ${(snapshot?.jeu || this.session.jeu || '').toUpperCase()} · ${mode}
                     </div>
-                    <div style="background:rgba(255,255,255,.05);border-radius:8px;
+                    <div style="background:var(--mgu-carton-50);border-radius:8px;
                         padding:.75rem;margin-bottom:.75rem;">
                         <div style="font-size:.72rem;color:#64748b;text-transform:uppercase;
                             letter-spacing:.06em;margin-bottom:.25rem;">Ton pseudo</div>
-                        <div style="font-size:1.1rem;font-weight:700;color:#00d4ff;">
+                        <div style="font-size:1.1rem;font-weight:700;color:var(--mgu-or-600);">
                             ${esc(this.session.pseudo)}
                         </div>
                         ${this.session.equipe
@@ -492,13 +492,13 @@ export const Player = {
                     </div>
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:center;gap:.75rem;">
-                    <div style="width:36px;height:36px;border:3px solid rgba(0,212,255,.2);
-                        border-top-color:#00d4ff;border-radius:50%;animation:pl-spin .9s linear infinite;">
+                    <div style="width:36px;height:36px;border:3px solid rgba(232,178,59,.2);
+                        border-top-color:var(--mgu-or-600);border-radius:50%;animation:pl-spin .9s linear infinite;">
                     </div>
                     <p style="color:#64748b;font-size:.9rem;margin:0;">En attente du lancement…</p>
                 </div>
                 <button id="btn-quitter-attente"
-                    style="background:none;border:1px solid rgba(255,255,255,.1);color:#64748b;
+                    style="background:none;border:1px solid var(--mgu-carton-line);color:#64748b;
                            border-radius:8px;padding:.5rem 1rem;cursor:pointer;font-size:.82rem;
                            font-family:inherit;">
                     Quitter
@@ -521,22 +521,22 @@ export const Player = {
                 <div style="display:flex;flex-direction:column;align-items:center;
                     justify-content:center;min-height:55vh;text-align:center;
                     padding:2rem;gap:1.25rem;">
-                    <div style="width:48px;height:48px;border:4px solid rgba(0,212,255,.2);
-                        border-top-color:#00d4ff;border-radius:50%;
+                    <div style="width:48px;height:48px;border:4px solid rgba(232,178,59,.2);
+                        border-top-color:var(--mgu-or-600);border-radius:50%;
                         animation:pl-spin .9s linear infinite;"></div>
-                    <h2 style="color:white;margin:0;font-size:1.2rem;">En attente de l'hôte…</h2>
+                    <h2 style="color:var(--mgu-encre-900);margin:0;font-size:1.2rem;">En attente de l'hôte…</h2>
                     <div id="attente-creation-msg">
-                        <p style="color:rgba(255,255,255,.6);max-width:320px;margin:0 0 .5rem;">
+                        <p style="color:var(--mgu-encre-600);max-width:320px;margin:0 0 .5rem;">
                             Connecté en tant que
-                            <strong style="color:#00d4ff;">${esc(this.session.pseudo)}</strong><br>
+                            <strong style="color:var(--mgu-or-600);">${esc(this.session.pseudo)}</strong><br>
                             L'hôte configure <strong>${esc(nom)}</strong>.
                         </p>
                         <p id="attente-countdown"
-                            style="color:rgba(255,255,255,.3);font-size:.82rem;margin:0;">
+                            style="color:var(--mgu-encre-600);font-size:.82rem;margin:0;">
                             Nouvelle tentative dans 3s…
                         </p>
                     </div>
-                    <a href="/" style="font-size:.8rem;color:rgba(255,255,255,.25);text-decoration:none;">
+                    <a href="/" style="font-size:.8rem;color:var(--mgu-encre-600);text-decoration:none;">
                         ← Retour
                     </a>
                 </div>
@@ -544,12 +544,12 @@ export const Player = {
         } else {
             target.innerHTML = `
                 <span style="display:inline-flex;align-items:center;gap:.5rem;">
-                    <span style="width:14px;height:14px;border:2px solid rgba(0,212,255,.3);
-                        border-top-color:#00d4ff;border-radius:50%;
+                    <span style="width:14px;height:14px;border:2px solid rgba(232,178,59,.3);
+                        border-top-color:var(--mgu-or-600);border-radius:50%;
                         animation:pl-spin .9s linear infinite;display:inline-block;"></span>
                     En attente de l'hôte…
                     <span id="attente-countdown"
-                        style="color:rgba(255,255,255,.3);font-size:.8rem;"></span>
+                        style="color:var(--mgu-encre-600);font-size:.8rem;"></span>
                 </span>
                 <style>@keyframes pl-spin{to{transform:rotate(360deg)}}</style>`;
         }
@@ -587,12 +587,12 @@ export const Player = {
                     pointer-events:none;
                 }
                 .pl-cd-n {
-                    font-size:6rem; font-weight:900; color:white;
-                    text-shadow:0 0 60px rgba(0,212,255,.9);
+                    font-size:6rem; font-weight:900; color:var(--mgu-encre-900);
+                    text-shadow:0 0 60px rgba(232,178,59,.9);
                     animation:plCdPop .4s cubic-bezier(.4,0,.2,1);
                 }
                 .pl-cd-l {
-                    font-size:1rem; color:rgba(255,255,255,.7);
+                    font-size:1rem; color:var(--mgu-encre-600);
                     font-weight:700; letter-spacing:.1em; text-transform:uppercase;
                 }`;
             document.head.appendChild(s);
@@ -637,10 +637,10 @@ export const Player = {
                     60% { transform:scale(.93)             }
                     100%{ transform:scale(1);   opacity:1  }
                 }
-                .pl-cd-n { font-size:5rem;font-weight:900;color:white;
-                    text-shadow:0 0 50px rgba(0,212,255,.9);
+                .pl-cd-n { font-size:5rem;font-weight:900;color:var(--mgu-encre-900);
+                    text-shadow:0 0 50px rgba(232,178,59,.9);
                     animation:plCdPop .4s cubic-bezier(.4,0,.2,1) }
-                .pl-cd-l { font-size:.95rem;color:rgba(255,255,255,.7);
+                .pl-cd-l { font-size:.95rem;color:var(--mgu-encre-600);
                     font-weight:700;letter-spacing:.1em;text-transform:uppercase }`;
             document.head.appendChild(s);
         }
@@ -679,14 +679,14 @@ export const Player = {
                 padding:2rem;gap:1rem;">
                 <span style="font-size:3.5rem;">${jeuIcon(jeu)}</span>
                 <h2 style="margin:0;font-size:1.2rem;">Jeu sur l'écran de l'hôte</h2>
-                <p style="color:rgba(255,255,255,.6);max-width:300px;margin:0;line-height:1.6;">
-                    <strong style="color:#00d4ff;">${esc((jeu || '').toUpperCase())}</strong>
+                <p style="color:var(--mgu-encre-600);max-width:300px;margin:0;line-height:1.6;">
+                    <strong style="color:var(--mgu-or-600);">${esc((jeu || '').toUpperCase())}</strong>
                     se joue sur l'écran principal.<br>
                     Tu es inscrit en tant que
-                    <strong style="color:#c4b5fd;">${esc(this.session.pseudo)}</strong>.
+                    <strong style="color:var(--mgu-or-600);">${esc(this.session.pseudo)}</strong>.
                 </p>
-                <div style="width:28px;height:28px;border:2px solid rgba(0,212,255,.2);
-                    border-top-color:#00d4ff;border-radius:50%;
+                <div style="width:28px;height:28px;border:2px solid rgba(232,178,59,.2);
+                    border-top-color:var(--mgu-or-600);border-radius:50%;
                     animation:pl-spin .9s linear infinite;margin-top:.5rem;"></div>
             </div>
             <style>@keyframes pl-spin{to{transform:rotate(360deg)}}</style>`;
@@ -711,9 +711,9 @@ export const Player = {
                             <div style="display:flex;justify-content:space-between;
                                 align-items:center;padding:.75rem 1rem;border-radius:10px;
                                 background:${nom === pseudo
-                                    ? 'rgba(0,212,255,.12)' : 'rgba(255,255,255,.04)'};
+                                    ? 'rgba(232,178,59,.12)' : 'rgba(255,255,255,.04)'};
                                 ${nom === pseudo
-                                    ? 'outline:2px solid rgba(0,212,255,.4);' : ''}">
+                                    ? 'outline:2px solid rgba(232,178,59,.4);' : ''}">
                                 <span>
                                     ${medals[i] || (i + 1) + '.'} ${esc(nom)}
                                     ${nom === pseudo
@@ -721,7 +721,7 @@ export const Player = {
                                         : ''}
                                 </span>
                                 <span style="font-weight:700;color:${
-                                    nom === pseudo ? '#00d4ff' : 'white'}">
+                                    nom === pseudo ? 'var(--mgu-or-600)' : 'white'}">
                                     ${pts} pts
                                 </span>
                             </div>`).join('')
@@ -729,8 +729,8 @@ export const Player = {
                 </div>
                 <a href="/"
                     style="display:inline-block;padding:.75rem 2rem;
-                        background:linear-gradient(135deg,#6a5af9,#8a2be2);
-                        border-radius:10px;color:white;text-decoration:none;
+                        background:linear-gradient(135deg,var(--mgu-or-600),var(--mgu-or-500));
+                        border-radius:10px;color:var(--mgu-encre-900);text-decoration:none;
                         font-weight:700;margin-top:.5rem;">
                     🏠 Retour à l'accueil
                 </a>
@@ -881,7 +881,7 @@ const QuizModule = {
                 text-align:center;padding:2rem;">
                 <div style="font-size:2.5rem;">❓</div>
                 <h2 style="margin:0;font-size:1.1rem;">Quiz en cours</h2>
-                <p style="color:rgba(255,255,255,.5);margin:0;">
+                <p style="color:var(--mgu-encre-600);margin:0;">
                     En attente de la prochaine question…
                 </p>
             </div>`;
@@ -901,9 +901,9 @@ const QuizModule = {
                 <div style="display:flex;justify-content:space-between;
                     align-items:center;flex-wrap:wrap;gap:.5rem;">
                     <span style="font-size:.75rem;text-transform:uppercase;
-                        letter-spacing:.1em;color:rgba(255,255,255,.5);
-                        background:rgba(255,255,255,.07);
-                        border:1px solid rgba(255,255,255,.15);
+                        letter-spacing:.1em;color:var(--mgu-encre-600);
+                        background:var(--mgu-carton-50);
+                        border:1px solid var(--mgu-carton-line);
                         border-radius:6px;padding:4px 10px;">
                         ${esc(theme || '—')}
                     </span>
@@ -913,14 +913,14 @@ const QuizModule = {
                 </div>
                 <div style="font-size:1.15rem;font-weight:700;line-height:1.45;
                     text-align:center;padding:.75rem;
-                    background:rgba(255,255,255,.04);border-radius:12px;">
+                    background:var(--mgu-carton-50);border-radius:12px;">
                     ${esc(question)}
                 </div>
                 <div style="display:flex;flex-direction:column;gap:.5rem;">
                     <div id="p-indice1" hidden
-                        style="font-size:.85rem;color:#fbbf24;padding:.5rem .75rem;
-                               background:rgba(251,191,36,.1);
-                               border:1px solid rgba(251,191,36,.25);border-radius:8px;"></div>
+                        style="font-size:.85rem;color:var(--mgu-or-600);padding:.5rem .75rem;
+                               background:rgba(232,178,59,.1);
+                               border:1px solid rgba(232,178,59,.25);border-radius:8px;"></div>
                     <div id="p-indice2" hidden
                         style="font-size:.85rem;color:#f97316;padding:.5rem .75rem;
                                background:rgba(249,115,22,.1);
@@ -931,22 +931,22 @@ const QuizModule = {
                     <input id="p-answer-input" type="text" autocomplete="off"
                         placeholder="Votre réponse…"
                         style="width:100%;box-sizing:border-box;padding:.75rem 1rem;
-                               background:rgba(255,255,255,.07);
-                               border:1.5px solid rgba(255,255,255,.18);
-                               border-radius:10px;color:white;font-size:1rem;
+                               background:var(--mgu-carton-50);
+                               border:1.5px solid var(--mgu-carton-line);
+                               border-radius:10px;color:var(--mgu-encre-900);font-size:1rem;
                                font-family:inherit;outline:none;">
                     <button id="p-btn-send"
-                        style="padding:.85rem;background:rgba(34,197,94,.2);
-                               border:1.5px solid rgba(34,197,94,.45);
-                               border-radius:10px;color:white;font-size:.95rem;
+                        style="padding:.85rem;background:rgba(95,167,119,.2);
+                               border:1.5px solid rgba(95,167,119,.45);
+                               border-radius:10px;color:var(--mgu-encre-900);font-size:.95rem;
                                font-weight:700;cursor:pointer;font-family:inherit;">
                         ✉️ Envoyer
                     </button>
                 </div>
                 <div id="p-texte-sent" hidden
-                    style="padding:1rem;background:rgba(34,197,94,.12);
-                           border:1px solid rgba(34,197,94,.3);border-radius:10px;
-                           text-align:center;color:#4ade80;font-size:.9rem;"></div>
+                    style="padding:1rem;background:rgba(95,167,119,.12);
+                           border:1px solid rgba(95,167,119,.3);border-radius:10px;
+                           text-align:center;color:#2f5f42;font-size:.9rem;"></div>
             </div>`;
 
         $('p-btn-send')?.addEventListener('click',    () => this._envoyerReponse());
@@ -983,23 +983,23 @@ const QuizModule = {
         if (!maRep) {
             fb = `<div style="background:rgba(100,116,139,.12);
                 border:1px solid rgba(100,116,139,.3);border-radius:10px;
-                padding:.75rem;color:rgba(255,255,255,.6);">
+                padding:.75rem;color:var(--mgu-encre-600);">
                 😶 Tu n'as pas répondu à temps. +0 pt
             </div>`;
         } else if (maRep.correct) {
             const prem = maRep.estPremier
-                ? '<span style="color:#fbbf24;"> 🏆 +1 bonus premier !</span>'
+                ? '<span style="color:var(--mgu-or-600);"> 🏆 +1 bonus premier !</span>'
                 : '';
             const totalPts = maRep.points;
-            fb = `<div style="background:rgba(34,197,94,.12);
-                border:1px solid rgba(34,197,94,.3);border-radius:10px;
-                padding:.75rem;color:#4ade80;font-weight:600;">
+            fb = `<div style="background:rgba(95,167,119,.12);
+                border:1px solid rgba(95,167,119,.3);border-radius:10px;
+                padding:.75rem;color:#2f5f42;font-weight:600;">
                 🎉 Bonne réponse ! <strong>+${totalPts} pt${totalPts !== 1 ? 's' : ''}</strong>${prem}
             </div>`;
         } else {
-            fb = `<div style="background:rgba(239,68,68,.12);
-                border:1px solid rgba(239,68,68,.3);border-radius:10px;
-                padding:.75rem;color:#fca5a5;">
+            fb = `<div style="background:rgba(214,72,79,.12);
+                border:1px solid rgba(214,72,79,.3);border-radius:10px;
+                padding:.75rem;color:#8a2f33;">
                 ❌ Mauvaise réponse — tu as écrit :
                 <em>${esc(maRep.texte)}</em> +0 pt
             </div>`;
@@ -1014,27 +1014,27 @@ const QuizModule = {
                     <span>Q ${posees} / ${totalAff}</span>
                 </div>
                 <div style="font-size:1rem;font-weight:600;line-height:1.4;
-                    color:rgba(255,255,255,.8);text-align:center;">
+                    color:var(--mgu-encre-600);text-align:center;">
                     ${esc(question)}
                 </div>
                 <div style="text-align:center;">
                     <div style="font-size:.72rem;text-transform:uppercase;
-                        letter-spacing:.08em;color:rgba(255,255,255,.4);margin-bottom:.35rem;">
+                        letter-spacing:.08em;color:var(--mgu-encre-600);margin-bottom:.35rem;">
                         Réponse correcte
                     </div>
-                    <div style="font-size:1.25rem;font-weight:800;color:#00d4ff;">
+                    <div style="font-size:1.25rem;font-weight:800;color:var(--mgu-or-600);">
                         ${esc(reponse)}
                     </div>
                 </div>
                 ${fb}
                 <div id="p-mes-points-row" style="text-align:center;margin-top:.5rem;
-                    padding:.5rem;background:rgba(0,212,255,.06);border-radius:8px;
-                    font-size:.82rem;color:rgba(255,255,255,.5);">
-                    Ton score : <span id="p-mes-points" style="color:#00d4ff;font-weight:700;">
+                    padding:.5rem;background:rgba(232,178,59,.06);border-radius:8px;
+                    font-size:.82rem;color:var(--mgu-encre-600);">
+                    Ton score : <span id="p-mes-points" style="color:var(--mgu-or-600);font-weight:700;">
                         ${this.scoreLocal ?? 0} pt${(this.scoreLocal ?? 0) > 1 ? 's' : ''}
                     </span>
                 </div>
-                <p style="font-size:.8rem;color:rgba(255,255,255,.35);
+                <p style="font-size:.8rem;color:var(--mgu-encre-600);
                     text-align:center;margin:0;">
                     En attente de la prochaine question…
                 </p>
@@ -1058,9 +1058,9 @@ const QuizModule = {
                         <div style="display:flex;justify-content:space-between;
                             align-items:center;padding:.7rem 1rem;border-radius:10px;
                             background:${nom === pseudo
-                                ? 'rgba(0,212,255,.12)' : 'rgba(255,255,255,.04)'};
+                                ? 'rgba(232,178,59,.12)' : 'rgba(255,255,255,.04)'};
                             ${nom === pseudo
-                                ? 'outline:2px solid rgba(0,212,255,.4);' : ''}">
+                                ? 'outline:2px solid rgba(232,178,59,.4);' : ''}">
                             <span>
                                 ${medals[i] || (i + 1) + '.'} ${esc(nom)}
                                 ${nom === pseudo
@@ -1068,15 +1068,15 @@ const QuizModule = {
                                     : ''}
                             </span>
                             <span style="font-weight:700;color:${
-                                nom === pseudo ? '#00d4ff' : 'white'}">
+                                nom === pseudo ? 'var(--mgu-or-600)' : 'white'}">
                                 ${pts} pts
                             </span>
                         </div>`).join('')}
                 </div>
                 <a href="/"
                     style="display:inline-block;padding:.75rem 2rem;
-                        background:linear-gradient(135deg,#6a5af9,#8a2be2);
-                        border-radius:10px;color:white;text-decoration:none;font-weight:700;">
+                        background:linear-gradient(135deg,var(--mgu-or-600),var(--mgu-or-500));
+                        border-radius:10px;color:var(--mgu-encre-900);text-decoration:none;font-weight:700;">
                     🏠 Retour à l'accueil
                 </a>
             </div>`;
@@ -1137,7 +1137,7 @@ const QuizModule = {
             zone.parentNode.insertBefore(el, zone);
         }
         el.textContent = `⏱ ${s}s`;
-        el.style.color  = s <= 5 ? '#f87171' : s <= 15 ? '#fbbf24' : '#00d4ff';
+        el.style.color  = s <= 5 ? 'var(--mgu-pion-rouge)' : s <= 15 ? 'var(--mgu-or-600)' : 'var(--mgu-or-600)';
     },
 
     _expirerTimer() {

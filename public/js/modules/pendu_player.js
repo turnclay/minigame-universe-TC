@@ -138,7 +138,7 @@ const PenduModule = {
                 text-align:center;padding:2rem;">
                 <div style="font-size:2.5rem;">🪢</div>
                 <h2 style="margin:0;font-size:1.1rem;">Pendu</h2>
-                <p style="color:rgba(255,255,255,.5);margin:0;">
+                <p style="color:var(--mgu-encre-600);margin:0;">
                     En attente du mot…
                 </p>
             </div>`;
@@ -151,11 +151,11 @@ const PenduModule = {
             <div style="padding:1rem 0;display:flex;flex-direction:column;gap:.85rem;">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;">
                     <span style="font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;
-                        color:rgba(255,255,255,.5);background:rgba(255,255,255,.07);
-                        border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:4px 10px;">
+                        color:var(--mgu-encre-600);background:var(--mgu-carton-50);
+                        border:1px solid var(--mgu-carton-line);border-radius:6px;padding:4px 10px;">
                         Manche ${manche}
                     </span>
-                    <span style="font-size:.82rem;color:rgba(167,139,250,.85);font-weight:700;">
+                    <span style="font-size:.82rem;color:rgba(232,178,59,.85);font-weight:700;">
                         ❌ <span id="pp-erreurs">0</span> / ${MAX_ERREURS}
                     </span>
                 </div>
@@ -163,15 +163,15 @@ const PenduModule = {
                     padding:.5rem;background:rgba(0,0,0,.25);border-radius:12px;"></div>
                 <div id="pp-theme-row" style="display:flex;gap:8px;align-items:center;justify-content:center;">
                     <button id="pp-theme-toggle"
-                        style="font-size:.75rem;padding:5px 10px;background:rgba(167,139,250,.15);
-                        border:1px solid rgba(167,139,250,.35);border-radius:7px;color:#c4b5fd;
+                        style="font-size:.75rem;padding:5px 10px;background:rgba(232,178,59,.15);
+                        border:1px solid rgba(232,178,59,.35);border-radius:7px;color:var(--mgu-or-600);
                         cursor:pointer;font-family:inherit;">
                         🎯 Afficher le thème
                     </button>
-                    <span id="pp-theme" style="font-size:.85rem;color:#c4b5fd;font-weight:700;display:none;"></span>
+                    <span id="pp-theme" style="font-size:.85rem;color:var(--mgu-or-600);font-weight:700;display:none;"></span>
                 </div>
                 <div id="pp-mot" style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap;
-                    padding:.8rem;background:rgba(167,139,250,.08);border:1.5px solid rgba(167,139,250,.3);
+                    padding:.8rem;background:rgba(232,178,59,.08);border:1.5px solid rgba(232,178,59,.3);
                     border-radius:12px;min-height:60px;align-items:center;"></div>
                 <div id="pp-clavier" style="display:grid;grid-template-columns:repeat(9,1fr);gap:5px;"></div>
                 <div id="pp-result" hidden style="padding:.85rem;border-radius:10px;text-align:center;
@@ -196,9 +196,9 @@ const PenduModule = {
         const elMot = $('pp-mot');
         if (elMot) elMot.innerHTML = this._motAffiche.map(l => `
             <span style="display:inline-block;min-width:24px;padding:4px 8px;
-                background:rgba(255,255,255,.06);border-bottom:2px solid rgba(196,181,253,.5);
+                background:var(--mgu-carton-50);border-bottom:2px solid rgba(196,181,253,.5);
                 border-radius:4px;font-weight:800;font-size:1.1rem;letter-spacing:1px;
-                color:#fff;">${l === '_' ? '&nbsp;' : esc(l)}</span>`).join('');
+                color:var(--mgu-encre-900);">${l === '_' ? '&nbsp;' : esc(l)}</span>`).join('');
         const elD = $('pp-dessin');
         if (elD) elD.innerHTML = DESSINS[Math.min(this._nbErreurs, 6)];
         const elE = $('pp-erreurs');
@@ -212,14 +212,14 @@ const PenduModule = {
             const used = this._lettresUsees.has(l);
             const inMot = used && Array.from(this._motSecret).some(c => _pNorm(c) === l);
             const bg    = used
-                ? (inMot ? 'rgba(34,197,94,.25)' : 'rgba(239,68,68,.25)')
+                ? (inMot ? 'rgba(95,167,119,.25)' : 'rgba(214,72,79,.25)')
                 : 'rgba(255,255,255,.08)';
             const bd    = used
-                ? (inMot ? 'rgba(34,197,94,.55)' : 'rgba(239,68,68,.45)')
+                ? (inMot ? 'rgba(95,167,119,.55)' : 'rgba(214,72,79,.45)')
                 : 'rgba(255,255,255,.18)';
             return `<button data-l="${l}" ${used ? 'disabled' : ''}
                 style="padding:8px 0;background:${bg};border:1.5px solid ${bd};
-                border-radius:6px;color:#fff;font-weight:700;font-size:.95rem;
+                border-radius:6px;color:var(--mgu-encre-900);font-weight:700;font-size:.95rem;
                 cursor:${used ? 'default' : 'pointer'};font-family:inherit;">${l}</button>`;
         }).join('');
         el.querySelectorAll('button').forEach(b => {
@@ -274,14 +274,14 @@ const PenduModule = {
         if (el) {
             el.hidden = false;
             if (victoire) {
-                el.style.background = 'rgba(34,197,94,.15)';
-                el.style.border     = '1.5px solid rgba(34,197,94,.4)';
-                el.style.color      = '#86efac';
+                el.style.background = 'rgba(95,167,119,.15)';
+                el.style.border     = '1.5px solid rgba(95,167,119,.4)';
+                el.style.color      = '#2f5f42';
                 el.innerHTML        = `🎉 Trouvé ! Le mot était <strong>${esc(this._motSecret)}</strong>`;
             } else {
-                el.style.background = 'rgba(239,68,68,.12)';
-                el.style.border     = '1.5px solid rgba(239,68,68,.4)';
-                el.style.color      = '#fca5a5';
+                el.style.background = 'rgba(214,72,79,.12)';
+                el.style.border     = '1.5px solid rgba(214,72,79,.4)';
+                el.style.color      = '#8a2f33';
                 el.innerHTML        = `😢 Perdu. Le mot était <strong>${esc(this._motSecret)}</strong>`;
             }
         }
@@ -308,16 +308,16 @@ const PenduModule = {
         const moi = this._session?.pseudo;
         const lignes = (payload.resultats || []).map(r => {
             const isMe = r.pseudo === moi;
-            const bg   = r.victoire ? 'rgba(34,197,94,.15)' : 'rgba(239,68,68,.12)';
-            const bd   = r.victoire ? 'rgba(34,197,94,.35)' : 'rgba(239,68,68,.25)';
+            const bg   = r.victoire ? 'rgba(95,167,119,.15)' : 'rgba(214,72,79,.12)';
+            const bd   = r.victoire ? 'rgba(95,167,119,.35)' : 'rgba(214,72,79,.25)';
             const badge = r.victoire
-                ? `<span style="color:#86efac;font-weight:700;">+${r.points}pt${r.points !== 1 ? 's' : ''} ✅</span>`
-                : `<span style="color:#fca5a5;">0pt ❌</span>`;
+                ? `<span style="color:#2f5f42;font-weight:700;">+${r.points}pt${r.points !== 1 ? 's' : ''} ✅</span>`
+                : `<span style="color:#8a2f33;">0pt ❌</span>`;
             return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;
                 background:${bg};border:1px solid ${bd};border-radius:10px;margin-bottom:6px;font-size:.85rem;">
-                <span style="font-weight:700;min-width:80px;color:${isMe ? '#c4b5fd' : '#fff'};">
+                <span style="font-weight:700;min-width:80px;color:${isMe ? 'var(--mgu-or-600)' : '#fff'};">
                     ${isMe ? '👤 ' : ''}${esc(r.pseudo)}</span>
-                <span style="flex:1;color:rgba(255,255,255,.6);">
+                <span style="flex:1;color:var(--mgu-encre-600);">
                     ${r.victoire ? '🎉 Trouvé' : '😢 Pas trouvé'} — ${r.erreurs} erreur${r.erreurs !== 1 ? 's' : ''}</span>
                 ${badge}
             </div>`;
@@ -326,13 +326,13 @@ const PenduModule = {
         cont.innerHTML = `
             <div style="padding:1rem 0;display:flex;flex-direction:column;gap:1rem;">
                 <div style="text-align:center;padding:.7rem;
-                    background:rgba(167,139,250,.1);border:1.5px solid rgba(167,139,250,.35);
+                    background:rgba(232,178,59,.1);border:1.5px solid rgba(232,178,59,.35);
                     border-radius:12px;">
                     <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;
                         color:rgba(196,181,253,.8);margin-bottom:4px;font-weight:700;">
                         Résultats — Manche ${payload.manche || '?'}
                     </div>
-                    <div style="font-size:1.1rem;font-weight:900;color:#c4b5fd;">
+                    <div style="font-size:1.1rem;font-weight:900;color:var(--mgu-or-600);">
                         Le mot : ${esc(payload.motSecret)}
                     </div>
                     <div style="font-size:.78rem;color:rgba(196,181,253,.7);margin-top:4px;">
@@ -340,14 +340,14 @@ const PenduModule = {
                     </div>
                 </div>
                 ${lignes}
-                <p style="text-align:center;font-size:.85rem;color:rgba(255,255,255,.5);margin:0;">
+                <p style="text-align:center;font-size:.85rem;color:var(--mgu-encre-600);margin:0;">
                     En attente du prochain mot…
                 </p>
             </div>`;
     },
 
     _toast(msg, type = 'info') {
-        const C = { success:'#22c55e', error:'#ef4444', warning:'#f59e0b', info:'#00d4ff' };
+        const C = { success:'#22c55e', error:'#ef4444', warning:'#f59e0b', info:'var(--mgu-or-600)' };
         const I = { success:'✅', error:'❌', warning:'⚠️', info:'ℹ️' };
         let c = $('toast-container');
         if (!c) {
@@ -357,7 +357,7 @@ const PenduModule = {
         }
         const el = document.createElement('div');
         el.style.cssText = `display:flex;gap:.5rem;align-items:flex-start;padding:.65rem .9rem;
-            border-radius:8px;background:#1e1e2e;color:#fff;border-left:3px solid ${C[type] || C.info};
+            border-radius:8px;background:#1e1e2e;color:var(--mgu-encre-900);border-left:3px solid ${C[type] || C.info};
             box-shadow:0 4px 16px rgba(0,0,0,.5);font-size:.88rem;pointer-events:auto;`;
         el.innerHTML = `<span>${I[type] || 'ℹ️'}</span><span>${esc(msg)}</span>`;
         c.appendChild(el);

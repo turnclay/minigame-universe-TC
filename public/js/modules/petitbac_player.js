@@ -31,10 +31,10 @@ const premiereLettre = v => String(v || '')
 // Présentation d'un statut serveur.
 function _styleStatut(statut) {
     switch (statut) {
-        case 'unique':   return { color:'#86efac', icon:'✅', badge:'+2' };
+        case 'unique':   return { color:'#2f5f42', icon:'✅', badge:'+2' };
         case 'double':   return { color:'#fde047', icon:'✅', badge:'+1 · doublon' };
-        case 'invalide': return { color:'#fca5a5', icon:'❌', badge:'+0' };
-        case 'annule':   return { color:'#f87171', icon:'🚫', badge:'annulé par l\'hôte' };
+        case 'invalide': return { color:'#8a2f33', icon:'❌', badge:'+0' };
+        case 'annule':   return { color:'var(--mgu-pion-rouge)', icon:'🚫', badge:'annulé par l\'hôte' };
         default:         return { color:'rgba(255,255,255,.4)', icon:'—', badge:'' };
     }
 }
@@ -46,8 +46,8 @@ function _btnDef(mot) {
         title="Définition / vérifier le mot"
         style="flex:none;display:inline-flex;align-items:center;justify-content:center;
         width:20px;height:20px;border-radius:50%;text-decoration:none;
-        background:rgba(167,139,250,.18);border:1px solid rgba(167,139,250,.4);
-        color:#c4b5fd;font-size:.72rem;font-weight:800;line-height:1;">?</a>`;
+        background:rgba(232,178,59,.18);border:1px solid rgba(232,178,59,.4);
+        color:var(--mgu-or-600);font-size:.72rem;font-weight:800;line-height:1;">?</a>`;
 }
 
 const PetitbacModule = {
@@ -169,7 +169,7 @@ const PetitbacModule = {
                 text-align:center;padding:2rem;">
                 <div style="font-size:2.5rem;">📝</div>
                 <h2 style="margin:0;font-size:1.1rem;">Petit Bac</h2>
-                <p style="color:rgba(255,255,255,.5);margin:0;">
+                <p style="color:var(--mgu-encre-600);margin:0;">
                     En attente du lancement…
                 </p>
             </div>`;
@@ -188,9 +188,9 @@ const PetitbacModule = {
                 <input id="pbp-input-${esc(c.id)}" data-cat="${esc(c.id)}" type="text"
                     maxlength="30" autocomplete="off" placeholder="…"
                     style="width:100%;box-sizing:border-box;padding:.55rem .75rem;
-                    background:rgba(255,255,255,.07);
-                    border:1.5px solid rgba(255,255,255,.18);border-radius:8px;
-                    color:white;font-size:.95rem;font-family:inherit;outline:none;">
+                    background:var(--mgu-carton-50);
+                    border:1.5px solid var(--mgu-carton-line);border-radius:8px;
+                    color:var(--mgu-encre-900);font-size:.95rem;font-family:inherit;outline:none;">
             </div>`).join('');
 
         cont.innerHTML = `
@@ -198,13 +198,13 @@ const PetitbacModule = {
                 <div style="display:flex;justify-content:space-between;
                     align-items:center;flex-wrap:wrap;gap:.5rem;">
                     <span style="font-size:.72rem;text-transform:uppercase;
-                        letter-spacing:.1em;color:rgba(255,255,255,.5);
-                        background:rgba(255,255,255,.07);
-                        border:1px solid rgba(255,255,255,.15);
+                        letter-spacing:.1em;color:var(--mgu-encre-600);
+                        background:var(--mgu-carton-50);
+                        border:1px solid var(--mgu-carton-line);
                         border-radius:6px;padding:4px 10px;">
                         Manche ${manche}
                     </span>
-                    <span id="pbp-timer" style="font-size:1rem;font-weight:800;color:#a78bfa;
+                    <span id="pbp-timer" style="font-size:1rem;font-weight:800;color:var(--mgu-or-600);
                         background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);
                         border-radius:8px;padding:4px 12px;">02:00</span>
                 </div>
@@ -213,7 +213,7 @@ const PetitbacModule = {
                     border-radius:12px;">
                     <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;
                         color:rgba(196,181,253,.8);margin-bottom:4px;font-weight:700;">Lettre</div>
-                    <div style="font-size:2.5rem;font-weight:900;color:#c4b5fd;line-height:1;">
+                    <div style="font-size:2.5rem;font-weight:900;color:var(--mgu-or-600);line-height:1;">
                         ${esc(this._lettre)}
                     </div>
                 </div>
@@ -221,7 +221,7 @@ const PetitbacModule = {
                 <button id="pbp-btn-send"
                     style="padding:.85rem;background:rgba(139,92,246,.22);
                     border:1.5px solid rgba(139,92,246,.5);border-radius:10px;
-                    color:white;font-size:.95rem;font-weight:700;cursor:pointer;
+                    color:var(--mgu-encre-900);font-size:.95rem;font-weight:700;cursor:pointer;
                     font-family:inherit;margin-top:.5rem;">
                     📤 Soumettre mes réponses
                 </button>
@@ -248,7 +248,7 @@ const PetitbacModule = {
             return;
         }
         const ok = premiereLettre(v) === String(this._lettre || '').toUpperCase();
-        input.style.borderColor = ok ? 'rgba(34,197,94,.6)' : 'rgba(239,68,68,.6)';
+        input.style.borderColor = ok ? 'rgba(95,167,119,.6)' : 'rgba(214,72,79,.6)';
     },
 
     _afficherAttenteRevelation() {
@@ -277,14 +277,14 @@ const PetitbacModule = {
             .map(r => {
                 const isMe = r.pseudo === moi;
                 const sc   = r.score || 0;
-                const bg   = sc > 0 ? 'rgba(34,197,94,.15)' : 'rgba(255,255,255,.06)';
-                const bd   = sc > 0 ? 'rgba(34,197,94,.35)' : 'rgba(255,255,255,.12)';
+                const bg   = sc > 0 ? 'rgba(95,167,119,.15)' : 'rgba(255,255,255,.06)';
+                const bd   = sc > 0 ? 'rgba(95,167,119,.35)' : 'rgba(255,255,255,.12)';
                 return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;
                     background:${bg};border:1px solid ${bd};border-radius:10px;margin-bottom:6px;">
-                    <span style="font-weight:700;font-size:.85rem;color:${isMe ? '#c4b5fd' : '#fff'};min-width:80px;">
+                    <span style="font-weight:700;font-size:.85rem;color:${isMe ? 'var(--mgu-or-600)' : '#fff'};min-width:80px;">
                         ${isMe ? '👤 ' : ''}${esc(r.pseudo)}</span>
                     <span style="flex:1;"></span>
-                    <span style="font-weight:800;font-size:.85rem;color:#86efac;">+${sc} pt${sc !== 1 ? 's' : ''}</span>
+                    <span style="font-weight:800;font-size:.85rem;color:#2f5f42;">+${sc} pt${sc !== 1 ? 's' : ''}</span>
                 </div>`;
             }).join('');
 
@@ -295,9 +295,9 @@ const PetitbacModule = {
             const st  = _styleStatut(d.statut);
             const val = String(d.val || '').trim();
             return `<div style="display:flex;gap:8px;align-items:center;padding:6px 10px;
-                background:rgba(255,255,255,.04);border-radius:6px;margin-bottom:4px;font-size:.85rem;">
+                background:var(--mgu-carton-50);border-radius:6px;margin-bottom:4px;font-size:.85rem;">
                 <span style="min-width:24px;">${c.icon}</span>
-                <span style="flex:1;color:rgba(255,255,255,.7);">${esc(c.label)}</span>
+                <span style="flex:1;color:var(--mgu-encre-600);">${esc(c.label)}</span>
                 <span style="color:${st.color};font-weight:600;display:flex;align-items:center;gap:6px;">
                     <span>${st.icon}</span><span>${esc(val) || '—'}</span>
                     ${st.badge ? `<span style="font-size:.7rem;opacity:.85;">${st.badge}</span>` : ''}
@@ -315,9 +315,9 @@ const PetitbacModule = {
             const st  = _styleStatut(d.statut);
             const val = String(d.val || '').trim();
             return `<div style="display:flex;gap:8px;align-items:center;padding:6px 10px;
-                background:rgba(255,255,255,.04);border-radius:6px;margin-bottom:4px;font-size:.85rem;">
+                background:var(--mgu-carton-50);border-radius:6px;margin-bottom:4px;font-size:.85rem;">
                 <span style="min-width:24px;">${c.icon}</span>
-                <span style="flex:1;color:rgba(255,255,255,.7);">${esc(c.label)}</span>
+                <span style="flex:1;color:var(--mgu-encre-600);">${esc(c.label)}</span>
                 <span style="color:${st.color};font-weight:600;display:flex;align-items:center;gap:6px;">
                     <span>${st.icon}</span><span>${esc(val) || '—'}</span>
                     ${st.badge ? `<span style="font-size:.7rem;opacity:.85;">${st.badge}</span>` : ''}
@@ -337,26 +337,26 @@ const PetitbacModule = {
                 </div>
                 <div>
                     <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;
-                        color:rgba(167,139,250,.8);margin-bottom:6px;font-weight:700;">
+                        color:rgba(232,178,59,.8);margin-bottom:6px;font-weight:700;">
                         Tes réponses
                     </div>
                     ${detail}
                 </div>
                 ${showHote ? `<div>
                     <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;
-                        color:rgba(167,139,250,.8);margin-bottom:6px;font-weight:700;">
+                        color:rgba(232,178,59,.8);margin-bottom:6px;font-weight:700;">
                         🎮 Réponses de l'hôte
                     </div>
                     ${detailHote}
                 </div>` : ''}
                 <div>
                     <div style="font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;
-                        color:rgba(167,139,250,.8);margin-bottom:6px;font-weight:700;">
+                        color:rgba(232,178,59,.8);margin-bottom:6px;font-weight:700;">
                         Classement
                     </div>
                     ${lignes}
                 </div>
-                <p style="text-align:center;font-size:.85rem;color:rgba(255,255,255,.5);margin:0;">
+                <p style="text-align:center;font-size:.85rem;color:var(--mgu-encre-600);margin:0;">
                     En attente de la prochaine manche…
                 </p>
             </div>`;
@@ -399,7 +399,7 @@ const PetitbacModule = {
             const m = String(Math.floor(r / 60)).padStart(2, '0');
             const s = String(r % 60).padStart(2, '0');
             t.textContent = `${m}:${s}`;
-            if (r <= 30) t.style.color = '#fca5a5';
+            if (r <= 30) t.style.color = '#8a2f33';
         };
         render();
         this._timerInterval = setInterval(() => {
@@ -420,7 +420,7 @@ const PetitbacModule = {
     // ─────────────────────────────────────────────────────
 
     _afficherToast(msg, type = 'info') {
-        const C = { success:'#22c55e', error:'#ef4444', warning:'#f59e0b', info:'#00d4ff' };
+        const C = { success:'#22c55e', error:'#ef4444', warning:'#f59e0b', info:'var(--mgu-or-600)' };
         const I = { success:'✅', error:'❌', warning:'⚠️', info:'ℹ️' };
         let c = $('toast-container');
         if (!c) {
@@ -430,7 +430,7 @@ const PetitbacModule = {
         }
         const el = document.createElement('div');
         el.style.cssText = `display:flex;gap:.5rem;align-items:flex-start;padding:.65rem .9rem;
-            border-radius:8px;background:#1e1e2e;color:#fff;
+            border-radius:8px;background:#1e1e2e;color:var(--mgu-encre-900);
             border-left:3px solid ${C[type] || C.info};box-shadow:0 4px 16px rgba(0,0,0,.5);
             font-size:.88rem;pointer-events:auto;`;
         el.innerHTML = `<span>${I[type] || 'ℹ️'}</span><span>${esc(msg)}</span>`;

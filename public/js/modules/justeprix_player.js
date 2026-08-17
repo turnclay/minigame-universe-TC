@@ -118,7 +118,7 @@ const JusteprixModule = {
                 text-align:center;padding:2rem;">
                 <div style="font-size:2.5rem;">💰</div>
                 <h2 style="margin:0;font-size:1.1rem;">Juste Prix</h2>
-                <p style="color:rgba(255,255,255,.5);margin:0;">
+                <p style="color:var(--mgu-encre-600);margin:0;">
                     En attente du produit…
                 </p>
             </div>`;
@@ -134,38 +134,38 @@ const JusteprixModule = {
             <div style="padding:1rem 0;display:flex;flex-direction:column;gap:.85rem;">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;">
                     <span style="font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;
-                        color:rgba(255,255,255,.5);background:rgba(255,255,255,.07);
-                        border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:4px 10px;">
+                        color:var(--mgu-encre-600);background:var(--mgu-carton-50);
+                        border:1px solid var(--mgu-carton-line);border-radius:6px;padding:4px 10px;">
                         Manche ${manche}
                     </span>
-                    <span id="jpp-timer" style="font-size:1rem;font-weight:800;color:#fbbf24;
-                        background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.3);
+                    <span id="jpp-timer" style="font-size:1rem;font-weight:800;color:var(--mgu-or-600);
+                        background:rgba(232,178,59,.12);border:1px solid rgba(232,178,59,.3);
                         border-radius:8px;padding:4px 12px;">01:00</span>
                 </div>
-                <div style="background:rgba(251,191,36,.07);border:1.5px solid rgba(251,191,36,.3);
+                <div style="background:rgba(232,178,59,.07);border:1.5px solid rgba(232,178,59,.3);
                     border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;text-align:center;">
                     ${p.categorie ? `<span style="font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;
-                        color:#fbbf24;font-weight:700;">${esc(p.categorie)}</span>` : ''}
-                    <div style="font-size:1.05rem;font-weight:800;color:#fff;">${esc(p.nom || '—')}</div>
-                    ${p.marque ? `<div style="font-size:.78rem;color:rgba(255,255,255,.55);">${esc(p.marque)}</div>` : ''}
-                    ${p.description ? `<div style="font-size:.82rem;color:rgba(255,255,255,.7);">${esc(p.description)}</div>` : ''}
+                        color:var(--mgu-or-600);font-weight:700;">${esc(p.categorie)}</span>` : ''}
+                    <div style="font-size:1.05rem;font-weight:800;color:var(--mgu-encre-900);">${esc(p.nom || '—')}</div>
+                    ${p.marque ? `<div style="font-size:.78rem;color:var(--mgu-encre-600);">${esc(p.marque)}</div>` : ''}
+                    ${p.description ? `<div style="font-size:.82rem;color:var(--mgu-encre-600);">${esc(p.description)}</div>` : ''}
                     <img src="${esc(src)}" alt="${esc(p.nom)}"
                         onerror="this.style.display='none'"
-                        style="max-width:100%;max-height:200px;margin:8px auto 0;border-radius:10px;background:rgba(255,255,255,.04);">
-                    ${p.fourchette ? `<div style="margin-top:6px;font-size:.82rem;color:rgba(255,255,255,.55);
-                        background:rgba(255,255,255,.05);padding:6px 10px;border-radius:8px;">
-                        💡 Fourchette : <strong style="color:#fbbf24;">${esc(p.fourchette)}</strong></div>` : ''}
+                        style="max-width:100%;max-height:200px;margin:8px auto 0;border-radius:10px;background:var(--mgu-carton-50);">
+                    ${p.fourchette ? `<div style="margin-top:6px;font-size:.82rem;color:var(--mgu-encre-600);
+                        background:var(--mgu-carton-50);padding:6px 10px;border-radius:8px;">
+                        💡 Fourchette : <strong style="color:var(--mgu-or-600);">${esc(p.fourchette)}</strong></div>` : ''}
                 </div>
                 <input id="jpp-input" type="number" step="0.01" min="0" inputmode="decimal"
                     autocomplete="off" placeholder="Ton estimation (€)…"
                     style="width:100%;box-sizing:border-box;padding:.85rem 1rem;
-                    background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.18);
-                    border-radius:10px;color:white;font-size:1.05rem;font-family:inherit;
+                    background:var(--mgu-carton-50);border:1.5px solid var(--mgu-carton-line);
+                    border-radius:10px;color:var(--mgu-encre-900);font-size:1.05rem;font-family:inherit;
                     text-align:center;font-weight:700;outline:none;">
                 <button id="jpp-btn-send"
-                    style="padding:.85rem;background:rgba(251,191,36,.22);
-                    border:1.5px solid rgba(251,191,36,.5);border-radius:10px;
-                    color:white;font-size:.95rem;font-weight:700;cursor:pointer;
+                    style="padding:.85rem;background:rgba(232,178,59,.22);
+                    border:1.5px solid rgba(232,178,59,.5);border-radius:10px;
+                    color:var(--mgu-encre-900);font-size:.95rem;font-weight:700;cursor:pointer;
                     font-family:inherit;">
                     📤 Envoyer mon estimation
                 </button>
@@ -200,19 +200,19 @@ const JusteprixModule = {
         const lignes = (payload.reponses || []).map(r => {
             const isMe = r.pseudo === moi;
             const correct = (r.points || 0) > 0;
-            const bg   = correct ? 'rgba(34,197,94,.15)' : 'rgba(239,68,68,.12)';
-            const bd   = correct ? 'rgba(34,197,94,.35)' : 'rgba(239,68,68,.25)';
+            const bg   = correct ? 'rgba(95,167,119,.15)' : 'rgba(214,72,79,.12)';
+            const bd   = correct ? 'rgba(95,167,119,.35)' : 'rgba(214,72,79,.25)';
             const ecartTxt = (typeof r.ecart === 'number') ? `${(r.ecart * 100).toFixed(1)}%` : '—';
             const badgePP  = r.estPlusProche ? ' 🎯' : '';
             const badge = correct
-                ? `<span style="color:#86efac;font-weight:700;">+${r.points}pt${r.points !== 1 ? 's' : ''}${badgePP}</span>`
-                : `<span style="color:#fca5a5;">0pt</span>`;
+                ? `<span style="color:#2f5f42;font-weight:700;">+${r.points}pt${r.points !== 1 ? 's' : ''}${badgePP}</span>`
+                : `<span style="color:#8a2f33;">0pt</span>`;
             return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;
                 background:${bg};border:1px solid ${bd};border-radius:10px;margin-bottom:6px;font-size:.85rem;flex-wrap:wrap;">
-                <span style="font-weight:700;min-width:80px;color:${isMe ? '#c4b5fd' : '#fff'};">
+                <span style="font-weight:700;min-width:80px;color:${isMe ? 'var(--mgu-or-600)' : '#fff'};">
                     ${isMe ? '👤 ' : ''}${esc(r.pseudo)}</span>
-                <span style="font-style:italic;color:rgba(255,255,255,.85);">${esc(String(r.estimation))}€</span>
-                <span style="flex:1;font-size:.75rem;color:rgba(255,255,255,.4);text-align:right;">${ecartTxt}</span>
+                <span style="font-style:italic;color:var(--mgu-encre-600);">${esc(String(r.estimation))}€</span>
+                <span style="flex:1;font-size:.75rem;color:var(--mgu-encre-600);text-align:right;">${ecartTxt}</span>
                 ${badge}
             </div>`;
         }).join('');
@@ -220,21 +220,21 @@ const JusteprixModule = {
         cont.innerHTML = `
             <div style="padding:1rem 0;display:flex;flex-direction:column;gap:1rem;">
                 <div style="text-align:center;padding:.8rem;
-                    background:rgba(251,191,36,.1);border:1.5px solid rgba(251,191,36,.35);
+                    background:rgba(232,178,59,.1);border:1.5px solid rgba(232,178,59,.35);
                     border-radius:12px;">
                     <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;
-                        color:rgba(251,191,36,.85);margin-bottom:4px;font-weight:700;">
+                        color:rgba(232,178,59,.85);margin-bottom:4px;font-weight:700;">
                         Manche ${payload.manche || '?'} — Prix réel
                     </div>
-                    <div style="font-size:1.4rem;font-weight:900;color:#fbbf24;">
+                    <div style="font-size:1.4rem;font-weight:900;color:var(--mgu-or-600);">
                         ${esc(payload.produit?.prix || '—')}
                     </div>
-                    <div style="font-size:.78rem;color:rgba(255,255,255,.55);margin-top:4px;">
+                    <div style="font-size:.78rem;color:var(--mgu-encre-600);margin-top:4px;">
                         ${esc(payload.produit?.nom || '')}
                     </div>
                 </div>
                 ${lignes}
-                <p style="text-align:center;font-size:.85rem;color:rgba(255,255,255,.5);margin:0;">
+                <p style="text-align:center;font-size:.85rem;color:var(--mgu-encre-600);margin:0;">
                     En attente du prochain produit…
                 </p>
             </div>`;
@@ -264,7 +264,7 @@ const JusteprixModule = {
             const t = $('jpp-timer'); if (!t) return;
             const r = compute();
             t.textContent = fmt(r);
-            if (r <= 5 && r > 0) t.style.color = '#fca5a5';
+            if (r <= 5 && r > 0) t.style.color = '#8a2f33';
         };
         render();
         this._timerInterval = setInterval(() => {
@@ -281,7 +281,7 @@ const JusteprixModule = {
     },
 
     _toast(msg, type = 'info') {
-        const C = { success:'#22c55e', error:'#ef4444', warning:'#f59e0b', info:'#00d4ff' };
+        const C = { success:'#22c55e', error:'#ef4444', warning:'#f59e0b', info:'var(--mgu-or-600)' };
         const I = { success:'✅', error:'❌', warning:'⚠️', info:'ℹ️' };
         let c = $('toast-container');
         if (!c) {
@@ -291,7 +291,7 @@ const JusteprixModule = {
         }
         const el = document.createElement('div');
         el.style.cssText = `display:flex;gap:.5rem;align-items:flex-start;padding:.65rem .9rem;
-            border-radius:8px;background:#1e1e2e;color:#fff;border-left:3px solid ${C[type] || C.info};
+            border-radius:8px;background:#1e1e2e;color:var(--mgu-encre-900);border-left:3px solid ${C[type] || C.info};
             box-shadow:0 4px 16px rgba(0,0,0,.5);font-size:.88rem;pointer-events:auto;`;
         el.innerHTML = `<span>${I[type] || 'ℹ️'}</span><span>${esc(msg)}</span>`;
         c.appendChild(el);

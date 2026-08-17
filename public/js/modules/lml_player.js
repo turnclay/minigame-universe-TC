@@ -103,7 +103,7 @@ const LmlModule = {
                 text-align:center;padding:2rem;">
                 <div style="font-size:2.5rem;">📖</div>
                 <h2 style="margin:0;font-size:1.1rem;">Maxi Lettres</h2>
-                <p style="color:rgba(255,255,255,.5);margin:0;">
+                <p style="color:var(--mgu-encre-600);margin:0;">
                     En attente des lettres…
                 </p>
             </div>`;
@@ -114,8 +114,8 @@ const LmlModule = {
         if (!cont) return;
         const lettres = this._lettres.map((l, i) => `
             <button class="lp-lettre" data-i="${i}"
-                style="min-width:38px;padding:10px 0;background:rgba(167,139,250,.18);
-                border:1.5px solid rgba(167,139,250,.45);border-radius:8px;color:#fff;
+                style="min-width:38px;padding:10px 0;background:rgba(232,178,59,.18);
+                border:1.5px solid rgba(232,178,59,.45);border-radius:8px;color:var(--mgu-encre-900);
                 font-weight:800;font-size:1.1rem;cursor:pointer;font-family:inherit;">
                 ${esc(l)}
             </button>`).join('');
@@ -124,35 +124,35 @@ const LmlModule = {
             <div style="padding:1rem 0;display:flex;flex-direction:column;gap:.85rem;">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;">
                     <span style="font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;
-                        color:rgba(255,255,255,.5);background:rgba(255,255,255,.07);
-                        border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:4px 10px;">
+                        color:var(--mgu-encre-600);background:var(--mgu-carton-50);
+                        border:1px solid var(--mgu-carton-line);border-radius:6px;padding:4px 10px;">
                         Manche ${manche}
                     </span>
-                    <span id="lp-timer" style="font-size:1rem;font-weight:800;color:#a78bfa;
-                        background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3);
+                    <span id="lp-timer" style="font-size:1rem;font-weight:800;color:var(--mgu-or-600);
+                        background:rgba(232,178,59,.12);border:1px solid rgba(232,178,59,.3);
                         border-radius:8px;padding:4px 12px;">01:00</span>
                 </div>
                 <div id="lp-lettres" style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap;">${lettres}</div>
                 <input id="lp-input" type="text" maxlength="10" autocomplete="off" spellcheck="false"
                     placeholder="Ton mot le plus long…"
                     style="width:100%;box-sizing:border-box;padding:.75rem 1rem;
-                    background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.18);
-                    border-radius:10px;color:white;font-size:1rem;font-family:inherit;
+                    background:var(--mgu-carton-50);border:1.5px solid var(--mgu-carton-line);
+                    border-radius:10px;color:var(--mgu-encre-900);font-size:1rem;font-family:inherit;
                     text-align:center;font-weight:700;letter-spacing:.1em;outline:none;">
                 <div style="display:flex;gap:8px;">
                     <button id="lp-shuffle" style="flex:0 0 auto;padding:.6rem 1rem;
-                        background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.18);
-                        border-radius:10px;color:#fff;font-size:.85rem;cursor:pointer;
+                        background:var(--mgu-carton-50);border:1.5px solid var(--mgu-carton-line);
+                        border-radius:10px;color:var(--mgu-encre-900);font-size:.85rem;cursor:pointer;
                         font-family:inherit;">🔀 Mélanger</button>
                     <button id="lp-clear" style="flex:0 0 auto;padding:.6rem 1rem;
-                        background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.18);
-                        border-radius:10px;color:#fff;font-size:.85rem;cursor:pointer;
+                        background:var(--mgu-carton-50);border:1.5px solid var(--mgu-carton-line);
+                        border-radius:10px;color:var(--mgu-encre-900);font-size:.85rem;cursor:pointer;
                         font-family:inherit;">⌫ Effacer</button>
                 </div>
                 <button id="lp-btn-send"
-                    style="padding:.85rem;background:rgba(34,197,94,.22);
-                    border:1.5px solid rgba(34,197,94,.5);border-radius:10px;
-                    color:white;font-size:.95rem;font-weight:700;cursor:pointer;
+                    style="padding:.85rem;background:rgba(95,167,119,.22);
+                    border:1.5px solid rgba(95,167,119,.5);border-radius:10px;
+                    color:var(--mgu-encre-900);font-size:.95rem;font-weight:700;cursor:pointer;
                     font-family:inherit;">
                     📤 Envoyer mon mot
                 </button>
@@ -224,18 +224,18 @@ const LmlModule = {
 
         const lignes = (payload.reponses || []).map(r => {
             const isMe = r.pseudo === moi;
-            const bg   = r.valide ? 'rgba(34,197,94,.15)' : 'rgba(239,68,68,.12)';
-            const bd   = r.valide ? 'rgba(34,197,94,.35)' : 'rgba(239,68,68,.25)';
+            const bg   = r.valide ? 'rgba(95,167,119,.15)' : 'rgba(214,72,79,.12)';
+            const bd   = r.valide ? 'rgba(95,167,119,.35)' : 'rgba(214,72,79,.25)';
             const badge = r.valide
-                ? `<span style="color:#86efac;font-weight:700;">+${r.points}pt${r.points !== 1 ? 's' : ''} ✅${r.estPlusLong ? ' 👑' : ''}</span>`
-                : `<span style="color:#fca5a5;">0pt ❌</span>`;
+                ? `<span style="color:#2f5f42;font-weight:700;">+${r.points}pt${r.points !== 1 ? 's' : ''} ✅${r.estPlusLong ? ' 👑' : ''}</span>`
+                : `<span style="color:#8a2f33;">0pt ❌</span>`;
             const motLen = (r.mot || '').length;
             return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;
                 background:${bg};border:1px solid ${bd};border-radius:10px;margin-bottom:6px;font-size:.85rem;flex-wrap:wrap;">
-                <span style="font-weight:700;min-width:80px;color:${isMe ? '#c4b5fd' : '#fff'};">
+                <span style="font-weight:700;min-width:80px;color:${isMe ? 'var(--mgu-or-600)' : '#fff'};">
                     ${isMe ? '👤 ' : ''}${esc(r.pseudo)}</span>
-                <span style="flex:1;font-style:italic;color:rgba(255,255,255,.85);">"${esc(r.mot || '—')}"</span>
-                <span style="font-size:.75rem;color:rgba(255,255,255,.4);">${motLen} lettre${motLen > 1 ? 's' : ''}</span>
+                <span style="flex:1;font-style:italic;color:var(--mgu-encre-600);">"${esc(r.mot || '—')}"</span>
+                <span style="font-size:.75rem;color:var(--mgu-encre-600);">${motLen} lettre${motLen > 1 ? 's' : ''}</span>
                 ${badge}
             </div>`;
         }).join('');
@@ -243,24 +243,24 @@ const LmlModule = {
         cont.innerHTML = `
             <div style="padding:1rem 0;display:flex;flex-direction:column;gap:1rem;">
                 <div style="text-align:center;padding:.7rem;
-                    background:rgba(167,139,250,.1);border:1.5px solid rgba(167,139,250,.35);
+                    background:rgba(232,178,59,.1);border:1.5px solid rgba(232,178,59,.35);
                     border-radius:12px;">
                     <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;
                         color:rgba(196,181,253,.8);margin-bottom:4px;font-weight:700;">
                         Résultats — Manche ${payload.manche || '?'}
                     </div>
-                    <div style="font-size:.95rem;color:#c4b5fd;letter-spacing:.15em;font-weight:700;">
+                    <div style="font-size:.95rem;color:var(--mgu-or-600);letter-spacing:.15em;font-weight:700;">
                         ${(payload.lettres || []).map(esc).join(' ')}
                     </div>
                 </div>
                 ${lignes}
                 ${payload.motMax ? `
                     <div style="text-align:center;padding:.6rem;font-size:.85rem;
-                        color:rgba(255,255,255,.55);border-top:1px solid rgba(255,255,255,.1);">
-                        💎 Meilleur possible : <strong style="color:#a78bfa;">${esc(payload.motMax)}</strong>
+                        color:var(--mgu-encre-600);border-top:1px solid var(--mgu-carton-line);">
+                        💎 Meilleur possible : <strong style="color:var(--mgu-or-600);">${esc(payload.motMax)}</strong>
                         (${payload.motMax.length} lettres)
                     </div>` : ''}
-                <p style="text-align:center;font-size:.85rem;color:rgba(255,255,255,.5);margin:0;">
+                <p style="text-align:center;font-size:.85rem;color:var(--mgu-encre-600);margin:0;">
                     En attente de la prochaine manche…
                 </p>
             </div>`;
@@ -290,7 +290,7 @@ const LmlModule = {
             const t = $('lp-timer'); if (!t) return;
             const r = compute();
             t.textContent = fmt(r);
-            if (r <= 10 && r > 0) t.style.color = '#fca5a5';
+            if (r <= 10 && r > 0) t.style.color = '#8a2f33';
         };
         render();
         this._timerInterval = setInterval(() => {
@@ -307,7 +307,7 @@ const LmlModule = {
     },
 
     _toast(msg, type = 'info') {
-        const C = { success:'#22c55e', error:'#ef4444', warning:'#f59e0b', info:'#00d4ff' };
+        const C = { success:'#22c55e', error:'#ef4444', warning:'#f59e0b', info:'var(--mgu-or-600)' };
         const I = { success:'✅', error:'❌', warning:'⚠️', info:'ℹ️' };
         let c = $('toast-container');
         if (!c) {
@@ -317,7 +317,7 @@ const LmlModule = {
         }
         const el = document.createElement('div');
         el.style.cssText = `display:flex;gap:.5rem;align-items:flex-start;padding:.65rem .9rem;
-            border-radius:8px;background:#1e1e2e;color:#fff;border-left:3px solid ${C[type] || C.info};
+            border-radius:8px;background:#1e1e2e;color:var(--mgu-encre-900);border-left:3px solid ${C[type] || C.info};
             box-shadow:0 4px 16px rgba(0,0,0,.5);font-size:.88rem;pointer-events:auto;`;
         el.innerHTML = `<span>${I[type] || 'ℹ️'}</span><span>${esc(msg)}</span>`;
         c.appendChild(el);
