@@ -1,16 +1,13 @@
 /*
   mgu-accueil-pilote.css — MiniGame Universe
-  Écran pilote (Option A) : Accueil (#home) + Choix du jeu (#choix-jeu) + barre
-  de navigation permanente (.top-nav-bar), UNIQUEMENT quand <body> porte la
-  classe .mgu-pilote (ajoutée/retirée par navigation.js selon l'écran affiché).
+  v2 — corrige l'écart de proportions signalé : la v1 ne changeait que les
+  couleurs, pas les tailles/espacements/rayons, qui restaient ceux d'Aurora
+  Glass. Cette version aligne les métriques sur le prototype validé
+  (minigame-universe-prototype.html) : icônes 22px, noms 13px, cartes
+  compactes, grille plafonnée à 760px.
 
-  Aucun sélecteur ici n'est global : tout est préfixé par "body.mgu-pilote",
-  donc aucun autre écran (jeux Aurora Glass restants) n'est affecté. Chargé
-  après style.css/gestion.css/reglages.css : gagne le cascade sans besoin
-  de !important, en plus de la spécificité déjà supérieure (body.classe + #id).
-
-  Ne touche à aucun ID/classe utilisé par main.js ou navigation.js pour le
-  binding d'événements — reskin visuel pur, zéro changement structurel.
+  Remplace entièrement la version précédente. Même principe de scope :
+  tout est préfixé "body.mgu-pilote", zéro fuite vers les autres écrans.
 */
 
 /* ---------- Canevas ---------- */
@@ -52,11 +49,17 @@ body.mgu-pilote .btn-music:hover {
   box-shadow: none;
 }
 
-/* ---------- Accueil ---------- */
+/* ---------- Accueil (#home — hub Nouvelle partie / Continuer) ---------- */
+body.mgu-pilote #home {
+  padding: var(--mgu-space-6) var(--mgu-space-4);
+}
+
 body.mgu-pilote .main-title,
 body.mgu-pilote #home h1 {
   font-family: var(--mgu-font-display);
   font-weight: 700;
+  font-size: clamp(20px, 3vw, 30px);
+  margin-bottom: var(--mgu-space-5);
   background: none;
   -webkit-text-fill-color: var(--mgu-carton-50);
   color: var(--mgu-carton-50);
@@ -67,13 +70,23 @@ body.mgu-pilote #home h1 {
 body.mgu-pilote .subtitle,
 body.mgu-pilote #home p {
   font-family: var(--mgu-font-body);
+  font-size: 14px;
   color: var(--mgu-carton-100);
   opacity: .85;
+  margin-bottom: var(--mgu-space-5);
+}
+
+body.mgu-pilote .hub-container {
+  gap: var(--mgu-space-3);
+  max-width: 520px;
+  margin: 0 auto;
 }
 
 body.mgu-pilote .hub-card {
   background: var(--mgu-feutrine-700);
   border: 1px solid var(--mgu-feutrine-line);
+  border-radius: var(--mgu-radius-m);
+  padding: var(--mgu-space-4);
   backdrop-filter: none;
   box-shadow: none;
 }
@@ -96,13 +109,16 @@ body.mgu-pilote .hub-card:hover::before {
 body.mgu-pilote .hub-card-title,
 body.mgu-pilote .hub-card h2 {
   font-family: var(--mgu-font-display);
+  font-size: 16px;
   color: var(--mgu-or-500);
+  margin-bottom: var(--mgu-space-2);
 }
 
 body.mgu-pilote .hub-card-subtitle,
 body.mgu-pilote .hub-card-description,
 body.mgu-pilote .hub-card p {
   font-family: var(--mgu-font-body);
+  font-size: 13px;
   color: var(--mgu-carton-100);
   opacity: .85;
 }
@@ -114,6 +130,9 @@ body.mgu-pilote #btn-continuer {
   color: var(--mgu-or-900);
   font-family: var(--mgu-font-display);
   font-weight: 700;
+  font-size: 14px;
+  padding: var(--mgu-space-3) var(--mgu-space-5);
+  border-radius: var(--mgu-radius-full);
   box-shadow: none;
 }
 
@@ -124,23 +143,39 @@ body.mgu-pilote #btn-continuer:hover {
   box-shadow: none;
 }
 
-/* ---------- Choix du jeu ---------- */
+/* ---------- Choix du jeu (#choix-jeu — grille des 11 jeux) ---------- */
+body.mgu-pilote #choix-jeu {
+  padding: var(--mgu-space-6) var(--mgu-space-4);
+}
+
 body.mgu-pilote .section-title {
   font-family: var(--mgu-font-display);
+  font-size: clamp(20px, 3vw, 30px);
   color: var(--mgu-carton-50);
   text-shadow: none;
   text-transform: none;
   letter-spacing: normal;
+  margin-bottom: var(--mgu-space-5);
+}
+
+body.mgu-pilote .games-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--mgu-space-3);
+  max-width: 760px;
+  margin: 0 auto;
 }
 
 body.mgu-pilote .game-btn {
   background: var(--mgu-feutrine-700);
   border: 1px solid var(--mgu-feutrine-line);
+  border-radius: var(--mgu-radius-m);
+  padding: var(--mgu-space-4) var(--mgu-space-2);
+  gap: var(--mgu-space-2);
   font-family: var(--mgu-font-display);
+  font-size: 13px;
   color: var(--mgu-carton-50);
   backdrop-filter: none;
   box-shadow: none;
-  border-radius: var(--mgu-radius-m);
 }
 
 body.mgu-pilote .game-btn::before {
@@ -159,11 +194,14 @@ body.mgu-pilote .game-btn:hover::before {
 }
 
 body.mgu-pilote .game-icon {
+  font-size: 22px;
   filter: none;
 }
 
 body.mgu-pilote .game-name {
   font-family: var(--mgu-font-display);
+  font-weight: 600;
+  font-size: 13px;
 }
 
 /* ---------- Accessibilité ---------- */
@@ -172,4 +210,33 @@ body.mgu-pilote input:focus-visible,
 body.mgu-pilote select:focus-visible {
   outline: none;
   box-shadow: var(--mgu-focus-ring);
+}
+
+/* ---------- Splash screen + loader ----------
+   Premier visuel vu par l'utilisateur, avant même l'Accueil — jamais
+   couvert jusqu'ici, d'où le flash Aurora signalé. Actif dès le premier
+   paint : body.mgu-pilote est posé en dur dans le HTML, pas ajouté par JS. */
+body.mgu-pilote #splash-screen,
+body.mgu-pilote .splash-screen,
+body.mgu-pilote #loader,
+body.mgu-pilote .loader {
+  background: var(--mgu-feutrine-900);
+  background-size: auto;
+  animation: none;
+}
+
+body.mgu-pilote .splash-logo {
+  filter: drop-shadow(0 0 20px rgba(232, 178, 59, .35));
+}
+
+body.mgu-pilote .spinner {
+  border: 6px solid var(--mgu-feutrine-700);
+  border-top-color: var(--mgu-or-500);
+  box-shadow: none;
+}
+
+body.mgu-pilote .loader p {
+  color: var(--mgu-carton-100);
+  text-shadow: none;
+  font-family: var(--mgu-font-body);
 }

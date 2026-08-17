@@ -30,6 +30,24 @@ export function getPionCouleur(id) {
 }
 
 /**
+ * Couleur déterministe dérivée du pseudo — PAS une donnée serveur.
+ * Différent du principe ci-dessus : aucune assignation de couleur n'existe
+ * encore côté store.js (Option 1 du handoff jamais câblée). En attendant,
+ * ce hash pur produit la MÊME couleur pour le MÊME pseudo, sur l'hôte et
+ * chez tous les invités, sans échange réseau ni état à synchroniser —
+ * ce n'est donc pas une nouvelle source de vérité, juste une fonction pure
+ * du pseudo déjà connu de tous.
+ */
+export function getPionParPseudo(pseudo) {
+  const s = String(pseudo || '');
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  }
+  return PION_PALETTE[h % PION_PALETTE.length];
+}
+
+/**
  * Crée l'élément DOM du pion seul (pastille ronde).
  * @param {string} couleurId - id présent dans PION_PALETTE (fourni par le serveur)
  * @param {'s'|'m'|'l'} taille

@@ -26,6 +26,8 @@
 //   — Aucune autre clé. Tout le reste passe par WS.
 // ================================================================
 
+import { getPionParPseudo } from '../core/pion.js';
+
 // ── Import navigation invité (lazy pour éviter circular deps) ──────────
 let _navbarInite = false;
 async function _initNavbar() {
@@ -47,6 +49,13 @@ export function clearPlayerPseudo()      { localStorage.removeItem(PLAYER_ID_KEY
 // ── Utilitaires DOM ────────────────────────────────────────────
 const $  = id => document.getElementById(id);
 const setText = (id, t) => { const e = $(id); if (e) e.textContent = t ?? ''; };
+function _majPion(pseudo) {
+    const el = $('hdr-pion');
+    if (!el) return;
+    const couleur = getPionParPseudo(pseudo);
+    el.style.background = couleur ? couleur.hex : 'transparent';
+    el.setAttribute('title', couleur ? `Pion ${couleur.label}` : '');
+}
 const esc = s => String(s ?? '')
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -215,6 +224,7 @@ export const Player = {
                 this.scoreLocal = scores[this.session.pseudo] ?? this.scoreLocal;
             }
             this.module?.onScores?.(scores);
+            setText('hdr-score', `${this.scoreLocal ?? 0} pt${(this.scoreLocal ?? 0) > 1 ? 's' : ''}`);
             // Mettre à jour l'affichage du score si visible
             const el = document.getElementById('p-mes-points');
             if (el) el.textContent = (this.scoreLocal ?? 0) + ' pt' + ((this.scoreLocal ?? 0) > 1 ? 's' : '');
@@ -442,6 +452,7 @@ export const Player = {
         setText('hdr-pseudo', this.session.pseudo || '—');
         setText('hdr-partie', snapshot?.nom || this.session.partieNom || 'Partie');
         setText('hdr-jeu',   (snapshot?.jeu || this.session.jeu || '').toUpperCase());
+        _majPion(this.session.pseudo);
 
         const nav = $('invite-navbar');
         if (nav) nav.classList.add('visible');

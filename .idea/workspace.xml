@@ -9,23 +9,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="73d891ed-7cb8-4a2e-b43e-d24a9aad95e0" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/css/mgu-invite-pilote.css" beforeDir="false" afterPath="$PROJECT_DIR$/public/css/mgu-invite-pilote.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/public/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/jeu.html" beforeDir="false" afterPath="$PROJECT_DIR$/public/jeu.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/modules/justeprix_player.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/justeprix_player.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/modules/lml_player.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/lml_player.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/modules/memoire_player.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/memoire_player.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/modules/mime_player.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/mime_player.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/modules/morpion_player.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/morpion_player.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/modules/pendu_player.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/pendu_player.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/modules/petitbac_player.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/petitbac_player.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/modules/player.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/player.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/modules/puissance4_player.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/puissance4_player.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/modules/reglages.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/reglages.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/modules/undercover_player.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/undercover_player.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/modules/uno_player.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/uno_player.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/js/navigation.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/navigation.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/css/mgu-accueil-pilote.css" beforeDir="false" afterPath="$PROJECT_DIR$/public/css/mgu-accueil-pilote.css" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

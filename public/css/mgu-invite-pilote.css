@@ -148,6 +148,21 @@ body {
   box-shadow: none;
 }
 
+.jeu-pion {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .18);
+  border: 1.5px solid rgba(255, 255, 255, .4);
+}
+
+.jeu-header-id {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
 .jeu-pseudo {
   font-family: var(--mgu-font-display);
   color: var(--mgu-or-600);
@@ -155,6 +170,19 @@ body {
 
 .jeu-partie {
   color: var(--mgu-encre-600);
+  font-size: 11px;
+}
+
+.jeu-score {
+  font-family: var(--mgu-font-display);
+  font-weight: 700;
+  color: var(--mgu-encre-900);
+  background: var(--mgu-carton-100);
+  border: 1px solid var(--mgu-carton-line);
+  border-radius: var(--mgu-radius-full);
+  padding: 2px 10px;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .jeu-badge {
