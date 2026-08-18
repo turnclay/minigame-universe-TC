@@ -1,7 +1,7 @@
 ﻿PROJECT-STATE.md (auto-genere par update-agent-state.ps1 - ne pas editer a la main)
 
-Derniere generation : 2026-08-17 23:30
-Commit               : 2e631013cb8ec544d8a5311c5044b0acd957481e
+Derniere generation : 2026-08-18 22:57
+Commit               : d07355097af2b2d3d0d9cfabe61729551ab6371d
 Message              : Auto update MiniGameV2
 
 JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)
@@ -22,11 +22,7 @@ FICHIERS MODIFIES DEPUIS LE PUSH PRECEDENT
 - [Modifie] .idea/workspace.xml
 - [Modifie] .render-restart
 - [Modifie] PROJECT-STATE.md
-- [Modifie] public/css/mgu-accueil-pilote.css
-- [Modifie] public/css/mgu-invite-pilote.css
-- [Modifie] public/jeu.html
-- [Modifie] public/js/core/pion.js
-- [Modifie] public/js/modules/player.js
+- [Modifie] public/css/invite.css
 
 REFERENCES (ne pas dupliquer leur contenu ici)
 - Dette technique    : DETTE-TECHNIQUE.md

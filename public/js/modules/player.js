@@ -89,7 +89,7 @@ function toast(msg, type = 'info', duration = 3000) {
     const el = document.createElement('div');
     el.style.cssText = [
         'display:flex;gap:.5rem;align-items:flex-start;padding:.65rem .9rem;border-radius:8px',
-        `background:#1e1e2e;color:var(--mgu-encre-900);border-left:3px solid ${C[type] || C.info}`,
+        `background:#1e1e2e;color:#ffffff;border-left:3px solid ${C[type] || C.info}`,
         'box-shadow:0 4px 16px rgba(0,0,0,.5)',
         'opacity:0;transition:opacity .2s,transform .2s;transform:translateX(12px)',
         'font-size:.88rem;pointer-events:auto'
