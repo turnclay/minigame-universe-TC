@@ -99,19 +99,22 @@ function premiereLettre(v) {
 
 /**
  * Cherche des entités Wikidata dont le label commence par `lettre`.
- * Retourne le meilleur QID (premier résultat valide).
+ * Retourne jusqu'à 5 QID candidats (au lieu d'un seul) — un nom ambigu
+ * (patronyme, marque, filiale légale...) retourne plusieurs entités
+ * homonymes ; se limiter au 1er résultat de recherche fait rejeter à tort
+ * des réponses valides si la "bonne" entité n'est pas en tête de liste.
  */
-async function rechercherQid(valeur, lettre) {
+async function rechercherCandidats(valeur, lettre) {
     const cacheKey = `search:${normaliser(valeur)}`;
     const cached = labelCache.get(cacheKey);
-    if (cached !== undefined) return cached; // peut être null
+    if (cached !== undefined) return cached; // tableau, peut être vide
 
     const url = `https://www.wikidata.org/w/api.php?action=wbsearchentities`
         + `&search=${encodeURIComponent(valeur)}&language=fr&type=item&limit=20&format=json`;
 
     let data;
     try { data = await httpGet(url); }
-    catch (e) { console.warn('[WIKIDATA] wbsearchentities échoué:', e.message); return null; }
+    catch (e) { console.warn('[WIKIDATA] wbsearchentities échoué:', e.message); return []; }
 
     const lettreMaj = lettre.toUpperCase();
 
@@ -121,11 +124,10 @@ async function rechercherQid(valeur, lettre) {
         const alt = (item.aliases || []).join(' ');
         return premiereLettre(lbl) === lettreMaj
             || alt.split(' ').some(a => premiereLettre(a) === lettreMaj);
-    });
+    }).slice(0, 5).map(item => item.id);
 
-    const qid = candidats.length > 0 ? candidats[0].id : null;
-    labelCache.set(cacheKey, qid);
-    return qid;
+    labelCache.set(cacheKey, candidats);
+    return candidats;
 }
 
 // ─────────────────────────────────────────────────────
@@ -180,20 +182,30 @@ const TYPES_FICTIF = [
     'wd:Q4194195',   // personnage de jeu vidéo
 ].join(' ');
 
-// Établissement humain (Q486972) — umbrella Wikidata standard.
-// Sous-classe transitive (P279*) : couvre ville, village, commune, bourg,
-// capitale, grande ville, etc. en un seul test au lieu d'une liste figée.
+// Types de lieux vérifiés en direct (P31 exact).
+// Q484170 "commune de France" est un statut ADMINISTRATIF — sous-classe de
+// "administrative territorial entity of France" (Q192498), PAS de
+// "établissement humain" (Q486972). Le check transitif seul ne matche donc
+// jamais une commune française réelle (~35 000 entités) : c'était la cause
+// exacte du rejet de Juvisy-sur-Orge. D'où le check direct ci-dessous, en
+// complément du fallback transitif pour les lieux hors France.
+const TYPES_LIEU_DIRECT = [
+    'wd:Q484170',   // commune de France
+    'wd:Q515',      // ville (city)
+    'wd:Q3957',     // ville (town)
+    'wd:Q532',      // village
+    'wd:Q1549591',  // grande ville
+    'wd:Q5119',     // capitale
+].join(' ');
 const TYPE_ETABLISSEMENT_HUMAIN = 'wd:Q486972';
 
 // Types "marque" reconnus. Constat terrain : les marques importées via
 // registres légaux (ex: SIRENE pour la France) sont souvent typées
 // génériquement "organisation" plutôt que "marque" au sens strict —
-// d'où l'inclusion de Q43229 en filet large.
-const TYPES_MARQUE = [
-    'wd:Q431289',   // marque (brand)
-    'wd:Q4830453',  // entreprise (business)
-    'wd:Q43229',    // organisation (filet large)
-].join(' ');
+// d'où l'inclusion de Q43229 en filet large, + fallback transitif vers
+// "marque" (Q431289) et "entreprise" (Q4830453) pour les sous-classes
+// spécifiques (maison de couture, marque de mode, etc.) non listées ici.
+const TYPES_MARQUE_DIRECT = ['wd:Q43229'].join(' '); // organisation
 
 async function validerCelebrite(qid) {
     const cached = qidCache.get(`cel:${qid}`);
@@ -277,16 +289,20 @@ async function validerVille(qid) {
     const cached = qidCache.get(`vil:${qid}`);
     if (cached !== undefined) return cached;
 
-    const estEtablissement = await sparqlAsk(
-        `ASK { wd:${qid} wdt:P31/wdt:P279* ${TYPE_ETABLISSEMENT_HUMAIN} }`
+    const estLieu = await sparqlAsk(
+        `ASK {
+            { wd:${qid} wdt:P31 ?t . VALUES ?t { ${TYPES_LIEU_DIRECT} } }
+            UNION
+            { wd:${qid} wdt:P31/wdt:P279* ${TYPE_ETABLISSEMENT_HUMAIN} }
+        }`
     );
 
     let valid, reason;
 
-    if (estEtablissement === null) {
+    if (estLieu === null) {
         valid  = true;
         reason = 'Indéterminé (API Wikidata injoignable) — accepté par défaut';
-    } else if (!estEtablissement) {
+    } else if (!estLieu) {
         valid  = false;
         reason = 'Pas un lieu habité reconnu';
     } else {
@@ -304,7 +320,13 @@ async function validerMarque(qid) {
     if (cached !== undefined) return cached;
 
     const estMarque = await sparqlAsk(
-        `ASK { wd:${qid} wdt:P31 ?t . VALUES ?t { ${TYPES_MARQUE} } }`
+        `ASK {
+            { wd:${qid} wdt:P31 ?t . VALUES ?t { ${TYPES_MARQUE_DIRECT} } }
+            UNION
+            { wd:${qid} wdt:P31/wdt:P279* wd:Q431289 }
+            UNION
+            { wd:${qid} wdt:P31/wdt:P279* wd:Q4830453 }
+        }`
     );
 
     let valid, reason;
@@ -331,8 +353,10 @@ async function validerMarque(qid) {
 
 /**
  * Valide une réponse joueur pour une catégorie dynamique Wikidata.
+ * Teste jusqu'à 5 candidats homonymes en parallèle, accepte dès que l'un
+ * d'eux correspond à la catégorie (cf rechercherCandidats).
  *
- * @param {'celebrite'|'personnage'} categorie
+ * @param {'celebrite'|'personnage'|'ville'|'marque'} categorie
  * @param {string} valeur  - Réponse brute du joueur
  * @param {string} lettre  - Lettre imposée (ex: 'M')
  * @returns {Promise<{ valid: boolean, reason?: string, qid?: string }>}
@@ -344,15 +368,27 @@ export async function validerWikidata(categorie, valeur, lettre) {
         return { valid: false, reason: `Ne commence pas par ${lettre}` };
     }
 
-    const qid = await rechercherQid(v, lettre);
-    if (!qid) return { valid: false, reason: 'Introuvable sur Wikidata' };
+    const VALIDATEURS = {
+        celebrite  : validerCelebrite,
+        personnage : validerPersonnage,
+        ville      : validerVille,
+        marque     : validerMarque,
+    };
+    const validate = VALIDATEURS[categorie];
+    if (!validate) return { valid: false, reason: `Catégorie inconnue: ${categorie}` };
 
-    if (categorie === 'celebrite')  return validerCelebrite(qid);
-    if (categorie === 'personnage') return validerPersonnage(qid);
-    if (categorie === 'ville')      return validerVille(qid);
-    if (categorie === 'marque')     return validerMarque(qid);
+    const candidats = await rechercherCandidats(v, lettre);
+    if (candidats.length === 0) return { valid: false, reason: 'Introuvable sur Wikidata' };
 
-    return { valid: false, reason: `Catégorie inconnue: ${categorie}` };
+    const resultats = await Promise.all(candidats.map(qid => validate(qid)));
+
+    const trouve = resultats.find(r => r.valid);
+    if (trouve) return trouve;
+
+    // Aucun candidat valide → dégradation gracieuse si l'API a été injoignable
+    // pour au moins un candidat, sinon rejet avec la raison du 1er candidat
+    const indetermine = resultats.find(r => r.reason?.startsWith('Indéterminé'));
+    return indetermine || resultats[0] || { valid: false, reason: 'Aucun candidat valide' };
 }
 
 export function cacheStats() {

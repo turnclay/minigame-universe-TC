@@ -1,7 +1,7 @@
 ﻿PROJECT-STATE.md (auto-genere par update-agent-state.ps1 - ne pas editer a la main)
 
-Derniere generation : 2026-08-23 11:19
-Commit               : 8656773c0f06bff8e30e85e3b018891332b316da
+Derniere generation : 2026-08-23 11:53
+Commit               : f07054a7804e3c96d5e9ea9bfb95985ee99e2c3b
 Message              : Auto update MiniGameV2
 
 JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)
@@ -22,8 +22,13 @@ FICHIERS MODIFIES DEPUIS LE PUSH PRECEDENT
 - [Modifie] .idea/workspace.xml
 - [Modifie] .render-restart
 - [Modifie] PROJECT-STATE.md
-- [Modifie] public/index.html
-- [Modifie] public/js/modules/player.js
+- [Modifie] arbo.txt
+- [Supprime] server/data/marques.txt
+- [Supprime] server/data/personnages.txt
+- [Supprime] server/data/villes.txt
+- [Modifie] server/games/dictionnaires.js
+- [Modifie] server/games/petitbac.js
+- [Modifie] server/games/wikidata-validator.js
 
 REFERENCES (ne pas dupliquer leur contenu ici)
 - Dette technique    : DETTE-TECHNIQUE.md
