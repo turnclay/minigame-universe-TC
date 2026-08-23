@@ -347,12 +347,9 @@
 │   │   ├── fr-words.txt
 │   │   ├── justeprix.json
 │   │   ├── Lexique383.tsv
-│   │   ├── marques.txt
 │   │   ├── pays.txt
 │   │   ├── pendu.json
-│   │   ├── personnages.txt
-│   │   ├── questions.json
-│   │   └── villes.txt
+│   │   └── questions.json
 │   ├── games
 │   │   ├── dictionnaires.js
 │   │   ├── justeprix.js

@@ -18,9 +18,6 @@ const DATA_DIR  = path.join(__dirname, '../data');
 const BASENAMES = {
     general    : 'fr-words',
     pays       : 'pays',
-    ville      : 'villes',
-    marque     : 'marques',
-    personnage : 'personnages',
     celebrite  : 'celebrites',
 };
 

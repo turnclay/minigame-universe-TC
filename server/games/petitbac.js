@@ -44,7 +44,7 @@ const CAT_DICO = {
 };
 
 // Catégories qui peuvent basculer sur Wikidata live si pas de fichier statique
-const CAT_WIKIDATA = new Set(['personnage']);
+const CAT_WIKIDATA = new Set(['ville', 'marque', 'personnage']);
 
 const LETTRES  = 'ABCDEFGHIJKLMNOPRSTUVW'.split('');
 const DUREE_MS = 120_000;

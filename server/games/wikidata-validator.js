@@ -180,6 +180,21 @@ const TYPES_FICTIF = [
     'wd:Q4194195',   // personnage de jeu vidéo
 ].join(' ');
 
+// Établissement humain (Q486972) — umbrella Wikidata standard.
+// Sous-classe transitive (P279*) : couvre ville, village, commune, bourg,
+// capitale, grande ville, etc. en un seul test au lieu d'une liste figée.
+const TYPE_ETABLISSEMENT_HUMAIN = 'wd:Q486972';
+
+// Types "marque" reconnus. Constat terrain : les marques importées via
+// registres légaux (ex: SIRENE pour la France) sont souvent typées
+// génériquement "organisation" plutôt que "marque" au sens strict —
+// d'où l'inclusion de Q43229 en filet large.
+const TYPES_MARQUE = [
+    'wd:Q431289',   // marque (brand)
+    'wd:Q4830453',  // entreprise (business)
+    'wd:Q43229',    // organisation (filet large)
+].join(' ');
+
 async function validerCelebrite(qid) {
     const cached = qidCache.get(`cel:${qid}`);
     if (cached !== undefined) return cached;
@@ -258,6 +273,58 @@ async function validerPersonnage(qid) {
     return r;
 }
 
+async function validerVille(qid) {
+    const cached = qidCache.get(`vil:${qid}`);
+    if (cached !== undefined) return cached;
+
+    const estEtablissement = await sparqlAsk(
+        `ASK { wd:${qid} wdt:P31/wdt:P279* ${TYPE_ETABLISSEMENT_HUMAIN} }`
+    );
+
+    let valid, reason;
+
+    if (estEtablissement === null) {
+        valid  = true;
+        reason = 'Indéterminé (API Wikidata injoignable) — accepté par défaut';
+    } else if (!estEtablissement) {
+        valid  = false;
+        reason = 'Pas un lieu habité reconnu';
+    } else {
+        valid  = true;
+        reason = 'Ville/lieu habité validé';
+    }
+
+    const r = { valid, reason, qid };
+    qidCache.set(`vil:${qid}`, r);
+    return r;
+}
+
+async function validerMarque(qid) {
+    const cached = qidCache.get(`mar:${qid}`);
+    if (cached !== undefined) return cached;
+
+    const estMarque = await sparqlAsk(
+        `ASK { wd:${qid} wdt:P31 ?t . VALUES ?t { ${TYPES_MARQUE} } }`
+    );
+
+    let valid, reason;
+
+    if (estMarque === null) {
+        valid  = true;
+        reason = 'Indéterminé (API Wikidata injoignable) — accepté par défaut';
+    } else if (!estMarque) {
+        valid  = false;
+        reason = 'Pas une marque/entreprise reconnue';
+    } else {
+        valid  = true;
+        reason = 'Marque validée';
+    }
+
+    const r = { valid, reason, qid };
+    qidCache.set(`mar:${qid}`, r);
+    return r;
+}
+
 // ─────────────────────────────────────────────────────
 // API PUBLIQUE
 // ─────────────────────────────────────────────────────
@@ -282,6 +349,8 @@ export async function validerWikidata(categorie, valeur, lettre) {
 
     if (categorie === 'celebrite')  return validerCelebrite(qid);
     if (categorie === 'personnage') return validerPersonnage(qid);
+    if (categorie === 'ville')      return validerVille(qid);
+    if (categorie === 'marque')     return validerMarque(qid);
 
     return { valid: false, reason: `Catégorie inconnue: ${categorie}` };
 }

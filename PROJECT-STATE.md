@@ -1,7 +1,7 @@
 ﻿PROJECT-STATE.md (auto-genere par update-agent-state.ps1 - ne pas editer a la main)
 
-Derniere generation : 2026-08-18 22:57
-Commit               : d07355097af2b2d3d0d9cfabe61729551ab6371d
+Derniere generation : 2026-08-23 11:19
+Commit               : 8656773c0f06bff8e30e85e3b018891332b316da
 Message              : Auto update MiniGameV2
 
 JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)
@@ -22,7 +22,8 @@ FICHIERS MODIFIES DEPUIS LE PUSH PRECEDENT
 - [Modifie] .idea/workspace.xml
 - [Modifie] .render-restart
 - [Modifie] PROJECT-STATE.md
-- [Modifie] public/css/invite.css
+- [Modifie] public/index.html
+- [Modifie] public/js/modules/player.js
 
 REFERENCES (ne pas dupliquer leur contenu ici)
 - Dette technique    : DETTE-TECHNIQUE.md
