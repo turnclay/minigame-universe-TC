@@ -15,6 +15,7 @@ import HostSession   from '../core/host_session.js';
 
 let _resultatsLive    = {};   // { pseudo: { victoire?, erreurs?, status:'en_cours'|'fini' } }
 let _resultatsRevele  = [];   // [{ pseudo, victoire, erreurs, points }]
+let _themeActuel      = '';
 let _wsListenersActifs = false;
 
 let _hMotStart   = null;
@@ -33,9 +34,11 @@ function _initWsListeners() {
     if (_wsListenersActifs) return;
     _wsListenersActifs = true;
 
-    _hMotStart = () => {
+    _hMotStart = (payload) => {
         _resultatsLive   = {};
         _resultatsRevele = [];
+        _themeActuel     = (payload && payload.theme) || '';
+        _refreshThemeHote();
         _refreshPanneauLive();
         const btn = document.getElementById('pendu-btn-resultats');
         if (btn) {
@@ -94,9 +97,17 @@ export function nettoyerPartieInvites() {
     _wsListenersActifs = false;
     _resultatsLive   = {};
     _resultatsRevele = [];
+    _themeActuel     = '';
 }
 
 // ── Panneau ────────────────────────────────────────────────────
+
+function _refreshThemeHote() {
+    const el = document.getElementById('pendu-hote-theme');
+    if (!el) return;
+    el.textContent = _themeActuel ? `🎯 Thème : ${_themeActuel}` : '';
+    el.style.display = _themeActuel ? 'block' : 'none';
+}
 
 function _refreshPanneauLive(meta = {}) {
     const container = document.getElementById('pendu-invites-reponses');
@@ -187,6 +198,8 @@ export function injecterPanneauHote() {
                 color:rgba(167,139,250,.8);margin-bottom:10px;font-weight:700;">
                 🎮 Résultats des joueurs
             </div>
+            <div id="pendu-hote-theme" style="display:none;font-size:.85rem;font-weight:700;
+                color:#a78bfa;margin-bottom:10px;"></div>
             <div id="pendu-invites-reponses">
                 <p style="font-size:.8rem;color:rgba(255,255,255,.4);text-align:center;">
                     En attente des résultats…
@@ -194,6 +207,18 @@ export function injecterPanneauHote() {
             </div>`;
         section.appendChild(panneau);
     }
+
+    // Bandeau thème : peut manquer si le panneau existait déjà statiquement
+    // dans index.html avant cette version.
+    if (!document.getElementById('pendu-hote-theme')) {
+        const themeEl = document.createElement('div');
+        themeEl.id = 'pendu-hote-theme';
+        themeEl.style.cssText = 'display:none;font-size:.85rem;font-weight:700;color:#a78bfa;margin-bottom:10px;';
+        const reponses = document.getElementById('pendu-invites-reponses');
+        if (reponses) panneau.insertBefore(themeEl, reponses);
+        else panneau.appendChild(themeEl);
+    }
+    _refreshThemeHote();
 
     // S'assurer que le conteneur de réponses existe.
     if (!document.getElementById('pendu-invites-reponses')) {

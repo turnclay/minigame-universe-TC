@@ -1,7 +1,7 @@
 ﻿PROJECT-STATE.md (auto-genere par update-agent-state.ps1 - ne pas editer a la main)
 
-Derniere generation : 2026-08-23 11:53
-Commit               : f07054a7804e3c96d5e9ea9bfb95985ee99e2c3b
+Derniere generation : 2026-08-23 14:57
+Commit               : 2ad4acb1bb1460a84d3d76c651ef5f067d71e518
 Message              : Auto update MiniGameV2
 
 JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)
@@ -22,12 +22,6 @@ FICHIERS MODIFIES DEPUIS LE PUSH PRECEDENT
 - [Modifie] .idea/workspace.xml
 - [Modifie] .render-restart
 - [Modifie] PROJECT-STATE.md
-- [Modifie] arbo.txt
-- [Supprime] server/data/marques.txt
-- [Supprime] server/data/personnages.txt
-- [Supprime] server/data/villes.txt
-- [Modifie] server/games/dictionnaires.js
-- [Modifie] server/games/petitbac.js
 - [Modifie] server/games/wikidata-validator.js
 
 REFERENCES (ne pas dupliquer leur contenu ici)

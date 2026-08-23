@@ -152,9 +152,6 @@ const JusteprixModule = {
                     <img src="${esc(src)}" alt="${esc(p.nom)}"
                         onerror="this.style.display='none'"
                         style="max-width:100%;max-height:200px;margin:8px auto 0;border-radius:10px;background:var(--mgu-carton-50);">
-                    ${p.fourchette ? `<div style="margin-top:6px;font-size:.82rem;color:var(--mgu-encre-600);
-                        background:var(--mgu-carton-50);padding:6px 10px;border-radius:8px;">
-                        💡 Fourchette : <strong style="color:var(--mgu-or-600);">${esc(p.fourchette)}</strong></div>` : ''}
                 </div>
                 <input id="jpp-input" type="number" step="0.01" min="0" inputmode="decimal"
                     autocomplete="off" placeholder="Ton estimation (€)…"
