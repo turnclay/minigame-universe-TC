@@ -78,6 +78,7 @@ function _onMotStart(payload) {
     _afficherMot();
     _afficherDessin();
     _afficherTheme();
+    _afficherThemeAuDessusDessin();
     _creerClavier();
 
     const nb = $('pendu-nb-erreurs'); if (nb) nb.textContent = '0';
@@ -165,6 +166,20 @@ const DESSINS = [
 function _afficherDessin() {
     const el = $('pendu-dessin'); if (!el) return;
     el.innerHTML = DESSINS[Math.min(nombreErreurs, 6)];
+}
+
+function _afficherThemeAuDessusDessin() {
+    const dessin = document.getElementById('pendu-dessin');
+    if (!dessin || !dessin.parentNode) return;
+    let el = document.getElementById('pendu-theme-fixe');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'pendu-theme-fixe';
+        el.className = 'theme-info';
+        el.style.cssText = 'text-align:center;font-weight:700;margin-bottom:8px;';
+        dessin.parentNode.insertBefore(el, dessin);
+    }
+    el.textContent = themeActuel ? `🎯 Thème : ${themeActuel}` : '';
 }
 
 // ── Logique locale ──────────────────────────────────────────
