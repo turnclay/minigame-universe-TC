@@ -1,9 +1,15 @@
 // ============================================================
-// /js/jeux/uno.js — v1.0 (hôte)
+// /js/jeux/uno.js — v2.0 (hôte) — refonte présentation mobile
 // ============================================================
 // Affichage hôte du jeu UNO.
 // Reçoit les events WS serveur, met à jour l'UI de l'écran hôte.
 // Aucune logique métier ici — tout part du serveur.
+//
+// v2.0 : rendu par classes CSS (.uno-*, cf mgu-jeux-pilote.css)
+// au lieu de style.cssText inline. Main hôte en fan scrollable
+// horizontal (remplace le flex-wrap — le vrai problème mobile).
+// Choix de couleur unifié sur un seul mécanisme délégué. Aucun
+// changement de logique, de payload WS ou de contrat d'events.
 //
 // Events WS reçus :
 //   UNO_STATE         — état complet public (à chaque action)
@@ -41,29 +47,24 @@ let _hostPseudo      = null;
 // Références aux handlers WS — conservées pour pouvoir faire socket.off()
 // lors d'un enchaînement de parties (cleanup.js → nettoyerPartieInvites).
 // Sans ça, chaque initialiserUno() empilerait un nouveau listener par event.
-let _wsHandlers = null;
+let _wsHandlers          = null;
+let _delegationInstallee = false;
 
 const $ = id => document.getElementById(id);
 
-// ── Couleurs UNO ────────────────────────────────────────────
+// ── Couleurs UNO (identité du jeu — hors palette --mgu-*) ───
 const COULEUR_CSS = {
-    rouge  : '#ef4444',
-    vert   : '#22c55e',
-    bleu   : '#3b82f6',
-    jaune  : '#eab308',
-    null   : '#6b7280',
+    rouge:'#ef4444', vert:'#22c55e', bleu:'#3b82f6', jaune:'#eab308', null:'#6b7280',
 };
-
-const COULEUR_LABEL = {
-    rouge:'🔴', vert:'🟢', bleu:'🔵', jaune:'🟡',
-};
+const COULEUR_LABEL = { rouge:'🔴', vert:'🟢', bleu:'🔵', jaune:'🟡' };
+const COULEURS      = ['rouge', 'vert', 'bleu', 'jaune'];
 
 function _esc(s) {
     return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // ─────────────────────────────────────────────────────
-// RENDU CARTE
+// RENDU CARTE (classes .uno-card, plus de style inline calculé)
 // ─────────────────────────────────────────────────────
 
 function _labelValeur(v) {
@@ -71,48 +72,24 @@ function _labelValeur(v) {
     return m[v] || v;
 }
 
-function _renderCarte(carte, opts = {}) {
-    const { jouable = false, petit = false, index = -1, onClick = null } = opts;
-    const couleur = carte.couleur || 'null';
-    const bg      = COULEUR_CSS[couleur] || '#6b7280';
-    const label   = _labelValeur(carte.valeur);
-    const isJoker = !carte.couleur;
-    const w       = petit ? '44px' : '64px';
-    const h       = petit ? '64px' : '92px';
-    const fs      = petit ? '.8rem' : '1.1rem';
-
-    const div = document.createElement('div');
-    div.style.cssText = `
-        display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
-        width:${w};height:${h};border-radius:10px;font-weight:900;font-size:${fs};
-        background:${isJoker ? 'linear-gradient(135deg,#ef4444,#eab308,#22c55e,#3b82f6)' : bg};
-        border:2.5px solid ${jouable ? '#fff' : 'rgba(255,255,255,.3)'};
-        box-shadow:${jouable ? '0 0 12px rgba(255,255,255,.6)' : '0 2px 8px rgba(0,0,0,.4)'};
-        cursor:${jouable && onClick ? 'pointer' : 'default'};
-        color:white;text-shadow:1px 1px 3px rgba(0,0,0,.5);
-        transition:transform .15s,box-shadow .15s;
-        flex-shrink:0;
-        ${jouable && onClick ? 'transform:translateY(0);' : 'opacity:' + (jouable ? '1' : '.7') + ';'}
-    `;
-    div.textContent = label;
-    if (jouable && onClick) {
-        div.addEventListener('mouseenter', () => div.style.transform = 'translateY(-6px)');
-        div.addEventListener('mouseleave', () => div.style.transform = 'translateY(0)');
-        div.addEventListener('click', () => onClick(index, carte));
-    }
-    return div;
+function _classeCouleurCarte(carte) {
+    return carte.couleur ? `uno-card--${carte.couleur}` : 'uno-card--joker';
 }
 
-function _renderCarteDos(nb) {
+function _renderCarte(carte, opts = {}) {
+    const { jouable = false, taille = 'md', index = -1, onClick = null } = opts;
     const div = document.createElement('div');
-    div.style.cssText = `
-        display:inline-flex;align-items:center;justify-content:center;
-        width:44px;height:64px;border-radius:8px;font-weight:900;font-size:.75rem;
-        background:linear-gradient(135deg,#1e1b4b,#312e81);
-        border:2px solid rgba(255,255,255,.25);
-        color:rgba(255,255,255,.8);flex-shrink:0;
-    `;
-    div.textContent = nb;
+    div.className = `uno-card uno-card--${taille} ${_classeCouleurCarte(carte)} ${jouable ? 'uno-card--jouable' : ''}`.trim();
+    div.textContent = _labelValeur(carte.valeur);
+    if (jouable && onClick) {
+        div.setAttribute('role', 'button');
+        div.setAttribute('tabindex', '0');
+        div.setAttribute('aria-label', `Jouer ${_labelValeur(carte.valeur)}${carte.couleur ? ' ' + carte.couleur : ''}`);
+        div.addEventListener('click', () => onClick(index, carte));
+        div.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(index, carte); }
+        });
+    }
     return div;
 }
 
@@ -124,129 +101,70 @@ function _renderEtat() {
     const cont = $('uno-contenu');
     if (!cont || !_etat) return;
 
-    const { joueurs, tourActuel, couleurActive, valeurActive,
+    const { joueurs, tourActuel, couleurActive,
             cartesParJoueur, derniereCarteDefausse, attenteCouleur,
             accumulateur, gagnant, unoAnnonces = [] } = _etat;
     const unoSet = new Set(unoAnnonces);
 
     if (gagnant) { _renderVictoire(gagnant); return; }
 
-    // ── Header : couleur active + tour ──────────────
-    const topColor = couleurActive ? COULEUR_CSS[couleurActive] : '#6b7280';
-
     // ── Carte du dessus ──────────────────────────────
-    let carteTopHtml = '';
+    let carteTopHtml = '<span class="uno-players-label">—</span>';
     if (derniereCarteDefausse) {
-        const bg = derniereCarteDefausse.couleur
-            ? COULEUR_CSS[derniereCarteDefausse.couleur]
-            : 'linear-gradient(135deg,#ef4444,#eab308,#22c55e,#3b82f6)';
-        const labelV = _labelValeur(derniereCarteDefausse.valeur);
-        carteTopHtml = `
-            <div style="width:72px;height:104px;border-radius:12px;
-                background:${bg};border:3px solid rgba(255,255,255,.5);
-                display:flex;align-items:center;justify-content:center;
-                font-size:1.5rem;font-weight:900;color:white;
-                text-shadow:1px 1px 3px rgba(0,0,0,.5);
-                box-shadow:0 8px 24px rgba(0,0,0,.4);">
-                ${_esc(labelV)}
-            </div>`;
+        const cls = _classeCouleurCarte(derniereCarteDefausse);
+        carteTopHtml = `<div class="uno-card uno-card--lg ${cls}">${_esc(_labelValeur(derniereCarteDefausse.valeur))}</div>`;
     }
 
-    // ── Joueurs + leurs cartes ───────────────────────
-    // Règles affichage :
-    //   - badge ⚠️ UNO! si nb=1 ET joueur a annoncé UNO (présent dans unoSet)
-    //   - bouton "Contester UNO" si nb=1 ET PAS annoncé (et pas l'hôte lui-même)
+    // ── Joueurs (pastilles horizontales) ─────────────
     const joueursHtml = joueurs.map(j => {
-        const nb    = cartesParJoueur[j] || 0;
-        const estLui = j === tourActuel;
+        const nb      = cartesParJoueur[j] || 0;
+        const estLui  = j === tourActuel;
         const aDitUno = unoSet.has(j);
-        const bg    = estLui ? 'rgba(0,212,255,.15)' : 'rgba(255,255,255,.05)';
-        const bd    = estLui ? '1.5px solid rgba(0,212,255,.5)' : '1px solid rgba(255,255,255,.1)';
         const unoBadge = (nb === 1 && aDitUno)
-            ? '<span style="color:#fbbf24;font-size:.8rem;font-weight:700;">⚠️ UNO !</span>'
-            : '';
+            ? '<span class="uno-badge-uno">⚠️ UNO !</span>' : '';
         const peutContester = nb === 1 && !aDitUno && j !== _hostPseudo;
         return `
-            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;
-                border-radius:12px;background:${bg};border:${bd};margin-bottom:6px;
-                transition:all .2s;">
-                <span style="font-weight:700;font-size:.95rem;color:${estLui ? '#00d4ff' : 'white'};
-                    flex:1;">${estLui ? '▶️ ' : ''}${_esc(j)}</span>
-                <span style="font-size:.8rem;color:rgba(255,255,255,.5);">${nb} carte${nb > 1 ? 's' : ''}</span>
+            <div class="uno-player-pill ${estLui ? 'uno-player-pill--actif' : ''}">
+                <span>${estLui ? '▶️ ' : ''}${_esc(j)}</span>
+                <span class="uno-player-count">${nb} 🃏</span>
                 ${unoBadge}
-                ${peutContester ? `
-                <button data-cible="${_esc(j)}" class="uno-challenge-btn"
-                    style="padding:4px 10px;background:rgba(239,68,68,.2);
-                    border:1px solid rgba(239,68,68,.4);border-radius:8px;
-                    color:#fca5a5;font-size:.72rem;cursor:pointer;font-family:inherit;">
-                    ✖ CONTRE UNO !
-                </button>` : ''}
+                ${peutContester ? `<button data-cible="${_esc(j)}" class="uno-challenge-btn">✖ CONTRE UNO !</button>` : ''}
             </div>`;
     }).join('');
 
-    // ── Accumulation ─────────────────────────────────
     const accu = accumulateur > 0
-        ? `<div style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);
-            border-radius:10px;padding:8px 14px;text-align:center;color:#fca5a5;font-weight:700;font-size:.88rem;">
-            ⚠️ ${accumulateur} cartes à piocher pour ${_esc(tourActuel)}
-           </div>`
+        ? `<div class="uno-accu">⚠️ ${accumulateur} cartes à piocher pour ${_esc(tourActuel)}</div>`
         : '';
 
-    // ── Choix couleur (si hôte joue) ─────────────────
+    // Choix couleur inline (cas hôte joue mais main vide — édge case
+    // conservé à l'identique de la version précédente)
     const choixCouleur = (attenteCouleur && _mainHote.length === 0 && _hostPseudo)
-        ? _renderChoixCouleurInline() : '';
+        ? _renderChoixCouleurHtml() : '';
 
     cont.innerHTML = `
-        <div style="display:flex;flex-direction:column;gap:12px;padding:0 0 16px;">
-
-            <!-- Header couleur + tour -->
-            <div style="display:flex;align-items:center;justify-content:space-between;
-                padding:12px 16px;border-radius:14px;
-                background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);">
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="width:22px;height:22px;border-radius:50%;
-                        background:${topColor};border:2px solid white;
-                        box-shadow:0 0 10px ${topColor};flex-shrink:0;"></div>
-                    <span style="font-size:.85rem;font-weight:700;color:white;">
-                        Couleur active : <strong style="color:${topColor};">${_esc(couleurActive || '?')}</strong>
-                    </span>
+        <div class="uno-board">
+            <div class="uno-table-strip">
+                <div class="uno-discard">
+                    <div>
+                        <div class="uno-discard-label">Défausse</div>
+                        ${carteTopHtml}
+                    </div>
                 </div>
-                <span style="font-size:.78rem;color:rgba(255,255,255,.5);">
-                    Tour : <strong style="color:#00d4ff;">${_esc(tourActuel)}</strong>
-                </span>
+                <div class="uno-turn-info">
+                    <span class="uno-color-dot" style="background:${COULEUR_CSS[couleurActive] || COULEUR_CSS.null};"></span>
+                    Tour : <strong>${_esc(tourActuel)}</strong>
+                </div>
             </div>
 
-            <!-- Zone centrale : défausse + joueurs -->
-            <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
-
-                <!-- Défausse -->
-                <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;">
-                    <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;
-                        color:rgba(255,255,255,.45);font-weight:700;">Défausse</div>
-                    ${carteTopHtml}
-                </div>
-
-                <!-- Joueurs -->
-                <div style="flex:1;min-width:200px;">
-                    <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;
-                        color:rgba(255,255,255,.45);font-weight:700;margin-bottom:8px;">Joueurs</div>
-                    ${joueursHtml}
-                </div>
+            <div>
+                <div class="uno-players-label">Joueurs</div>
+                <div class="uno-players-strip">${joueursHtml}</div>
             </div>
 
             ${accu}
             ${choixCouleur}
-
-        </div>`;
-
-    // Brancher les boutons "Contester UNO"
-    cont.querySelectorAll('.uno-challenge-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const cible = btn.dataset.cible;
-            try { socket.send('HOST_ACTION', { action: 'uno:challenge_uno', data: { cible } }); }
-            catch(e) { console.error('[UNO] challenge_uno:', e); }
-        });
-    });
+        </div>
+        <div id="uno-main-hote"></div>`;
 
     // Main hôte si hostJoue
     if (_hostPseudo && _mainHote.length > 0) {
@@ -254,126 +172,90 @@ function _renderEtat() {
     }
 }
 
-function _renderChoixCouleurInline() {
+function _renderChoixCouleurHtml() {
     return `
-        <div id="uno-choix-couleur-inline"
-            style="background:rgba(99,102,241,.12);border:1.5px solid rgba(99,102,241,.3);
-            border-radius:14px;padding:14px 18px;text-align:center;">
-            <div style="font-size:.85rem;font-weight:700;color:white;margin-bottom:12px;">
-                🎨 Choisis la couleur active
-            </div>
-            <div style="display:flex;gap:12px;justify-content:center;">
-                ${['rouge','vert','bleu','jaune'].map(c => `
-                    <button data-couleur="${c}" class="uno-couleur-btn"
-                        style="width:48px;height:48px;border-radius:50%;
-                        background:${COULEUR_CSS[c]};border:3px solid rgba(255,255,255,.5);
-                        cursor:pointer;transition:transform .15s;font-size:1.1rem;">
-                        ${COULEUR_LABEL[c]}
-                    </button>`).join('')}
+        <div class="uno-color-inline">
+            <div class="uno-color-picker-label" style="margin-bottom:10px;">🎨 Choisis la couleur active</div>
+            <div class="uno-color-picker">
+                ${COULEURS.map(c => `
+                    <button data-couleur="${c}" class="uno-color-btn uno-color-btn--${c}"
+                        aria-label="Choisir ${c}">${COULEUR_LABEL[c]}</button>`).join('')}
             </div>
         </div>`;
 }
 
 function _renderMainHote() {
-    let wrap = $('uno-main-hote');
-    if (!wrap) {
-        wrap = document.createElement('div');
-        wrap.id = 'uno-main-hote';
-        wrap.style.cssText = `
-            margin-top:14px;padding:14px 16px;
-            background:rgba(139,92,246,.07);
-            border:1px solid rgba(139,92,246,.25);border-radius:14px;`;
-        const cont = $('uno-contenu');
-        if (cont) cont.appendChild(wrap);
-    }
+    const cont = $('uno-contenu');
+    const zone = $('uno-main-hote');
+    if (!zone || !cont) return;
 
-    wrap.innerHTML = `
-        <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;
-            color:rgba(139,92,246,.8);margin-bottom:10px;font-weight:700;">
-            🎮 Ta main (${_hostPseudo})
-        </div>`;
-
-    const cartesDiv = document.createElement('div');
-    cartesDiv.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;';
-
-    _mainHote.forEach((carte, i) => {
+    const cartesHtml = _mainHote.map((carte, i) => {
         const jouable = _jouablesIdx.includes(i);
-        const el = _renderCarte(carte, {
-            jouable, petit: false, index: i,
-            onClick: jouable ? _jouerCarteHote : null,
-        });
-        cartesDiv.appendChild(el);
+        return { carte, i, jouable };
     });
 
-    wrap.appendChild(cartesDiv);
+    zone.innerHTML = `
+        <div class="uno-hand-panel">
+            <div class="uno-hand-title">🎮 Ta main (${_esc(_hostPseudo)})</div>
+            <div class="uno-hand-scroll" id="uno-hand-scroll-hote"></div>
+            <div class="uno-hand-actions" id="uno-hand-actions-hote"></div>
+        </div>`;
 
-    // Bouton piocher
+    const scrollWrap = $('uno-hand-scroll-hote');
+    cartesHtml.forEach(({ carte, i, jouable }) => {
+        scrollWrap.appendChild(_renderCarte(carte, { jouable, taille: 'md', index: i, onClick: _jouerCarteHote }));
+    });
+
+    const actions = $('uno-hand-actions-hote');
+
     const btnPioche = document.createElement('button');
-    btnPioche.style.cssText = `
-        margin-top:10px;padding:8px 18px;background:rgba(255,255,255,.08);
-        border:1px solid rgba(255,255,255,.2);border-radius:10px;
-        color:white;font-size:.82rem;font-weight:700;cursor:pointer;font-family:inherit;`;
+    btnPioche.className = 'uno-btn';
     btnPioche.textContent = '📦 Piocher';
-    btnPioche.onclick = () => {
+    btnPioche.addEventListener('click', () => {
         try { socket.send('PLAYER_ACTION', { action: 'uno:draw', data: {} }); }
         catch(e) { console.error('[UNO] draw hôte:', e); }
-    };
-    wrap.appendChild(btnPioche);
+    });
+    actions.appendChild(btnPioche);
 
-    // Bouton UNO si 2 cartes → anticiper
     if (_mainHote.length <= 2) {
         const btnUno = document.createElement('button');
-        btnUno.style.cssText = `
-            margin-top:10px;margin-left:8px;padding:8px 18px;
-            background:rgba(239,68,68,.2);border:1.5px solid rgba(239,68,68,.4);
-            border-radius:10px;color:#fca5a5;font-size:.82rem;font-weight:700;
-            cursor:pointer;font-family:inherit;`;
+        btnUno.className = 'uno-btn uno-btn--uno';
         btnUno.textContent = '🔔 UNO !';
-        btnUno.onclick = () => {
+        btnUno.addEventListener('click', () => {
             try { socket.send('PLAYER_ACTION', { action: 'uno:say_uno', data: {} }); }
             catch(e) {}
-        };
-        wrap.appendChild(btnUno);
-    }
-
-    // Choix couleur si en attente
-    if (_attenteCouleur && _etat?.tourActuel === _hostPseudo) {
-        const coulDiv = document.createElement('div');
-        coulDiv.style.cssText = 'margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;';
-        coulDiv.innerHTML = `<span style="font-size:.82rem;color:rgba(255,255,255,.6);align-self:center;">Choisir couleur :</span>`;
-        ['rouge','vert','bleu','jaune'].forEach(c => {
-            const b = document.createElement('button');
-            b.style.cssText = `width:38px;height:38px;border-radius:50%;
-                background:${COULEUR_CSS[c]};border:3px solid rgba(255,255,255,.5);cursor:pointer;`;
-            b.title = c;
-            b.onclick = () => {
-                try { socket.send('PLAYER_ACTION', { action: 'uno:choose_color', data: { couleur: c } }); }
-                catch(e) {}
-            };
-            coulDiv.appendChild(b);
         });
-        wrap.appendChild(coulDiv);
+        actions.appendChild(btnUno);
     }
 
-    // Passer si drawPlayable non joué
+    if (_attenteCouleur && _etat?.tourActuel === _hostPseudo) {
+        const wrap = document.createElement('div');
+        wrap.className = 'uno-color-picker';
+        wrap.style.width = '100%';
+        COULEURS.forEach(c => {
+            const b = document.createElement('button');
+            b.className = `uno-color-btn uno-color-btn--${c}`;
+            b.dataset.couleur = c;
+            b.setAttribute('aria-label', `Choisir ${c}`);
+            wrap.appendChild(b);
+        });
+        actions.appendChild(wrap);
+    }
+
     if (_drawPlayable !== null) {
         const btnPass = document.createElement('button');
-        btnPass.style.cssText = `
-            margin-top:10px;margin-left:8px;padding:8px 18px;
-            background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);
-            border-radius:10px;color:rgba(255,255,255,.6);font-size:.82rem;
-            cursor:pointer;font-family:inherit;`;
+        btnPass.className = 'uno-btn';
         btnPass.textContent = '⏭️ Passer';
-        btnPass.onclick = () => {
+        btnPass.addEventListener('click', () => {
             _drawPlayable = null;
             try { socket.send('PLAYER_ACTION', { action: 'uno:pass', data: {} }); }
             catch(e) {}
-        };
-        wrap.appendChild(btnPass);
+        });
+        actions.appendChild(btnPass);
     }
 }
 
-function _jouerCarteHote(index, carte) {
+function _jouerCarteHote(index) {
     if (_attenteCouleur) return;
     try {
         socket.send('PLAYER_ACTION', { action: 'uno:play', data: { index } });
@@ -388,7 +270,6 @@ function _renderVictoire(gagnant) {
     const delta      = _etat?.delta || {};
     const classement = _etat?.classement || [];
 
-    // Classement par cartes restantes si fourni, sinon fallback sur scores
     const rangs = (classement.length)
         ? classement
         : Object.entries(scores).sort((a,b) => b[1] - a[1])
@@ -399,40 +280,25 @@ function _renderVictoire(gagnant) {
         const dPts = r.delta || 0;
         const cum  = scores[r.pseudo] ?? 0;
         return `
-            <div style="display:flex;justify-content:space-between;align-items:center;
-                padding:8px 14px;border-radius:10px;margin-bottom:5px;
-                background:${r.pseudo === gagnant ? 'rgba(251,191,36,.15)' : 'rgba(255,255,255,.05)'};
-                border:1px solid ${r.pseudo === gagnant ? 'rgba(251,191,36,.4)' : 'rgba(255,255,255,.1)'};">
+            <div class="uno-rank-row ${r.pseudo === gagnant ? 'uno-rank-row--winner' : ''}">
                 <span style="display:flex;align-items:center;gap:8px;">
                     <span>${medals[i] || (i+1)+'.'} ${_esc(r.pseudo)}</span>
-                    ${r.cartes != null ? `<span style="font-size:.72rem;color:rgba(255,255,255,.5);">${r.cartes} 🃏</span>` : ''}
+                    ${r.cartes != null ? `<span class="uno-players-label">${r.cartes} 🃏</span>` : ''}
                 </span>
                 <span style="display:flex;align-items:center;gap:8px;">
-                    <span style="font-weight:800;color:${dPts > 0 ? '#22c55e' : 'rgba(255,255,255,.4)'};">
-                        +${dPts}
-                    </span>
-                    <span style="font-size:.78rem;color:rgba(255,255,255,.5);">(${cum} cumul)</span>
+                    <span class="uno-rank-delta ${dPts > 0 ? 'uno-rank-delta--positif' : ''}">+${dPts}</span>
+                    <span class="uno-rank-cum">(${cum} cumul)</span>
                 </span>
             </div>`;
     }).join('');
 
     cont.innerHTML = `
-        <div style="text-align:center;padding:20px 0;display:flex;flex-direction:column;gap:16px;">
+        <div class="uno-victory">
             <div style="font-size:3rem;">🏆</div>
-            <h2 style="margin:0;font-size:1.3rem;color:#fbbf24;">
-                ${_esc(gagnant)} remporte la partie !
-            </h2>
-            <div style="font-size:.78rem;color:rgba(255,255,255,.45);
-                text-transform:uppercase;letter-spacing:.08em;">
-                Classement · 1ᵉʳ=3pts · 2ᵉ=2pts · 3ᵉ=1pt · suivants=0
-            </div>
-            <div style="max-width:380px;margin:0 auto;width:100%;">${lignes}</div>
-            <button id="uno-rejouer"
-                style="padding:12px 28px;background:linear-gradient(135deg,#6a5af9,#8a2be2);
-                border:none;border-radius:12px;color:white;font-size:.95rem;font-weight:700;
-                cursor:pointer;font-family:inherit;margin-top:8px;">
-                🔄 Rejouer
-            </button>
+            <h2 class="uno-victory-title">${_esc(gagnant)} remporte la partie !</h2>
+            <div class="uno-victory-sub">Classement · 1ᵉʳ=3pts · 2ᵉ=2pts · 3ᵉ=1pt · suivants=0</div>
+            <div class="uno-rank-list">${lignes}</div>
+            <button id="uno-rejouer" class="uno-btn-rejouer">🔄 Rejouer</button>
         </div>`;
 
     $('uno-rejouer')?.addEventListener('click', () => {
@@ -442,17 +308,32 @@ function _renderVictoire(gagnant) {
 }
 
 // ─────────────────────────────────────────────────────
-// CHOIX COULEUR (délégation events DOM)
+// DÉLÉGATION D'EVENTS DOM (choix couleur + contestation UNO)
+// Un seul listener global, posé une fois — survit à tous les
+// remplacements de innerHTML (pas de rebranchement par render).
 // ─────────────────────────────────────────────────────
 
-function _branchementsChoixCouleur() {
+function _installerDelegation() {
+    if (_delegationInstallee) return;
+    _delegationInstallee = true;
+
     document.addEventListener('click', e => {
-        const btn = e.target.closest('.uno-couleur-btn');
-        if (!btn) return;
-        const couleur = btn.dataset.couleur;
-        if (!couleur) return;
-        try { socket.send('PLAYER_ACTION', { action: 'uno:choose_color', data: { couleur } }); }
-        catch(err) {}
+        const btnCouleur = e.target.closest('.uno-color-btn');
+        if (btnCouleur) {
+            const couleur = btnCouleur.dataset.couleur;
+            if (!couleur) return;
+            try { socket.send('PLAYER_ACTION', { action: 'uno:choose_color', data: { couleur } }); }
+            catch(err) {}
+            return;
+        }
+
+        const btnChallenge = e.target.closest('.uno-challenge-btn');
+        if (btnChallenge) {
+            const cible = btnChallenge.dataset.cible;
+            if (!cible) return;
+            try { socket.send('HOST_ACTION', { action: 'uno:challenge_uno', data: { cible } }); }
+            catch(err) { console.error('[UNO] challenge_uno:', err); }
+        }
     });
 }
 
@@ -533,7 +414,7 @@ function _afficherToastEffect(payload) {
     const log = $('uno-log');
     if (!log) return;
     const li = document.createElement('li');
-    li.style.cssText = 'padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.8rem;';
+    li.className = 'uno-log-entry';
     li.textContent = payload.effet || (payload.joueur + ' agit');
     log.prepend(li);
     // Garder max 30 entrées
@@ -558,10 +439,8 @@ function _injecterPanneau() {
         <div id="uno-contenu" style="min-height:200px;"></div>
 
         <!-- Log des actions -->
-        <div style="margin-top:14px;background:rgba(0,0,0,.2);border-radius:12px;
-            padding:12px 14px;max-height:200px;overflow-y:auto;">
-            <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;
-                color:rgba(255,255,255,.4);margin-bottom:6px;font-weight:700;">Journal des actions</div>
+        <div class="uno-log-panel">
+            <div class="uno-log-title">Journal des actions</div>
             <ul id="uno-log" style="list-style:none;margin:0;padding:0;"></ul>
         </div>
     `;
@@ -589,7 +468,7 @@ export async function initialiserUno() {
 
     _injecterPanneau();
     _abonnerEvents();
-    _branchementsChoixCouleur();
+    _installerDelegation();
 
     // Initialiser la partie côté serveur
     try {

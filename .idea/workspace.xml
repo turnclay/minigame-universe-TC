@@ -8,7 +8,12 @@
     <option name="selectedProviderName" value="Anthropic" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="73d891ed-7cb8-4a2e-b43e-d24a9aad95e0" name="Changes" comment="" />
+    <list default="true" id="73d891ed-7cb8-4a2e-b43e-d24a9aad95e0" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/public/css/mgu-invite-pilote.css" beforeDir="false" afterPath="$PROJECT_DIR$/public/css/mgu-invite-pilote.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/css/mgu-jeux-pilote.css" beforeDir="false" afterPath="$PROJECT_DIR$/public/css/mgu-jeux-pilote.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/jeux/uno.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/jeux/uno.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/public/js/modules/uno_player.js" beforeDir="false" afterPath="$PROJECT_DIR$/public/js/modules/uno_player.js" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />

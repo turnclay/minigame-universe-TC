@@ -504,3 +504,406 @@ body.mgu-pilote .btn-valider-equipes {
 body.mgu-pilote .btn-valider-equipes:hover {
   background: var(--mgu-or-600);
 }
+
+/* ============================================================
+   10) UNO
+   Restructuration complète (contenu dynamique #uno-contenu,
+   jusqu'ici hors périmètre CSS — cf note d'en-tête). Fan de
+   cartes scrollable horizontal remplaçant le flex-wrap d'origine
+   (le vrai problème mobile : retour à la ligne qui bouffe la
+   hauteur d'écran), joueurs en pastilles horizontales au lieu
+   d'une liste verticale, choix de couleur unifié.
+   Couleurs de cartes (rouge/vert/bleu/jaune) volontairement hors
+   palette --mgu-* : identité du jeu UNO lui-même, pas un choix
+   décoratif à harmoniser.
+   ============================================================ */
+
+body.mgu-pilote .uno-board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mgu-space-3);
+}
+
+body.mgu-pilote .uno-table-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mgu-space-3);
+  padding: 10px 14px;
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  border-radius: var(--mgu-radius-l);
+  flex-wrap: wrap;
+}
+
+body.mgu-pilote .uno-discard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+body.mgu-pilote .uno-discard-label,
+body.mgu-pilote .uno-players-label,
+body.mgu-pilote .uno-hand-title {
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-weight: 700;
+  color: rgba(255, 255, 255, .45);
+}
+
+body.mgu-pilote .uno-turn-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mgu-font-body);
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--mgu-carton-50);
+}
+
+body.mgu-pilote .uno-color-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid white;
+  flex-shrink: 0;
+}
+
+body.mgu-pilote .uno-turn-info strong {
+  color: var(--mgu-or-500);
+}
+
+body.mgu-pilote .uno-players-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+  -webkit-overflow-scrolling: touch;
+}
+
+body.mgu-pilote .uno-player-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 7px 12px;
+  border-radius: var(--mgu-radius-full);
+  background: var(--mgu-feutrine-800);
+  border: 1px solid var(--mgu-feutrine-line);
+  font-family: var(--mgu-font-body);
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--mgu-carton-50);
+  white-space: nowrap;
+}
+
+body.mgu-pilote .uno-player-pill--actif {
+  background: rgba(232, 178, 59, .15);
+  border-color: var(--mgu-or-500);
+  color: var(--mgu-or-500);
+}
+
+body.mgu-pilote .uno-player-count {
+  color: rgba(255, 255, 255, .5);
+  font-weight: 600;
+}
+
+body.mgu-pilote .uno-player-pill--actif .uno-player-count {
+  color: rgba(232, 178, 59, .75);
+}
+
+body.mgu-pilote .uno-badge-uno {
+  color: var(--mgu-or-500);
+  font-weight: 800;
+  font-size: .72rem;
+  white-space: nowrap;
+}
+
+body.mgu-pilote .uno-challenge-btn,
+body.mgu-pilote .uno-contre-btn {
+  padding: 4px 9px;
+  background: rgba(214, 72, 79, .18);
+  border: 1px solid var(--mgu-pion-rouge);
+  border-radius: var(--mgu-radius-s);
+  color: #fca5a5;
+  font-size: .7rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+body.mgu-pilote .uno-challenge-btn:disabled,
+body.mgu-pilote .uno-contre-btn:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+body.mgu-pilote .uno-accu {
+  background: rgba(214, 72, 79, .15);
+  border: 1px solid var(--mgu-pion-rouge);
+  border-radius: var(--mgu-radius-m);
+  padding: 8px 14px;
+  text-align: center;
+  color: #fca5a5;
+  font-weight: 700;
+  font-size: .85rem;
+}
+
+body.mgu-pilote .uno-card {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--mgu-radius-m);
+  font-weight: 900;
+  color: white;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, .5);
+  border: 2.5px solid rgba(255, 255, 255, .3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .4);
+  transition: transform .15s, box-shadow .15s, opacity .15s;
+  flex-shrink: 0;
+  cursor: default;
+  opacity: .7;
+}
+
+body.mgu-pilote .uno-card--jouable {
+  opacity: 1;
+  cursor: pointer;
+  border-color: #fff;
+  box-shadow: 0 0 12px rgba(255, 255, 255, .6);
+}
+
+body.mgu-pilote .uno-card--jouable:hover {
+  transform: translateY(-10px);
+}
+
+body.mgu-pilote .uno-card--rouge { background: #ef4444; }
+body.mgu-pilote .uno-card--vert  { background: #22c55e; }
+body.mgu-pilote .uno-card--bleu  { background: #3b82f6; }
+body.mgu-pilote .uno-card--jaune { background: #eab308; }
+body.mgu-pilote .uno-card--joker {
+  background: linear-gradient(135deg, #ef4444, #eab308, #22c55e, #3b82f6);
+}
+
+body.mgu-pilote .uno-card--sm { width: 44px; height: 64px; font-size: .8rem; }
+body.mgu-pilote .uno-card--md { width: 56px; height: 80px; font-size: 1rem; }
+body.mgu-pilote .uno-card--lg { width: 72px; height: 104px; font-size: 1.5rem; }
+
+body.mgu-pilote .uno-hand-panel {
+  background: rgba(139, 92, 246, .07);
+  border: 1px solid rgba(139, 92, 246, .25);
+  border-radius: var(--mgu-radius-l);
+  padding: 12px 0 14px;
+}
+
+body.mgu-pilote .uno-hand-title {
+  padding: 0 14px;
+  margin-bottom: 8px;
+  color: rgba(196, 181, 253, .8);
+}
+
+body.mgu-pilote .uno-hand-scroll {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: 8px 20px 18px 14px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+body.mgu-pilote .uno-hand-scroll .uno-card {
+  margin-left: -14px;
+  scroll-snap-align: center;
+}
+
+body.mgu-pilote .uno-hand-scroll .uno-card:first-child {
+  margin-left: 0;
+}
+
+body.mgu-pilote .uno-hand-scroll .uno-card--jouable:hover {
+  transform: translateY(-14px);
+  z-index: 2;
+}
+
+body.mgu-pilote .uno-hand-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 14px;
+}
+
+body.mgu-pilote .uno-btn {
+  min-height: 40px;
+  padding: 9px 16px;
+  border-radius: var(--mgu-radius-m);
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid var(--mgu-feutrine-line);
+  background: var(--mgu-feutrine-700);
+  color: var(--mgu-carton-50);
+}
+
+body.mgu-pilote .uno-btn:hover:not(:disabled) {
+  background: var(--mgu-feutrine-600);
+}
+
+body.mgu-pilote .uno-btn--uno {
+  background: rgba(214, 72, 79, .2);
+  border-color: var(--mgu-pion-rouge);
+  color: #fca5a5;
+}
+
+body.mgu-pilote .uno-btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+body.mgu-pilote .uno-color-picker {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 12px;
+}
+
+body.mgu-pilote .uno-color-picker-label {
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--mgu-carton-50);
+  align-self: center;
+}
+
+body.mgu-pilote .uno-color-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, .5);
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: transform .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.mgu-pilote .uno-color-btn:hover {
+  transform: scale(1.12);
+}
+
+body.mgu-pilote .uno-color-btn--rouge { background: #ef4444; }
+body.mgu-pilote .uno-color-btn--vert  { background: #22c55e; }
+body.mgu-pilote .uno-color-btn--bleu  { background: #3b82f6; }
+body.mgu-pilote .uno-color-btn--jaune { background: #eab308; }
+
+body.mgu-pilote .uno-color-inline {
+  background: rgba(99, 102, 241, .12);
+  border: 1.5px solid rgba(99, 102, 241, .3);
+  border-radius: var(--mgu-radius-l);
+  text-align: center;
+}
+
+body.mgu-pilote .uno-log-panel {
+  margin-top: 14px;
+  background: rgba(0, 0, 0, .2);
+  border-radius: var(--mgu-radius-m);
+  padding: 12px 14px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+body.mgu-pilote .uno-log-title {
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: rgba(255, 255, 255, .4);
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+body.mgu-pilote .uno-log-entry {
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, .06);
+  font-size: .78rem;
+  color: rgba(255, 255, 255, .7);
+}
+
+body.mgu-pilote .uno-victory {
+  text-align: center;
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+body.mgu-pilote .uno-victory-title {
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--mgu-or-500);
+  font-family: var(--mgu-font-display);
+}
+
+body.mgu-pilote .uno-victory-sub {
+  font-size: .78rem;
+  color: rgba(255, 255, 255, .45);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+body.mgu-pilote .uno-rank-list {
+  max-width: 380px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+body.mgu-pilote .uno-rank-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: var(--mgu-radius-m);
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+}
+
+body.mgu-pilote .uno-rank-row--winner {
+  background: rgba(232, 178, 59, .15);
+  border-color: var(--mgu-or-500);
+}
+
+body.mgu-pilote .uno-rank-delta {
+  font-weight: 800;
+  color: rgba(255, 255, 255, .4);
+}
+
+body.mgu-pilote .uno-rank-delta--positif {
+  color: var(--mgu-pion-prairie);
+}
+
+body.mgu-pilote .uno-rank-cum {
+  font-size: .78rem;
+  color: rgba(255, 255, 255, .5);
+}
+
+body.mgu-pilote .uno-btn-rejouer {
+  background: var(--mgu-or-500);
+  color: var(--mgu-or-900);
+  font-family: var(--mgu-font-display);
+  border: none;
+  border-radius: var(--mgu-radius-m);
+  padding: 12px 28px;
+  font-size: .95rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+body.mgu-pilote .uno-btn-rejouer:hover {
+  background: var(--mgu-or-600);
+}

@@ -1,7 +1,7 @@
 ﻿PROJECT-STATE.md (auto-genere par update-agent-state.ps1 - ne pas editer a la main)
 
-Derniere generation : 2026-08-24 19:15
-Commit               : 82fbfe96cb6cda2c6dd9b6f67bea3724ec971825
+Derniere generation : 2026-08-30 20:57
+Commit               : f964294365fe916386eb40326eb6c4662bdfa4d9
 Message              : Auto update MiniGameV2
 
 JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)
@@ -22,8 +22,7 @@ FICHIERS MODIFIES DEPUIS LE PUSH PRECEDENT
 - [Modifie] .idea/workspace.xml
 - [Modifie] .render-restart
 - [Modifie] PROJECT-STATE.md
-- [Modifie] public/js/modules/justeprix_player.js
-- [Modifie] public/js/modules/pendu_hote.js
+- [Modifie] public/js/jeux/pendu.js
 
 REFERENCES (ne pas dupliquer leur contenu ici)
 - Dette technique    : DETTE-TECHNIQUE.md

@@ -1,8 +1,14 @@
 // ============================================================
-// /js/modules/uno_player.js — v1.0
+// /js/modules/uno_player.js — v2.0 — refonte présentation mobile
 // ============================================================
 // Module invité UNO. Auto-enregistré dans JeuRegistry de player.js.
 // Interface : initPlayer / destroy / onWsEvent / onScores
+//
+// v2.0 : rendu par classes CSS (.uno-*, cf mgu-invite-pilote.css)
+// au lieu de style.cssText inline. Main en fan scrollable
+// horizontal (remplace le flex-wrap — le vrai problème mobile :
+// retour à la ligne qui bouffe la hauteur d'écran). Aucun
+// changement de logique, de payload WS ou de contrat d'events.
 //
 // Events WS reçus (via onWsEvent) :
 //   UNO_STATE         — état complet public
@@ -29,13 +35,18 @@ const esc = s => String(s ?? '')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 const COULEUR_CSS = {
-    rouge:'#ef4444', vert:'#22c55e', bleu:'#3b82f6', jaune:'#eab308',
+    rouge:'#ef4444', vert:'#22c55e', bleu:'#3b82f6', jaune:'#eab308', null:'#6b7280',
 };
 const COULEUR_LABEL = { rouge:'🔴', vert:'🟢', bleu:'🔵', jaune:'🟡' };
+const COULEURS       = ['rouge', 'vert', 'bleu', 'jaune'];
 
 function _labelValeur(v) {
     const m = { '+2':'+2','plus4':'+4','passe':'🚫','inversion':'↩️','joker':'🎨' };
     return m[v] || v;
+}
+
+function _classeCouleurCarte(carte) {
+    return carte.couleur ? `uno-card--${carte.couleur}` : 'uno-card--joker';
 }
 
 const UnoPlayerModule = {
@@ -49,6 +60,7 @@ const UnoPlayerModule = {
     _scores        : {},
     _unoSaidByMe   : false,  // protège contre double clic 🔔 UNO!
     _challengesSent: new Set(), // pseudos déjà contestés (pour griser bouton)
+    _delegationInstallee: false,
 
     // ─────────────────────────────────────────────────
     // INIT
@@ -64,6 +76,7 @@ const UnoPlayerModule = {
         this._unoSaidByMe    = false;
         this._challengesSent = new Set();
 
+        this._installerDelegation();
         this._afficherAttente();
 
         if (gameState) {
@@ -224,6 +237,35 @@ const UnoPlayerModule = {
         } catch(e) {}
     },
 
+    // Envoyer la contestation au serveur (PLAYER_ACTION).
+    _contesterUno(cible) {
+        if (this._challengesSent.has(cible)) return;
+        this._challengesSent.add(cible);
+        try {
+            this._socket.send('PLAYER_ACTION', {
+                action: 'uno:challenge_uno', data: { cible },
+            });
+        } catch(e) { console.error('[UNO_PLAYER] challenge_uno:', e); }
+    },
+
+    // ─────────────────────────────────────────────────
+    // DÉLÉGATION D'EVENTS DOM (contestation UNO)
+    // Un seul listener global posé une fois — survit à tous les
+    // remplacements de innerHTML (pas de rebranchement par render).
+    // ─────────────────────────────────────────────────
+    _installerDelegation() {
+        if (this._delegationInstallee) return;
+        this._delegationInstallee = true;
+        document.addEventListener('click', e => {
+            const btn = e.target.closest('.uno-contre-btn');
+            if (!btn || btn.disabled) return;
+            const cible = btn.dataset.cible;
+            if (!cible) return;
+            this._contesterUno(cible);
+            btn.disabled = true;
+        });
+    },
+
     // ─────────────────────────────────────────────────
     // UI
     // ─────────────────────────────────────────────────
@@ -250,62 +292,38 @@ const UnoPlayerModule = {
 
         const moi        = this._session?.pseudo;
         const monTour    = tourActuel === moi;
-        const topColor   = couleurActive ? COULEUR_CSS[couleurActive] : '#6b7280';
         const accu       = accumulateur > 0
-            ? `<div style="background:rgba(214,72,79,.12);border:1px solid rgba(214,72,79,.3);
-                border-radius:8px;padding:8px 12px;font-size:.8rem;font-weight:700;color:#8a2f33;">
-                ⚠️ ${accumulateur} cartes à piocher
-               </div>` : '';
+            ? `<div class="uno-accu">⚠️ ${accumulateur} cartes à piocher</div>` : '';
 
-        // Carte du dessus
         let carteTopHtml = '—';
         if (derniereCarteDefausse) {
-            const bg = derniereCarteDefausse.couleur
-                ? COULEUR_CSS[derniereCarteDefausse.couleur]
-                : 'linear-gradient(135deg,#ef4444,#eab308,#22c55e,#3b82f6)';
-            carteTopHtml = `<div style="width:60px;height:88px;border-radius:10px;
-                background:${bg};border:2.5px solid var(--mgu-carton-line);
-                display:inline-flex;align-items:center;justify-content:center;
-                font-size:1.3rem;font-weight:900;color:var(--mgu-encre-900);
-                text-shadow:1px 1px 3px rgba(0,0,0,.5);">
-                ${esc(_labelValeur(derniereCarteDefausse.valeur))}
-            </div>`;
+            const cls = _classeCouleurCarte(derniereCarteDefausse);
+            carteTopHtml = `<div class="uno-card uno-card--lg ${cls}">${esc(_labelValeur(derniereCarteDefausse.valeur))}</div>`;
         }
 
         // Section Joueurs — équivalent fonctionnel de la vue hôte.
         // unoAnnonces vient du serveur : tableau des pseudos ayant dit UNO.
         const unoAnnonces = new Set(this._etat.unoAnnonces || []);
-        const autresHtml = this._renderPlayers(
+        const joueursHtml = this._renderPlayers(
             cartesParJoueur || {}, tourActuel, moi, unoAnnonces
         );
 
         cont.innerHTML = `
-            <div style="display:flex;flex-direction:column;gap:10px;padding:0 0 12px;">
-
-                <!-- Tour + couleur -->
-                <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;
-                    border-radius:12px;
-                    background:${monTour ? 'rgba(232,178,59,.1)' : 'rgba(255,255,255,.05)'};
-                    border:1px solid ${monTour ? 'rgba(232,178,59,.35)' : 'rgba(255,255,255,.1)'};">
-                    <div style="width:18px;height:18px;border-radius:50%;
-                        background:${topColor};border:2px solid white;flex-shrink:0;"></div>
-                    <span style="font-size:.85rem;font-weight:700;color:var(--mgu-encre-900);flex:1;">
-                        ${monTour ? '⭐ C\'est ton tour !' : `Tour : <strong>${esc(tourActuel)}</strong>`}
-                    </span>
-                </div>
-
-                <!-- Défausse + Joueurs -->
-                <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;">
-                    <div style="flex-shrink:0;">
-                        <div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;
-                            color:var(--mgu-encre-600);margin-bottom:6px;font-weight:700;">Défausse</div>
+            <div class="uno-board">
+                <div class="uno-table-strip">
+                    <div>
+                        <div class="uno-discard-label">Défausse</div>
                         ${carteTopHtml}
                     </div>
-                    <div style="flex:1;min-width:160px;">
-                        <div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;
-                            color:var(--mgu-encre-600);margin-bottom:6px;font-weight:700;">Joueurs</div>
-                        ${autresHtml}
+                    <div class="uno-turn-info">
+                        <span class="uno-color-dot" style="background:${COULEUR_CSS[couleurActive] || COULEUR_CSS.null};"></span>
+                        ${monTour ? '⭐ C\'est ton tour !' : `Tour : <strong>${esc(tourActuel)}</strong>`}
                     </div>
+                </div>
+
+                <div>
+                    <div class="uno-players-label">Joueurs</div>
+                    <div class="uno-players-strip">${joueursHtml}</div>
                 </div>
 
                 ${accu}
@@ -314,32 +332,18 @@ const UnoPlayerModule = {
                 <div id="uno-player-main-wrap"></div>
 
                 <!-- Log -->
-                <div style="background:rgba(0,0,0,.15);border-radius:10px;
-                    padding:8px 12px;max-height:120px;overflow-y:auto;margin-top:4px;">
+                <div class="uno-log-panel">
                     <ul id="uno-player-log" style="list-style:none;margin:0;padding:0;"></ul>
                 </div>
             </div>`;
-
-        // Brancher les boutons ✖ CONTRE UNO! générés par _renderPlayers
-        cont.querySelectorAll('.uno-contre-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const cible = btn.dataset.cible;
-                if (!cible) return;
-                this._contesterUno(cible);
-                btn.disabled = true;
-                btn.style.opacity = '.4';
-                btn.style.cursor  = 'not-allowed';
-            });
-        });
 
         this._afficherMain();
     },
 
     // ─────────────────────────────────────────────────
-    // Section Joueurs (équivalent vue hôte) — UNO badge
-    // + bouton ✖ CONTRE UNO! quand cible a 1 carte sans
-    // avoir annoncé. Auto-contestation interdite (bouton
-    // absent sur soi-même).
+    // Section Joueurs (pastilles horizontales, équivalent vue hôte)
+    // + bouton ✖ CONTRE UNO! quand cible a 1 carte sans avoir
+    // annoncé. Auto-contestation interdite (bouton absent sur soi).
     // ─────────────────────────────────────────────────
     _renderPlayers(cartesParJoueur, tourActuel, moi, unoAnnonces) {
         return Object.entries(cartesParJoueur).map(([j, nb]) => {
@@ -350,188 +354,39 @@ const UnoPlayerModule = {
             const peutContester = nb === 1 && !aDitUno && !estMoi;
 
             const badge = (nb === 1 && aDitUno)
-                ? `<span class="uno-badge" style="display:inline-flex;align-items:center;gap:4px;
-                    padding:3px 8px;border-radius:8px;background:rgba(232,178,59,.18);
-                    border:1px solid rgba(232,178,59,.45);color:var(--mgu-or-600);font-size:.7rem;
-                    font-weight:800;white-space:nowrap;">⚠️ UNO !</span>`
-                : '';
+                ? `<span class="uno-badge-uno">⚠️ UNO !</span>` : '';
 
             const btnContre = peutContester
-                ? `<button class="uno-contre-btn" data-cible="${esc(j)}"
-                    ${dejaConteste ? 'disabled' : ''}
-                    style="padding:4px 9px;background:rgba(214,72,79,.2);
-                    border:1px solid rgba(214,72,79,.45);border-radius:8px;
-                    color:#8a2f33;font-size:.7rem;font-weight:700;cursor:${dejaConteste ? 'not-allowed' : 'pointer'};
-                    opacity:${dejaConteste ? '.4' : '1'};font-family:inherit;white-space:nowrap;">
-                    ✖ CONTRE UNO !
-                </button>`
-                : '';
+                ? `<button class="uno-contre-btn" data-cible="${esc(j)}" ${dejaConteste ? 'disabled' : ''}>
+                    ✖ CONTRE UNO !</button>` : '';
 
-            return `<div style="display:flex;align-items:center;gap:8px;padding:7px 12px;
-                border-radius:10px;font-size:.82rem;font-weight:600;margin-bottom:5px;
-                background:${estLui ? 'rgba(232,178,59,.1)' : 'rgba(255,255,255,.04)'};
-                border:1px solid ${estLui ? 'rgba(232,178,59,.35)' : 'rgba(255,255,255,.07)'};">
-                <span style="flex:1;color:${estLui ? 'var(--mgu-or-600)' : 'white'};
-                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                    ${estLui ? '▶️ ' : ''}${esc(j)}${estMoi ? ' <em style="opacity:.55;font-style:normal;">(toi)</em>' : ''}
-                </span>
-                <span style="color:var(--mgu-encre-600);font-size:.78rem;white-space:nowrap;">${nb} 🃏</span>
+            return `<div class="uno-player-pill ${estLui ? 'uno-player-pill--actif' : ''}">
+                <span>${estLui ? '▶️ ' : ''}${esc(j)}${estMoi ? ' <em style="opacity:.6;font-style:normal;">(toi)</em>' : ''}</span>
+                <span class="uno-player-count">${nb} 🃏</span>
                 ${badge}
                 ${btnContre}
             </div>`;
         }).join('');
     },
 
-    // Envoyer la contestation au serveur (PLAYER_ACTION).
-    _contesterUno(cible) {
-        if (this._challengesSent.has(cible)) return;
-        this._challengesSent.add(cible);
-        try {
-            this._socket.send('PLAYER_ACTION', {
-                action: 'uno:challenge_uno', data: { cible },
-            });
-        } catch(e) { console.error('[UNO_PLAYER] challenge_uno:', e); }
-    },
-
-    _afficherMain() {
-        const wrap = $('uno-player-main-wrap');
-        if (!wrap) return;
-
-        const moi     = this._session?.pseudo;
-        const monTour = this._etat?.tourActuel === moi;
-        wrap.innerHTML = '';
-
-        if (!this._main.length) {
-            wrap.innerHTML = '<p style="font-size:.8rem;color:var(--mgu-encre-600);text-align:center;">Aucune carte</p>';
-            return;
-        }
-
-        const titre = document.createElement('div');
-        titre.style.cssText = 'font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--mgu-encre-600);margin-bottom:8px;font-weight:700;';
-        titre.textContent = `Ta main (${this._main.length} carte${this._main.length > 1 ? 's' : ''})`;
-        wrap.appendChild(titre);
-
-        const cartesDiv = document.createElement('div');
-        cartesDiv.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;';
-
-        this._main.forEach((carte, i) => {
-            const jouable = monTour && !this._attenteCouleur && this._jouablesIdx.includes(i);
-            const bg = carte.couleur
-                ? COULEUR_CSS[carte.couleur]
-                : 'linear-gradient(135deg,#ef4444,#eab308,#22c55e,#3b82f6)';
-            const label = _labelValeur(carte.valeur);
-
-            const div = document.createElement('div');
-            div.style.cssText = `
-                display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
-                width:56px;height:80px;border-radius:10px;font-weight:900;font-size:1rem;
-                background:${bg};
-                border:2.5px solid ${jouable ? '#fff' : 'rgba(255,255,255,.2)'};
-                box-shadow:${jouable ? '0 0 14px rgba(255,255,255,.5)' : '0 2px 8px rgba(0,0,0,.4)'};
-                cursor:${jouable ? 'pointer' : 'default'};
-                color:var(--mgu-encre-900);text-shadow:1px 1px 3px rgba(0,0,0,.5);
-                opacity:${jouable ? '1' : '.6'};
-                transition:transform .15s;flex-shrink:0;`;
-            div.textContent = label;
-            if (jouable) {
-                div.addEventListener('mouseenter', () => div.style.transform = 'translateY(-8px)');
-                div.addEventListener('mouseleave', () => div.style.transform = 'translateY(0)');
-                div.addEventListener('click', () => this._jouerCarte(i));
-            }
-            cartesDiv.appendChild(div);
-        });
-
-        wrap.appendChild(cartesDiv);
-
-        // Boutons d'action
-        const actionsDiv = document.createElement('div');
-        actionsDiv.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;';
-
-        if (monTour && !this._attenteCouleur && !this._drawPlayable) {
-            const btnPioche = document.createElement('button');
-            btnPioche.style.cssText = `padding:9px 16px;background:var(--mgu-carton-50);
-                border:1px solid var(--mgu-carton-line);border-radius:10px;color:var(--mgu-encre-900);
-                font-size:.82rem;font-weight:700;cursor:pointer;font-family:inherit;`;
-            btnPioche.textContent = '📦 Piocher';
-            btnPioche.addEventListener('click', () => this._piocher());
-            actionsDiv.appendChild(btnPioche);
-        }
-
-        if (this._drawPlayable !== null) {
-            const btnPass = document.createElement('button');
-            btnPass.style.cssText = `padding:9px 16px;background:var(--mgu-carton-50);
-                border:1px solid var(--mgu-carton-line);border-radius:10px;
-                color:var(--mgu-encre-600);font-size:.82rem;cursor:pointer;font-family:inherit;`;
-            btnPass.textContent = '⏭️ Passer';
-            btnPass.addEventListener('click', () => this._passer());
-            actionsDiv.appendChild(btnPass);
-        }
-
-        // Bouton 🔔 UNO! — visible UNIQUEMENT à exactement 1 carte (règle UNO).
-        // Désactivé après clic (ou si déjà annoncé selon unoAnnonces serveur).
-        if (this._main.length === 1) {
-            const moi = this._session?.pseudo;
-            const dejaAnnonce = this._unoSaidByMe
-                || (this._etat?.unoAnnonces || []).includes(moi);
-            const btnUno = document.createElement('button');
-            btnUno.style.cssText = `padding:9px 16px;background:rgba(214,72,79,.2);
-                border:1.5px solid rgba(214,72,79,.4);border-radius:10px;color:#8a2f33;
-                font-size:.82rem;font-weight:700;cursor:${dejaAnnonce ? 'not-allowed' : 'pointer'};
-                font-family:inherit;opacity:${dejaAnnonce ? '.45' : '1'};`;
-            btnUno.textContent = dejaAnnonce ? '🔔 UNO annoncé' : '🔔 UNO !';
-            btnUno.disabled = dejaAnnonce;
-            if (!dejaAnnonce) {
-                btnUno.addEventListener('click', () => {
-                    this._unoSaidByMe = true;
-                    btnUno.disabled = true;
-                    btnUno.style.opacity = '.45';
-                    btnUno.style.cursor  = 'not-allowed';
-                    btnUno.textContent = '🔔 UNO annoncé';
-                    this._direUno();
-                });
-            }
-            actionsDiv.appendChild(btnUno);
-        }
-
-        if (actionsDiv.children.length) wrap.appendChild(actionsDiv);
-    },
-
     _afficherChoixCouleur() {
-        const cont = $('jeu-contenu');
-        if (!cont) return;
-
-        // Injecter au-dessus de la main
         const existing = $('uno-choix-couleur');
         if (existing) existing.remove();
 
         const div = document.createElement('div');
         div.id = 'uno-choix-couleur';
-        div.style.cssText = `
-            position:fixed;inset:0;z-index:800;
-            display:flex;align-items:center;justify-content:center;
-            background:rgba(0,0,0,.75);backdrop-filter:blur(8px);`;
+        div.className = 'uno-modal-overlay';
         div.innerHTML = `
-            <div style="background:rgba(15,10,35,.97);border:1px solid var(--mgu-carton-line);
-                border-radius:20px;padding:30px 32px;text-align:center;
-                box-shadow:0 20px 60px rgba(0,0,0,.5);">
-                <div style="font-size:1.1rem;font-weight:800;margin-bottom:20px;color:var(--mgu-encre-900);">
-                    🎨 Choisis la couleur active
-                </div>
-                <div style="display:flex;gap:16px;justify-content:center;">
-                    ${['rouge','vert','bleu','jaune'].map(c => `
-                        <button data-couleur="${c}"
-                            style="width:56px;height:56px;border-radius:50%;
-                            background:${COULEUR_CSS[c]};border:3px solid var(--mgu-carton-line);
-                            cursor:pointer;font-size:1.3rem;transition:transform .15s;
-                            display:flex;align-items:center;justify-content:center;">
-                            ${COULEUR_LABEL[c]}
-                        </button>`).join('')}
+            <div class="uno-modal-card">
+                <div class="uno-modal-title">🎨 Choisis la couleur active</div>
+                <div class="uno-color-picker">
+                    ${COULEURS.map(c => `
+                        <button data-couleur="${c}" class="uno-color-btn uno-color-btn--${c}"
+                            aria-label="Choisir ${c}">${COULEUR_LABEL[c]}</button>`).join('')}
                 </div>
             </div>`;
 
         div.querySelectorAll('button[data-couleur]').forEach(btn => {
-            btn.addEventListener('mouseenter', () => btn.style.transform = 'scale(1.15)');
-            btn.addEventListener('mouseleave', () => btn.style.transform = 'scale(1)');
             btn.addEventListener('click', () => {
                 this._choisirCouleur(btn.dataset.couleur);
                 div.remove();
@@ -555,46 +410,108 @@ const UnoPlayerModule = {
                 .map(([pseudo]) => ({ pseudo, cartes: null, delta: delta?.[pseudo] || 0 }));
 
         cont.innerHTML = `
-            <div style="display:flex;flex-direction:column;align-items:center;
-                justify-content:center;min-height:55vh;text-align:center;
-                padding:2rem;gap:1.5rem;">
+            <div class="uno-victory">
                 <span style="font-size:3rem;">${gagnant === moi ? '🏆' : '🃏'}</span>
                 <h2 style="margin:0;">
                     ${gagnant === moi ? 'Tu as gagné ! 🎉' : `${esc(gagnant)} remporte la partie !`}
                 </h2>
-                <div style="font-size:.78rem;color:var(--mgu-encre-600);
-                    text-transform:uppercase;letter-spacing:.08em;">
-                    Classement de la partie · 1ᵉʳ=3pts · 2ᵉ=2pts · 3ᵉ=1pt
-                </div>
-                <div style="display:flex;flex-direction:column;gap:.5rem;width:100%;max-width:340px;">
+                <div class="uno-victory-sub">Classement de la partie · 1ᵉʳ=3pts · 2ᵉ=2pts · 3ᵉ=1pt</div>
+                <div class="uno-rank-list">
                     ${rangs.map((r, i) => {
                         const dPts = r.delta || 0;
                         const cum  = scores?.[r.pseudo] ?? 0;
                         return `
-                        <div style="display:flex;justify-content:space-between;align-items:center;
-                            padding:.7rem 1rem;border-radius:10px;
-                            background:${r.pseudo === moi ? 'rgba(232,178,59,.12)' : 'rgba(255,255,255,.04)'};
-                            ${r.pseudo === moi ? 'outline:2px solid rgba(232,178,59,.4);' : ''}">
+                        <div class="uno-rank-row ${r.pseudo === moi ? 'uno-rank-row--moi' : ''}">
                             <span style="display:flex;align-items:center;gap:8px;">
                                 <span>${medals[i] || (i+1)+'.'} ${esc(r.pseudo)}</span>
                                 ${r.pseudo === moi ? '<em style="font-size:.78rem;opacity:.6;font-style:normal;">(toi)</em>' : ''}
-                                ${r.cartes != null ? `<span style="font-size:.72rem;color:var(--mgu-encre-600);">${r.cartes} 🃏</span>` : ''}
+                                ${r.cartes != null ? `<span class="uno-players-label">${r.cartes} 🃏</span>` : ''}
                             </span>
                             <span style="display:flex;align-items:center;gap:8px;">
-                                <span style="font-weight:800;color:${dPts > 0 ? '#22c55e' : 'rgba(255,255,255,.4)'};">
-                                    +${dPts}
-                                </span>
-                                <span style="font-size:.78rem;color:var(--mgu-encre-600);">(${cum} cumul)</span>
+                                <span class="uno-rank-delta ${dPts > 0 ? 'uno-rank-delta--positif' : ''}">+${dPts}</span>
+                                <span class="uno-rank-cum">(${cum} cumul)</span>
                             </span>
                         </div>`;
                     }).join('')}
                 </div>
-                <a href="/" style="display:inline-block;padding:.75rem 2rem;
-                    background:linear-gradient(135deg,var(--mgu-or-600),var(--mgu-or-500));
-                    border-radius:10px;color:var(--mgu-encre-900);text-decoration:none;font-weight:700;margin-top:.5rem;">
-                    🏠 Retour à l'accueil
-                </a>
+                <a href="/" class="uno-btn-accueil">🏠 Retour à l'accueil</a>
             </div>`;
+    },
+
+    _afficherMain() {
+        const wrap = $('uno-player-main-wrap');
+        if (!wrap) return;
+
+        const moi     = this._session?.pseudo;
+        const monTour = this._etat?.tourActuel === moi;
+
+        if (!this._main.length) {
+            wrap.innerHTML = '<p style="font-size:.8rem;color:var(--mgu-encre-600);text-align:center;">Aucune carte</p>';
+            return;
+        }
+
+        wrap.innerHTML = `
+            <div class="uno-hand-title">Ta main (${this._main.length} carte${this._main.length > 1 ? 's' : ''})</div>
+            <div class="uno-hand-scroll" id="uno-player-hand-scroll"></div>
+            <div class="uno-hand-actions" id="uno-player-hand-actions"></div>`;
+
+        const scrollWrap = $('uno-player-hand-scroll');
+        this._main.forEach((carte, i) => {
+            const jouable = monTour && !this._attenteCouleur && this._jouablesIdx.includes(i);
+            const div = document.createElement('div');
+            div.className = `uno-card uno-card--md ${_classeCouleurCarte(carte)} ${jouable ? 'uno-card--jouable' : ''}`.trim();
+            div.textContent = _labelValeur(carte.valeur);
+            if (jouable) {
+                div.setAttribute('role', 'button');
+                div.setAttribute('tabindex', '0');
+                div.setAttribute('aria-label', `Jouer ${_labelValeur(carte.valeur)}${carte.couleur ? ' ' + carte.couleur : ''}`);
+                div.addEventListener('click', () => this._jouerCarte(i));
+                div.addEventListener('keydown', e => {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._jouerCarte(i); }
+                });
+            }
+            scrollWrap.appendChild(div);
+        });
+
+        // Boutons d'action
+        const actionsDiv = $('uno-player-hand-actions');
+
+        if (monTour && !this._attenteCouleur && !this._drawPlayable) {
+            const btnPioche = document.createElement('button');
+            btnPioche.className = 'uno-btn';
+            btnPioche.textContent = '📦 Piocher';
+            btnPioche.addEventListener('click', () => this._piocher());
+            actionsDiv.appendChild(btnPioche);
+        }
+
+        if (this._drawPlayable !== null) {
+            const btnPass = document.createElement('button');
+            btnPass.className = 'uno-btn';
+            btnPass.textContent = '⏭️ Passer';
+            btnPass.addEventListener('click', () => this._passer());
+            actionsDiv.appendChild(btnPass);
+        }
+
+        // Bouton 🔔 UNO! — visible UNIQUEMENT à exactement 1 carte (règle UNO).
+        // Désactivé après clic (ou si déjà annoncé selon unoAnnonces serveur).
+        if (this._main.length === 1) {
+            const moiPseudo = this._session?.pseudo;
+            const dejaAnnonce = this._unoSaidByMe
+                || (this._etat?.unoAnnonces || []).includes(moiPseudo);
+            const btnUno = document.createElement('button');
+            btnUno.className = 'uno-btn uno-btn--uno';
+            btnUno.textContent = dejaAnnonce ? '🔔 UNO annoncé' : '🔔 UNO !';
+            btnUno.disabled = dejaAnnonce;
+            if (!dejaAnnonce) {
+                btnUno.addEventListener('click', () => {
+                    this._unoSaidByMe = true;
+                    btnUno.disabled = true;
+                    btnUno.textContent = '🔔 UNO annoncé';
+                    this._direUno();
+                });
+            }
+            actionsDiv.appendChild(btnUno);
+        }
     },
 
     // ─────────────────────────────────────────────────
@@ -604,7 +521,7 @@ const UnoPlayerModule = {
         const log = $('uno-player-log');
         if (!log) return;
         const li = document.createElement('li');
-        li.style.cssText = 'padding:3px 0;border-bottom:1px solid var(--mgu-carton-line);font-size:.75rem;color:var(--mgu-encre-600);';
+        li.className = 'uno-log-entry';
         li.textContent = payload.effet || '';
         log.prepend(li);
         while (log.children.length > 20) log.removeChild(log.lastChild);
@@ -621,9 +538,9 @@ const UnoPlayerModule = {
         }
         const el = document.createElement('div');
         el.style.cssText = `display:flex;gap:.5rem;align-items:flex-start;padding:.65rem .9rem;
-            border-radius:8px;background:#1e1e2e;color:var(--mgu-encre-900);
+            border-radius:8px;background:#1e1e2e;color:#ffffff;
             border-left:3px solid ${C[type] || C.info};box-shadow:0 4px 16px rgba(0,0,0,.5);
-            font-size:.88rem;`;
+            font-size:.88rem;pointer-events:auto;`;
         el.innerHTML = `<span>${I[type] || 'ℹ️'}</span><span>${esc(msg)}</span>`;
         c.appendChild(el);
         setTimeout(() => el.remove(), 3500);

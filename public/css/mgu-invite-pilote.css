@@ -588,6 +588,368 @@ body {
   background: var(--mgu-feutrine-900);
 }
 
+/* ---------- UNO ---------- */
+/* Restructuration complète (jusqu'ici non couvert — cf note d'en-tête).
+   Même logique que côté hôte : fan de cartes scrollable au lieu du
+   flex-wrap, joueurs en pastilles horizontales. Couleurs de cartes
+   hors palette --mgu-* : identité du jeu, pas un choix décoratif. */
+
+.uno-board {
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
+}
+
+.uno-table-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--mgu-carton-50);
+  border: 1px solid var(--mgu-carton-line);
+  border-radius: var(--mgu-radius-l);
+  flex-wrap: wrap;
+}
+
+.uno-discard-label,
+.uno-players-label,
+.uno-hand-title {
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-weight: 700;
+  color: var(--mgu-encre-600);
+}
+
+.uno-turn-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--mgu-encre-900);
+}
+
+.uno-turn-info strong {
+  color: var(--mgu-or-600);
+}
+
+.uno-color-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid white;
+  flex-shrink: 0;
+}
+
+.uno-players-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.uno-player-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 7px 12px;
+  border-radius: var(--mgu-radius-full);
+  background: rgba(255, 255, 255, .35);
+  border: 1px solid var(--mgu-carton-line);
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--mgu-encre-900);
+  white-space: nowrap;
+}
+
+.uno-player-pill--actif {
+  background: rgba(232, 178, 59, .12);
+  border-color: var(--mgu-or-500);
+  color: var(--mgu-or-600);
+}
+
+.uno-player-count {
+  color: var(--mgu-encre-600);
+  font-weight: 600;
+}
+
+.uno-badge-uno {
+  color: var(--mgu-or-600);
+  font-weight: 800;
+  font-size: .7rem;
+  white-space: nowrap;
+}
+
+.uno-contre-btn {
+  padding: 4px 9px;
+  background: rgba(214, 72, 79, .10);
+  border: 1px solid var(--mgu-pion-rouge);
+  border-radius: var(--mgu-radius-s);
+  color: #8a2f33;
+  font-size: .7rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.uno-contre-btn:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.uno-accu {
+  background: rgba(214, 72, 79, .10);
+  border: 1px solid var(--mgu-pion-rouge);
+  border-radius: var(--mgu-radius-m);
+  padding: 8px 12px;
+  font-size: .8rem;
+  font-weight: 700;
+  color: #8a2f33;
+}
+
+.uno-card {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--mgu-radius-m);
+  font-weight: 900;
+  color: white;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, .4);
+  border: 2.5px solid var(--mgu-carton-line);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+  transition: transform .15s, box-shadow .15s, opacity .15s;
+  flex-shrink: 0;
+  cursor: default;
+  opacity: .6;
+}
+
+.uno-card--jouable {
+  opacity: 1;
+  cursor: pointer;
+  border-color: #fff;
+  box-shadow: 0 0 14px rgba(0, 0, 0, .3);
+}
+
+.uno-card--jouable:hover,
+.uno-card--jouable:active {
+  transform: translateY(-8px);
+}
+
+.uno-card--rouge { background: #ef4444; }
+.uno-card--vert  { background: #22c55e; }
+.uno-card--bleu  { background: #3b82f6; }
+.uno-card--jaune { background: #eab308; }
+.uno-card--joker {
+  background: linear-gradient(135deg, #ef4444, #eab308, #22c55e, #3b82f6);
+}
+
+.uno-card--sm { width: 44px; height: 64px; font-size: .8rem; }
+.uno-card--md { width: 56px; height: 80px; font-size: 1rem; }
+.uno-card--lg { width: 60px; height: 88px; font-size: 1.3rem; }
+
+.uno-hand-scroll {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: 8px 20px 16px 4px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.uno-hand-scroll .uno-card {
+  margin-left: -14px;
+  scroll-snap-align: center;
+}
+
+.uno-hand-scroll .uno-card:first-child {
+  margin-left: 0;
+}
+
+.uno-hand-scroll .uno-card--jouable:hover,
+.uno-hand-scroll .uno-card--jouable:active {
+  transform: translateY(-12px);
+  z-index: 2;
+}
+
+.uno-hand-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.uno-btn {
+  min-height: 40px;
+  padding: 9px 16px;
+  border-radius: var(--mgu-radius-m);
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid var(--mgu-carton-line);
+  background: var(--mgu-carton-50);
+  color: var(--mgu-encre-900);
+}
+
+.uno-btn:hover:not(:disabled) {
+  background: var(--mgu-carton-100);
+}
+
+.uno-btn--uno {
+  background: rgba(214, 72, 79, .12);
+  border-color: var(--mgu-pion-rouge);
+  color: #8a2f33;
+}
+
+.uno-btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.uno-color-picker {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.uno-color-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid var(--mgu-carton-line);
+  cursor: pointer;
+  font-size: 1.3rem;
+  transition: transform .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.uno-color-btn:hover,
+.uno-color-btn:active {
+  transform: scale(1.15);
+}
+
+.uno-color-btn--rouge { background: #ef4444; }
+.uno-color-btn--vert  { background: #22c55e; }
+.uno-color-btn--bleu  { background: #3b82f6; }
+.uno-color-btn--jaune { background: #eab308; }
+
+.uno-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, .75);
+  backdrop-filter: blur(8px);
+}
+
+.uno-modal-card {
+  background: rgba(15, 10, 35, .97);
+  border: 1px solid var(--mgu-carton-line);
+  border-radius: 20px;
+  padding: 28px 30px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .5);
+}
+
+.uno-modal-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin-bottom: 18px;
+  color: var(--mgu-carton-50);
+}
+
+.uno-log-panel {
+  background: rgba(0, 0, 0, .06);
+  border-radius: var(--mgu-radius-m);
+  padding: 8px 12px;
+  max-height: 120px;
+  overflow-y: auto;
+  margin-top: 4px;
+}
+
+.uno-log-entry {
+  padding: 3px 0;
+  border-bottom: 1px solid var(--mgu-carton-line);
+  font-size: .75rem;
+  color: var(--mgu-encre-600);
+}
+
+.uno-victory {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 55vh;
+  text-align: center;
+  padding: 2rem;
+  gap: 1.5rem;
+}
+
+.uno-victory-sub {
+  font-size: .78rem;
+  color: var(--mgu-encre-600);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.uno-rank-list {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  width: 100%;
+  max-width: 340px;
+}
+
+.uno-rank-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .7rem 1rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .3);
+}
+
+.uno-rank-row--moi {
+  background: rgba(232, 178, 59, .12);
+  outline: 2px solid rgba(232, 178, 59, .4);
+}
+
+.uno-rank-delta {
+  font-weight: 800;
+  color: var(--mgu-encre-600);
+}
+
+.uno-rank-delta--positif {
+  color: #2f5f42;
+}
+
+.uno-rank-cum {
+  font-size: .78rem;
+  color: var(--mgu-encre-600);
+}
+
+.uno-btn-accueil {
+  display: inline-block;
+  padding: .75rem 2rem;
+  background: linear-gradient(135deg, var(--mgu-or-600), var(--mgu-or-500));
+  border-radius: 10px;
+  color: var(--mgu-encre-900);
+  text-decoration: none;
+  font-weight: 700;
+  margin-top: .5rem;
+}
+
 /* ---------- Accessibilité ---------- */
 button:focus-visible,
 input:focus-visible {
