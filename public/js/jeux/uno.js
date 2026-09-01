@@ -1,15 +1,16 @@
 // ============================================================
-// /js/jeux/uno.js — v2.0 (hôte) — refonte présentation mobile
+// /js/jeux/uno.js — v3.0 (hôte) — table centrale + cartes UNO
 // ============================================================
 // Affichage hôte du jeu UNO.
 // Reçoit les events WS serveur, met à jour l'UI de l'écran hôte.
 // Aucune logique métier ici — tout part du serveur.
 //
-// v2.0 : rendu par classes CSS (.uno-*, cf mgu-jeux-pilote.css)
-// au lieu de style.cssText inline. Main hôte en fan scrollable
-// horizontal (remplace le flex-wrap — le vrai problème mobile).
-// Choix de couleur unifié sur un seul mécanisme délégué. Aucun
-// changement de logique, de payload WS ou de contrat d'events.
+// v3.0 : refonte layout "table" — pioche + carte en jeu centrées,
+// adversaires (tous les joueurs sauf l'hôte) affichés en dos de
+// carte tout autour, main de l'hôte face visible en bas (il joue
+// comme n'importe quel joueur). Cartes redessinées façon UNO
+// officiel (ovale + coins numérotés + roue multicolore joker).
+// Aucun changement de logique, de payload WS ou de contrat d'events.
 //
 // Events WS reçus :
 //   UNO_STATE         — état complet public (à chaque action)
@@ -46,7 +47,6 @@ let _hostPseudo      = null;
 
 // Références aux handlers WS — conservées pour pouvoir faire socket.off()
 // lors d'un enchaînement de parties (cleanup.js → nettoyerPartieInvites).
-// Sans ça, chaque initialiserUno() empilerait un nouveau listener par event.
 let _wsHandlers          = null;
 let _delegationInstallee = false;
 
@@ -64,7 +64,8 @@ function _esc(s) {
 }
 
 // ─────────────────────────────────────────────────────
-// RENDU CARTE (classes .uno-card, plus de style inline calculé)
+// RENDU CARTE — design fidèle au visuel officiel UNO
+// (ovale central + coins numérotés + roue multicolore joker)
 // ─────────────────────────────────────────────────────
 
 function _labelValeur(v) {
@@ -79,17 +80,36 @@ function _classeCouleurCarte(carte) {
 function _renderCarte(carte, opts = {}) {
     const { jouable = false, taille = 'md', index = -1, onClick = null } = opts;
     const div = document.createElement('div');
-    div.className = `uno-card uno-card--${taille} ${_classeCouleurCarte(carte)} ${jouable ? 'uno-card--jouable' : ''}`.trim();
-    div.textContent = _labelValeur(carte.valeur);
+    const classes = ['uno-card', `uno-card--${taille}`, _classeCouleurCarte(carte)];
+    if (carte.valeur === 'plus4') classes.push('uno-card--plus4');
+    if (jouable) classes.push('uno-card--jouable');
+    div.className = classes.join(' ');
+
+    const label = _labelValeur(carte.valeur);
+    div.innerHTML = `
+        <span class="uno-card-corner uno-card-corner--tl">${label}</span>
+        <span class="uno-card-oval"><span class="uno-card-value">${label}</span></span>
+        <span class="uno-card-corner uno-card-corner--br">${label}</span>`;
+
     if (jouable && onClick) {
         div.setAttribute('role', 'button');
         div.setAttribute('tabindex', '0');
-        div.setAttribute('aria-label', `Jouer ${_labelValeur(carte.valeur)}${carte.couleur ? ' ' + carte.couleur : ''}`);
+        div.setAttribute('aria-label', `Jouer ${label}${carte.couleur ? ' ' + carte.couleur : ''}`);
         div.addEventListener('click', () => onClick(index, carte));
         div.addEventListener('keydown', e => {
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(index, carte); }
         });
+    } else {
+        div.setAttribute('aria-hidden', 'true');
     }
+    return div;
+}
+
+// Dos de carte — pile pioche + mains adverses retournées.
+function _renderCarteDos(taille = '') {
+    const div = document.createElement('div');
+    div.className = `uno-card-back ${taille ? 'uno-card-back--' + taille : ''}`.trim();
+    div.setAttribute('aria-hidden', 'true');
     return div;
 }
 
@@ -108,25 +128,19 @@ function _renderEtat() {
 
     if (gagnant) { _renderVictoire(gagnant); return; }
 
-    // ── Carte du dessus ──────────────────────────────
-    let carteTopHtml = '<span class="uno-players-label">—</span>';
-    if (derniereCarteDefausse) {
-        const cls = _classeCouleurCarte(derniereCarteDefausse);
-        carteTopHtml = `<div class="uno-card uno-card--lg ${cls}">${_esc(_labelValeur(derniereCarteDefausse.valeur))}</div>`;
-    }
-
-    // ── Joueurs (pastilles horizontales) ─────────────
-    const joueursHtml = joueurs.map(j => {
+    // ── Adversaires : tous les joueurs sauf l'hôte (dos de carte) ──
+    const adversaires = joueurs.filter(j => j !== _hostPseudo);
+    const opposantsHtml = adversaires.map(j => {
         const nb      = cartesParJoueur[j] || 0;
         const estLui  = j === tourActuel;
         const aDitUno = unoSet.has(j);
-        const unoBadge = (nb === 1 && aDitUno)
-            ? '<span class="uno-badge-uno">⚠️ UNO !</span>' : '';
-        const peutContester = nb === 1 && !aDitUno && j !== _hostPseudo;
+        const unoBadge = (nb === 1 && aDitUno) ? '<span class="uno-badge-uno">⚠️ UNO !</span>' : '';
+        const peutContester = nb === 1 && !aDitUno;
         return `
-            <div class="uno-player-pill ${estLui ? 'uno-player-pill--actif' : ''}">
-                <span>${estLui ? '▶️ ' : ''}${_esc(j)}</span>
-                <span class="uno-player-count">${nb} 🃏</span>
+            <div class="uno-opponent ${estLui ? 'uno-opponent--actif' : ''}">
+                <span class="uno-opponent-name">${estLui ? '▶️ ' : ''}${_esc(j)}</span>
+                <span class="uno-hand-back" data-pseudo="${_esc(j)}"></span>
+                <span class="uno-opponent-count">${nb} 🃏</span>
                 ${unoBadge}
                 ${peutContester ? `<button data-cible="${_esc(j)}" class="uno-challenge-btn">✖ CONTRE UNO !</button>` : ''}
             </div>`;
@@ -143,28 +157,55 @@ function _renderEtat() {
 
     cont.innerHTML = `
         <div class="uno-board">
-            <div class="uno-table-strip">
-                <div class="uno-discard">
-                    <div>
-                        <div class="uno-discard-label">Défausse</div>
-                        ${carteTopHtml}
-                    </div>
-                </div>
-                <div class="uno-turn-info">
-                    <span class="uno-color-dot" style="background:${COULEUR_CSS[couleurActive] || COULEUR_CSS.null};"></span>
-                    Tour : <strong>${_esc(tourActuel)}</strong>
-                </div>
+            <div class="uno-players-label">Adversaires</div>
+            <div class="uno-opponents-row">${opposantsHtml}</div>
+
+            <div class="uno-table-center">
+                <div id="uno-pioche-slot"></div>
+                <div class="uno-carte-jeu-zone" id="uno-carte-jeu-slot"></div>
             </div>
 
-            <div>
-                <div class="uno-players-label">Joueurs</div>
-                <div class="uno-players-strip">${joueursHtml}</div>
+            <div class="uno-turn-banner">
+                <span class="uno-color-dot" style="background:${COULEUR_CSS[couleurActive] || COULEUR_CSS.null};"></span>
+                ${tourActuel === _hostPseudo ? '⭐ C\'est ton tour !' : `Tour : <strong>${_esc(tourActuel)}</strong>`}
             </div>
 
             ${accu}
             ${choixCouleur}
         </div>
         <div id="uno-main-hote"></div>`;
+
+    // Dos de carte adverses (pile miniature, plafonnée à 6 éléments visuels)
+    adversaires.forEach(j => {
+        const slot = cont.querySelector(`.uno-hand-back[data-pseudo="${CSS.escape(j)}"]`);
+        if (!slot) return;
+        const nb = Math.min(cartesParJoueur[j] || 0, 6);
+        for (let i = 0; i < nb; i++) slot.appendChild(_renderCarteDos());
+    });
+
+    // Carte en jeu (centrale, grande taille)
+    const carteJeuSlot = $('uno-carte-jeu-slot');
+    if (carteJeuSlot && derniereCarteDefausse) {
+        carteJeuSlot.appendChild(_renderCarte(derniereCarteDefausse, { taille: 'xl' }));
+    }
+
+    // Pile pioche + bouton, groupés (hôte uniquement — il joue aussi)
+    const piocheSlot = $('uno-pioche-slot');
+    if (piocheSlot && _hostPseudo) {
+        const btn = document.createElement('button');
+        btn.className = 'uno-pioche-btn';
+        btn.setAttribute('aria-label', 'Piocher une carte');
+        btn.appendChild(_renderCarteDos('lg'));
+        const lbl = document.createElement('span');
+        lbl.className = 'uno-pioche-label';
+        lbl.textContent = '📦 Piocher';
+        btn.appendChild(lbl);
+        btn.addEventListener('click', () => {
+            try { socket.send('PLAYER_ACTION', { action: 'uno:draw', data: {} }); }
+            catch(e) { console.error('[UNO] draw hôte:', e); }
+        });
+        piocheSlot.appendChild(btn);
+    }
 
     // Main hôte si hostJoue
     if (_hostPseudo && _mainHote.length > 0) {
@@ -185,14 +226,8 @@ function _renderChoixCouleurHtml() {
 }
 
 function _renderMainHote() {
-    const cont = $('uno-contenu');
     const zone = $('uno-main-hote');
-    if (!zone || !cont) return;
-
-    const cartesHtml = _mainHote.map((carte, i) => {
-        const jouable = _jouablesIdx.includes(i);
-        return { carte, i, jouable };
-    });
+    if (!zone) return;
 
     zone.innerHTML = `
         <div class="uno-hand-panel">
@@ -202,20 +237,12 @@ function _renderMainHote() {
         </div>`;
 
     const scrollWrap = $('uno-hand-scroll-hote');
-    cartesHtml.forEach(({ carte, i, jouable }) => {
+    _mainHote.forEach((carte, i) => {
+        const jouable = _jouablesIdx.includes(i);
         scrollWrap.appendChild(_renderCarte(carte, { jouable, taille: 'md', index: i, onClick: _jouerCarteHote }));
     });
 
     const actions = $('uno-hand-actions-hote');
-
-    const btnPioche = document.createElement('button');
-    btnPioche.className = 'uno-btn';
-    btnPioche.textContent = '📦 Piocher';
-    btnPioche.addEventListener('click', () => {
-        try { socket.send('PLAYER_ACTION', { action: 'uno:draw', data: {} }); }
-        catch(e) { console.error('[UNO] draw hôte:', e); }
-    });
-    actions.appendChild(btnPioche);
 
     if (_mainHote.length <= 2) {
         const btnUno = document.createElement('button');
@@ -417,7 +444,6 @@ function _afficherToastEffect(payload) {
     li.className = 'uno-log-entry';
     li.textContent = payload.effet || (payload.joueur + ' agit');
     log.prepend(li);
-    // Garder max 30 entrées
     while (log.children.length > 30) log.removeChild(log.lastChild);
 }
 
@@ -435,10 +461,8 @@ function _injecterPanneau() {
             <h2 style="font-size:1.1rem;font-weight:800;">🃏 UNO</h2>
         </header>
 
-        <!-- Contenu dynamique -->
         <div id="uno-contenu" style="min-height:200px;"></div>
 
-        <!-- Log des actions -->
         <div class="uno-log-panel">
             <div class="uno-log-title">Journal des actions</div>
             <ul id="uno-log" style="list-style:none;margin:0;padding:0;"></ul>
@@ -459,10 +483,6 @@ export async function initialiserUno() {
     _attenteCouleur = false;
     _drawPlayable   = null;
 
-    // Source de vérité serveur : snapshot.hostPseudo (réplique store.snapshotPartie).
-    // Présent uniquement si l'hôte joue (hostJoue = true) — sinon null et l'hôte
-    // n'affiche pas de main. GameState.joueurs est conservé comme fallback de
-    // dernier recours (cas où le snapshot n'aurait pas encore été reçu).
     const snap = window.HostSession?._snapshot || null;
     _hostPseudo = snap?.hostPseudo || GameState?.joueurs?.[0] || null;
 
@@ -470,7 +490,6 @@ export async function initialiserUno() {
     _abonnerEvents();
     _installerDelegation();
 
-    // Initialiser la partie côté serveur
     try {
         socket.send('HOST_ACTION', { action: 'uno:load', data: {} });
         console.log('[UNO] 📡 uno:load envoyé');

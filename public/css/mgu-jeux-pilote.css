@@ -507,12 +507,11 @@ body.mgu-pilote .btn-valider-equipes:hover {
 
 /* ============================================================
    10) UNO
-   Restructuration complète (contenu dynamique #uno-contenu,
-   jusqu'ici hors périmètre CSS — cf note d'en-tête). Fan de
-   cartes scrollable horizontal remplaçant le flex-wrap d'origine
-   (le vrai problème mobile : retour à la ligne qui bouffe la
-   hauteur d'écran), joueurs en pastilles horizontales au lieu
-   d'une liste verticale, choix de couleur unifié.
+   Table centrale : pioche + carte en jeu, adversaires en dos de
+   carte tout autour (sauf la main de l'hôte, face visible en bas,
+   qui joue comme n'importe quel joueur). Design de carte fidèle
+   au visuel officiel UNO (ovale + coins numérotés + roue
+   multicolore pour les jokers, cases noires +4).
    Couleurs de cartes (rouge/vert/bleu/jaune) volontairement hors
    palette --mgu-* : identité du jeu UNO lui-même, pas un choix
    décoratif à harmoniser.
@@ -524,110 +523,92 @@ body.mgu-pilote .uno-board {
   gap: var(--mgu-space-3);
 }
 
-body.mgu-pilote .uno-table-strip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--mgu-space-3);
-  padding: 10px 14px;
-  background: var(--mgu-feutrine-700);
-  border: 1px solid var(--mgu-feutrine-line);
-  border-radius: var(--mgu-radius-l);
-  flex-wrap: wrap;
-}
-
-body.mgu-pilote .uno-discard {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-body.mgu-pilote .uno-discard-label,
-body.mgu-pilote .uno-players-label,
-body.mgu-pilote .uno-hand-title {
+/* Adversaires — dos de carte, rangée scrollable au-dessus de la table */
+body.mgu-pilote .uno-players-label {
   font-size: .68rem;
   text-transform: uppercase;
   letter-spacing: .1em;
   font-weight: 700;
   color: rgba(255, 255, 255, .45);
+  padding: 0 2px;
 }
 
-body.mgu-pilote .uno-turn-info {
+body.mgu-pilote .uno-opponents-row {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--mgu-font-body);
-  font-size: .85rem;
-  font-weight: 700;
-  color: var(--mgu-carton-50);
-}
-
-body.mgu-pilote .uno-color-dot {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 2px solid white;
-  flex-shrink: 0;
-}
-
-body.mgu-pilote .uno-turn-info strong {
-  color: var(--mgu-or-500);
-}
-
-body.mgu-pilote .uno-players-strip {
-  display: flex;
-  gap: 8px;
+  gap: 10px;
   overflow-x: auto;
-  padding: 2px 2px 6px;
+  padding: 4px 2px 8px;
   -webkit-overflow-scrolling: touch;
 }
 
-body.mgu-pilote .uno-player-pill {
+body.mgu-pilote .uno-opponent {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex-shrink: 0;
-  padding: 7px 12px;
-  border-radius: var(--mgu-radius-full);
-  background: var(--mgu-feutrine-800);
+  padding: 8px 10px 10px;
+  min-width: 92px;
+  border-radius: var(--mgu-radius-m);
+  background: var(--mgu-feutrine-700);
   border: 1px solid var(--mgu-feutrine-line);
-  font-family: var(--mgu-font-body);
-  font-size: .8rem;
+}
+
+body.mgu-pilote .uno-opponent--actif {
+  border-color: var(--mgu-or-500);
+  background: rgba(232, 178, 59, .12);
+}
+
+body.mgu-pilote .uno-opponent-name {
+  font-size: .72rem;
   font-weight: 700;
   color: var(--mgu-carton-50);
   white-space: nowrap;
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-body.mgu-pilote .uno-player-pill--actif {
-  background: rgba(232, 178, 59, .15);
-  border-color: var(--mgu-or-500);
+body.mgu-pilote .uno-opponent--actif .uno-opponent-name {
   color: var(--mgu-or-500);
 }
 
-body.mgu-pilote .uno-player-count {
-  color: rgba(255, 255, 255, .5);
+body.mgu-pilote .uno-opponent-count {
+  font-size: .68rem;
   font-weight: 600;
+  color: rgba(255, 255, 255, .5);
 }
 
-body.mgu-pilote .uno-player-pill--actif .uno-player-count {
-  color: rgba(232, 178, 59, .75);
+body.mgu-pilote .uno-hand-back {
+  display: flex;
+  padding-left: 14px;
+  min-height: 44px;
+  align-items: center;
+}
+
+body.mgu-pilote .uno-hand-back .uno-card-back {
+  margin-left: -14px;
+}
+
+body.mgu-pilote .uno-hand-back .uno-card-back:first-child {
+  margin-left: 0;
 }
 
 body.mgu-pilote .uno-badge-uno {
   color: var(--mgu-or-500);
   font-weight: 800;
-  font-size: .72rem;
+  font-size: .7rem;
   white-space: nowrap;
 }
 
 body.mgu-pilote .uno-challenge-btn,
 body.mgu-pilote .uno-contre-btn {
-  padding: 4px 9px;
+  padding: 3px 8px;
   background: rgba(214, 72, 79, .18);
   border: 1px solid var(--mgu-pion-rouge);
   border-radius: var(--mgu-radius-s);
   color: #fca5a5;
-  font-size: .7rem;
+  font-size: .66rem;
   font-weight: 700;
   cursor: pointer;
   font-family: inherit;
@@ -638,6 +619,83 @@ body.mgu-pilote .uno-challenge-btn:disabled,
 body.mgu-pilote .uno-contre-btn:disabled {
   opacity: .4;
   cursor: not-allowed;
+}
+
+/* Table centrale — pioche à gauche, carte en jeu centrée */
+body.mgu-pilote .uno-table-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 16px 10px 8px;
+  flex-wrap: wrap;
+}
+
+body.mgu-pilote .uno-pioche-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+
+body.mgu-pilote .uno-pioche-btn:hover .uno-card-back {
+  transform: translateY(-4px);
+}
+
+body.mgu-pilote .uno-pioche-btn:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+body.mgu-pilote .uno-pioche-btn:disabled .uno-card-back {
+  transform: none;
+}
+
+body.mgu-pilote .uno-pioche-label {
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--mgu-carton-50);
+  background: var(--mgu-feutrine-700);
+  border: 1px solid var(--mgu-feutrine-line);
+  padding: 4px 12px;
+  border-radius: var(--mgu-radius-full);
+}
+
+body.mgu-pilote .uno-carte-jeu-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+body.mgu-pilote .uno-turn-banner {
+  width: 100%;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--mgu-font-body);
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--mgu-carton-50);
+}
+
+body.mgu-pilote .uno-turn-banner strong {
+  color: var(--mgu-or-500);
+}
+
+body.mgu-pilote .uno-color-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid white;
+  flex-shrink: 0;
 }
 
 body.mgu-pilote .uno-accu {
@@ -651,46 +709,141 @@ body.mgu-pilote .uno-accu {
   font-size: .85rem;
 }
 
+/* ── Cartes — design fidèle au visuel officiel UNO ──────────── */
+
 body.mgu-pilote .uno-card {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--mgu-radius-m);
-  font-weight: 900;
-  color: white;
-  text-shadow: 1px 1px 3px rgba(0, 0, 0, .5);
-  border: 2.5px solid rgba(255, 255, 255, .3);
+  --cw: 56px;
+  --ch: 80px;
+  position: relative;
+  width: var(--cw);
+  height: var(--ch);
+  border-radius: calc(var(--cw) * .16);
+  border: 2.5px solid rgba(255, 255, 255, .35);
   box-shadow: 0 2px 8px rgba(0, 0, 0, .4);
-  transition: transform .15s, box-shadow .15s, opacity .15s;
   flex-shrink: 0;
   cursor: default;
-  opacity: .7;
+  overflow: hidden;
+  transition: transform .15s, box-shadow .15s, filter .15s;
 }
 
-body.mgu-pilote .uno-card--jouable {
-  opacity: 1;
-  cursor: pointer;
-  border-color: #fff;
-  box-shadow: 0 0 12px rgba(255, 255, 255, .6);
-}
-
-body.mgu-pilote .uno-card--jouable:hover {
-  transform: translateY(-10px);
-}
+body.mgu-pilote .uno-card--sm { --cw: 42px; --ch: 60px; }
+body.mgu-pilote .uno-card--md { --cw: 56px; --ch: 80px; }
+body.mgu-pilote .uno-card--lg { --cw: 86px; --ch: 124px; }
+body.mgu-pilote .uno-card--xl { --cw: 108px; --ch: 156px; }
 
 body.mgu-pilote .uno-card--rouge { background: #ef4444; }
 body.mgu-pilote .uno-card--vert  { background: #22c55e; }
 body.mgu-pilote .uno-card--bleu  { background: #3b82f6; }
 body.mgu-pilote .uno-card--jaune { background: #eab308; }
-body.mgu-pilote .uno-card--joker {
-  background: linear-gradient(135deg, #ef4444, #eab308, #22c55e, #3b82f6);
+body.mgu-pilote .uno-card--joker { background: #171717; }
+
+/* Cartes de la main non jouables : assombries (signal visuel).
+   Jouables : pleine opacité + halo + soulèvement au survol. */
+body.mgu-pilote .uno-hand-scroll .uno-card:not(.uno-card--jouable) {
+  filter: grayscale(.4) brightness(.75);
 }
 
-body.mgu-pilote .uno-card--sm { width: 44px; height: 64px; font-size: .8rem; }
-body.mgu-pilote .uno-card--md { width: 56px; height: 80px; font-size: 1rem; }
-body.mgu-pilote .uno-card--lg { width: 72px; height: 104px; font-size: 1.5rem; }
+body.mgu-pilote .uno-card--jouable {
+  cursor: pointer;
+  border-color: #fff;
+  box-shadow: 0 0 12px rgba(255, 255, 255, .65);
+}
 
+body.mgu-pilote .uno-card--jouable:hover {
+  transform: translateY(-10px);
+  z-index: 2;
+}
+
+body.mgu-pilote .uno-card-oval {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--cw) * .82);
+  height: calc(var(--ch) * .56);
+  background: #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) rotate(-25deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.mgu-pilote .uno-card--joker .uno-card-oval {
+  background: conic-gradient(from 0deg, #ef4444 0 25%, #eab308 25% 50%, #22c55e 50% 75%, #3b82f6 75% 100%);
+  transform: translate(-50%, -50%) rotate(0deg);
+  width: calc(var(--cw) * .74);
+  height: calc(var(--cw) * .74);
+}
+
+body.mgu-pilote .uno-card--plus4 .uno-card-oval {
+  background: #fff;
+  transform: translate(-50%, -50%) rotate(-25deg);
+  width: calc(var(--cw) * .82);
+  height: calc(var(--ch) * .56);
+}
+
+body.mgu-pilote .uno-card-value {
+  font-weight: 900;
+  font-size: calc(var(--cw) * .38);
+  line-height: 1;
+  transform: rotate(25deg);
+  text-shadow: 0 0 1px rgba(0, 0, 0, .25);
+}
+
+body.mgu-pilote .uno-card--rouge .uno-card-value { color: #ef4444; }
+body.mgu-pilote .uno-card--vert  .uno-card-value { color: #22c55e; }
+body.mgu-pilote .uno-card--bleu  .uno-card-value { color: #3b82f6; }
+body.mgu-pilote .uno-card--jaune .uno-card-value { color: #b8860b; }
+body.mgu-pilote .uno-card--joker .uno-card-value {
+  transform: rotate(0deg);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .5);
+  font-size: calc(var(--cw) * .3);
+}
+body.mgu-pilote .uno-card--plus4 .uno-card-value {
+  color: #171717;
+  transform: rotate(25deg);
+}
+
+body.mgu-pilote .uno-card-corner {
+  position: absolute;
+  font-weight: 800;
+  font-size: calc(var(--cw) * .22);
+  color: #fff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, .5);
+  line-height: 1;
+}
+
+body.mgu-pilote .uno-card-corner--tl { top: 7%; left: 10%; }
+body.mgu-pilote .uno-card-corner--br { bottom: 7%; right: 10%; transform: rotate(180deg); }
+
+/* Dos de carte — pile pioche + mains adverses retournées */
+body.mgu-pilote .uno-card-back {
+  --cw: 30px;
+  --ch: 44px;
+  width: var(--cw);
+  height: var(--ch);
+  border-radius: calc(var(--cw) * .18);
+  background: linear-gradient(135deg, #1a1a1a, #3a0a0a);
+  border: 2px solid #ef4444;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .4);
+  transition: transform .15s;
+}
+
+body.mgu-pilote .uno-card-back--lg { --cw: 56px; --ch: 80px; }
+
+body.mgu-pilote .uno-card-back::after {
+  content: '';
+  position: absolute;
+  inset: 16% 22%;
+  border-radius: 50%;
+  background: #ef4444;
+  opacity: .9;
+  transform: rotate(-20deg);
+}
+
+/* Main — fan scrollable horizontal */
 body.mgu-pilote .uno-hand-panel {
   background: rgba(139, 92, 246, .07);
   border: 1px solid rgba(139, 92, 246, .25);
@@ -701,6 +854,10 @@ body.mgu-pilote .uno-hand-panel {
 body.mgu-pilote .uno-hand-title {
   padding: 0 14px;
   margin-bottom: 8px;
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-weight: 700;
   color: rgba(196, 181, 253, .8);
 }
 
@@ -720,11 +877,6 @@ body.mgu-pilote .uno-hand-scroll .uno-card {
 
 body.mgu-pilote .uno-hand-scroll .uno-card:first-child {
   margin-left: 0;
-}
-
-body.mgu-pilote .uno-hand-scroll .uno-card--jouable:hover {
-  transform: translateY(-14px);
-  z-index: 2;
 }
 
 body.mgu-pilote .uno-hand-actions {
@@ -762,6 +914,7 @@ body.mgu-pilote .uno-btn:disabled {
   cursor: not-allowed;
 }
 
+/* Choix de couleur */
 body.mgu-pilote .uno-color-picker {
   display: flex;
   gap: 12px;
@@ -806,6 +959,7 @@ body.mgu-pilote .uno-color-inline {
   text-align: center;
 }
 
+/* Journal des actions */
 body.mgu-pilote .uno-log-panel {
   margin-top: 14px;
   background: rgba(0, 0, 0, .2);
@@ -831,6 +985,7 @@ body.mgu-pilote .uno-log-entry {
   color: rgba(255, 255, 255, .7);
 }
 
+/* Victoire */
 body.mgu-pilote .uno-victory {
   text-align: center;
   padding: 20px 0;

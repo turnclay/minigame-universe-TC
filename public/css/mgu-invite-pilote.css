@@ -589,10 +589,12 @@ body {
 }
 
 /* ---------- UNO ---------- */
-/* Restructuration complète (jusqu'ici non couvert — cf note d'en-tête).
-   Même logique que côté hôte : fan de cartes scrollable au lieu du
-   flex-wrap, joueurs en pastilles horizontales. Couleurs de cartes
-   hors palette --mgu-* : identité du jeu, pas un choix décoratif. */
+/* Table centrale : pioche + carte en jeu, adversaires en dos de
+   carte tout autour, ma main face visible en bas. Design de carte
+   fidèle au visuel officiel UNO (ovale + coins numérotés + roue
+   multicolore pour les jokers, cases noires +4). Couleurs de
+   cartes hors palette --mgu-* : identité du jeu, pas un choix
+   décoratif. */
 
 .uno-board {
   display: flex;
@@ -600,81 +602,74 @@ body {
   gap: .65rem;
 }
 
-.uno-table-strip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 10px 14px;
-  background: var(--mgu-carton-50);
-  border: 1px solid var(--mgu-carton-line);
-  border-radius: var(--mgu-radius-l);
-  flex-wrap: wrap;
-}
-
-.uno-discard-label,
-.uno-players-label,
-.uno-hand-title {
+.uno-players-label {
   font-size: .68rem;
   text-transform: uppercase;
   letter-spacing: .1em;
   font-weight: 700;
   color: var(--mgu-encre-600);
+  padding: 0 2px;
 }
 
-.uno-turn-info {
+.uno-opponents-row {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: .85rem;
-  font-weight: 700;
-  color: var(--mgu-encre-900);
-}
-
-.uno-turn-info strong {
-  color: var(--mgu-or-600);
-}
-
-.uno-color-dot {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 2px solid white;
-  flex-shrink: 0;
-}
-
-.uno-players-strip {
-  display: flex;
-  gap: 8px;
+  gap: 10px;
   overflow-x: auto;
-  padding: 2px 2px 6px;
+  padding: 4px 2px 8px;
   -webkit-overflow-scrolling: touch;
 }
 
-.uno-player-pill {
+.uno-opponent {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex-shrink: 0;
-  padding: 7px 12px;
-  border-radius: var(--mgu-radius-full);
-  background: rgba(255, 255, 255, .35);
+  padding: 8px 10px 10px;
+  min-width: 92px;
+  border-radius: var(--mgu-radius-m);
+  background: var(--mgu-carton-50);
   border: 1px solid var(--mgu-carton-line);
-  font-size: .8rem;
-  font-weight: 600;
-  color: var(--mgu-encre-900);
-  white-space: nowrap;
 }
 
-.uno-player-pill--actif {
-  background: rgba(232, 178, 59, .12);
+.uno-opponent--actif {
   border-color: var(--mgu-or-500);
+  background: rgba(232, 178, 59, .1);
+}
+
+.uno-opponent-name {
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--mgu-encre-900);
+  white-space: nowrap;
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.uno-opponent--actif .uno-opponent-name {
   color: var(--mgu-or-600);
 }
 
-.uno-player-count {
-  color: var(--mgu-encre-600);
+.uno-opponent-count {
+  font-size: .68rem;
   font-weight: 600;
+  color: var(--mgu-encre-600);
+}
+
+.uno-hand-back {
+  display: flex;
+  padding-left: 14px;
+  min-height: 44px;
+  align-items: center;
+}
+
+.uno-hand-back .uno-card-back {
+  margin-left: -14px;
+}
+
+.uno-hand-back .uno-card-back:first-child {
+  margin-left: 0;
 }
 
 .uno-badge-uno {
@@ -685,12 +680,12 @@ body {
 }
 
 .uno-contre-btn {
-  padding: 4px 9px;
-  background: rgba(214, 72, 79, .10);
+  padding: 3px 8px;
+  background: rgba(214, 72, 79, .1);
   border: 1px solid var(--mgu-pion-rouge);
   border-radius: var(--mgu-radius-s);
   color: #8a2f33;
-  font-size: .7rem;
+  font-size: .66rem;
   font-weight: 700;
   cursor: pointer;
   font-family: inherit;
@@ -702,8 +697,83 @@ body {
   cursor: not-allowed;
 }
 
+.uno-table-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 16px 10px 8px;
+  flex-wrap: wrap;
+}
+
+.uno-pioche-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+
+.uno-pioche-btn:hover .uno-card-back {
+  transform: translateY(-4px);
+}
+
+.uno-pioche-btn:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.uno-pioche-btn:disabled .uno-card-back {
+  transform: none;
+}
+
+.uno-pioche-label {
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--mgu-encre-900);
+  background: var(--mgu-carton-50);
+  border: 1px solid var(--mgu-carton-line);
+  padding: 4px 12px;
+  border-radius: var(--mgu-radius-full);
+}
+
+.uno-carte-jeu-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.uno-turn-banner {
+  width: 100%;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--mgu-encre-900);
+}
+
+.uno-turn-banner strong {
+  color: var(--mgu-or-600);
+}
+
+.uno-color-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid white;
+  flex-shrink: 0;
+}
+
 .uno-accu {
-  background: rgba(214, 72, 79, .10);
+  background: rgba(214, 72, 79, .1);
   border: 1px solid var(--mgu-pion-rouge);
   border-radius: var(--mgu-radius-m);
   padding: 8px 12px;
@@ -712,25 +782,39 @@ body {
   color: #8a2f33;
 }
 
+/* ── Cartes — design fidèle au visuel officiel UNO ──────────── */
+
 .uno-card {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--mgu-radius-m);
-  font-weight: 900;
-  color: white;
-  text-shadow: 1px 1px 3px rgba(0, 0, 0, .4);
+  --cw: 56px;
+  --ch: 80px;
+  position: relative;
+  width: var(--cw);
+  height: var(--ch);
+  border-radius: calc(var(--cw) * .16);
   border: 2.5px solid var(--mgu-carton-line);
   box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
-  transition: transform .15s, box-shadow .15s, opacity .15s;
   flex-shrink: 0;
   cursor: default;
-  opacity: .6;
+  overflow: hidden;
+  transition: transform .15s, box-shadow .15s, filter .15s;
+}
+
+.uno-card--sm { --cw: 42px; --ch: 60px; }
+.uno-card--md { --cw: 56px; --ch: 80px; }
+.uno-card--lg { --cw: 86px; --ch: 124px; }
+.uno-card--xl { --cw: 108px; --ch: 156px; }
+
+.uno-card--rouge { background: #ef4444; }
+.uno-card--vert  { background: #22c55e; }
+.uno-card--bleu  { background: #3b82f6; }
+.uno-card--jaune { background: #eab308; }
+.uno-card--joker { background: #171717; }
+
+.uno-hand-scroll .uno-card:not(.uno-card--jouable) {
+  filter: grayscale(.4) brightness(.85);
 }
 
 .uno-card--jouable {
-  opacity: 1;
   cursor: pointer;
   border-color: #fff;
   box-shadow: 0 0 14px rgba(0, 0, 0, .3);
@@ -741,17 +825,103 @@ body {
   transform: translateY(-8px);
 }
 
-.uno-card--rouge { background: #ef4444; }
-.uno-card--vert  { background: #22c55e; }
-.uno-card--bleu  { background: #3b82f6; }
-.uno-card--jaune { background: #eab308; }
-.uno-card--joker {
-  background: linear-gradient(135deg, #ef4444, #eab308, #22c55e, #3b82f6);
+.uno-card-oval {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--cw) * .82);
+  height: calc(var(--ch) * .56);
+  background: #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) rotate(-25deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.uno-card--sm { width: 44px; height: 64px; font-size: .8rem; }
-.uno-card--md { width: 56px; height: 80px; font-size: 1rem; }
-.uno-card--lg { width: 60px; height: 88px; font-size: 1.3rem; }
+.uno-card--joker .uno-card-oval {
+  background: conic-gradient(from 0deg, #ef4444 0 25%, #eab308 25% 50%, #22c55e 50% 75%, #3b82f6 75% 100%);
+  transform: translate(-50%, -50%) rotate(0deg);
+  width: calc(var(--cw) * .74);
+  height: calc(var(--cw) * .74);
+}
+
+.uno-card--plus4 .uno-card-oval {
+  background: #fff;
+  transform: translate(-50%, -50%) rotate(-25deg);
+  width: calc(var(--cw) * .82);
+  height: calc(var(--ch) * .56);
+}
+
+.uno-card-value {
+  font-weight: 900;
+  font-size: calc(var(--cw) * .38);
+  line-height: 1;
+  transform: rotate(25deg);
+  text-shadow: 0 0 1px rgba(0, 0, 0, .25);
+}
+
+.uno-card--rouge .uno-card-value { color: #ef4444; }
+.uno-card--vert  .uno-card-value { color: #22c55e; }
+.uno-card--bleu  .uno-card-value { color: #3b82f6; }
+.uno-card--jaune .uno-card-value { color: #b8860b; }
+.uno-card--joker .uno-card-value {
+  transform: rotate(0deg);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .5);
+  font-size: calc(var(--cw) * .3);
+}
+.uno-card--plus4 .uno-card-value {
+  color: #171717;
+  transform: rotate(25deg);
+}
+
+.uno-card-corner {
+  position: absolute;
+  font-weight: 800;
+  font-size: calc(var(--cw) * .22);
+  color: #fff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, .5);
+  line-height: 1;
+}
+
+.uno-card-corner--tl { top: 7%; left: 10%; }
+.uno-card-corner--br { bottom: 7%; right: 10%; transform: rotate(180deg); }
+
+/* Dos de carte — pile pioche + mains adverses retournées */
+.uno-card-back {
+  --cw: 30px;
+  --ch: 44px;
+  width: var(--cw);
+  height: var(--ch);
+  border-radius: calc(var(--cw) * .18);
+  background: linear-gradient(135deg, #1a1a1a, #3a0a0a);
+  border: 2px solid #ef4444;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .3);
+  transition: transform .15s;
+}
+
+.uno-card-back--lg { --cw: 56px; --ch: 80px; }
+
+.uno-card-back::after {
+  content: '';
+  position: absolute;
+  inset: 16% 22%;
+  border-radius: 50%;
+  background: #ef4444;
+  opacity: .9;
+  transform: rotate(-20deg);
+}
+
+.uno-hand-title {
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-weight: 700;
+  color: var(--mgu-encre-600);
+  margin-bottom: 6px;
+}
 
 .uno-hand-scroll {
   display: flex;
@@ -769,12 +939,6 @@ body {
 
 .uno-hand-scroll .uno-card:first-child {
   margin-left: 0;
-}
-
-.uno-hand-scroll .uno-card--jouable:hover,
-.uno-hand-scroll .uno-card--jouable:active {
-  transform: translateY(-12px);
-  z-index: 2;
 }
 
 .uno-hand-actions {
