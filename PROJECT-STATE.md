@@ -1,7 +1,7 @@
 ﻿PROJECT-STATE.md (auto-genere par update-agent-state.ps1 - ne pas editer a la main)
 
-Derniere generation : 2026-09-02 01:09
-Commit               : e4167564c949d436284a3d135c15698610886c5a
+Derniere generation : 2026-09-05 14:49
+Commit               : 553827d74e93bade493aa8eded43087ea1e3d4dc
 Message              : Auto update MiniGameV2
 
 JEUX ENREGISTRES DANS JEU_HANDLERS (server/ws-handler.js)

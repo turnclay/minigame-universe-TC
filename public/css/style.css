@@ -8065,3 +8065,12 @@ select:focus-visible {
 ============================================ */
 #scores-hote-overlay { z-index: 10000; }
 #scores-hote-panel   { z-index: 10001; }
+
+/* ============================================
+   ⚙️ PANNEAU RÉGLAGES GLOBAL (reglages.js)
+   Même souci que ci-dessus : .top-nav-bar (z-index:9999) recouvre
+   l'en-tête + la croix de fermeture. Ciblé par id → n'affecte pas
+   d'éventuels autres usages de .reglages-panel/.reglages-overlay.
+============================================ */
+#reglages-overlay { z-index: 10000; }
+#reglages-panel   { z-index: 10001; }
